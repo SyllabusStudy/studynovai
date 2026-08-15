@@ -1,0 +1,297 @@
+import { useState, type ReactNode } from "react";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import {
+  BookOpen,
+  Bot,
+  Brain,
+  CalendarDays,
+  CheckSquare,
+  ChartColumn,
+  FileQuestion,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Moon,
+  Search,
+  Settings,
+  Sparkles,
+  Sun,
+  Bell,
+  X,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
+import { signOut, useAuth } from "@/lib/auth";
+import { useTheme } from "@/lib/theme";
+import { daysUntil, formatDate, relativeDay, urgencyDot, useAssignments, useEvents, useProfile } from "@/lib/data";
+import { AskAiDock } from "@/components/AskAiDock";
+import { GlobalSearch } from "@/components/GlobalSearch";
+
+const NAV = [
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/classes", label: "My Classes", icon: BookOpen },
+  { to: "/calendar", label: "Calendar", icon: CalendarDays },
+  { to: "/assignments", label: "Assignments", icon: CheckSquare },
+  { to: "/flashcards", label: "Flashcards", icon: Brain },
+  { to: "/quizzes", label: "Quizzes", icon: FileQuestion },
+  { to: "/grades", label: "Grades", icon: ChartColumn },
+  { to: "/tutor", label: "AI Tutor", icon: Bot },
+  { to: "/settings", label: "Settings", icon: Settings },
+] as const;
+
+const MOBILE_NAV = [NAV[0], NAV[1], NAV[2], NAV[3], NAV[7]] as const;
+
+export function AppShell({ children }: { children: ReactNode }) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  return (
+    <div className="min-h-screen bg-background">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
+        <BrandBlock />
+        <NavList pathname={pathname} />
+        <SidebarFooter />
+      </aside>
+
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent side="left" className="w-72 bg-sidebar p-0">
+          <BrandBlock />
+          <NavList pathname={pathname} onNavigate={() => setMobileOpen(false)} />
+          <SidebarFooter />
+        </SheetContent>
+      </Sheet>
+
+      <div className="lg:pl-64">
+        <TopBar onMenu={() => setMobileOpen(true)} onSearch={() => setSearchOpen(true)} />
+        <main className="mx-auto w-full max-w-6xl px-4 pb-28 pt-6 sm:px-6 lg:pb-14">{children}</main>
+      </div>
+
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur lg:hidden">
+        <ul className="grid grid-cols-5">
+          {MOBILE_NAV.map((item) => {
+            const active = pathname.startsWith(item.to);
+            return (
+              <li key={item.to}>
+                <Link
+                  to={item.to}
+                  className={cn(
+                    "flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors",
+                    active ? "text-primary" : "text-muted-foreground",
+                  )}
+                >
+                  <item.icon className="size-5" />
+                  {item.label.replace("My ", "")}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
+      <AskAiDock />
+      <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
+    </div>
+  );
+}
+
+function BrandBlock() {
+  return (
+    <div className="flex h-16 items-center gap-2.5 border-b border-sidebar-border px-5">
+      <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+        <Sparkles className="size-5" />
+      </span>
+      <span className="leading-tight">
+        <span className="block text-sm font-extrabold tracking-tight">StudyMate AI</span>
+        <span className="block text-[11px] text-muted-foreground">Your college companion</span>
+      </span>
+    </div>
+  );
+}
+
+function NavList({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+  return (
+    <nav className="flex-1 overflow-y-auto p-3 scroll-slim">
+      <ul className="space-y-1">
+        {NAV.map((item) => {
+          const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
+          return (
+            <li key={item.to}>
+              <Link
+                to={item.to}
+                onClick={onNavigate}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                  active
+                    ? "bg-sidebar-primary/12 text-sidebar-primary"
+                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                )}
+              >
+                <item.icon className="size-4.5" />
+                {item.label}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+
+function SidebarFooter() {
+  const { theme, toggle } = useTheme();
+  return (
+    <div className="border-t border-sidebar-border p-3">
+      <Button variant="ghost" size="sm" className="w-full justify-start gap-2" onClick={toggle}>
+        {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+        {theme === "dark" ? "Light mode" : "Dark mode"}
+      </Button>
+    </div>
+  );
+}
+
+function TopBar({ onMenu, onSearch }: { onMenu: () => void; onSearch: () => void }) {
+  const { user } = useAuth();
+  const { data: profile } = useProfile(user?.id);
+  const navigate = useNavigate();
+  const initials = (profile?.name ?? user?.email ?? "S").slice(0, 1).toUpperCase();
+
+  return (
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/85 px-4 backdrop-blur sm:px-6">
+      <Button variant="ghost" size="icon" className="lg:hidden" onClick={onMenu} aria-label="Open menu">
+        <Menu className="size-5" />
+      </Button>
+
+      <button
+        onClick={onSearch}
+        className="flex h-9 flex-1 max-w-sm items-center gap-2 rounded-lg border border-input bg-card px-3 text-sm text-muted-foreground transition-colors hover:border-ring"
+      >
+        <Search className="size-4" />
+        <span className="truncate">Search classes, notes, deadlines…</span>
+      </button>
+
+      <div className="ml-auto flex items-center gap-1">
+        <NotificationBell />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" aria-label="Profile menu">
+              <Avatar className="size-8">
+                <AvatarFallback className="bg-secondary text-xs font-semibold text-secondary-foreground">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel className="truncate">
+              {profile?.name ?? "Student"}
+              <span className="block text-xs font-normal text-muted-foreground">{user?.email}</span>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}>
+              <Settings className="size-4" /> Settings
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={async () => {
+                await signOut();
+                navigate({ to: "/auth" });
+              }}
+            >
+              <LogOut className="size-4" /> Log out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </header>
+  );
+}
+
+function NotificationBell() {
+  const { user } = useAuth();
+  const { data: assignments = [] } = useAssignments(user?.id);
+  const { data: events = [] } = useEvents(user?.id);
+
+  const items = [
+    ...assignments
+      .filter((a) => a.status !== "completed" && a.due_date)
+      .map((a) => ({
+        id: a.id,
+        title: a.title,
+        date: a.due_date,
+        kind: "Assignment",
+        reminder: a.reminder_days ?? 3,
+      })),
+    ...events.map((e) => ({
+      id: e.id,
+      title: e.title,
+      date: e.event_date,
+      kind: e.event_type,
+      reminder: e.reminder_days ?? 3,
+    })),
+  ]
+    .filter((i) => {
+      const d = daysUntil(i.date);
+      return d !== null && d >= -7 && d <= Math.max(i.reminder, 3);
+    })
+    .sort((a, b) => (a.date ?? "").localeCompare(b.date ?? ""))
+    .slice(0, 8);
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="icon" aria-label="Notifications" className="relative">
+          <Bell className="size-5" />
+          {items.length ? (
+            <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-destructive" />
+          ) : null}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-80 p-0">
+        <div className="border-b border-border px-4 py-3 text-sm font-semibold">Reminders</div>
+        {items.length === 0 ? (
+          <p className="px-4 py-6 text-sm text-muted-foreground">You're all caught up. Nothing due soon.</p>
+        ) : (
+          <ul className="max-h-80 divide-y divide-border overflow-y-auto scroll-slim">
+            {items.map((i) => (
+              <li key={`${i.kind}-${i.id}`} className="px-4 py-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{i.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {i.kind} · {formatDate(i.date)}
+                    </p>
+                  </div>
+                  <span className={cn("shrink-0 text-xs font-semibold", urgencyDot(daysUntil(i.date)))}>
+                    {relativeDay(i.date)}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+export function InlineCloseButton({ onClick }: { onClick: () => void }) {
+  return (
+    <Button variant="ghost" size="icon" onClick={onClick} aria-label="Close">
+      <X className="size-4" />
+    </Button>
+  );
+}
+
+export { Input };

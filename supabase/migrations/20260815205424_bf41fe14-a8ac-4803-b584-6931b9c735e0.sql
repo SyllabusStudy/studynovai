@@ -1,0 +1,8 @@
+CREATE POLICY "course_materials_select_own" ON storage.objects FOR SELECT TO authenticated
+USING (bucket_id = 'course-materials' AND (storage.foldername(name))[1] = auth.uid()::text);
+CREATE POLICY "course_materials_insert_own" ON storage.objects FOR INSERT TO authenticated
+WITH CHECK (bucket_id = 'course-materials' AND (storage.foldername(name))[1] = auth.uid()::text);
+CREATE POLICY "course_materials_update_own" ON storage.objects FOR UPDATE TO authenticated
+USING (bucket_id = 'course-materials' AND (storage.foldername(name))[1] = auth.uid()::text);
+CREATE POLICY "course_materials_delete_own" ON storage.objects FOR DELETE TO authenticated
+USING (bucket_id = 'course-materials' AND (storage.foldername(name))[1] = auth.uid()::text);
