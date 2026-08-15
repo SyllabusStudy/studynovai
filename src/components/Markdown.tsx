@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, type ReactElement } from "react";
 
 function inline(text: string, keyPrefix: string) {
   const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g).filter(Boolean);
@@ -29,7 +29,7 @@ function inline(text: string, keyPrefix: string) {
 /** Small, dependency-free renderer for the subset of markdown the tutor produces. */
 export function Markdown({ content }: { content: string }) {
   const lines = content.split("\n");
-  const blocks: JSX.Element[] = [];
+  const blocks: ReactElement[] = [];
   let list: string[] = [];
 
   const flush = () => {
