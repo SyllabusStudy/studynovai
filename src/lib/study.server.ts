@@ -114,7 +114,7 @@ ${doc.extracted_text.slice(0, 60000)}`,
 
   let eventsCreated = 0;
   if (doc.class_id) {
-    const patch: Record<string, string> = {};
+    const patch: Record<string, string | null> = {};
     if (parsed.professor) patch["professor"] = parsed.professor;
     if (parsed.professor_email) patch["professor_email"] = parsed.professor_email;
     if (parsed.office_hours) patch["office_hours"] = parsed.office_hours;
@@ -123,7 +123,11 @@ ${doc.extracted_text.slice(0, 60000)}`,
     if (parsed.makeup_policy) patch["makeup_policy"] = parsed.makeup_policy;
     if (parsed.required_materials) patch["required_materials"] = parsed.required_materials;
     if (Object.keys(patch).length) {
-      await supabase.from("classes").update(patch).eq("id", doc.class_id).eq("user_id", userId);
+      await supabase
+        .from("classes")
+        .update(patch as never)
+        .eq("id", doc.class_id)
+        .eq("user_id", userId);
     }
 
     if (Array.isArray(parsed.grading_breakdown) && parsed.grading_breakdown.length) {
@@ -198,7 +202,12 @@ export type TutorMessage = { role: "user" | "assistant"; content: string; at?: s
 export async function runTutorChat(
   supabase: DB,
   userId: string,
-  input: { conversationId?: string | null; classId?: string | null; mode: string; message: string },
+  input: {
+    conversationId?: string | null | undefined;
+    classId?: string | null | undefined;
+    mode: string;
+    message: string;
+  },
 ) {
   const { contextText } = await buildClassContext(supabase, userId, input.classId ?? null);
 
@@ -259,7 +268,13 @@ export async function runTutorChat(
 export async function runFlashcardGeneration(
   supabase: DB,
   userId: string,
-  input: { classId: string; documentId?: string | null; count: number; difficulty: string; topic?: string | null },
+  input: {
+    classId: string;
+    documentId?: string | null | undefined;
+    count: number;
+    difficulty: string;
+    topic?: string | null | undefined;
+  },
 ) {
   const source = await sourceText(supabase, userId, input.classId, input.documentId ?? null);
   if (!source) throw new Error("Upload a readable document for this class first.");
@@ -317,11 +332,11 @@ export async function runQuizGeneration(
   userId: string,
   input: {
     classId: string;
-    documentId?: string | null;
+    documentId?: string | null | undefined;
     count: number;
     difficulty: string;
     types: string[];
-    title?: string | null;
+    title?: string | null | undefined;
   },
 ) {
   const source = await sourceText(supabase, userId, input.classId, input.documentId ?? null);
@@ -387,7 +402,7 @@ export async function runShortAnswerGrading(
 export async function runStudyCoach(
   supabase: DB,
   userId: string,
-  input: { minutes?: number | null; question?: string | null },
+  input: { minutes?: number | null | undefined; question?: string | null | undefined },
 ) {
   const { contextText } = await buildClassContext(supabase, userId, null);
   const today = new Date().toISOString().slice(0, 10);
