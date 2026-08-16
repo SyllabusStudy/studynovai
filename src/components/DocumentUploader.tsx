@@ -12,12 +12,18 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
-export function DocumentUploader({ classId }: { classId: string }) {
+export function DocumentUploader({
+  classId = null,
+  syllabusOnly = false,
+}: {
+  classId?: string | null;
+  syllabusOnly?: boolean;
+}) {
   const { user } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const [isSyllabus, setIsSyllabus] = useState(false);
+  const [isSyllabus, setIsSyllabus] = useState(syllabusOnly);
   const qc = useQueryClient();
   const runProcess = useServerFn(processDocument);
   const runSyllabus = useServerFn(analyzeSyllabus);
@@ -40,7 +46,7 @@ export function DocumentUploader({ classId }: { classId: string }) {
             file_size: file.size,
             file_type: file.type || null,
             storage_path: path,
-            is_syllabus: isSyllabus,
+            is_syllabus: syllabusOnly || isSyllabus,
           })
           .select("id")
           .single();
@@ -49,13 +55,21 @@ export function DocumentUploader({ classId }: { classId: string }) {
         await qc.invalidateQueries({ queryKey: ["documents"] });
         try {
           await runProcess({ data: { documentId: row.id } });
-          if (isSyllabus) {
-            await runSyllabus({ data: { documentId: row.id } });
+          if (syllabusOnly || isSyllabus) {
+            const result = await runSyllabus({ data: { documentId: row.id } });
             await qc.invalidateQueries({ queryKey: ["events"] });
             await qc.invalidateQueries({ queryKey: ["assignments"] });
             await qc.invalidateQueries({ queryKey: ["class"] });
+            await qc.invalidateQueries({ queryKey: ["classes"] });
+            await qc.invalidateQueries({ queryKey: ["grade-categories"] });
+            if (result?.createdClass) {
+              toast.success(`Created "${result.createdClass.class_name}" with ${result.eventsCreated} dates`);
+            } else {
+              toast.success(`${file.name}: added ${result?.eventsCreated ?? 0} dates to your calendar`);
+            }
+          } else {
+            toast.success(`${file.name} processed`);
           }
-          toast.success(`${file.name} processed`);
         } catch (e) {
           toast.error(e instanceof Error ? e.message : "AI processing failed");
         }
@@ -87,16 +101,20 @@ export function DocumentUploader({ classId }: { classId: string }) {
       )}
     >
       <FileUp className="mx-auto size-6 text-primary" />
-      <p className="mt-3 text-sm font-semibold">Drop course materials here</p>
+      <p className="mt-3 text-sm font-semibold">
+        {syllabusOnly ? "Drop a syllabus PDF here" : "Drop course materials here"}
+      </p>
       <p className="mt-1 text-xs text-muted-foreground">
-        PDF, images, slides, docs or notes. We extract the text for your AI tutor.
+        {syllabusOnly
+          ? "We read the PDF, create the class, and fill in your exams, homework and grade weights automatically."
+          : "PDF, images, slides, docs or notes. We extract the text for your AI tutor."}
       </p>
       <div className="mt-4 flex flex-wrap items-center justify-center gap-4">
         <Button size="sm" disabled={busy} onClick={() => inputRef.current?.click()}>
           {busy ? <Loader2 className="size-4 animate-spin" /> : null}
           Choose files
         </Button>
-        <div className="flex items-center gap-2">
+        <div className={cn("flex items-center gap-2", syllabusOnly && "hidden")}>
           <Switch id="is-syllabus" checked={isSyllabus} onCheckedChange={setIsSyllabus} />
           <Label htmlFor="is-syllabus" className="text-xs">
             This is a syllabus
