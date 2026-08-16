@@ -50,6 +50,8 @@ export const generateFlashcards = createServerFn({ method: "POST" })
         count: z.number().int().min(5).max(50),
         difficulty: z.string().default("medium"),
         topic: z.string().max(200).nullable().optional(),
+        assignmentId: z.string().uuid().nullable().optional(),
+        matchHomework: z.boolean().optional(),
       })
       .parse(d),
   )
