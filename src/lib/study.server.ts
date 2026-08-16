@@ -112,6 +112,45 @@ ${doc.extracted_text.slice(0, 60000)}`,
     .update({ is_syllabus: true, syllabus_data: parsed as never })
     .eq("id", doc.id);
 
+  // No class yet? Build one straight from the syllabus (matching an existing class if we can).
+  let createdClass: { id: string; class_name: string } | null = null;
+  if (!doc.class_id) {
+    const name = parsed.course_name ?? parsed.course_code ?? doc.file_name.replace(/\.[^.]+$/, "");
+    const { data: existingClasses } = await supabase
+      .from("classes")
+      .select("id,class_name,course_code")
+      .eq("user_id", userId);
+    const match = (existingClasses ?? []).find(
+      (c) =>
+        (parsed.course_code &&
+          c.course_code &&
+          c.course_code.replace(/\s+/g, "").toLowerCase() ===
+            parsed.course_code.replace(/\s+/g, "").toLowerCase()) ||
+        c.class_name.trim().toLowerCase() === name.trim().toLowerCase(),
+    );
+    if (match) {
+      doc.class_id = match.id;
+    } else {
+      const palette = ["teal", "blue", "indigo", "emerald", "amber", "orange", "rose", "slate"];
+      const color = palette[(existingClasses?.length ?? 0) % palette.length]!;
+      const { data: inserted, error: classError } = await supabase
+        .from("classes")
+        .insert({
+          user_id: userId,
+          class_name: name,
+          course_code: parsed.course_code,
+          professor: parsed.professor,
+          color,
+        })
+        .select("id,class_name")
+        .single();
+      if (classError || !inserted) throw new Error(classError?.message ?? "Could not create the class.");
+      doc.class_id = inserted.id;
+      createdClass = inserted;
+    }
+    await supabase.from("documents").update({ class_id: doc.class_id }).eq("id", doc.id);
+  }
+
   let eventsCreated = 0;
   if (doc.class_id) {
     const patch: Record<string, string | null> = {};
