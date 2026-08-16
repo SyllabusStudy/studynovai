@@ -112,6 +112,45 @@ ${doc.extracted_text.slice(0, 60000)}`,
     .update({ is_syllabus: true, syllabus_data: parsed as never })
     .eq("id", doc.id);
 
+  // No class yet? Build one straight from the syllabus (matching an existing class if we can).
+  let createdClass: { id: string; class_name: string } | null = null;
+  if (!doc.class_id) {
+    const name = parsed.course_name ?? parsed.course_code ?? doc.file_name.replace(/\.[^.]+$/, "");
+    const { data: existingClasses } = await supabase
+      .from("classes")
+      .select("id,class_name,course_code")
+      .eq("user_id", userId);
+    const match = (existingClasses ?? []).find(
+      (c) =>
+        (parsed.course_code &&
+          c.course_code &&
+          c.course_code.replace(/\s+/g, "").toLowerCase() ===
+            parsed.course_code.replace(/\s+/g, "").toLowerCase()) ||
+        c.class_name.trim().toLowerCase() === name.trim().toLowerCase(),
+    );
+    if (match) {
+      doc.class_id = match.id;
+    } else {
+      const palette = ["teal", "blue", "indigo", "emerald", "amber", "orange", "rose", "slate"];
+      const color = palette[(existingClasses?.length ?? 0) % palette.length]!;
+      const { data: inserted, error: classError } = await supabase
+        .from("classes")
+        .insert({
+          user_id: userId,
+          class_name: name,
+          course_code: parsed.course_code,
+          professor: parsed.professor,
+          color,
+        })
+        .select("id,class_name")
+        .single();
+      if (classError || !inserted) throw new Error(classError?.message ?? "Could not create the class.");
+      doc.class_id = inserted.id;
+      createdClass = inserted;
+    }
+    await supabase.from("documents").update({ class_id: doc.class_id }).eq("id", doc.id);
+  }
+
   let eventsCreated = 0;
   if (doc.class_id) {
     const patch: Record<string, string | null> = {};
@@ -192,7 +231,7 @@ ${doc.extracted_text.slice(0, 60000)}`,
     }
   }
 
-  return { syllabus: parsed, eventsCreated };
+  return { syllabus: parsed, eventsCreated, classId: doc.class_id, createdClass };
 }
 
 /* ------------------------------------------------------------------ tutor */
@@ -274,10 +313,49 @@ export async function runFlashcardGeneration(
     count: number;
     difficulty: string;
     topic?: string | null | undefined;
+    assignmentId?: string | null | undefined;
+    matchHomework?: boolean | undefined;
   },
 ) {
   const source = await sourceText(supabase, userId, input.classId, input.documentId ?? null);
   if (!source) throw new Error("Upload a readable document for this class first.");
+
+  // Optionally aim the deck at the student's real homework / upcoming deadlines.
+  let homework = "";
+  if (input.assignmentId || input.matchHomework) {
+    const today = new Date().toISOString().slice(0, 10);
+    let q = supabase
+      .from("assignments")
+      .select("title,description,due_date,category,status")
+      .eq("user_id", userId)
+      .eq("class_id", input.classId);
+    if (input.assignmentId) q = q.eq("id", input.assignmentId);
+    else q = q.neq("status", "completed").gte("due_date", today).order("due_date").limit(6);
+    const { data: hw } = await q;
+
+    let events: Array<{ title: string; event_date: string; event_type: string }> = [];
+    if (!input.assignmentId) {
+      const { data } = await supabase
+        .from("calendar_events")
+        .select("title,event_date,event_type")
+        .eq("user_id", userId)
+        .eq("class_id", input.classId)
+        .gte("event_date", today)
+        .order("event_date")
+        .limit(6);
+      events = data ?? [];
+    }
+
+    const lines = [
+      ...(hw ?? []).map(
+        (a) =>
+          `- Homework: ${a.title}${a.due_date ? ` (due ${a.due_date})` : ""}${a.category ? ` [${a.category}]` : ""}${a.description ? ` — ${a.description}` : ""}`,
+      ),
+      ...events.map((e) => `- Upcoming ${e.event_type}: ${e.title} on ${e.event_date}`),
+    ];
+    homework = lines.join("\n");
+    if (!homework && input.assignmentId) throw new Error("That assignment could not be found.");
+  }
 
   const raw = await callAI([
     {
@@ -288,7 +366,11 @@ export async function runFlashcardGeneration(
     {
       role: "user",
       content: `Create exactly ${input.count} ${input.difficulty} flashcards${input.topic ? ` focused on: ${input.topic}` : ""} from the material below. Fronts are short prompts/questions, backs are precise answers (1-3 sentences). Only use facts present in the material.
-Return json: {"cards":[{"front":string,"back":string,"topic":string}]}
+${
+  homework
+    ? `Prioritise the concepts, skills and problem types the student needs for this homework and these upcoming deadlines. Set each card's "topic" to the homework or deadline it supports:\n${homework}\n`
+    : ""
+}Return json: {"cards":[{"front":string,"back":string,"topic":string}]}
 
 MATERIAL:
 ${source.slice(0, 45000)}`,
