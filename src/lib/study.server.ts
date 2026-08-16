@@ -231,7 +231,7 @@ ${doc.extracted_text.slice(0, 60000)}`,
     }
   }
 
-  return { syllabus: parsed, eventsCreated };
+  return { syllabus: parsed, eventsCreated, classId: doc.class_id, createdClass };
 }
 
 /* ------------------------------------------------------------------ tutor */
