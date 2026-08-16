@@ -50,17 +50,22 @@ function AuthPage() {
     setBusy(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: { name: name || email.split("@")[0] },
-            emailRedirectTo: `${window.location.origin}/dashboard`,
+            emailRedirectTo: window.location.origin,
           },
         });
         if (error) throw error;
+        if (!data.session) {
+          const signIn = await supabase.auth.signInWithPassword({ email, password });
+          if (signIn.error) throw signIn.error;
+        }
         toast.success("Account created. Welcome to StudyMate AI!");
         navigate({ to: "/dashboard" });
+
       } else if (mode === "login") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
