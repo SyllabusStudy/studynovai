@@ -20,7 +20,7 @@ import {
 import { generateFlashcards } from "@/lib/ai.functions";
 import { DIFFICULTIES } from "@/lib/constants";
 import { useAuth } from "@/lib/auth";
-import { classLabel, useClasses, useDocuments, useFlashcards } from "@/lib/data";
+import { classLabel, useAssignments, useClasses, useDocuments, useFlashcards } from "@/lib/data";
 
 export const Route = createFileRoute("/_authenticated/flashcards")({
   head: () => ({
@@ -41,7 +41,9 @@ function FlashcardsPage() {
   const [classId, setClassId] = useState("");
   const { data: documents = [] } = useDocuments(user?.id, classId || undefined);
   const { data: cards = [], isLoading } = useFlashcards(user?.id, classId || undefined);
+  const { data: assignments = [] } = useAssignments(user?.id, classId || undefined);
   const [documentId, setDocumentId] = useState("");
+  const [assignmentId, setAssignmentId] = useState("all");
   const [count, setCount] = useState(15);
   const [difficulty, setDifficulty] = useState<string>("medium");
   const [busy, setBusy] = useState(false);
@@ -49,6 +51,10 @@ function FlashcardsPage() {
   const [flipped, setFlipped] = useState(false);
   const run = useServerFn(generateFlashcards);
 
+  const openAssignments = useMemo(
+    () => assignments.filter((a) => a.status !== "completed"),
+    [assignments],
+  );
   const deck = useMemo(() => cards, [cards]);
   const current = deck[index];
 
@@ -65,6 +71,8 @@ function FlashcardsPage() {
           documentId: documentId || null,
           count,
           difficulty,
+          assignmentId: assignmentId !== "all" && assignmentId !== "none" ? assignmentId : null,
+          matchHomework: assignmentId === "all",
         },
       });
       await qc.invalidateQueries({ queryKey: ["flashcards"] });
@@ -94,9 +102,9 @@ function FlashcardsPage() {
 
   return (
     <div>
-      <PageHeader title="Flashcards" description="Generate a deck from any document, then study it." />
+      <PageHeader title="Flashcards" description="Generate a deck from your materials, aimed at the homework that's actually due." />
 
-      <div className="surface-card grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="surface-card grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-5">
         <div className="space-y-1.5">
           <Label>Class</Label>
           <Select
@@ -104,6 +112,7 @@ function FlashcardsPage() {
             onValueChange={(v) => {
               setClassId(v);
               setDocumentId("");
+              setAssignmentId("all");
             }}
           >
             <SelectTrigger>
@@ -128,6 +137,24 @@ function FlashcardsPage() {
               {documents.map((d) => (
                 <SelectItem key={d.id} value={d.id}>
                   {d.file_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label>Match my homework</Label>
+          <Select value={assignmentId} onValueChange={setAssignmentId}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All upcoming homework &amp; exams</SelectItem>
+              <SelectItem value="none">Don't match homework</SelectItem>
+              {openAssignments.map((a) => (
+                <SelectItem key={a.id} value={a.id}>
+                  {a.title}
+                  {a.due_date ? ` · due ${a.due_date}` : ""}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -159,7 +186,7 @@ function FlashcardsPage() {
             </SelectContent>
           </Select>
         </div>
-        <div className="sm:col-span-2 lg:col-span-4">
+        <div className="sm:col-span-2 lg:col-span-5">
           <Button onClick={generate} disabled={busy} className="gap-1.5">
             {busy ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
             Generate flashcards
