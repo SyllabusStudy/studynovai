@@ -21,6 +21,7 @@ import {
 import { CLASS_COLORS } from "@/lib/constants";
 import { useAuth } from "@/lib/auth";
 import { useAssignments, useClasses, useDocuments } from "@/lib/data";
+import { DocumentUploader } from "@/components/DocumentUploader";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/classes/")({
@@ -49,13 +50,18 @@ function ClassesPage() {
         actions={<NewClassDialog />}
       />
 
+      <section className="mb-6">
+        <h2 className="mb-2 text-sm font-bold tracking-tight">Import a syllabus PDF</h2>
+        <DocumentUploader syllabusOnly />
+      </section>
+
       {isLoading ? (
         <Loader2 className="size-5 animate-spin text-primary" />
       ) : classes.length === 0 ? (
         <EmptyState
           icon={BookOpen}
           title="No classes yet"
-          description="Create your first class to start uploading materials and studying with AI."
+          description="Drop a syllabus PDF above and we'll create the class for you, or add one manually."
           action={<NewClassDialog />}
         />
       ) : (
