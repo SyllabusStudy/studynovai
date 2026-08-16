@@ -313,10 +313,49 @@ export async function runFlashcardGeneration(
     count: number;
     difficulty: string;
     topic?: string | null | undefined;
+    assignmentId?: string | null | undefined;
+    matchHomework?: boolean | undefined;
   },
 ) {
   const source = await sourceText(supabase, userId, input.classId, input.documentId ?? null);
   if (!source) throw new Error("Upload a readable document for this class first.");
+
+  // Optionally aim the deck at the student's real homework / upcoming deadlines.
+  let homework = "";
+  if (input.assignmentId || input.matchHomework) {
+    const today = new Date().toISOString().slice(0, 10);
+    let q = supabase
+      .from("assignments")
+      .select("title,description,due_date,category,status")
+      .eq("user_id", userId)
+      .eq("class_id", input.classId);
+    if (input.assignmentId) q = q.eq("id", input.assignmentId);
+    else q = q.neq("status", "completed").gte("due_date", today).order("due_date").limit(6);
+    const { data: hw } = await q;
+
+    let events: Array<{ title: string; event_date: string; event_type: string }> = [];
+    if (!input.assignmentId) {
+      const { data } = await supabase
+        .from("calendar_events")
+        .select("title,event_date,event_type")
+        .eq("user_id", userId)
+        .eq("class_id", input.classId)
+        .gte("event_date", today)
+        .order("event_date")
+        .limit(6);
+      events = data ?? [];
+    }
+
+    const lines = [
+      ...(hw ?? []).map(
+        (a) =>
+          `- Homework: ${a.title}${a.due_date ? ` (due ${a.due_date})` : ""}${a.category ? ` [${a.category}]` : ""}${a.description ? ` — ${a.description}` : ""}`,
+      ),
+      ...events.map((e) => `- Upcoming ${e.event_type}: ${e.title} on ${e.event_date}`),
+    ];
+    homework = lines.join("\n");
+    if (!homework && input.assignmentId) throw new Error("That assignment could not be found.");
+  }
 
   const raw = await callAI([
     {
@@ -327,7 +366,11 @@ export async function runFlashcardGeneration(
     {
       role: "user",
       content: `Create exactly ${input.count} ${input.difficulty} flashcards${input.topic ? ` focused on: ${input.topic}` : ""} from the material below. Fronts are short prompts/questions, backs are precise answers (1-3 sentences). Only use facts present in the material.
-Return json: {"cards":[{"front":string,"back":string,"topic":string}]}
+${
+  homework
+    ? `Prioritise the concepts, skills and problem types the student needs for this homework and these upcoming deadlines. Set each card's "topic" to the homework or deadline it supports:\n${homework}\n`
+    : ""
+}Return json: {"cards":[{"front":string,"back":string,"topic":string}]}
 
 MATERIAL:
 ${source.slice(0, 45000)}`,
