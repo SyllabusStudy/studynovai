@@ -1,0 +1,168 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { FileText, Loader2 } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
+import { EmptyState } from "@/components/EmptyState";
+import { ClassDot } from "@/components/ClassBadge";
+import { DocumentUploader } from "@/components/DocumentUploader";
+import { TutorChat } from "@/components/TutorChat";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/lib/auth";
+import {
+  formatDate,
+  relativeDay,
+  useAssignments,
+  useClass,
+  useDocuments,
+  useEvents,
+  useFlashcards,
+} from "@/lib/data";
+
+export const Route = createFileRoute("/_authenticated/classes/$classId")({
+  head: () => ({
+    meta: [
+      { title: "Class workspace — StudyMate AI" },
+      { name: "description", content: "Course materials, policies, deadlines and AI study tools for this class." },
+      { property: "og:title", content: "Class workspace — StudyMate AI" },
+      { property: "og:description", content: "Materials, policies and AI study tools for this class." },
+    ],
+  }),
+  component: ClassDetail,
+});
+
+function ClassDetail() {
+  const { classId } = Route.useParams();
+  const { user } = useAuth();
+  const { data: klass, isLoading } = useClass(classId);
+  const { data: documents = [] } = useDocuments(user?.id, classId);
+  const { data: assignments = [] } = useAssignments(user?.id, classId);
+  const { data: events = [] } = useEvents(user?.id, classId);
+  const { data: flashcards = [] } = useFlashcards(user?.id, classId);
+
+  if (isLoading) return <Loader2 className="size-5 animate-spin text-primary" />;
+  if (!klass) return <p className="text-sm text-muted-foreground">This class no longer exists.</p>;
+
+  const policies = [
+    { label: "Attendance", value: klass.attendance_policy },
+    { label: "Late work", value: klass.late_work_policy },
+    { label: "Make-up work", value: klass.makeup_policy },
+    { label: "Office hours", value: klass.office_hours },
+    { label: "Required materials", value: klass.required_materials },
+  ].filter((p) => p.value);
+
+  return (
+    <div>
+      <PageHeader
+        title={
+          <span className="flex items-center gap-2">
+            <ClassDot color={klass.color} /> {klass.class_name}
+          </span>
+        }
+        description={[klass.course_code, klass.professor, klass.semester].filter(Boolean).join(" · ")}
+      />
+
+      <Tabs defaultValue="materials">
+        <TabsList className="flex-wrap">
+          <TabsTrigger value="materials">Materials</TabsTrigger>
+          <TabsTrigger value="deadlines">Deadlines</TabsTrigger>
+          <TabsTrigger value="policies">Policies</TabsTrigger>
+          <TabsTrigger value="study">Study</TabsTrigger>
+          <TabsTrigger value="tutor">Tutor</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="materials" className="mt-5 space-y-4">
+          <DocumentUploader classId={classId} />
+          {documents.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No documents uploaded yet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {documents.map((d) => (
+                <li key={d.id} className="surface-card flex items-center gap-3 p-4">
+                  <FileText className="size-4 text-primary" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold">{d.file_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {d.is_syllabus ? "Syllabus · " : ""}
+                      {d.processing_status === "completed"
+                        ? "Ready for AI"
+                        : d.processing_status === "failed"
+                          ? d.processing_error || "Processing failed"
+                          : "Processing…"}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </TabsContent>
+
+        <TabsContent value="deadlines" className="mt-5 space-y-6">
+          <section>
+            <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-muted-foreground">
+              Assignments
+            </h2>
+            {assignments.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nothing here yet.</p>
+            ) : (
+              <ul className="space-y-2">
+                {assignments.map((a) => (
+                  <li key={a.id} className="surface-card flex items-center justify-between gap-3 p-4">
+                    <span className="truncate text-sm font-semibold">{a.title}</span>
+                    <span className="text-xs text-muted-foreground">{relativeDay(a.due_date)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+          <section>
+            <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-muted-foreground">
+              Exams & events
+            </h2>
+            {events.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nothing here yet.</p>
+            ) : (
+              <ul className="space-y-2">
+                {events.map((e) => (
+                  <li key={e.id} className="surface-card flex items-center justify-between gap-3 p-4">
+                    <span className="truncate text-sm font-semibold">{e.title}</span>
+                    <span className="text-xs text-muted-foreground">{formatDate(e.event_date)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </TabsContent>
+
+        <TabsContent value="policies" className="mt-5">
+          {policies.length === 0 ? (
+            <EmptyState
+              icon={FileText}
+              title="No policies extracted yet"
+              description="Upload the syllabus and mark it as a syllabus — StudyMate will pull out the policies."
+            />
+          ) : (
+            <dl className="space-y-4">
+              {policies.map((p) => (
+                <div key={p.label} className="surface-card p-4">
+                  <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                    {p.label}
+                  </dt>
+                  <dd className="mt-1 text-sm">{p.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+        </TabsContent>
+
+        <TabsContent value="study" className="mt-5">
+          <p className="text-sm text-muted-foreground">
+            {flashcards.length} flashcards for this class. Generate more from the Flashcards page.
+          </p>
+        </TabsContent>
+
+        <TabsContent value="tutor" className="mt-5">
+          <TutorChat fixedClassId={classId} compact />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
