@@ -6,7 +6,7 @@ import { Check, Crown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { PRO_PRICE_USD, FREE_LIMITS } from "@/lib/plan";
+import { PRO_PRICE_USD, FREE_LIMITS, FREE_WINDOW_HOURS } from "@/lib/plan";
 import { Input } from "@/components/ui/input";
 import { cancelProPlan, confirmProCheckout, getBilling, redeemPromo, startProCheckout } from "@/lib/billing.functions";
 import { useAuth } from "@/lib/auth";
@@ -109,6 +109,17 @@ function UpgradePage() {
 
   const pro = billing?.plan === "pro";
   const promoPlan = billing?.status === "promo";
+  const nextReset = (() => {
+    const times = Object.values(billing?.resets ?? {})
+      .filter((t): t is string => Boolean(t))
+      .map((t) => new Date(t).getTime())
+      .filter((t) => t > Date.now());
+    if (!times.length) return null;
+    const mins = Math.max(1, Math.ceil((Math.min(...times) - Date.now()) / 60000));
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return h ? (m ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
+  })();
 
   return (
     <div className="mx-auto max-w-3xl">
