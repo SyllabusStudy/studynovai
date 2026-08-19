@@ -51,15 +51,79 @@ export async function callAI(
   return data.choices?.[0]?.message?.content?.trim() ?? "";
 }
 
+/** Repairs a truncated JSON string by closing open strings/arrays/objects and dropping the trailing partial item. */
+function repairJson(text: string): string {
+  const stack: string[] = [];
+  let inString = false;
+  let escaped = false;
+  let lastSafe = -1; // index just after the last completed top-level-ish value
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]!;
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === "\\") escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') inString = true;
+    else if (ch === "{" || ch === "[") stack.push(ch === "{" ? "}" : "]");
+    else if (ch === "}" || ch === "]") {
+      stack.pop();
+      if (stack.length === 1) lastSafe = i + 1;
+    } else if (ch === "," && stack.length === 1) lastSafe = i;
+  }
+
+  let out = text;
+  if (inString || stack.length) {
+    if (lastSafe > 0) out = text.slice(0, lastSafe);
+    // recompute closers for the trimmed text
+    const closers: string[] = [];
+    let s = false;
+    let esc = false;
+    for (let i = 0; i < out.length; i++) {
+      const ch = out[i]!;
+      if (s) {
+        if (esc) esc = false;
+        else if (ch === "\\") esc = true;
+        else if (ch === '"') s = false;
+        continue;
+      }
+      if (ch === '"') s = true;
+      else if (ch === "{") closers.push("}");
+      else if (ch === "[") closers.push("]");
+      else if (ch === "}" || ch === "]") closers.pop();
+    }
+    if (s) out += '"';
+    out = out.replace(/,\s*$/, "");
+    out += closers.reverse().join("");
+  }
+  return out;
+}
+
 export function parseJsonBlock<T>(raw: string): T {
   let text = raw.trim();
   const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (fence?.[1]) text = fence[1].trim();
   const first = text.search(/[[{]/);
+  if (first < 0 || !text) {
+    throw new Error("The AI reply came back empty. Please try again.");
+  }
   const lastBrace = Math.max(text.lastIndexOf("}"), text.lastIndexOf("]"));
-  if (first > 0 || lastBrace < text.length - 1) text = text.slice(Math.max(first, 0), lastBrace + 1);
-  return JSON.parse(text) as T;
+  if (first > 0 || (lastBrace > -1 && lastBrace < text.length - 1)) {
+    text = text.slice(first, lastBrace > first ? lastBrace + 1 : undefined);
+  }
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    try {
+      return JSON.parse(repairJson(text)) as T;
+    } catch {
+      throw new Error("The AI reply was cut off. Please try that again.");
+    }
+  }
 }
+
 
 export function bytesToBase64(bytes: Uint8Array): string {
   let binary = "";
