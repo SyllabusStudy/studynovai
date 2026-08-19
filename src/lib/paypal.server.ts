@@ -65,10 +65,11 @@ type AdminClient = {
   };
 };
 
-/** Creates the $20/month plan on first use and caches its id in the database. */
+/** Creates the $5.99/month plan on first use and caches its id in the database. */
 export async function ensureProPlanId(admin: AdminClient): Promise<string> {
   // Plans are environment-specific: a sandbox plan id is invalid in live and vice versa.
-  const configId = paypalEnv() === "live" ? "pro" : "pro-sandbox";
+  // The price is part of the key so a price change creates a fresh PayPal plan.
+  const configId = paypalEnv() === "live" ? "pro-599" : "pro-sandbox-599";
   const existing = await admin
     .from("paypal_config")
     .select("plan_id")
@@ -95,7 +96,7 @@ export async function ensureProPlanId(admin: AdminClient): Promise<string> {
         sequence: 1,
         total_cycles: 0,
         pricing_scheme: {
-          fixed_price: { value: `${PRO_PRICE_USD}.00`, currency_code: "USD" },
+          fixed_price: { value: PRO_PRICE_USD.toFixed(2), currency_code: "USD" },
         },
       },
     ],
