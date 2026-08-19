@@ -190,6 +190,11 @@ function QuizzesPage() {
                     {q.completed_at ? "Review" : "Start"}
                   </Link>
                 </Button>
+                <DeleteButton
+                  label="quiz"
+                  description={`"${q.title}" and your answers for it will be removed.`}
+                  onDelete={() => deleteQuiz(q.id)}
+                />
               </li>
             ))}
           </ul>
