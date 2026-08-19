@@ -103,7 +103,7 @@ export async function ensureProPlanId(admin: AdminClient): Promise<string> {
 
   const up = await admin
     .from("paypal_config")
-    .upsert({ id: "pro", product_id: product.id, plan_id: plan.id });
+    .upsert({ id: configId, product_id: product.id, plan_id: plan.id });
   if (up.error) throw new Error(up.error.message);
   return plan.id;
 }
