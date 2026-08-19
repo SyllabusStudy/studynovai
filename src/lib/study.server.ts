@@ -588,9 +588,11 @@ async function sourceText(
 
 const HELP_RULES = [
   "You are StudyMate AI helping a college student with their own homework.",
-  "Teach, don't just dump answers: identify what each question asks, then show the full worked reasoning step by step and state the final answer clearly.",
+  "Teach, don't just dump answers: identify what each question asks, then show the worked reasoning step by step and state the final answer clearly.",
   "Use markdown with a short heading per question. Flag anything you cannot read from the file instead of guessing.",
   "End with a 2-3 bullet 'What to review' list.",
+  "\n",
+  PLAIN_STYLE,
 ].join(" ");
 
 export async function runAssignmentHelp(
