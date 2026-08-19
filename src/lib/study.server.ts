@@ -464,7 +464,7 @@ ${syllabusText}`,
     ]
       .filter(Boolean)
       .join(" ")
-      .slice(0, 2000);
+      .slice(0, 6000);
     await supabase.from("ai_memory").insert({
       user_id: userId,
       class_id: doc.class_id,
