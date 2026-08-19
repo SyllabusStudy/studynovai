@@ -291,6 +291,16 @@ function NewEventDialog() {
               />
             </div>
             <div className="space-y-1.5">
+              <Label htmlFor="event-time">Time</Label>
+              <Input
+                id="event-time"
+                type="time"
+                value={form.event_time}
+                onChange={(e) => setForm({ ...form, event_time: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+
               <Label>Type</Label>
               <Select value={form.event_type} onValueChange={(v) => setForm({ ...form, event_type: v })}>
                 <SelectTrigger>
