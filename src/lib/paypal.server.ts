@@ -1,9 +1,11 @@
 import { PRO_PRICE_USD } from "./plan";
 
+export function paypalEnv(): "live" | "sandbox" {
+  return (process.env["PAYPAL_ENV"] ?? "sandbox").trim() === "live" ? "live" : "sandbox";
+}
+
 function base() {
-  return (process.env["PAYPAL_ENV"] ?? "sandbox").trim() === "live"
-    ? "https://api-m.paypal.com"
-    : "https://api-m.sandbox.paypal.com";
+  return paypalEnv() === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
 }
 
 async function token(): Promise<string> {
