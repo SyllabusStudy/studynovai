@@ -2,10 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
+  runAssignmentHelp,
   runDocumentExtraction,
   runFlashcardGeneration,
   runQuizGeneration,
   runShortAnswerGrading,
+  runSnapHelp,
   runStudyCoach,
   runStudyPlanEvents,
   runSyllabusAnalysis,
@@ -106,3 +108,28 @@ export const createStudyPlan = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) =>
     runStudyPlanEvents(context.supabase, context.userId, data),
   );
+
+export const assignmentHelp = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        assignmentId: z.string().uuid(),
+        question: z.string().max(1000).nullable().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => runAssignmentHelp(context.supabase, context.userId, data));
+
+export const snapHelp = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        imageDataUrl: z.string().startsWith("data:image/").max(12_000_000),
+        classId: z.string().uuid().nullable().optional(),
+        question: z.string().max(500).nullable().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => runSnapHelp(context.supabase, context.userId, data));

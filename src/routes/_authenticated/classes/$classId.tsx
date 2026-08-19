@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { ClassDot } from "@/components/ClassBadge";
 import { DocumentUploader } from "@/components/DocumentUploader";
+import { DocumentList } from "@/components/DocumentList";
 import { TutorChat } from "@/components/TutorChat";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/lib/auth";
@@ -71,28 +72,7 @@ function ClassDetail() {
 
         <TabsContent value="materials" className="mt-5 space-y-4">
           <DocumentUploader classId={classId} />
-          {documents.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No documents uploaded yet.</p>
-          ) : (
-            <ul className="space-y-2">
-              {documents.map((d) => (
-                <li key={d.id} className="surface-card flex items-center gap-3 p-4">
-                  <FileText className="size-4 text-primary" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold">{d.file_name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {d.is_syllabus ? "Syllabus · " : ""}
-                      {d.processing_status === "completed"
-                        ? "Ready for AI"
-                        : d.processing_status === "failed"
-                          ? d.processing_error || "Processing failed"
-                          : "Processing…"}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+          <DocumentList documents={documents} />
         </TabsContent>
 
         <TabsContent value="deadlines" className="mt-5 space-y-6">

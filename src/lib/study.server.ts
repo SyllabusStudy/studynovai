@@ -583,3 +583,93 @@ async function sourceText(
     .map((d) => `### ${d.file_name}\n${(d.extracted_text ?? "").slice(0, 20000)}`)
     .join("\n\n");
 }
+
+/* ------------------------------------------------------------------ assignment help */
+
+const HELP_RULES = [
+  "You are StudyMate AI helping a college student with their own homework.",
+  "Teach, don't just dump answers: identify what each question asks, then show the full worked reasoning step by step and state the final answer clearly.",
+  "Use markdown with a short heading per question. Flag anything you cannot read from the file instead of guessing.",
+  "End with a 2-3 bullet 'What to review' list.",
+].join(" ");
+
+export async function runAssignmentHelp(
+  supabase: DB,
+  userId: string,
+  input: { assignmentId: string; question?: string | null | undefined },
+) {
+  const { data: assignment } = await supabase
+    .from("assignments")
+    .select("*")
+    .eq("id", input.assignmentId)
+    .eq("user_id", userId)
+    .single();
+  if (!assignment) throw new Error("Assignment not found.");
+
+  const { data: docs } = await supabase
+    .from("documents")
+    .select("id,file_name,extracted_text,processing_status")
+    .eq("user_id", userId)
+    .eq("assignment_id", assignment.id);
+
+  const attached = (docs ?? []).filter((d) => (d.extracted_text ?? "").trim().length > 0);
+  if (!attached.length) {
+    throw new Error(
+      (docs ?? []).length
+        ? "Your attached file is still being read. Try again in a few seconds."
+        : "Attach a PDF or screenshot of this assignment first.",
+    );
+  }
+
+  const { contextText } = await buildClassContext(supabase, userId, assignment.class_id);
+
+  const reply = await callAI([
+    { role: "system", content: `${HELP_RULES}\n\nSTUDENT COURSE CONTEXT:\n${contextText.slice(0, 20000)}` },
+    {
+      role: "user",
+      content: `Assignment: ${assignment.title}${assignment.due_date ? ` (due ${assignment.due_date})` : ""}
+${assignment.description ? `Notes: ${assignment.description}` : ""}
+${input.question ? `My specific question: ${input.question}` : "Walk me through the whole thing."}
+
+ATTACHED FILES:
+${attached.map((d) => `### ${d.file_name}\n${(d.extracted_text ?? "").slice(0, 20000)}`).join("\n\n")}`,
+    },
+  ]);
+
+  await supabase
+    .from("documents")
+    .update({ ai_help: reply })
+    .eq("id", attached[0]!.id)
+    .eq("user_id", userId);
+
+  return { reply };
+}
+
+/* ------------------------------------------------------------------ snapquick */
+
+export async function runSnapHelp(
+  supabase: DB,
+  userId: string,
+  input: { imageDataUrl: string; classId?: string | null | undefined; question?: string | null | undefined },
+) {
+  const { contextText } = await buildClassContext(supabase, userId, input.classId ?? null);
+
+  const reply = await callAI([
+    {
+      role: "system",
+      content: `${HELP_RULES} The student photographed their work with a phone camera, so read carefully and say if part of the image is blurry or cut off.\n\nSTUDENT COURSE CONTEXT:\n${contextText.slice(0, 12000)}`,
+    },
+    {
+      role: "user",
+      content: [
+        {
+          type: "text",
+          text: `Scan this photo of my work. Identify every question or problem on it, then solve and explain each one.${input.question ? ` Focus especially on: ${input.question}` : ""}`,
+        },
+        { type: "image_url", image_url: { url: input.imageDataUrl } },
+      ],
+    },
+  ]);
+
+  return { reply };
+}
