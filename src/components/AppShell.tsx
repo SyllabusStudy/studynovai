@@ -38,8 +38,13 @@ import { cn } from "@/lib/utils";
 import { signOut, useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
 import { daysUntil, formatDate, relativeDay, urgencyDot, useAssignments, useEvents, useProfile } from "@/lib/data";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { ShieldCheck } from "lucide-react";
+import { checkAdmin } from "@/lib/admin.functions";
 import { AskAiDock } from "@/components/AskAiDock";
 import { GlobalSearch } from "@/components/GlobalSearch";
+
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -126,10 +131,22 @@ function BrandBlock() {
 }
 
 function NavList({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+  const { user } = useAuth();
+  const check = useServerFn(checkAdmin);
+  const { data: adminInfo } = useQuery({
+    queryKey: ["is-admin", user?.id],
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+    queryFn: () => check({}),
+  });
+  const items = adminInfo?.admin
+    ? [...NAV, { to: "/admin", label: "Owner stats", icon: ShieldCheck } as const]
+    : NAV;
   return (
     <nav className="flex-1 overflow-y-auto p-3 scroll-slim">
       <ul className="space-y-1">
-        {NAV.map((item) => {
+        {items.map((item) => {
+
           const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
           return (
             <li key={item.to}>
