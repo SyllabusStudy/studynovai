@@ -24,6 +24,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedSnapquickRouteImport } from './routes/_authenticated/snapquick'
 import { Route as AuthenticatedTutorRouteImport } from './routes/_authenticated/tutor'
 import { Route as AuthenticatedUpgradeRouteImport } from './routes/_authenticated/upgrade'
+import { Route as FeaturesFlashcardsRouteImport } from './routes/features.flashcards'
 import { Route as AuthenticatedClassesIndexRouteImport } from './routes/_authenticated/classes/index'
 import { Route as AuthenticatedClassesClassIdRouteImport } from './routes/_authenticated/classes/$classId'
 import { Route as AuthenticatedFlashcardsIndexRouteImport } from './routes/_authenticated/flashcards/index'
@@ -106,6 +107,11 @@ const AuthenticatedUpgradeRoute = AuthenticatedUpgradeRouteImport.update({
   path: '/upgrade',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const FeaturesFlashcardsRoute = FeaturesFlashcardsRouteImport.update({
+  id: '/features/flashcards',
+  path: '/features/flashcards',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedClassesIndexRoute =
   AuthenticatedClassesIndexRouteImport.update({
     id: '/classes/',
@@ -158,6 +164,7 @@ export interface FileRoutesByFullPath {
   '/snapquick': typeof AuthenticatedSnapquickRoute
   '/tutor': typeof AuthenticatedTutorRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
+  '/features/flashcards': typeof FeaturesFlashcardsRoute
   '/classes/$classId': typeof AuthenticatedClassesClassIdRoute
   '/flashcards/$deck': typeof AuthenticatedFlashcardsDeckRoute
   '/quizzes/$quizId': typeof AuthenticatedQuizzesQuizIdRoute
@@ -180,6 +187,7 @@ export interface FileRoutesByTo {
   '/snapquick': typeof AuthenticatedSnapquickRoute
   '/tutor': typeof AuthenticatedTutorRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
+  '/features/flashcards': typeof FeaturesFlashcardsRoute
   '/classes/$classId': typeof AuthenticatedClassesClassIdRoute
   '/flashcards/$deck': typeof AuthenticatedFlashcardsDeckRoute
   '/quizzes/$quizId': typeof AuthenticatedQuizzesQuizIdRoute
@@ -204,6 +212,7 @@ export interface FileRoutesById {
   '/_authenticated/snapquick': typeof AuthenticatedSnapquickRoute
   '/_authenticated/tutor': typeof AuthenticatedTutorRoute
   '/_authenticated/upgrade': typeof AuthenticatedUpgradeRoute
+  '/features/flashcards': typeof FeaturesFlashcardsRoute
   '/_authenticated/classes/$classId': typeof AuthenticatedClassesClassIdRoute
   '/_authenticated/flashcards/$deck': typeof AuthenticatedFlashcardsDeckRoute
   '/_authenticated/quizzes/$quizId': typeof AuthenticatedQuizzesQuizIdRoute
@@ -228,6 +237,7 @@ export interface FileRouteTypes {
     | '/snapquick'
     | '/tutor'
     | '/upgrade'
+    | '/features/flashcards'
     | '/classes/$classId'
     | '/flashcards/$deck'
     | '/quizzes/$quizId'
@@ -250,6 +260,7 @@ export interface FileRouteTypes {
     | '/snapquick'
     | '/tutor'
     | '/upgrade'
+    | '/features/flashcards'
     | '/classes/$classId'
     | '/flashcards/$deck'
     | '/quizzes/$quizId'
@@ -273,6 +284,7 @@ export interface FileRouteTypes {
     | '/_authenticated/snapquick'
     | '/_authenticated/tutor'
     | '/_authenticated/upgrade'
+    | '/features/flashcards'
     | '/_authenticated/classes/$classId'
     | '/_authenticated/flashcards/$deck'
     | '/_authenticated/quizzes/$quizId'
@@ -287,6 +299,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  FeaturesFlashcardsRoute: typeof FeaturesFlashcardsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -396,6 +409,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUpgradeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/features/flashcards': {
+      id: '/features/flashcards'
+      path: '/features/flashcards'
+      fullPath: '/features/flashcards'
+      preLoaderRoute: typeof FeaturesFlashcardsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/classes/': {
       id: '/_authenticated/classes/'
       path: '/classes'
@@ -488,6 +508,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  FeaturesFlashcardsRoute: FeaturesFlashcardsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
