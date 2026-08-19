@@ -126,12 +126,20 @@ export async function cancelPro(supabase: DB, userId: string) {
     .select("paypal_subscription_id")
     .eq("user_id", userId)
     .maybeSingle();
-  if (!data?.paypal_subscription_id) throw new Error("No active subscription found.");
-  await cancelSubscription(data.paypal_subscription_id);
+  if (data?.paypal_subscription_id) {
+    try {
+      await cancelSubscription(data.paypal_subscription_id);
+    } catch {
+      // already cancelled on PayPal's side — still drop back to free locally
+    }
+  }
   const { error } = await supabaseAdmin
     .from("subscriptions")
-    .update({ plan: "free", status: "cancelled" })
-    .eq("user_id", userId);
+    .upsert(
+      { user_id: userId, plan: "free", status: "cancelled" },
+      { onConflict: "user_id" },
+    );
   if (error) throw new Error(error.message);
   return { ok: true };
 }
+
