@@ -5,6 +5,7 @@ import {
   callAI,
   extractTextFromFile,
   parseJsonBlock,
+  PLAIN_STYLE,
   tutorSystemPrompt,
 } from "./ai.server";
 
@@ -264,11 +265,14 @@ export async function runTutorChat(
     else conversationId = null;
   }
 
-  const reply = await callAI([
-    { role: "system", content: tutorSystemPrompt(input.mode, contextText) },
-    ...history.slice(-12).map((m) => ({ role: m.role, content: m.content })),
-    { role: "user", content: input.message },
-  ]);
+  const reply = await callAI(
+    [
+      { role: "system", content: tutorSystemPrompt(input.mode, contextText) },
+      ...history.slice(-8).map((m) => ({ role: m.role, content: m.content })),
+      { role: "user", content: input.message },
+    ],
+    { maxTokens: 1200 },
+  );
 
   const now = new Date().toISOString();
   const messages: TutorMessage[] = [
@@ -277,25 +281,41 @@ export async function runTutorChat(
     { role: "assistant", content: reply, at: now },
   ];
 
+  const savers: Array<PromiseLike<unknown>> = [
+    // Long-term memory: one compact note per exchange, readable in every future chat.
+    supabase.from("ai_memory").insert({
+      user_id: userId,
+      class_id: input.classId ?? null,
+      kind: "chat",
+      content: `Student asked: ${input.message.slice(0, 220)} | You answered: ${reply.replace(/\s+/g, " ").slice(0, 320)}`,
+    }),
+  ];
+
   if (conversationId) {
-    await supabase
-      .from("ai_conversations")
-      .update({ messages: messages as never, study_mode: input.mode })
-      .eq("id", conversationId)
-      .eq("user_id", userId);
+    savers.push(
+      supabase
+        .from("ai_conversations")
+        .update({ messages: messages as never, study_mode: input.mode })
+        .eq("id", conversationId)
+        .eq("user_id", userId),
+    );
+    await Promise.all(savers);
   } else {
     const title = input.message.slice(0, 60);
-    const { data: created } = await supabase
-      .from("ai_conversations")
-      .insert({
-        user_id: userId,
-        class_id: input.classId ?? null,
-        title,
-        study_mode: input.mode,
-        messages: messages as never,
-      })
-      .select("id")
-      .single();
+    const [{ data: created }] = await Promise.all([
+      supabase
+        .from("ai_conversations")
+        .insert({
+          user_id: userId,
+          class_id: input.classId ?? null,
+          title,
+          study_mode: input.mode,
+          messages: messages as never,
+        })
+        .select("id")
+        .single(),
+      ...savers,
+    ]);
     conversationId = created?.id ?? null;
   }
 
@@ -315,6 +335,7 @@ export async function runFlashcardGeneration(
     topic?: string | null | undefined;
     assignmentId?: string | null | undefined;
     matchHomework?: boolean | undefined;
+    deck?: string | null | undefined;
   },
 ) {
   const source = await sourceText(supabase, userId, input.classId, input.documentId ?? null);
@@ -322,6 +343,7 @@ export async function runFlashcardGeneration(
 
   // Optionally aim the deck at the student's real homework / upcoming deadlines.
   let homework = "";
+  let deckHint = "";
   if (input.assignmentId || input.matchHomework) {
     const today = new Date().toISOString().slice(0, 10);
     let q = supabase
@@ -354,18 +376,20 @@ export async function runFlashcardGeneration(
       ...events.map((e) => `- Upcoming ${e.event_type}: ${e.title} on ${e.event_date}`),
     ];
     homework = lines.join("\n");
+    if (input.assignmentId && hw?.[0]) deckHint = hw[0].title;
     if (!homework && input.assignmentId) throw new Error("That assignment could not be found.");
   }
 
-  const raw = await callAI([
-    {
-      role: "system",
-      content:
-        "You create high-quality college study flashcards from the student's own course material and reply with json only.",
-    },
-    {
-      role: "user",
-      content: `Create exactly ${input.count} ${input.difficulty} flashcards${input.topic ? ` focused on: ${input.topic}` : ""} from the material below. Fronts are short prompts/questions, backs are precise answers (1-3 sentences). Only use facts present in the material.
+  const raw = await callAI(
+    [
+      {
+        role: "system",
+        content:
+          "You create high-quality college study flashcards from the student's own course material and reply with json only. Plain text only: no LaTeX, no $ signs, no backslash math commands. Write math like (x+2)/3, x^2, sqrt(9).",
+      },
+      {
+        role: "user",
+        content: `Create exactly ${input.count} ${input.difficulty} flashcards${input.topic ? ` focused on: ${input.topic}` : ""} from the material below. Fronts are short prompts/questions, backs are precise answers (1-2 sentences). Only use facts present in the material.
 ${
   homework
     ? `Prioritise the concepts, skills and problem types the student needs for this homework and these upcoming deadlines. Set each card's "topic" to the homework or deadline it supports:\n${homework}\n`
@@ -373,17 +397,30 @@ ${
 }Return json: {"cards":[{"front":string,"back":string,"topic":string}]}
 
 MATERIAL:
-${source.slice(0, 45000)}`,
-    },
-  ]);
+${source.slice(0, 20000)}`,
+      },
+    ],
+    { maxTokens: 4000 },
+  );
 
   const parsed = parseJsonBlock<{ cards: Array<{ front: string; back: string; topic?: string }> }>(raw);
+  const stamp = new Date().toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  const deck =
+    (input.deck ?? "").trim() ||
+    `${deckHint || input.topic || (homework ? "Homework focus" : "All materials")} · ${stamp}`;
+
   const rows = (parsed.cards ?? [])
     .filter((c) => c?.front && c?.back)
     .slice(0, input.count)
     .map((c) => ({
       user_id: userId,
       class_id: input.classId,
+      deck,
       front: c.front,
       back: c.back,
       topic: c.topic ?? input.topic ?? null,
@@ -394,7 +431,7 @@ ${source.slice(0, 45000)}`,
 
   const { error } = await supabase.from("flashcards").insert(rows);
   if (error) throw new Error(error.message);
-  return { created: rows.length };
+  return { created: rows.length, deck };
 }
 
 /* ------------------------------------------------------------------ quizzes */
@@ -437,7 +474,7 @@ Return json: {"title":string,"questions":[{"id":string,"type":"multiple_choice"|
 Rules: multiple_choice needs exactly 4 options and answer must match one option exactly. true_false options are ["True","False"]. short_answer and problem have an empty options array and a concise model answer.
 
 MATERIAL:
-${source.slice(0, 45000)}`,
+${source.slice(0, 20000)}`,
     },
   ]);
 
@@ -489,22 +526,25 @@ export async function runStudyCoach(
   const { contextText } = await buildClassContext(supabase, userId, null);
   const today = new Date().toISOString().slice(0, 10);
 
-  const raw = await callAI([
-    {
-      role: "system",
-      content:
-        "You are StudyMate AI's daily study coach. Reply with json only. Base every recommendation on the student's real deadlines, quiz results and materials. Never invent course facts. If the student has almost no data, say so kindly in the summary and suggest adding a class or syllabus.",
-    },
-    {
-      role: "user",
-      content: `Today is ${today}. The student has ${input.minutes ?? 60} minutes to study today.${input.question ? ` They also asked: ${input.question}` : ""}
+  const raw = await callAI(
+    [
+      {
+        role: "system",
+        content:
+          "You are StudyMate AI's daily study coach. Reply with json only. Base every recommendation on the student's real deadlines, quiz results and materials. Never invent course facts. Plain text only: no LaTeX, no $ signs, no backslash math commands. If the student has almost no data, say so kindly in the summary and suggest adding a class or syllabus.",
+      },
+      {
+        role: "user",
+        content: `Today is ${today}. The student has ${input.minutes ?? 60} minutes to study today.${input.question ? ` They also asked: ${input.question}` : ""}
 Return json: {"summary":string,"tasks":[{"title":string,"detail":string,"minutes":number,"class":string}]}
 Keep summary to 1-2 sentences. Give 2-4 tasks whose minutes add up to about the available time.
 
 STUDENT CONTEXT:
-${contextText}`,
-    },
-  ]);
+${contextText.slice(0, 12000)}`,
+      },
+    ],
+    { maxTokens: 900 },
+  );
 
   return parseJsonBlock<{
     summary: string;
@@ -580,7 +620,7 @@ async function sourceText(
   if (documentId) query = query.eq("id", documentId);
   const { data } = await query;
   return (data ?? [])
-    .map((d) => `### ${d.file_name}\n${(d.extracted_text ?? "").slice(0, 20000)}`)
+    .map((d) => `### ${d.file_name}\n${(d.extracted_text ?? "").slice(0, 12000)}`)
     .join("\n\n");
 }
 
@@ -588,9 +628,11 @@ async function sourceText(
 
 const HELP_RULES = [
   "You are StudyMate AI helping a college student with their own homework.",
-  "Teach, don't just dump answers: identify what each question asks, then show the full worked reasoning step by step and state the final answer clearly.",
+  "Teach, don't just dump answers: identify what each question asks, then show the worked reasoning step by step and state the final answer clearly.",
   "Use markdown with a short heading per question. Flag anything you cannot read from the file instead of guessing.",
   "End with a 2-3 bullet 'What to review' list.",
+  "\n",
+  PLAIN_STYLE,
 ].join(" ");
 
 export async function runAssignmentHelp(
@@ -624,7 +666,7 @@ export async function runAssignmentHelp(
   const { contextText } = await buildClassContext(supabase, userId, assignment.class_id);
 
   const reply = await callAI([
-    { role: "system", content: `${HELP_RULES}\n\nSTUDENT COURSE CONTEXT:\n${contextText.slice(0, 20000)}` },
+    { role: "system", content: `${HELP_RULES}\n\nSTUDENT COURSE CONTEXT:\n${contextText.slice(0, 8000)}` },
     {
       role: "user",
       content: `Assignment: ${assignment.title}${assignment.due_date ? ` (due ${assignment.due_date})` : ""}
@@ -632,7 +674,7 @@ ${assignment.description ? `Notes: ${assignment.description}` : ""}
 ${input.question ? `My specific question: ${input.question}` : "Walk me through the whole thing."}
 
 ATTACHED FILES:
-${attached.map((d) => `### ${d.file_name}\n${(d.extracted_text ?? "").slice(0, 20000)}`).join("\n\n")}`,
+${attached.map((d) => `### ${d.file_name}\n${(d.extracted_text ?? "").slice(0, 12000)}`).join("\n\n")}`,
     },
   ]);
 
@@ -657,7 +699,7 @@ export async function runSnapHelp(
   const reply = await callAI([
     {
       role: "system",
-      content: `${HELP_RULES} The student photographed their work with a phone camera, so read carefully and say if part of the image is blurry or cut off.\n\nSTUDENT COURSE CONTEXT:\n${contextText.slice(0, 12000)}`,
+      content: `${HELP_RULES} The student photographed their work with a phone camera, so read carefully and say if part of the image is blurry or cut off.\n\nSTUDENT COURSE CONTEXT:\n${contextText.slice(0, 6000)}`,
     },
     {
       role: "user",

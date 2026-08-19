@@ -16,7 +16,10 @@ export type ChatMessage = {
   content: string | ContentBlock[];
 };
 
-export async function callAI(messages: ChatMessage[], opts?: { model?: string }): Promise<string> {
+export async function callAI(
+  messages: ChatMessage[],
+  opts?: { model?: string; maxTokens?: number; temperature?: number },
+): Promise<string> {
   const key = process.env["LOVABLE_API_KEY"];
   if (!key) throw new Error("AI is not configured for this project yet.");
 
@@ -27,7 +30,12 @@ export async function callAI(messages: ChatMessage[], opts?: { model?: string })
       "Lovable-API-Key": key,
       "X-Lovable-AIG-SDK": "fetch",
     },
-    body: JSON.stringify({ model: opts?.model ?? CHAT_MODEL, messages }),
+    body: JSON.stringify({
+      model: opts?.model ?? CHAT_MODEL,
+      messages,
+      temperature: opts?.temperature ?? 0.3,
+      ...(opts?.maxTokens ? { max_tokens: opts.maxTokens } : {}),
+    }),
   });
 
   if (!res.ok) {
@@ -122,15 +130,21 @@ export type ClassContext = {
   events: Array<{ title: string; type: string; date: string }>;
 };
 
-const DOC_CHAR_BUDGET = 14000;
+const DOC_CHAR_BUDGET = 8000;
 
 export async function buildClassContext(
   supabase: DB,
   userId: string,
   classId: string | null,
 ): Promise<{ contextText: string; classes: string[] }> {
-  const [{ data: classes }, { data: docs }, { data: assignments }, { data: events }, { data: quizzes }] =
-    await Promise.all([
+  const [
+    { data: classes },
+    { data: docs },
+    { data: assignments },
+    { data: events },
+    { data: quizzes },
+    { data: memory },
+  ] = await Promise.all([
       supabase.from("classes").select("*").eq("user_id", userId),
       supabase
         .from("documents")
@@ -145,7 +159,14 @@ export async function buildClassContext(
         .not("completed_at", "is", null)
         .order("completed_at", { ascending: false })
         .limit(10),
+      supabase
+        .from("ai_memory")
+        .select("content,kind,class_id,created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(60),
     ]);
+
 
   const relevantClasses = (classes ?? []).filter((c) => !classId || c.id === classId);
   const classNames = relevantClasses.map((c) => `${c.course_code ?? ""} ${c.class_name}`.trim());
@@ -201,8 +222,15 @@ export async function buildClassContext(
     }
   }
 
+  const mem = (memory ?? []).filter((m) => !classId || !m.class_id || m.class_id === classId);
+  if (mem.length) {
+    lines.push("## WHAT YOU REMEMBER ABOUT THIS STUDENT (long-term memory)");
+    for (const m of mem) lines.push(`- ${m.content}`);
+  }
+
   if (!lines.length) lines.push("The student has not added any classes or documents yet.");
   return { contextText: lines.join("\n"), classes: classNames };
+
 }
 
 const MODE_INSTRUCTIONS: Record<string, string> = {
@@ -221,6 +249,16 @@ const MODE_INSTRUCTIONS: Record<string, string> = {
     "Build a concrete, day-by-day study plan up to the exam date using the student's real deadlines and weak topics.",
 };
 
+/** Plain-text answer style: no LaTeX, no dollar signs, no filler. Reused by every prompt. */
+export const PLAIN_STYLE = [
+  "ANSWER STYLE (strict):",
+  "- Write plain readable text. NEVER use LaTeX or math markup: no $, $$, \\(, \\), \\[, \\frac, \\times, \\cdot, ^{}, _{} or backslash commands.",
+  "- Write math the way a person types it: (x + 2)/3, x^2, sqrt(9), 25%, 3 * 4. Use $ only for real money amounts.",
+  "- No preamble, no restating the question, no sign-offs, no 'let me know if'. Answer immediately.",
+  "- Short sentences. Bullets or numbered steps over paragraphs. Bold only the final answer.",
+  "- Keep it under ~200 words unless the student asks for a full walkthrough or plan.",
+].join("\n");
+
 export function tutorSystemPrompt(mode: string, contextText: string): string {
   return [
     "You are StudyMate AI, a warm, sharp college study tutor for one specific student.",
@@ -231,6 +269,9 @@ export function tutorSystemPrompt(mode: string, contextText: string): string {
     "- NEVER invent course policies, dates, grading weights, professor statements or attendance limits. If it is not in the context, say so plainly, e.g. \"I couldn't find an attendance limit in your uploaded syllabus.\"",
     "- You MAY teach general academic subject matter from your own knowledge; just don't fabricate course-specific facts.",
     "- Be concise by default, use markdown headings/bullets, and never pretend to remember something absent from the context.",
+    "- You have long-term memory of this student below. Use it naturally; do not say you cannot remember past chats.",
+    "",
+    PLAIN_STYLE,
     "",
     `MODE: ${mode}. ${MODE_INSTRUCTIONS[mode] ?? MODE_INSTRUCTIONS["explain"]}`,
     "",

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
+import { DeleteButton } from "@/components/DeleteButton";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -46,6 +47,8 @@ function FlashcardsPage() {
   const [assignmentId, setAssignmentId] = useState("all");
   const [count, setCount] = useState(15);
   const [difficulty, setDifficulty] = useState<string>("medium");
+  const [deckName, setDeckName] = useState("");
+  const [activeDeck, setActiveDeck] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -55,7 +58,22 @@ function FlashcardsPage() {
     () => assignments.filter((a) => a.status !== "completed"),
     [assignments],
   );
-  const deck = useMemo(() => cards, [cards]);
+
+  const decks = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const c of cards) {
+      const key = c.deck ?? "Earlier cards";
+      map.set(key, (map.get(key) ?? 0) + 1);
+    }
+    return [...map.entries()].map(([name, size]) => ({ name, size }));
+  }, [cards]);
+
+  const selectedDeck = activeDeck && decks.some((d) => d.name === activeDeck) ? activeDeck : decks[0]?.name ?? null;
+
+  const deck = useMemo(
+    () => (selectedDeck ? cards.filter((c) => (c.deck ?? "Earlier cards") === selectedDeck) : []),
+    [cards, selectedDeck],
+  );
   const current = deck[index];
 
   async function generate() {
@@ -65,25 +83,39 @@ function FlashcardsPage() {
     }
     setBusy(true);
     try {
-      await run({
+      const result = await run({
         data: {
           classId,
           documentId: documentId || null,
           count,
           difficulty,
+          deck: deckName.trim() || null,
           assignmentId: assignmentId !== "all" && assignmentId !== "none" ? assignmentId : null,
           matchHomework: assignmentId === "all",
         },
       });
       await qc.invalidateQueries({ queryKey: ["flashcards"] });
+      setActiveDeck(result.deck);
+      setDeckName("");
       setIndex(0);
       setFlipped(false);
-      toast.success("Flashcards ready");
+      toast.success(`New deck ready: ${result.deck}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Generation failed");
     } finally {
       setBusy(false);
     }
+  }
+
+  async function deleteDeck() {
+    if (!selectedDeck) return;
+    const ids = deck.map((c) => c.id);
+    const { error } = await supabase.from("flashcards").delete().in("id", ids);
+    if (error) throw new Error(error.message);
+    await qc.invalidateQueries({ queryKey: ["flashcards"] });
+    setActiveDeck(null);
+    setIndex(0);
+    setFlipped(false);
   }
 
   async function review(correct: boolean) {
@@ -186,6 +218,15 @@ function FlashcardsPage() {
             </SelectContent>
           </Select>
         </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="deckName">Deck name (optional)</Label>
+          <Input
+            id="deckName"
+            placeholder="Auto-named by topic + time"
+            value={deckName}
+            onChange={(e) => setDeckName(e.target.value)}
+          />
+        </div>
         <div className="sm:col-span-2 lg:col-span-5">
           <Button onClick={generate} disabled={busy} className="gap-1.5">
             {busy ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
@@ -193,6 +234,33 @@ function FlashcardsPage() {
           </Button>
         </div>
       </div>
+
+      {decks.length > 0 ? (
+        <div className="mt-6 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-muted-foreground">Decks:</span>
+          {decks.map((d) => (
+            <Button
+              key={d.name}
+              size="sm"
+              variant={d.name === selectedDeck ? "default" : "outline"}
+              onClick={() => {
+                setActiveDeck(d.name);
+                setIndex(0);
+                setFlipped(false);
+              }}
+            >
+              {d.name} · {d.size}
+            </Button>
+          ))}
+          {selectedDeck ? (
+            <DeleteButton
+              label="deck"
+              description={`All ${deck.length} cards in "${selectedDeck}" will be removed. Your other decks stay.`}
+              onDelete={deleteDeck}
+            />
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="mt-6">
         {isLoading ? (

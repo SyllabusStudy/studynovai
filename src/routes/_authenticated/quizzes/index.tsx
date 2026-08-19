@@ -6,6 +6,8 @@ import { FileQuestion, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
+import { DeleteButton } from "@/components/DeleteButton";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -74,6 +76,12 @@ function QuizzesPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function deleteQuiz(id: string) {
+    const { error } = await supabase.from("quizzes").delete().eq("id", id);
+    if (error) throw new Error(error.message);
+    await qc.invalidateQueries({ queryKey: ["quizzes"] });
   }
 
   return (
@@ -190,6 +198,11 @@ function QuizzesPage() {
                     {q.completed_at ? "Review" : "Start"}
                   </Link>
                 </Button>
+                <DeleteButton
+                  label="quiz"
+                  description={`"${q.title}" and your answers for it will be removed.`}
+                  onDelete={() => deleteQuiz(q.id)}
+                />
               </li>
             ))}
           </ul>
