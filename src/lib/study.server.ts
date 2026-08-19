@@ -329,18 +329,22 @@ ${syllabusText}`,
         .select("title,event_date")
         .eq("user_id", userId)
         .eq("class_id", doc.class_id);
-      const seen = new Set((existing ?? []).map((e) => `${e.title}|${e.event_date}`));
+      const seen = new Set(
+        (existing ?? []).map((e) => `${String(e.title).trim().toLowerCase()}|${e.event_date}`),
+      );
       const rows = valid
-        .filter((d) => !seen.has(`${d.title}|${d.date}`))
+        .filter((d) => !seen.has(`${String(d.title).trim().toLowerCase()}|${d.date}`))
         .map((d) => ({
           user_id: userId,
           class_id: doc.class_id!,
           title: d.title,
           event_type: d.type ?? "other",
           event_date: d.date,
+          event_time: /^\d{2}:\d{2}$/.test(String(d.time ?? "")) ? `${d.time}:00` : null,
           description: d.description ?? null,
           source_document: doc.id,
         }));
+
       if (rows.length) {
         const { error } = await supabase.from("calendar_events").insert(rows);
         if (!error) eventsCreated = rows.length;
