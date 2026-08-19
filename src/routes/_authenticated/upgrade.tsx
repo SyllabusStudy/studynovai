@@ -69,36 +69,25 @@ function UpgradePage() {
   }, [confirm, qc]);
 
   async function upgrade() {
-    const inFrame = window.top !== window.self;
     // Open the tab while this function is still handling the click. Waiting for
     // the server first can make mobile browsers treat it as an unsolicited popup.
-    const checkoutWindow = inFrame ? window.open("about:blank", "_blank") : null;
+    const checkoutWindow = window.open("about:blank", "_blank");
     if (checkoutWindow) {
-      checkoutWindow.opener = null;
       checkoutWindow.document.title = "Opening PayPal…";
       checkoutWindow.document.body.textContent = "Opening secure PayPal checkout…";
+    } else {
+      toast.error("Your browser blocked the payment tab. Allow pop-ups, then try again.");
+      return;
     }
     setBusy(true);
     try {
       const { approveUrl } = await start({ data: { origin: window.location.origin } });
-      if (inFrame) {
-        if (checkoutWindow) {
-          checkoutWindow.location.replace(approveUrl);
-          toast.info("PayPal checkout opened in a new tab.");
-        } else {
-          // Never load PayPal inside the embedded preview. If the browser blocked
-          // the pre-opened tab, a direct second click is allowed reliably.
-          const opened = window.open(approveUrl, "_blank");
-          if (opened) opened.opener = null;
-          else toast.error("Your browser blocked PayPal. Allow pop-ups, then try again.");
-        }
-        setBusy(false);
-        return;
-      }
-      window.location.href = approveUrl;
+      checkoutWindow.location.replace(approveUrl);
+      toast.info("Secure checkout opened in a new tab.");
     } catch (e) {
-      checkoutWindow?.close();
+      checkoutWindow.close();
       toast.error(e instanceof Error ? e.message : "Could not start PayPal checkout.");
+    } finally {
       setBusy(false);
     }
   }
