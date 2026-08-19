@@ -5,6 +5,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, Loader2, Plus } from "lucide-r
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
+import { SyllabusCsvExport } from "@/components/SyllabusCsvExport";
 import { ClassDot } from "@/components/ClassBadge";
 import { DeleteButton } from "@/components/DeleteButton";
 import { Button } from "@/components/ui/button";
