@@ -394,22 +394,34 @@ export async function runQuizGeneration(
     difficulty: string;
     types: string[];
     title?: string | null | undefined;
+    assignmentId?: string | null | undefined;
+    matchHomework?: boolean | undefined;
   },
 ) {
   const source = await sourceText(supabase, userId, input.classId, input.documentId ?? null);
   if (!source) throw new Error("Upload a readable document for this class first.");
 
+  let homework = "";
+  if (input.assignmentId || input.matchHomework) {
+    homework = await deadlineContext(supabase, userId, input.classId, input.assignmentId ?? null);
+    if (!homework && input.assignmentId) throw new Error("That assignment could not be found.");
+  }
+
   const raw = await callAI([
     {
       role: "system",
       content:
-        "You write college quizzes from the student's own course material and reply with json only. Every answer must be verifiable from the material.",
+        "You write college quizzes strictly from the student's own uploaded course material and reply with json only. Every question, answer and explanation must be verifiable from the provided material — never use outside knowledge and never invent numbers, names or definitions. Distractors must be plausible and drawn from nearby content in the same material. Explanations must point back to what the document actually says.",
     },
     {
       role: "user",
       content: `Write exactly ${input.count} ${input.difficulty}-difficulty questions using only these types: ${input.types.join(", ")}.
-Return json: {"title":string,"questions":[{"id":string,"type":"multiple_choice"|"true_false"|"short_answer"|"problem","prompt":string,"options":string[],"answer":string,"explanation":string,"topic":string}]}
-Rules: multiple_choice needs exactly 4 options and answer must match one option exactly. true_false options are ["True","False"]. short_answer and problem have an empty options array and a concise model answer.
+Rules: multiple_choice needs exactly 4 options and answer must match one option exactly. true_false options are ["True","False"]. short_answer and problem have an empty options array and a concise model answer. Spread the questions across the whole material, weighting the sections the document emphasises. Set "topic" to the document section the question tests, and "source" to a short quote or heading from the material it is based on.
+${
+  homework
+    ? `Target this quiz at the homework and upcoming deadlines below — test the same concepts, skills and problem types the student will be graded on:\n${homework}\n`
+    : ""
+}Return json: {"title":string,"questions":[{"id":string,"type":"multiple_choice"|"true_false"|"short_answer"|"problem","prompt":string,"options":string[],"answer":string,"explanation":string,"topic":string,"source":string}]}
 
 MATERIAL:
 ${source.slice(0, 45000)}`,
