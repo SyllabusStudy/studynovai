@@ -69,6 +69,27 @@ export function useDocuments(userId?: string, classId?: string) {
   });
 }
 
+export function useAssignmentDocuments(userId?: string, assignmentId?: string) {
+  return useQuery({
+    queryKey: ["documents", userId, "assignment", assignmentId],
+    enabled: !!userId && !!assignmentId,
+    queryFn: () =>
+      must<DocumentRow[]>(
+        supabase
+          .from("documents")
+          .select("*")
+          .eq("assignment_id", assignmentId!)
+          .order("created_at", { ascending: false }),
+      ),
+    refetchInterval: (query) => {
+      const rows = (query.state.data ?? []) as DocumentRow[];
+      return rows.some((d) => !d.extracted_text && d.processing_status !== "failed" && d.processing_status !== "unsupported")
+        ? 4000
+        : false;
+    },
+  });
+}
+
 export function useAssignments(userId?: string, classId?: string) {
   return useQuery({
     queryKey: ["assignments", userId, classId ?? "all"],
