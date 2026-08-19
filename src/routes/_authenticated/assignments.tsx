@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { ClassChip } from "@/components/ClassBadge";
+import { DeleteButton } from "@/components/DeleteButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -101,6 +102,15 @@ function AssignmentsPage() {
                     label={classLabel(classById.get(a.class_id))}
                   />
                 ) : null}
+                <DeleteButton
+                  label="assignment"
+                  description={`"${a.title}" will be removed from your list.`}
+                  onDelete={async () => {
+                    const { error } = await supabase.from("assignments").delete().eq("id", a.id);
+                    if (error) throw new Error(error.message);
+                    await qc.invalidateQueries({ queryKey: ["assignments"] });
+                  }}
+                />
               </li>
             );
           })}

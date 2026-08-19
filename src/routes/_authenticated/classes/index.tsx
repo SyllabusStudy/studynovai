@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { ClassDot } from "@/components/ClassBadge";
+import { DeleteButton } from "@/components/DeleteButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,29 +68,58 @@ function ClassesPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {classes.map((c) => (
-            <Link
-              key={c.id}
-              to="/classes/$classId"
-              params={{ classId: c.id }}
-              className="surface-card block p-5 transition-colors hover:border-primary/40"
-            >
-              <div className="flex items-center gap-2">
-                <ClassDot color={c.color} />
-                <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                  {c.course_code || "Course"}
-                </span>
+            <div key={c.id} className="surface-card relative p-5 transition-colors hover:border-primary/40">
+              <div className="absolute right-2 top-2">
+                <DeleteClassButton classId={c.id} className_={c.class_name} />
               </div>
-              <h2 className="mt-2 text-base font-bold tracking-tight">{c.class_name}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">{c.professor || "No instructor yet"}</p>
-              <p className="mt-4 text-xs text-muted-foreground">
-                {documents.filter((d) => d.class_id === c.id).length} documents ·{" "}
-                {assignments.filter((a) => a.class_id === c.id && a.status !== "completed").length} open tasks
-              </p>
-            </Link>
+              <Link to="/classes/$classId" params={{ classId: c.id }} className="block">
+                <div className="flex items-center gap-2">
+                  <ClassDot color={c.color} />
+                  <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                    {c.course_code || "Course"}
+                  </span>
+                </div>
+                <h2 className="mt-2 text-base font-bold tracking-tight">{c.class_name}</h2>
+                <p className="mt-1 text-sm text-muted-foreground">{c.professor || "No instructor yet"}</p>
+                <p className="mt-4 text-xs text-muted-foreground">
+                  {documents.filter((d) => d.class_id === c.id).length} documents ·{" "}
+                  {assignments.filter((a) => a.class_id === c.id && a.status !== "completed").length} open tasks
+                </p>
+              </Link>
+            </div>
           ))}
         </div>
       )}
     </div>
+  );
+}
+
+function DeleteClassButton({ classId, className_ }: { classId: string; className_: string }) {
+  const qc = useQueryClient();
+  return (
+    <DeleteButton
+      label="class"
+      description={`"${className_}" and its documents, assignments, events, flashcards and quizzes will be deleted.`}
+      onDelete={async () => {
+        const children = [
+          "calendar_events",
+          "assignments",
+          "flashcards",
+          "quizzes",
+          "grade_categories",
+          "study_progress",
+          "ai_conversations",
+          "documents",
+        ] as const;
+        for (const table of children) {
+          const { error } = await supabase.from(table).delete().eq("class_id", classId);
+          if (error) throw new Error(error.message);
+        }
+        const { error } = await supabase.from("classes").delete().eq("id", classId);
+        if (error) throw new Error(error.message);
+        await qc.invalidateQueries();
+      }}
+    />
   );
 }
 
