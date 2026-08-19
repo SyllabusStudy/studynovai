@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
 import { ClassDot } from "@/components/ClassBadge";
+import { DeleteButton } from "@/components/DeleteButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -161,6 +162,15 @@ function CalendarPage() {
               {e.class_id ? (
                 <span className="text-xs text-muted-foreground">{classLabel(classById.get(e.class_id))}</span>
               ) : null}
+              <DeleteButton
+                label="event"
+                description={`"${e.title}" will be removed from your calendar.`}
+                onDelete={async () => {
+                  const { error } = await supabase.from("calendar_events").delete().eq("id", e.id);
+                  if (error) throw new Error(error.message);
+                  await qc.invalidateQueries({ queryKey: ["events"] });
+                }}
+              />
             </li>
           ))}
         </ul>
