@@ -50,6 +50,28 @@ function ClassDetail() {
     { label: "Required materials", value: klass.required_materials },
   ].filter((p) => p.value);
 
+  // Every policy the AI pulled out of the syllabi for this class.
+  const detailed: Array<{ label: string; value: string }> = [];
+  const seenPolicy = new Set(policies.map((p) => p.label.toLowerCase()));
+  for (const d of documents) {
+    const data = d.syllabus_data as
+      | { policies?: Array<{ title?: string; details?: string }>; other_policies?: string | null }
+      | null;
+    for (const p of data?.policies ?? []) {
+      if (!p?.title || !p?.details) continue;
+      const key = p.title.trim().toLowerCase();
+      if (seenPolicy.has(key)) continue;
+      seenPolicy.add(key);
+      detailed.push({ label: p.title.trim(), value: p.details.trim() });
+    }
+    if (data?.other_policies && !seenPolicy.has("other")) {
+      seenPolicy.add("other");
+      detailed.push({ label: "Other", value: data.other_policies });
+    }
+  }
+  const allPolicies = [...policies, ...detailed] as Array<{ label: string; value: string }>;
+
+
   return (
     <div>
       <PageHeader
