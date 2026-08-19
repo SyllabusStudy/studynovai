@@ -36,7 +36,7 @@ function UpgradePage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
-  const start = useServerFn(startProCheckout);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const confirm = useServerFn(confirmProCheckout);
   const cancel = useServerFn(cancelProPlan);
   const loadBilling = useServerFn(getBilling);
@@ -50,19 +50,21 @@ function UpgradePage() {
     queryFn: () => loadBilling({}),
   });
 
-  // PayPal sends the student back here with ?subscription_id=...
+  // Checkout returns the student here with ?session_id=...
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const subscriptionId = params.get("subscription_id");
-    if (!subscriptionId) return;
+    const sessionId = params.get("session_id");
+    if (!sessionId) return;
     window.history.replaceState({}, "", "/upgrade");
     void (async () => {
       setBusy(true);
       try {
-        const res = await confirm({ data: { subscriptionId } });
+        const res = await confirm({
+          data: { sessionId, environment: getStripeEnvironment() },
+        });
         await qc.invalidateQueries({ queryKey: ["billing"] });
         if (res.plan === "pro") toast.success("You're on Pro — everything is unlimited now.");
-        else toast.error(`PayPal reported the subscription as ${res.status.toLowerCase()}.`);
+        else toast.error(`Your payment came back as ${res.status.toLowerCase()}.`);
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Could not confirm your subscription.");
       } finally {
@@ -71,35 +73,10 @@ function UpgradePage() {
     })();
   }, [confirm, qc]);
 
-  async function upgrade() {
-    // Open the tab while this function is still handling the click. Waiting for
-    // the server first can make mobile browsers treat it as an unsolicited popup.
-    const checkoutWindow = window.open("about:blank", "_blank");
-    if (checkoutWindow) {
-      checkoutWindow.document.title = "Opening PayPal…";
-      checkoutWindow.document.body.textContent = "Opening secure PayPal checkout…";
-    } else {
-      toast.error("Your browser blocked the payment tab. Allow pop-ups, then try again.");
-      return;
-    }
-    setBusy(true);
-    try {
-      const { approveUrl } = await start({ data: { origin: window.location.origin } });
-      checkoutWindow.location.replace(approveUrl);
-      toast.info("Secure checkout opened in a new tab.");
-    } catch (e) {
-      checkoutWindow.close();
-      toast.error(e instanceof Error ? e.message : "Could not start PayPal checkout.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-
   async function stop() {
     setBusy(true);
     try {
-      await cancel({});
+      await cancel({ data: { environment: getStripeEnvironment() } });
       await qc.invalidateQueries({ queryKey: ["billing"] });
       toast.success("Subscription cancelled.");
     } catch (e) {
