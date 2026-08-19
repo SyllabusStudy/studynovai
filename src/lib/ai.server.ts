@@ -130,15 +130,21 @@ export type ClassContext = {
   events: Array<{ title: string; type: string; date: string }>;
 };
 
-const DOC_CHAR_BUDGET = 14000;
+const DOC_CHAR_BUDGET = 8000;
 
 export async function buildClassContext(
   supabase: DB,
   userId: string,
   classId: string | null,
 ): Promise<{ contextText: string; classes: string[] }> {
-  const [{ data: classes }, { data: docs }, { data: assignments }, { data: events }, { data: quizzes }] =
-    await Promise.all([
+  const [
+    { data: classes },
+    { data: docs },
+    { data: assignments },
+    { data: events },
+    { data: quizzes },
+    { data: memory },
+  ] = await Promise.all([
       supabase.from("classes").select("*").eq("user_id", userId),
       supabase
         .from("documents")
@@ -153,7 +159,14 @@ export async function buildClassContext(
         .not("completed_at", "is", null)
         .order("completed_at", { ascending: false })
         .limit(10),
+      supabase
+        .from("ai_memory")
+        .select("content,kind,class_id,created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(60),
     ]);
+
 
   const relevantClasses = (classes ?? []).filter((c) => !classId || c.id === classId);
   const classNames = relevantClasses.map((c) => `${c.course_code ?? ""} ${c.class_name}`.trim());
