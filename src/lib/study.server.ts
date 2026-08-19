@@ -526,22 +526,25 @@ export async function runStudyCoach(
   const { contextText } = await buildClassContext(supabase, userId, null);
   const today = new Date().toISOString().slice(0, 10);
 
-  const raw = await callAI([
-    {
-      role: "system",
-      content:
-        "You are StudyMate AI's daily study coach. Reply with json only. Base every recommendation on the student's real deadlines, quiz results and materials. Never invent course facts. If the student has almost no data, say so kindly in the summary and suggest adding a class or syllabus.",
-    },
-    {
-      role: "user",
-      content: `Today is ${today}. The student has ${input.minutes ?? 60} minutes to study today.${input.question ? ` They also asked: ${input.question}` : ""}
+  const raw = await callAI(
+    [
+      {
+        role: "system",
+        content:
+          "You are StudyMate AI's daily study coach. Reply with json only. Base every recommendation on the student's real deadlines, quiz results and materials. Never invent course facts. Plain text only: no LaTeX, no $ signs, no backslash math commands. If the student has almost no data, say so kindly in the summary and suggest adding a class or syllabus.",
+      },
+      {
+        role: "user",
+        content: `Today is ${today}. The student has ${input.minutes ?? 60} minutes to study today.${input.question ? ` They also asked: ${input.question}` : ""}
 Return json: {"summary":string,"tasks":[{"title":string,"detail":string,"minutes":number,"class":string}]}
 Keep summary to 1-2 sentences. Give 2-4 tasks whose minutes add up to about the available time.
 
 STUDENT CONTEXT:
-${contextText}`,
-    },
-  ]);
+${contextText.slice(0, 12000)}`,
+      },
+    ],
+    { maxTokens: 900 },
+  );
 
   return parseJsonBlock<{
     summary: string;
