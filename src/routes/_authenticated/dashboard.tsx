@@ -42,7 +42,7 @@ function Dashboard() {
   const { data: assignments = [] } = useAssignments(user?.id);
   const { data: events = [] } = useEvents(user?.id);
   const { data: flashcards = [] } = useFlashcards(user?.id);
-  const [plan, setPlan] = useState<string | null>(null);
+  const [plan, setPlan] = useState<CoachPlan | null>(null);
   const [busy, setBusy] = useState(false);
   const coach = useServerFn(studyCoach);
 
