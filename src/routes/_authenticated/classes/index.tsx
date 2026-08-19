@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { ClassDot } from "@/components/ClassBadge";
+import { DeleteButton } from "@/components/DeleteButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -90,6 +91,35 @@ function ClassesPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function DeleteClassButton({ classId, className_ }: { classId: string; className_: string }) {
+  const qc = useQueryClient();
+  return (
+    <DeleteButton
+      label="class"
+      description={`"${className_}" and its documents, assignments, events, flashcards and quizzes will be deleted.`}
+      onDelete={async () => {
+        const children = [
+          "calendar_events",
+          "assignments",
+          "flashcards",
+          "quizzes",
+          "grade_categories",
+          "study_progress",
+          "ai_conversations",
+          "documents",
+        ] as const;
+        for (const table of children) {
+          const { error } = await supabase.from(table).delete().eq("class_id", classId);
+          if (error) throw new Error(error.message);
+        }
+        const { error } = await supabase.from("classes").delete().eq("id", classId);
+        if (error) throw new Error(error.message);
+        await qc.invalidateQueries();
+      }}
+    />
   );
 }
 
