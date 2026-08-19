@@ -46,7 +46,15 @@ export async function runDocumentExtraction(supabase: DB, userId: string, docume
       })
       .eq("id", doc.id);
 
-    return { characters: text.length, note: note ?? null };
+    // Class memory: a follow-up upload (chapter 4 study guide, notes, homework)
+    // gets attached to the class it clearly belongs to, so the student never has
+    // to re-explain which course they mean.
+    let linkedClass: { id: string; class_name: string } | null = null;
+    if (text && !doc.class_id && !doc.is_syllabus) {
+      linkedClass = await inferDocumentClass(supabase, userId, doc.id, doc.file_name, text);
+    }
+
+    return { characters: text.length, note: note ?? null, linkedClass };
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
     await supabase
@@ -56,6 +64,63 @@ export async function runDocumentExtraction(supabase: DB, userId: string, docume
     throw new Error(message);
   }
 }
+
+/** Picks the student's existing class that a new document belongs to and links it. */
+async function inferDocumentClass(
+  supabase: DB,
+  userId: string,
+  documentId: string,
+  fileName: string,
+  text: string,
+): Promise<{ id: string; class_name: string } | null> {
+  const { data: classes } = await supabase
+    .from("classes")
+    .select("id,class_name,course_code,professor")
+    .eq("user_id", userId);
+  if (!classes?.length) return null;
+
+  let chosen: (typeof classes)[number] | undefined;
+  if (classes.length === 1) {
+    chosen = classes[0];
+  } else {
+    const raw = await callAI(
+      [
+        {
+          role: "system",
+          content:
+            'You match a student document to one of their college classes and reply with json only: {"class_id":string|null}. Use null only when the document clearly belongs to none of them.',
+        },
+        {
+          role: "user",
+          content: `CLASSES:
+${classes.map((c) => `- id ${c.id}: ${c.course_code ? c.course_code + " " : ""}${c.class_name}${c.professor ? ` (prof ${c.professor})` : ""}`).join("\n")}
+
+DOCUMENT FILE NAME: ${fileName}
+DOCUMENT TEXT (start):
+${text.slice(0, 4000)}`,
+        },
+      ],
+      { maxTokens: 120 },
+    );
+    try {
+      const parsed = parseJsonBlock<{ class_id: string | null }>(raw);
+      chosen = classes.find((c) => c.id === parsed.class_id);
+    } catch {
+      chosen = undefined;
+    }
+  }
+  if (!chosen) return null;
+
+  await supabase.from("documents").update({ class_id: chosen.id }).eq("id", documentId);
+  await supabase.from("ai_memory").insert({
+    user_id: userId,
+    class_id: chosen.id,
+    kind: "context",
+    content: `The document "${fileName}" belongs to ${chosen.course_code ? chosen.course_code + " " : ""}${chosen.class_name}. When the student mentions this material, assume that class without asking.`,
+  });
+  return { id: chosen.id, class_name: chosen.class_name };
+}
+
 
 /* ------------------------------------------------------------------ syllabus */
 
