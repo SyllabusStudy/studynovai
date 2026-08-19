@@ -145,7 +145,16 @@ function UpgradePage() {
                 </p>
               </div>
             ) : null}
+            {pro ? (
+              <Button variant="outline" className="w-full" disabled={busy} onClick={() => void stop()}>
+                {busy ? <Loader2 className="size-4 animate-spin" /> : null}
+                Go back to Free plan
+              </Button>
+            ) : (
+              <p className="text-xs text-muted-foreground">You're on the Free plan.</p>
+            )}
           </div>
+
 
           <div className="surface-card space-y-4 border-primary/40 p-5 ring-1 ring-primary/20">
             <div>
