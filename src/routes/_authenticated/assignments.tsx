@@ -101,6 +101,15 @@ function AssignmentsPage() {
                     label={classLabel(classById.get(a.class_id))}
                   />
                 ) : null}
+                <DeleteButton
+                  label="assignment"
+                  description={`"${a.title}" will be removed from your list.`}
+                  onDelete={async () => {
+                    const { error } = await supabase.from("assignments").delete().eq("id", a.id);
+                    if (error) throw new Error(error.message);
+                    await qc.invalidateQueries({ queryKey: ["assignments"] });
+                  }}
+                />
               </li>
             );
           })}
