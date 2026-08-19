@@ -119,9 +119,10 @@ function Landing() {
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link to="/auth">I already have an account</Link>
+              <Link to="/features/flashcards">See AI flashcards</Link>
             </Button>
           </div>
+
         </div>
 
         <div className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
