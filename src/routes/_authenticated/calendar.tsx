@@ -232,7 +232,7 @@ function NewEventDialog() {
   const { data: classes = [] } = useClasses(user?.id);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({ title: "", event_date: "", event_type: "exam", class_id: "" });
+  const [form, setForm] = useState({ title: "", event_date: "", event_time: "", event_type: "exam", class_id: "" });
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -242,6 +242,7 @@ function NewEventDialog() {
       user_id: user.id,
       title: form.title,
       event_date: form.event_date,
+      event_time: form.event_time || null,
       event_type: form.event_type,
       class_id: form.class_id || null,
     });
@@ -253,8 +254,9 @@ function NewEventDialog() {
     await qc.invalidateQueries({ queryKey: ["events"] });
     toast.success("Event added");
     setOpen(false);
-    setForm({ title: "", event_date: "", event_type: "exam", class_id: "" });
+    setForm({ title: "", event_date: "", event_time: "", event_type: "exam", class_id: "" });
   }
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
