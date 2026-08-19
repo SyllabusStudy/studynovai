@@ -62,7 +62,13 @@ type AdminClient = {
 
 /** Creates the $20/month plan on first use and caches its id in the database. */
 export async function ensureProPlanId(admin: AdminClient): Promise<string> {
-  const existing = await admin.from("paypal_config").select("plan_id").eq("id", "pro").maybeSingle();
+  // Plans are environment-specific: a sandbox plan id is invalid in live and vice versa.
+  const configId = paypalEnv() === "live" ? "pro" : "pro-sandbox";
+  const existing = await admin
+    .from("paypal_config")
+    .select("plan_id")
+    .eq("id", configId)
+    .maybeSingle();
   if (existing.data?.plan_id) return existing.data.plan_id;
 
   const product = await api<{ id: string }>("/v1/catalogs/products", "POST", {
