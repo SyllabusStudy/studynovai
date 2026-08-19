@@ -1,0 +1,129 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { Camera, Crown, Loader2, Sparkles, Users } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
+import { getAdminStats } from "@/lib/admin.functions";
+import { useAuth } from "@/lib/auth";
+
+export const Route = createFileRoute("/_authenticated/admin")({
+  head: () => ({
+    meta: [
+      { title: "Owner dashboard — StudyMate AI" },
+      { name: "description", content: "Sign-ups, Pro upgrades and AI usage across StudyMate AI." },
+      { property: "og:title", content: "Owner dashboard — StudyMate AI" },
+      { property: "og:description", content: "Sign-ups, Pro upgrades and AI usage per student." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: AdminPage,
+});
+
+function AdminPage() {
+  const { user } = useAuth();
+  const load = useServerFn(getAdminStats);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["admin-stats", user?.id],
+    enabled: !!user,
+    queryFn: () => load({}),
+  });
+
+  const t = data?.totals;
+  const cards = [
+    { icon: Users, label: "Students signed up", value: t?.students ?? 0, note: `${t?.signupsLast7Days ?? 0} in the last 7 days` },
+    { icon: Crown, label: "Pro upgrades", value: t?.pro ?? 0, note: `${t?.promo ?? 0} via promo code` },
+    { icon: Camera, label: "SnapQuick scans", value: t?.snaps ?? 0, note: "all time" },
+    { icon: Sparkles, label: "AI assignment helps", value: t?.helps ?? 0, note: "all time" },
+  ];
+
+  return (
+    <div>
+      <PageHeader title="Owner dashboard" description="How StudyMate AI is being used across every account." />
+
+      {isLoading ? (
+        <div className="flex justify-center py-10">
+          <Loader2 className="size-5 animate-spin text-primary" />
+        </div>
+      ) : error ? (
+        <p className="text-sm text-destructive">
+          {error instanceof Error ? error.message : "Could not load stats."}
+        </p>
+      ) : (
+        <>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {cards.map((c) => (
+              <div key={c.label} className="surface-card min-w-0 p-4">
+                <c.icon className="size-4 text-primary" />
+                <p className="mt-3 text-2xl font-bold tracking-tight">{c.value}</p>
+                <p className="text-xs font-semibold">{c.label}</p>
+                <p className="text-xs text-muted-foreground">{c.note}</p>
+              </div>
+            ))}
+          </div>
+
+          <h2 className="mb-3 mt-8 text-sm font-bold uppercase tracking-wide text-muted-foreground">
+            Per student
+          </h2>
+
+          <div className="space-y-2 lg:hidden">
+            {data?.students.map((s) => (
+              <div key={s.id} className="surface-card min-w-0 p-4">
+                <p className="truncate text-sm font-semibold">{s.name ?? "Student"}</p>
+                <p className="truncate text-xs text-muted-foreground">{s.email}</p>
+                <p className="mt-2 text-xs">
+                  <span className={s.plan === "pro" ? "font-semibold text-primary" : "text-muted-foreground"}>
+                    {s.plan === "pro" ? `Pro (${s.status})` : "Free"}
+                  </span>
+                  {" · joined "}
+                  {new Date(s.joined).toLocaleDateString()}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {s.snaps} scans · {s.helps} AI helps · {s.classes} classes
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="surface-card hidden overflow-x-auto lg:block">
+            <table className="w-full text-sm">
+              <thead className="border-b border-border text-left text-xs uppercase text-muted-foreground">
+                <tr>
+                  <th className="p-3 font-semibold">Student</th>
+                  <th className="p-3 font-semibold">Plan</th>
+                  <th className="p-3 font-semibold">Joined</th>
+                  <th className="p-3 text-right font-semibold">Scans</th>
+                  <th className="p-3 text-right font-semibold">AI helps</th>
+                  <th className="p-3 text-right font-semibold">Classes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data?.students.map((s) => (
+                  <tr key={s.id} className="border-b border-border/50 last:border-0">
+                    <td className="p-3">
+                      <p className="font-semibold">{s.name ?? "Student"}</p>
+                      <p className="text-xs text-muted-foreground">{s.email}</p>
+                    </td>
+                    <td className="p-3">
+                      {s.plan === "pro" ? (
+                        <span className="font-semibold text-primary">Pro · {s.status}</span>
+                      ) : (
+                        <span className="text-muted-foreground">Free</span>
+                      )}
+                    </td>
+                    <td className="p-3 text-muted-foreground">
+                      {new Date(s.joined).toLocaleDateString()}
+                    </td>
+                    <td className="p-3 text-right">{s.snaps}</td>
+                    <td className="p-3 text-right">{s.helps}</td>
+                    <td className="p-3 text-right">{s.classes}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
