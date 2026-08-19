@@ -5,6 +5,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, Loader2, Plus } from "lucide-r
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
+import { SyllabusCsvExport } from "@/components/SyllabusCsvExport";
 import { ClassDot } from "@/components/ClassBadge";
 import { DeleteButton } from "@/components/DeleteButton";
 import { Button } from "@/components/ui/button";
@@ -84,8 +85,14 @@ function CalendarPage() {
       <PageHeader
         title="Calendar"
         description="Colour-coded per class, built from your syllabi and anything you add."
-        actions={<NewEventDialog />}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <SyllabusCsvExport label="Export CSV" />
+            <NewEventDialog />
+          </div>
+        }
       />
+
 
       <div className="mb-3 flex items-center gap-2">
         <Button

@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  MessageSquare,
   Moon,
   Search,
   Settings,
@@ -57,6 +58,7 @@ const NAV = [
   { to: "/tutor", label: "AI Tutor", icon: Bot },
   { to: "/snapquick", label: "SnapQuick", icon: Camera },
   { to: "/upgrade", label: "Upgrade", icon: Crown },
+  { to: "/feedback", label: "Feedback", icon: MessageSquare },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 

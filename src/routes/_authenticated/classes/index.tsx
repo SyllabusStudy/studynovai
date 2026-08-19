@@ -5,6 +5,7 @@ import { BookOpen, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
+import { SyllabusCsvExport } from "@/components/SyllabusCsvExport";
 import { EmptyState } from "@/components/EmptyState";
 import { ClassDot } from "@/components/ClassBadge";
 import { DeleteButton } from "@/components/DeleteButton";
@@ -48,7 +49,12 @@ function ClassesPage() {
       <PageHeader
         title="My Classes"
         description="Add each course, then drop in the syllabus to auto-build your semester."
-        actions={<NewClassDialog />}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <SyllabusCsvExport />
+            <NewClassDialog />
+          </div>
+        }
       />
 
       <section className="mb-6">
