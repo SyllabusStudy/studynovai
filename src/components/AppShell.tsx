@@ -126,10 +126,22 @@ function BrandBlock() {
 }
 
 function NavList({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+  const { user } = useAuth();
+  const check = useServerFn(checkAdmin);
+  const { data: adminInfo } = useQuery({
+    queryKey: ["is-admin", user?.id],
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+    queryFn: () => check({}),
+  });
+  const items = adminInfo?.admin
+    ? [...NAV, { to: "/admin", label: "Owner stats", icon: ShieldCheck } as const]
+    : NAV;
   return (
     <nav className="flex-1 overflow-y-auto p-3 scroll-slim">
       <ul className="space-y-1">
-        {NAV.map((item) => {
+        {items.map((item) => {
+
           const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
           return (
             <li key={item.to}>
