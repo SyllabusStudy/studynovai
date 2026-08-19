@@ -9,6 +9,7 @@ export const CHAT_MODEL = "google/gemini-3.5-flash";
 type ContentBlock =
   | { type: "text"; text: string }
   | { type: "image_url"; image_url: { url: string } }
+  | { type: "video_url"; video_url: { url: string } }
   | { type: "file"; file: { filename: string; file_data: string } };
 
 export type ChatMessage = {

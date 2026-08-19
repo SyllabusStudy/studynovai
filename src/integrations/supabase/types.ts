@@ -679,6 +679,62 @@ export type Database = {
         }
         Relationships: []
       }
+      video_notes: {
+        Row: {
+          chat: Json
+          class_id: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          source_type: string
+          source_url: string | null
+          status: string
+          summary: string | null
+          title: string
+          transcript: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chat?: Json
+          class_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          source_type?: string
+          source_url?: string | null
+          status?: string
+          summary?: string | null
+          title: string
+          transcript?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chat?: Json
+          class_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          source_type?: string
+          source_url?: string | null
+          status?: string
+          summary?: string | null
+          title?: string
+          transcript?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_notes_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

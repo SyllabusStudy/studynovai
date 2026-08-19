@@ -138,7 +138,8 @@ function UpgradePage() {
               <div className="rounded-lg border border-border p-3 text-xs text-muted-foreground">
                 <p>
                   Today: {billing.usage.assignment_help}/{FREE_LIMITS.assignment_help} assignment helps ·{" "}
-                  {billing.usage.snap}/{FREE_LIMITS.snap} scans
+                  {billing.usage.snap}/{FREE_LIMITS.snap} scans ·{" "}
+                  {billing.usage.video}/{FREE_LIMITS.video} video imports
                 </p>
                 <p className="mt-1">
                   Classes: {billing.usage.classes}/{FREE_LIMITS.classes}

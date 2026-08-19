@@ -29,6 +29,8 @@ import { Route as AuthenticatedClassesIndexRouteImport } from './routes/_authent
 import { Route as AuthenticatedClassesClassIdRouteImport } from './routes/_authenticated/classes/$classId'
 import { Route as AuthenticatedFlashcardsIndexRouteImport } from './routes/_authenticated/flashcards/index'
 import { Route as AuthenticatedFlashcardsDeckRouteImport } from './routes/_authenticated/flashcards/$deck'
+import { Route as AuthenticatedQuickvideoIndexRouteImport } from './routes/_authenticated/quickvideo/index'
+import { Route as AuthenticatedQuickvideoNoteIdRouteImport } from './routes/_authenticated/quickvideo/$noteId'
 import { Route as AuthenticatedQuizzesIndexRouteImport } from './routes/_authenticated/quizzes/index'
 import { Route as AuthenticatedQuizzesQuizIdRouteImport } from './routes/_authenticated/quizzes/$quizId'
 
@@ -136,6 +138,18 @@ const AuthenticatedFlashcardsDeckRoute =
     path: '/flashcards/$deck',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedQuickvideoIndexRoute =
+  AuthenticatedQuickvideoIndexRouteImport.update({
+    id: '/quickvideo/',
+    path: '/quickvideo/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedQuickvideoNoteIdRoute =
+  AuthenticatedQuickvideoNoteIdRouteImport.update({
+    id: '/quickvideo/$noteId',
+    path: '/quickvideo/$noteId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedQuizzesIndexRoute =
   AuthenticatedQuizzesIndexRouteImport.update({
     id: '/quizzes/',
@@ -167,9 +181,11 @@ export interface FileRoutesByFullPath {
   '/features/flashcards': typeof FeaturesFlashcardsRoute
   '/classes/$classId': typeof AuthenticatedClassesClassIdRoute
   '/flashcards/$deck': typeof AuthenticatedFlashcardsDeckRoute
+  '/quickvideo/$noteId': typeof AuthenticatedQuickvideoNoteIdRoute
   '/quizzes/$quizId': typeof AuthenticatedQuizzesQuizIdRoute
   '/classes/': typeof AuthenticatedClassesIndexRoute
   '/flashcards/': typeof AuthenticatedFlashcardsIndexRoute
+  '/quickvideo/': typeof AuthenticatedQuickvideoIndexRoute
   '/quizzes/': typeof AuthenticatedQuizzesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -190,9 +206,11 @@ export interface FileRoutesByTo {
   '/features/flashcards': typeof FeaturesFlashcardsRoute
   '/classes/$classId': typeof AuthenticatedClassesClassIdRoute
   '/flashcards/$deck': typeof AuthenticatedFlashcardsDeckRoute
+  '/quickvideo/$noteId': typeof AuthenticatedQuickvideoNoteIdRoute
   '/quizzes/$quizId': typeof AuthenticatedQuizzesQuizIdRoute
   '/classes': typeof AuthenticatedClassesIndexRoute
   '/flashcards': typeof AuthenticatedFlashcardsIndexRoute
+  '/quickvideo': typeof AuthenticatedQuickvideoIndexRoute
   '/quizzes': typeof AuthenticatedQuizzesIndexRoute
 }
 export interface FileRoutesById {
@@ -215,9 +233,11 @@ export interface FileRoutesById {
   '/features/flashcards': typeof FeaturesFlashcardsRoute
   '/_authenticated/classes/$classId': typeof AuthenticatedClassesClassIdRoute
   '/_authenticated/flashcards/$deck': typeof AuthenticatedFlashcardsDeckRoute
+  '/_authenticated/quickvideo/$noteId': typeof AuthenticatedQuickvideoNoteIdRoute
   '/_authenticated/quizzes/$quizId': typeof AuthenticatedQuizzesQuizIdRoute
   '/_authenticated/classes/': typeof AuthenticatedClassesIndexRoute
   '/_authenticated/flashcards/': typeof AuthenticatedFlashcardsIndexRoute
+  '/_authenticated/quickvideo/': typeof AuthenticatedQuickvideoIndexRoute
   '/_authenticated/quizzes/': typeof AuthenticatedQuizzesIndexRoute
 }
 export interface FileRouteTypes {
@@ -240,9 +260,11 @@ export interface FileRouteTypes {
     | '/features/flashcards'
     | '/classes/$classId'
     | '/flashcards/$deck'
+    | '/quickvideo/$noteId'
     | '/quizzes/$quizId'
     | '/classes/'
     | '/flashcards/'
+    | '/quickvideo/'
     | '/quizzes/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -263,9 +285,11 @@ export interface FileRouteTypes {
     | '/features/flashcards'
     | '/classes/$classId'
     | '/flashcards/$deck'
+    | '/quickvideo/$noteId'
     | '/quizzes/$quizId'
     | '/classes'
     | '/flashcards'
+    | '/quickvideo'
     | '/quizzes'
   id:
     | '__root__'
@@ -287,9 +311,11 @@ export interface FileRouteTypes {
     | '/features/flashcards'
     | '/_authenticated/classes/$classId'
     | '/_authenticated/flashcards/$deck'
+    | '/_authenticated/quickvideo/$noteId'
     | '/_authenticated/quizzes/$quizId'
     | '/_authenticated/classes/'
     | '/_authenticated/flashcards/'
+    | '/_authenticated/quickvideo/'
     | '/_authenticated/quizzes/'
   fileRoutesById: FileRoutesById
 }
@@ -444,6 +470,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFlashcardsDeckRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/quickvideo/': {
+      id: '/_authenticated/quickvideo/'
+      path: '/quickvideo'
+      fullPath: '/quickvideo/'
+      preLoaderRoute: typeof AuthenticatedQuickvideoIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/quickvideo/$noteId': {
+      id: '/_authenticated/quickvideo/$noteId'
+      path: '/quickvideo/$noteId'
+      fullPath: '/quickvideo/$noteId'
+      preLoaderRoute: typeof AuthenticatedQuickvideoNoteIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/quizzes/': {
       id: '/_authenticated/quizzes/'
       path: '/quizzes'
@@ -474,9 +514,11 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedUpgradeRoute: typeof AuthenticatedUpgradeRoute
   AuthenticatedClassesClassIdRoute: typeof AuthenticatedClassesClassIdRoute
   AuthenticatedFlashcardsDeckRoute: typeof AuthenticatedFlashcardsDeckRoute
+  AuthenticatedQuickvideoNoteIdRoute: typeof AuthenticatedQuickvideoNoteIdRoute
   AuthenticatedQuizzesQuizIdRoute: typeof AuthenticatedQuizzesQuizIdRoute
   AuthenticatedClassesIndexRoute: typeof AuthenticatedClassesIndexRoute
   AuthenticatedFlashcardsIndexRoute: typeof AuthenticatedFlashcardsIndexRoute
+  AuthenticatedQuickvideoIndexRoute: typeof AuthenticatedQuickvideoIndexRoute
   AuthenticatedQuizzesIndexRoute: typeof AuthenticatedQuizzesIndexRoute
 }
 
@@ -493,9 +535,11 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedUpgradeRoute: AuthenticatedUpgradeRoute,
   AuthenticatedClassesClassIdRoute: AuthenticatedClassesClassIdRoute,
   AuthenticatedFlashcardsDeckRoute: AuthenticatedFlashcardsDeckRoute,
+  AuthenticatedQuickvideoNoteIdRoute: AuthenticatedQuickvideoNoteIdRoute,
   AuthenticatedQuizzesQuizIdRoute: AuthenticatedQuizzesQuizIdRoute,
   AuthenticatedClassesIndexRoute: AuthenticatedClassesIndexRoute,
   AuthenticatedFlashcardsIndexRoute: AuthenticatedFlashcardsIndexRoute,
+  AuthenticatedQuickvideoIndexRoute: AuthenticatedQuickvideoIndexRoute,
   AuthenticatedQuizzesIndexRoute: AuthenticatedQuizzesIndexRoute,
 }
 

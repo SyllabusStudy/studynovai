@@ -11,6 +11,7 @@ export type QuizRow = Database["public"]["Tables"]["quizzes"]["Row"];
 export type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 export type GradeCategoryRow = Database["public"]["Tables"]["grade_categories"]["Row"];
 export type ConversationRow = Database["public"]["Tables"]["ai_conversations"]["Row"];
+export type VideoNoteRow = Database["public"]["Tables"]["video_notes"]["Row"];
 
 async function must<T>(p: PromiseLike<{ data: T | null; error: { message: string } | null }>) {
   const { data, error } = await p;
@@ -158,6 +159,29 @@ export function useConversations(userId?: string) {
       must<ConversationRow[]>(
         supabase.from("ai_conversations").select("*").order("updated_at", { ascending: false }),
       ),
+  });
+}
+
+export function useVideoNotes(userId?: string) {
+  return useQuery({
+    queryKey: ["video_notes", userId],
+    enabled: !!userId,
+    queryFn: () =>
+      must<VideoNoteRow[]>(
+        supabase.from("video_notes").select("*").order("created_at", { ascending: false }),
+      ),
+  });
+}
+
+export function useVideoNote(id?: string) {
+  return useQuery({
+    queryKey: ["video_note", id],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("video_notes").select("*").eq("id", id!).single();
+      if (error) throw new Error(error.message);
+      return data as VideoNoteRow;
+    },
   });
 }
 
