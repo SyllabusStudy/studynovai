@@ -52,7 +52,9 @@ function CalendarPage() {
   const { data: events = [], isLoading } = useEvents(user?.id);
   const { data: classes = [] } = useClasses(user?.id);
   const classById = new Map(classes.map((c) => [c.id, c]));
+  const [selected, setSelected] = useState<string | null>(null);
   const [cursor, setCursor] = useState(() => {
+
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
@@ -121,10 +123,12 @@ function CalendarPage() {
           const key = iso(d);
           const dayEvents = byDate.get(key) ?? [];
           return (
-            <div
+            <button
+              type="button"
               key={key}
+              onClick={() => setSelected(key)}
               className={cn(
-                "min-h-20 rounded-lg border border-border bg-card p-1.5 text-left",
+                "min-h-20 rounded-lg border border-border bg-card p-1.5 text-left transition-colors hover:border-primary hover:bg-accent/40",
                 d.getMonth() !== cursor.getMonth() && "opacity-40",
                 key === todayIso && "border-primary",
               )}
@@ -134,14 +138,56 @@ function CalendarPage() {
                 {dayEvents.map((e) => (
                   <li key={e.id} className="flex items-start gap-1 text-[10px] leading-tight">
                     <ClassDot color={e.class_id ? classById.get(e.class_id)?.color : null} className="mt-0.5 size-1.5" />
-                    <span className="line-clamp-2">{e.title}</span>
+                    <span className="line-clamp-2">
+                      {e.event_time ? `${e.event_time} ` : ""}
+                      {e.title}
+                    </span>
                   </li>
                 ))}
               </ul>
-            </div>
+            </button>
           );
         })}
       </div>
+
+      <Dialog open={selected !== null} onOpenChange={(o) => !o && setSelected(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{selected ? formatDate(selected) : "Day"}</DialogTitle>
+          </DialogHeader>
+          {selected && (byDate.get(selected) ?? []).length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nothing scheduled on this day.</p>
+          ) : (
+            <ul className="space-y-2">
+              {(selected ? byDate.get(selected) ?? [] : []).map((e) => (
+                <li key={e.id} className="surface-card flex items-start justify-between gap-3 p-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">{e.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {e.event_time ? e.event_time : "No time listed"} ·{" "}
+                      {EVENT_TYPE_LABELS[e.event_type] ?? "Event"}
+                      {e.class_id ? ` · ${classLabel(classById.get(e.class_id))}` : ""}
+                    </p>
+                    {e.description ? (
+                      <p className="mt-1 text-xs text-muted-foreground">{e.description}</p>
+                    ) : null}
+                  </div>
+                  <DeleteButton
+                    label="event"
+                    description={`"${e.title}" will be removed from your calendar.`}
+                    onDelete={async () => {
+                      const { error } = await supabase.from("calendar_events").delete().eq("id", e.id);
+                      if (error) throw new Error(error.message);
+                      await qc.invalidateQueries({ queryKey: ["events"] });
+                    }}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+        </DialogContent>
+      </Dialog>
+
 
       <h2 className="mb-3 mt-8 text-sm font-bold uppercase tracking-wide text-muted-foreground">
         All events
@@ -186,7 +232,7 @@ function NewEventDialog() {
   const { data: classes = [] } = useClasses(user?.id);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({ title: "", event_date: "", event_type: "exam", class_id: "" });
+  const [form, setForm] = useState({ title: "", event_date: "", event_time: "", event_type: "exam", class_id: "" });
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -196,6 +242,7 @@ function NewEventDialog() {
       user_id: user.id,
       title: form.title,
       event_date: form.event_date,
+      event_time: form.event_time || null,
       event_type: form.event_type,
       class_id: form.class_id || null,
     });
@@ -207,8 +254,9 @@ function NewEventDialog() {
     await qc.invalidateQueries({ queryKey: ["events"] });
     toast.success("Event added");
     setOpen(false);
-    setForm({ title: "", event_date: "", event_type: "exam", class_id: "" });
+    setForm({ title: "", event_date: "", event_time: "", event_type: "exam", class_id: "" });
   }
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -243,6 +291,16 @@ function NewEventDialog() {
               />
             </div>
             <div className="space-y-1.5">
+              <Label htmlFor="event-time">Time</Label>
+              <Input
+                id="event-time"
+                type="time"
+                value={form.event_time}
+                onChange={(e) => setForm({ ...form, event_time: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+
               <Label>Type</Label>
               <Select value={form.event_type} onValueChange={(v) => setForm({ ...form, event_type: v })}>
                 <SelectTrigger>
