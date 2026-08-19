@@ -198,14 +198,36 @@ function UpgradePage() {
                 )}
               </div>
             ) : (
-              <Button className="w-full" disabled={busy} onClick={() => void upgrade()}>
+              <Button
+                className="w-full"
+                disabled={busy || checkoutOpen}
+                onClick={() => setCheckoutOpen(true)}
+              >
                 {busy ? <Loader2 className="size-4 animate-spin" /> : null}
-                Upgrade with PayPal
+                Upgrade to Pro
               </Button>
             )}
           </div>
         </div>
       )}
+
+      {!pro && checkoutOpen ? (
+        <div className="surface-card mt-4 p-4">
+          <PaymentTestModeBanner />
+          <StripeEmbeddedCheckout
+            priceId={PRO_PRICE_ID}
+            returnUrl={`${window.location.origin}/upgrade?session_id={CHECKOUT_SESSION_ID}`}
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mt-3"
+            onClick={() => setCheckoutOpen(false)}
+          >
+            Cancel
+          </Button>
+        </div>
+      ) : null}
 
       {pro ? null : (
         <div className="surface-card mt-4 space-y-3 p-5">
