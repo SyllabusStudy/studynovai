@@ -431,7 +431,7 @@ export async function runFlashcardGeneration(
   },
 ) {
   const source = await sourceText(supabase, userId, input.classId, input.documentId ?? null);
-  if (!source) throw new Error("Upload a readable document for this class first.");
+  if (!source) throw new Error("Upload notes, a study guide or an assignment for this class first — syllabi are not used as study material.");
 
   // Optionally aim the deck at the student's real homework / upcoming deadlines.
   let homework = "";
@@ -551,7 +551,7 @@ export async function runQuizGeneration(
   },
 ) {
   const source = await sourceText(supabase, userId, input.classId, input.documentId ?? null);
-  if (!source) throw new Error("Upload a readable document for this class first.");
+  if (!source) throw new Error("Upload notes, a study guide or an assignment for this class first — syllabi are not used as study material.");
 
   const raw = await callAI([
     {
