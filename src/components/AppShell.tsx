@@ -91,7 +91,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         <main className="mx-auto w-full max-w-6xl px-4 pb-28 pt-6 sm:px-6 lg:pb-14">{children}</main>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur lg:hidden">
+      <nav
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur lg:hidden"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
         <ul className="grid grid-cols-5">
           {MOBILE_NAV.map((item) => {
             const active = pathname.startsWith(item.to);
