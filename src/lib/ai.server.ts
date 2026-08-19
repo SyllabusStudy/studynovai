@@ -222,8 +222,15 @@ export async function buildClassContext(
     }
   }
 
+  const mem = (memory ?? []).filter((m) => !classId || !m.class_id || m.class_id === classId);
+  if (mem.length) {
+    lines.push("## WHAT YOU REMEMBER ABOUT THIS STUDENT (long-term memory)");
+    for (const m of mem) lines.push(`- ${m.content}`);
+  }
+
   if (!lines.length) lines.push("The student has not added any classes or documents yet.");
   return { contextText: lines.join("\n"), classes: classNames };
+
 }
 
 const MODE_INSTRUCTIONS: Record<string, string> = {
