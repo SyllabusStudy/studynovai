@@ -45,10 +45,16 @@ export async function callAI(
     throw new Error(`AI request failed (${res.status}): ${body.slice(0, 400)}`);
   }
 
-  const data = (await res.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
+  const bodyText = await res.text();
+  if (!bodyText.trim()) throw new Error("The AI returned an empty response. Please try again.");
+  let data: { choices?: Array<{ message?: { content?: string } }> };
+  try {
+    data = JSON.parse(bodyText) as typeof data;
+  } catch {
+    throw new Error("The AI response was incomplete. Please try again.");
+  }
   return data.choices?.[0]?.message?.content?.trim() ?? "";
+
 }
 
 /** Repairs a truncated JSON string by closing open strings/arrays/objects and dropping the trailing partial item. */
