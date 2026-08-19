@@ -709,12 +709,16 @@ async function sourceText(
     .eq("user_id", userId)
     .eq("class_id", classId)
     .not("extracted_text", "is", null);
+  // Syllabi are schedules/policies, not study material — skip them unless the
+  // student explicitly picked that exact document.
   if (documentId) query = query.eq("id", documentId);
+  else query = query.eq("is_syllabus", false);
   const { data } = await query;
   return (data ?? [])
     .map((d) => `### ${d.file_name}\n${(d.extracted_text ?? "").slice(0, 12000)}`)
     .join("\n\n");
 }
+
 
 /* ------------------------------------------------------------------ assignment help */
 
