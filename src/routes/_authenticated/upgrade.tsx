@@ -69,28 +69,35 @@ function UpgradePage() {
   }, [confirm, qc]);
 
   async function upgrade() {
+    const inFrame = window.top !== window.self;
+    // Open the tab while this function is still handling the click. Waiting for
+    // the server first can make mobile browsers treat it as an unsolicited popup.
+    const checkoutWindow = inFrame ? window.open("about:blank", "_blank") : null;
+    if (checkoutWindow) {
+      checkoutWindow.opener = null;
+      checkoutWindow.document.title = "Opening PayPal…";
+      checkoutWindow.document.body.textContent = "Opening secure PayPal checkout…";
+    }
     setBusy(true);
     try {
       const { approveUrl } = await start({ data: { origin: window.location.origin } });
-      // PayPal refuses to render inside an iframe (the editor preview), which shows
-      // its "things don't appear to be working" page. Always send checkout to the
-      // top-level window, falling back to a new tab when that is blocked.
-      const inFrame = window.top !== window.self;
       if (inFrame) {
-        const opened = window.open(approveUrl, "_blank", "noopener,noreferrer");
-        if (!opened) {
-          try {
-            window.top!.location.href = approveUrl;
-          } catch {
-            window.location.href = approveUrl;
-          }
+        if (checkoutWindow) {
+          checkoutWindow.location.replace(approveUrl);
+          toast.info("PayPal checkout opened in a new tab.");
+        } else {
+          // Never load PayPal inside the embedded preview. If the browser blocked
+          // the pre-opened tab, a direct second click is allowed reliably.
+          const opened = window.open(approveUrl, "_blank");
+          if (opened) opened.opener = null;
+          else toast.error("Your browser blocked PayPal. Allow pop-ups, then try again.");
         }
-        toast.info("PayPal checkout opened in a new tab.");
         setBusy(false);
         return;
       }
       window.location.href = approveUrl;
     } catch (e) {
+      checkoutWindow?.close();
       toast.error(e instanceof Error ? e.message : "Could not start PayPal checkout.");
       setBusy(false);
     }
