@@ -251,7 +251,7 @@ export async function runSyllabusAnalysis(supabase: DB, userId: string, document
 
   const today = new Date().toISOString().slice(0, 10);
   const syllabusText = doc.extracted_text.slice(0, 60000);
-  const [raw, swept] = await Promise.all([
+  const [raw, swept, sweptPolicies] = await Promise.all([
     callAI(
       [
         {
@@ -262,9 +262,11 @@ export async function runSyllabusAnalysis(supabase: DB, userId: string, document
         {
           role: "user",
           content: `Today is ${today}. Extract this json shape:
-{"course_name":string|null,"course_code":string|null,"professor":string|null,"professor_email":string|null,"office_hours":string|null,"attendance_policy":string|null,"late_work_policy":string|null,"makeup_policy":string|null,"required_materials":string|null,"other_policies":string|null,"grading_breakdown":[{"name":string,"weight":number}],"dates":[{"title":string,"date":"YYYY-MM-DD","time":"HH:MM"|null,"type":"exam"|"quiz"|"assignment"|"project"|"presentation"|"final"|"other","description":string|null}]}
+{"course_name":string|null,"course_code":string|null,"professor":string|null,"professor_email":string|null,"office_hours":string|null,"attendance_policy":string|null,"late_work_policy":string|null,"makeup_policy":string|null,"required_materials":string|null,"other_policies":string|null,"policies":[{"title":string,"details":string}],"grading_breakdown":[{"name":string,"weight":number}],"dates":[{"title":string,"date":"YYYY-MM-DD","time":"HH:MM"|null,"type":"exam"|"quiz"|"assignment"|"project"|"presentation"|"final"|"other","description":string|null}]}
 
 ${DATE_RULES}
+
+${POLICY_RULES}
 
 SYLLABUS TEXT:
 ${syllabusText}`,
@@ -273,6 +275,7 @@ ${syllabusText}`,
       { maxTokens: 12000, temperature: 0 },
     ),
     sweepSyllabusDates(syllabusText, today),
+    sweepSyllabusPolicies(syllabusText),
   ]);
 
   const parsed = parseJsonBlock<SyllabusResult>(raw);
@@ -288,6 +291,27 @@ ${syllabusText}`,
     mergedDates.push(d);
   }
   parsed.dates = mergedDates;
+
+  const mergedPolicies: SyllabusPolicy[] = [];
+  const policyKeys = new Set<string>();
+  for (const p of [...(parsed.policies ?? []), ...sweptPolicies]) {
+    if (!p?.title || !p?.details) continue;
+    const title = String(p.title).trim();
+    const details = String(p.details).trim();
+    const key = `${title.toLowerCase()}|${details.slice(0, 80).toLowerCase()}`;
+    if (policyKeys.has(key)) continue;
+    // Same topic already captured with the same or longer wording? Keep the longer one.
+    const sameTitle = mergedPolicies.find((m) => m.title.toLowerCase() === title.toLowerCase());
+    if (sameTitle) {
+      if (details.length > sameTitle.details.length) sameTitle.details = details;
+      continue;
+    }
+    policyKeys.add(key);
+    mergedPolicies.push({ title, details });
+  }
+  parsed.policies = mergedPolicies;
+
+
 
 
 
