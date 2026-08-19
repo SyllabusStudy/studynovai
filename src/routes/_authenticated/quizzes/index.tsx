@@ -75,13 +75,13 @@ function QuizzesPage() {
       toast.error(e instanceof Error ? e.message : "Generation failed");
     } finally {
       setBusy(false);
+    }
   }
 
   async function deleteQuiz(id: string) {
     const { error } = await supabase.from("quizzes").delete().eq("id", id);
     if (error) throw new Error(error.message);
     await qc.invalidateQueries({ queryKey: ["quizzes"] });
-  }
   }
 
   return (
