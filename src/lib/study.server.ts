@@ -474,7 +474,7 @@ Return json: {"title":string,"questions":[{"id":string,"type":"multiple_choice"|
 Rules: multiple_choice needs exactly 4 options and answer must match one option exactly. true_false options are ["True","False"]. short_answer and problem have an empty options array and a concise model answer.
 
 MATERIAL:
-${source.slice(0, 45000)}`,
+${source.slice(0, 20000)}`,
     },
   ]);
 
@@ -617,7 +617,7 @@ async function sourceText(
   if (documentId) query = query.eq("id", documentId);
   const { data } = await query;
   return (data ?? [])
-    .map((d) => `### ${d.file_name}\n${(d.extracted_text ?? "").slice(0, 20000)}`)
+    .map((d) => `### ${d.file_name}\n${(d.extracted_text ?? "").slice(0, 12000)}`)
     .join("\n\n");
 }
 
@@ -663,7 +663,7 @@ export async function runAssignmentHelp(
   const { contextText } = await buildClassContext(supabase, userId, assignment.class_id);
 
   const reply = await callAI([
-    { role: "system", content: `${HELP_RULES}\n\nSTUDENT COURSE CONTEXT:\n${contextText.slice(0, 20000)}` },
+    { role: "system", content: `${HELP_RULES}\n\nSTUDENT COURSE CONTEXT:\n${contextText.slice(0, 8000)}` },
     {
       role: "user",
       content: `Assignment: ${assignment.title}${assignment.due_date ? ` (due ${assignment.due_date})` : ""}
@@ -671,7 +671,7 @@ ${assignment.description ? `Notes: ${assignment.description}` : ""}
 ${input.question ? `My specific question: ${input.question}` : "Walk me through the whole thing."}
 
 ATTACHED FILES:
-${attached.map((d) => `### ${d.file_name}\n${(d.extracted_text ?? "").slice(0, 20000)}`).join("\n\n")}`,
+${attached.map((d) => `### ${d.file_name}\n${(d.extracted_text ?? "").slice(0, 12000)}`).join("\n\n")}`,
     },
   ]);
 
@@ -696,7 +696,7 @@ export async function runSnapHelp(
   const reply = await callAI([
     {
       role: "system",
-      content: `${HELP_RULES} The student photographed their work with a phone camera, so read carefully and say if part of the image is blurry or cut off.\n\nSTUDENT COURSE CONTEXT:\n${contextText.slice(0, 12000)}`,
+      content: `${HELP_RULES} The student photographed their work with a phone camera, so read carefully and say if part of the image is blurry or cut off.\n\nSTUDENT COURSE CONTEXT:\n${contextText.slice(0, 6000)}`,
     },
     {
       role: "user",
