@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { BookOpen, Bot, Camera, CheckSquare, Sparkles } from "lucide-react";
+import { BookOpen, Bot, Camera, CheckSquare, Sparkles, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/lib/auth";
@@ -9,7 +9,7 @@ const STEPS = [
   {
     icon: Sparkles,
     title: "Welcome to StudyMate AI",
-    body: "A quick 5-step tour so you know where everything lives. It takes about 30 seconds.",
+    body: "A quick tour so you know where everything lives. It takes about 30 seconds.",
   },
   {
     icon: BookOpen,
@@ -30,6 +30,11 @@ const STEPS = [
     icon: Bot,
     title: "4. Study with your own materials",
     body: "The AI Tutor, Flashcards and Quizzes all pull from your uploaded documents, so answers match your actual course.",
+  },
+  {
+    icon: Video,
+    title: "5. Turn videos into notes",
+    body: "Paste a YouTube link or upload a lecture recording in QuickVideo. StudyMate writes the notes for you, then answers any question about the video.",
   },
 ] as const;
 
