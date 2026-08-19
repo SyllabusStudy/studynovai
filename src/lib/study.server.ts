@@ -331,16 +331,21 @@ export async function runFlashcardGeneration(
     {
       role: "system",
       content:
-        "You create high-quality college study flashcards from the student's own course material and reply with json only.",
+        "You create high-quality college study flashcards strictly from the student's own uploaded course material and reply with json only. Never use outside knowledge: every front and back must be traceable to a specific sentence, definition, formula, example or figure in the provided material. Cover the material broadly instead of clustering on one section, and prefer the terms, notation and wording the document itself uses.",
     },
     {
       role: "user",
-      content: `Create exactly ${input.count} ${input.difficulty} flashcards${input.topic ? ` focused on: ${input.topic}` : ""} from the material below. Fronts are short prompts/questions, backs are precise answers (1-3 sentences). Only use facts present in the material.
+      content: `Create exactly ${input.count} ${input.difficulty} flashcards${input.topic ? ` focused on: ${input.topic}` : ""} from the material below.
+Guidelines:
+- Fronts are short prompts/questions; backs are precise answers (1-3 sentences) using the document's own terminology.
+- Pull from definitions, key terms, formulas, processes, worked examples, comparisons and anything the document emphasises (bold, headings, "important", "note").
+- No duplicates, no trivia, nothing that isn't in the material. If the material is thin, make fewer but accurate cards.
+- Set "source" to the document section or heading the card comes from.
 ${
   homework
     ? `Prioritise the concepts, skills and problem types the student needs for this homework and these upcoming deadlines. Set each card's "topic" to the homework or deadline it supports:\n${homework}\n`
     : ""
-}Return json: {"cards":[{"front":string,"back":string,"topic":string}]}
+}Return json: {"cards":[{"front":string,"back":string,"topic":string,"source":string}]}
 
 MATERIAL:
 ${source.slice(0, 45000)}`,
