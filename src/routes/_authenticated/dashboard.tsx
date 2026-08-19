@@ -23,6 +23,11 @@ import {
 } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
+type CoachPlan = {
+  summary?: string;
+  tasks?: Array<{ title?: string; detail?: string; minutes?: number; class?: string }>;
+};
+
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
@@ -42,7 +47,7 @@ function Dashboard() {
   const { data: assignments = [] } = useAssignments(user?.id);
   const { data: events = [] } = useEvents(user?.id);
   const { data: flashcards = [] } = useFlashcards(user?.id);
-  const [plan, setPlan] = useState<string | null>(null);
+  const [plan, setPlan] = useState<CoachPlan | null>(null);
   const [busy, setBusy] = useState(false);
   const coach = useServerFn(studyCoach);
 
@@ -66,7 +71,9 @@ function Dashboard() {
     setBusy(true);
     try {
       const res = await coach({ data: { minutes: 60 } });
-      setPlan((res as { plan?: string }).plan ?? "No plan returned.");
+      const p = res as CoachPlan;
+      if (!p?.summary && !p?.tasks?.length) throw new Error("The AI reply came back empty. Try again.");
+      setPlan(p);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not build a plan");
     } finally {
@@ -174,8 +181,28 @@ function Dashboard() {
             {plan ? "Regenerate plan" : "Build my plan"}
           </Button>
           {plan ? (
-            <div className="mt-4 text-sm">
-              <Markdown content={plan} />
+            <div className="mt-4 space-y-3 text-sm">
+              {plan.summary ? <Markdown content={plan.summary} /> : null}
+              {plan.tasks?.length ? (
+                <ul className="space-y-2">
+                  {plan.tasks.map((t, i) => (
+                    <li key={i} className="rounded-lg border border-border/60 p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm font-semibold">{t.title}</p>
+                        {t.minutes ? (
+                          <span className="shrink-0 text-xs text-muted-foreground">
+                            {t.minutes} min
+                          </span>
+                        ) : null}
+                      </div>
+                      {t.class ? (
+                        <p className="mt-0.5 text-xs text-muted-foreground">{t.class}</p>
+                      ) : null}
+                      {t.detail ? <p className="mt-1.5 text-sm">{t.detail}</p> : null}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
             </div>
           ) : null}
         </div>
