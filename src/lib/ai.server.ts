@@ -16,7 +16,10 @@ export type ChatMessage = {
   content: string | ContentBlock[];
 };
 
-export async function callAI(messages: ChatMessage[], opts?: { model?: string }): Promise<string> {
+export async function callAI(
+  messages: ChatMessage[],
+  opts?: { model?: string; maxTokens?: number; temperature?: number },
+): Promise<string> {
   const key = process.env["LOVABLE_API_KEY"];
   if (!key) throw new Error("AI is not configured for this project yet.");
 
@@ -27,7 +30,12 @@ export async function callAI(messages: ChatMessage[], opts?: { model?: string })
       "Lovable-API-Key": key,
       "X-Lovable-AIG-SDK": "fetch",
     },
-    body: JSON.stringify({ model: opts?.model ?? CHAT_MODEL, messages }),
+    body: JSON.stringify({
+      model: opts?.model ?? CHAT_MODEL,
+      messages,
+      temperature: opts?.temperature ?? 0.3,
+      ...(opts?.maxTokens ? { max_tokens: opts.maxTokens } : {}),
+    }),
   });
 
   if (!res.ok) {
