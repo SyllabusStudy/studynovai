@@ -457,6 +457,10 @@ ${syllabusText}`,
         ? `Grade weights: ${parsed.grading_breakdown.map((g) => `${g.name} ${g.weight}%`).join(", ")}.`
         : "",
       parsed.other_policies ? `Other policies: ${parsed.other_policies}` : "",
+      Array.isArray(parsed.policies) && parsed.policies.length
+        ? `Full policy list: ${parsed.policies.map((p) => `${p.title}: ${p.details}`).join(" | ")}`
+        : "",
+
     ]
       .filter(Boolean)
       .join(" ")
