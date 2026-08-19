@@ -13,6 +13,7 @@ import {
   Sun,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { InstallAppButton } from "@/components/InstallAppButton";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
 
@@ -123,6 +124,7 @@ function Landing() {
             <Button asChild size="lg" variant="outline">
               <Link to="/features/flashcards">See AI flashcards</Link>
             </Button>
+            <InstallAppButton className="gap-2" />
           </div>
 
         </div>
