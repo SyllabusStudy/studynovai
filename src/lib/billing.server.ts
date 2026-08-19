@@ -59,7 +59,12 @@ export async function assertQuota(supabase: DB, userId: string, kind: UsageKind)
   const used = await countToday(supabase, userId, kind);
   const limit = FREE_LIMITS[kind];
   if (used >= limit) {
-    const what = kind === "snap" ? "SnapQuick scans" : "AI assignment helps";
+    const what =
+      kind === "snap"
+        ? "SnapQuick scans"
+        : kind === "video"
+          ? "QuickVideo imports"
+          : "AI assignment helps";
     throw new Error(
       `Free plan limit reached: ${limit} ${what} per day. Upgrade to Pro for unlimited use.`,
     );
@@ -71,10 +76,11 @@ export async function recordUsage(supabase: DB, userId: string, kind: UsageKind)
 }
 
 export async function loadBilling(supabase: DB, userId: string): Promise<BillingState> {
-  const [sub, help, snap, classes] = await Promise.all([
+  const [sub, help, snap, video, classes] = await Promise.all([
     supabase.from("subscriptions").select("*").eq("user_id", userId).maybeSingle(),
     countToday(supabase, userId, "assignment_help"),
     countToday(supabase, userId, "snap"),
+    countToday(supabase, userId, "video"),
     supabase.from("classes").select("id", { count: "exact", head: true }).eq("user_id", userId),
   ]);
   const row = sub.data;
@@ -83,10 +89,15 @@ export async function loadBilling(supabase: DB, userId: string): Promise<Billing
     plan: pro ? "pro" : "free",
     status: row?.status ?? "inactive",
     currentPeriodEnd: row?.current_period_end ?? null,
-    usage: { assignment_help: help, snap, classes: classes.count ?? 0 },
+    usage: { assignment_help: help, snap, video, classes: classes.count ?? 0 },
     limits: pro
-      ? { assignment_help: -1, snap: -1, classes: -1 }
-      : { assignment_help: FREE_LIMITS.assignment_help, snap: FREE_LIMITS.snap, classes: FREE_LIMITS.classes },
+      ? { assignment_help: -1, snap: -1, video: -1, classes: -1 }
+      : {
+          assignment_help: FREE_LIMITS.assignment_help,
+          snap: FREE_LIMITS.snap,
+          video: FREE_LIMITS.video,
+          classes: FREE_LIMITS.classes,
+        },
   };
 }
 
