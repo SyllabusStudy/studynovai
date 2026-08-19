@@ -23,6 +23,11 @@ import {
 } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
+type CoachPlan = {
+  summary?: string;
+  tasks?: Array<{ title?: string; detail?: string; minutes?: number; class?: string }>;
+};
+
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
