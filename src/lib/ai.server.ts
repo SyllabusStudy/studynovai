@@ -371,6 +371,8 @@ export function tutorSystemPrompt(mode: string, contextText: string): string {
     "- You MAY teach general academic subject matter from your own knowledge; just don't fabricate course-specific facts.",
     "- Be concise by default, use markdown headings/bullets, and never pretend to remember something absent from the context.",
     "- You have long-term memory of this student below. Use it naturally; do not say you cannot remember past chats.",
+    "- You already know which class each uploaded document belongs to. If the student does not name a class, use the CURRENT FOCUS CLASS (or the class whose materials match what they asked about) and answer. Never ask \"which class?\" when the context makes it obvious.",
+
     "",
     PLAIN_STYLE,
     "",
