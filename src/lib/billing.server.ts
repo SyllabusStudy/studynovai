@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { FREE_LIMITS, type BillingState, type UsageKind } from "./plan";
+import { FREE_LIMITS, FREE_WINDOW_HOURS, USAGE_LABELS, type BillingState, type UsageKind } from "./plan";
 import { cancelSubscription, ensureProPlanId, getSubscription, createProSubscription } from "./paypal.server";
 
 type DB = SupabaseClient<Database>;
@@ -28,10 +28,19 @@ export async function redeemPromoCode(userId: string, code: string) {
   return { plan: "pro" as const, status: "promo" as const };
 }
 
-function startOfTodayIso() {
-  const d = new Date();
-  d.setUTCHours(0, 0, 0, 0);
-  return d.toISOString();
+const WINDOW_MS = FREE_WINDOW_HOURS * 60 * 60 * 1000;
+
+function windowStartIso() {
+  return new Date(Date.now() - WINDOW_MS).toISOString();
+}
+
+function formatWait(ms: number) {
+  const mins = Math.max(1, Math.ceil(ms / 60000));
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h && m) return `${h}h ${m}m`;
+  if (h) return `${h}h`;
+  return `${m}m`;
 }
 
 export async function isPro(supabase: DB, userId: string) {
@@ -43,30 +52,32 @@ export async function isPro(supabase: DB, userId: string) {
   return data?.plan === "pro" && PRO_STATUSES.has(data.status);
 }
 
-async function countToday(supabase: DB, userId: string, kind: UsageKind) {
-  const { count } = await supabase
+/** Uses + when the oldest use in the rolling window ages out. */
+async function windowUsage(supabase: DB, userId: string, kind: UsageKind) {
+  const { data } = await supabase
     .from("usage_events")
-    .select("id", { count: "exact", head: true })
+    .select("created_at")
     .eq("user_id", userId)
     .eq("kind", kind)
-    .gte("created_at", startOfTodayIso());
-  return count ?? 0;
+    .gte("created_at", windowStartIso())
+    .order("created_at", { ascending: true });
+  const rows = data ?? [];
+  const oldest = rows[0]?.created_at ?? null;
+  return {
+    used: rows.length,
+    resetAt: oldest ? new Date(new Date(oldest).getTime() + WINDOW_MS).toISOString() : null,
+  };
 }
 
 /** Throws a friendly error when a free student is out of daily uses. */
 export async function assertQuota(supabase: DB, userId: string, kind: UsageKind) {
   if (await isPro(supabase, userId)) return;
-  const used = await countToday(supabase, userId, kind);
+  const { used, resetAt } = await windowUsage(supabase, userId, kind);
   const limit = FREE_LIMITS[kind];
   if (used >= limit) {
-    const what =
-      kind === "snap"
-        ? "SnapQuick scans"
-        : kind === "video"
-          ? "QuickVideo imports"
-          : "AI assignment helps";
+    const wait = resetAt ? formatWait(new Date(resetAt).getTime() - Date.now()) : `${FREE_WINDOW_HOURS}h`;
     throw new Error(
-      `Free plan limit reached: ${limit} ${what} per day. Upgrade to Pro for unlimited use.`,
+      `You've hit your free limit of ${limit} ${USAGE_LABELS[kind]} every ${FREE_WINDOW_HOURS} hours. Try again in ${wait}, or upgrade to Pro for unlimited use.`,
     );
   }
 }
@@ -78,9 +89,9 @@ export async function recordUsage(supabase: DB, userId: string, kind: UsageKind)
 export async function loadBilling(supabase: DB, userId: string): Promise<BillingState> {
   const [sub, help, snap, video, classes] = await Promise.all([
     supabase.from("subscriptions").select("*").eq("user_id", userId).maybeSingle(),
-    countToday(supabase, userId, "assignment_help"),
-    countToday(supabase, userId, "snap"),
-    countToday(supabase, userId, "video"),
+    windowUsage(supabase, userId, "assignment_help"),
+    windowUsage(supabase, userId, "snap"),
+    windowUsage(supabase, userId, "video"),
     supabase.from("classes").select("id", { count: "exact", head: true }).eq("user_id", userId),
   ]);
   const row = sub.data;
@@ -89,7 +100,13 @@ export async function loadBilling(supabase: DB, userId: string): Promise<Billing
     plan: pro ? "pro" : "free",
     status: row?.status ?? "inactive",
     currentPeriodEnd: row?.current_period_end ?? null,
-    usage: { assignment_help: help, snap, video, classes: classes.count ?? 0 },
+    usage: {
+      assignment_help: help.used,
+      snap: snap.used,
+      video: video.used,
+      classes: classes.count ?? 0,
+    },
+    resets: { assignment_help: help.resetAt, snap: snap.resetAt, video: video.resetAt },
     limits: pro
       ? { assignment_help: -1, snap: -1, video: -1, classes: -1 }
       : {
