@@ -71,7 +71,9 @@ function Dashboard() {
     setBusy(true);
     try {
       const res = await coach({ data: { minutes: 60 } });
-      setPlan((res as { plan?: string }).plan ?? "No plan returned.");
+      const p = res as CoachPlan;
+      if (!p?.summary && !p?.tasks?.length) throw new Error("The AI reply came back empty. Try again.");
+      setPlan(p);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not build a plan");
     } finally {
