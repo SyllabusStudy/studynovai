@@ -8,8 +8,11 @@ import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { PRO_PRICE_USD, FREE_LIMITS, FREE_WINDOW_HOURS } from "@/lib/plan";
 import { Input } from "@/components/ui/input";
-import { cancelProPlan, confirmProCheckout, getBilling, redeemPromo, startProCheckout } from "@/lib/billing.functions";
+import { cancelProPlan, confirmProCheckout, getBilling, redeemPromo } from "@/lib/billing.functions";
 import { useAuth } from "@/lib/auth";
+import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
+import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
+import { getStripeEnvironment, PRO_PRICE_ID } from "@/lib/stripe";
 
 export const Route = createFileRoute("/_authenticated/upgrade")({
   head: () => ({
