@@ -635,7 +635,7 @@ STUDENT CONTEXT:
 ${contextText.slice(0, 12000)}`,
       },
     ],
-    { maxTokens: 900 },
+    { maxTokens: 1600 },
   );
 
   return parseJsonBlock<{
