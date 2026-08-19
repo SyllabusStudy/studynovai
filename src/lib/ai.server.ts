@@ -18,7 +18,7 @@ export type ChatMessage = {
 
 export async function callAI(
   messages: ChatMessage[],
-  opts?: { model?: string; maxTokens?: number; temperature?: number },
+  opts?: { model?: string; maxTokens?: number; temperature?: number; reasoningEffort?: string; _retry?: boolean },
 ): Promise<string> {
   const key = process.env["LOVABLE_API_KEY"];
   if (!key) throw new Error("AI is not configured for this project yet.");
@@ -34,6 +34,9 @@ export async function callAI(
       model: opts?.model ?? CHAT_MODEL,
       messages,
       temperature: opts?.temperature ?? 0.3,
+      // Skip internal "thinking" so the whole token budget goes to the answer
+      // (thinking tokens were eating the budget and returning empty content).
+      reasoning_effort: opts?.reasoningEffort ?? "none",
       ...(opts?.maxTokens ? { max_tokens: opts.maxTokens } : {}),
     }),
   });
@@ -47,15 +50,25 @@ export async function callAI(
 
   const bodyText = await res.text();
   if (!bodyText.trim()) throw new Error("The AI returned an empty response. Please try again.");
-  let data: { choices?: Array<{ message?: { content?: string } }> };
+  let data: { choices?: Array<{ message?: { content?: string }; finish_reason?: string }> };
   try {
     data = JSON.parse(bodyText) as typeof data;
   } catch {
     throw new Error("The AI response was incomplete. Please try again.");
   }
-  return data.choices?.[0]?.message?.content?.trim() ?? "";
-
+  const content = data.choices?.[0]?.message?.content?.trim() ?? "";
+  if (!content && !opts?._retry) {
+    // One automatic retry with a bigger budget instead of bubbling an empty reply to the user.
+    return callAI(messages, {
+      ...opts,
+      maxTokens: Math.max((opts?.maxTokens ?? 900) * 2, 1800),
+      reasoningEffort: "none",
+      _retry: true,
+    });
+  }
+  return content;
 }
+
 
 /** Repairs a truncated JSON string by closing open strings/arrays/objects and dropping the trailing partial item. */
 function repairJson(text: string): string {
