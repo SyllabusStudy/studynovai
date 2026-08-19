@@ -1,0 +1,1 @@
+UPDATE public.paypal_config SET id = 'pro-sandbox' WHERE id = 'pro';

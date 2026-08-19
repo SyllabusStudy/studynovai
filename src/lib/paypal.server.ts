@@ -1,9 +1,11 @@
 import { PRO_PRICE_USD } from "./plan";
 
+export function paypalEnv(): "live" | "sandbox" {
+  return (process.env["PAYPAL_ENV"] ?? "sandbox").trim() === "live" ? "live" : "sandbox";
+}
+
 function base() {
-  return (process.env["PAYPAL_ENV"] ?? "sandbox").trim() === "live"
-    ? "https://api-m.paypal.com"
-    : "https://api-m.sandbox.paypal.com";
+  return paypalEnv() === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
 }
 
 async function token(): Promise<string> {
@@ -60,7 +62,13 @@ type AdminClient = {
 
 /** Creates the $20/month plan on first use and caches its id in the database. */
 export async function ensureProPlanId(admin: AdminClient): Promise<string> {
-  const existing = await admin.from("paypal_config").select("plan_id").eq("id", "pro").maybeSingle();
+  // Plans are environment-specific: a sandbox plan id is invalid in live and vice versa.
+  const configId = paypalEnv() === "live" ? "pro" : "pro-sandbox";
+  const existing = await admin
+    .from("paypal_config")
+    .select("plan_id")
+    .eq("id", configId)
+    .maybeSingle();
   if (existing.data?.plan_id) return existing.data.plan_id;
 
   const product = await api<{ id: string }>("/v1/catalogs/products", "POST", {
@@ -95,7 +103,7 @@ export async function ensureProPlanId(admin: AdminClient): Promise<string> {
 
   const up = await admin
     .from("paypal_config")
-    .upsert({ id: "pro", product_id: product.id, plan_id: plan.id });
+    .upsert({ id: configId, product_id: product.id, plan_id: plan.id });
   if (up.error) throw new Error(up.error.message);
   return plan.id;
 }
