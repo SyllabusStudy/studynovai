@@ -86,7 +86,20 @@ function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <PageHeader title="Settings" description="Your profile, reminders and appearance." />
+      <PageHeader title="Settings" description="Your profile, plan, reminders and appearance." />
+
+      <div className="surface-card mb-4 flex items-center justify-between gap-4 p-5">
+        <div>
+          <p className="text-sm font-semibold">Plan & billing</p>
+          <p className="text-xs text-muted-foreground">
+            See your usage or go unlimited for $20/month with PayPal.
+          </p>
+        </div>
+        <Button asChild variant="outline" size="sm">
+          <Link to="/upgrade">View plans</Link>
+        </Button>
+      </div>
+
 
       <form onSubmit={save} className="surface-card space-y-4 p-5">
         <div className="space-y-1.5">
