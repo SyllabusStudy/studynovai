@@ -7,7 +7,8 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { PRO_PRICE_USD, FREE_LIMITS } from "@/lib/plan";
-import { cancelProPlan, confirmProCheckout, getBilling, startProCheckout } from "@/lib/billing.functions";
+import { Input } from "@/components/ui/input";
+import { cancelProPlan, confirmProCheckout, getBilling, redeemPromo, startProCheckout } from "@/lib/billing.functions";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_authenticated/upgrade")({
@@ -36,6 +37,9 @@ function UpgradePage() {
   const confirm = useServerFn(confirmProCheckout);
   const cancel = useServerFn(cancelProPlan);
   const loadBilling = useServerFn(getBilling);
+  const redeem = useServerFn(redeemPromo);
+  const [promo, setPromo] = useState("");
+  const [redeeming, setRedeeming] = useState(false);
 
   const { data: billing, isLoading } = useQuery({
     queryKey: ["billing", user?.id],
@@ -88,7 +92,23 @@ function UpgradePage() {
     }
   }
 
+  async function applyPromo() {
+    if (!promo.trim()) return;
+    setRedeeming(true);
+    try {
+      await redeem({ data: { code: promo.trim() } });
+      await qc.invalidateQueries({ queryKey: ["billing"] });
+      setPromo("");
+      toast.success("Promo applied — everything is unlimited for you.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not apply that code.");
+    } finally {
+      setRedeeming(false);
+    }
+  }
+
   const pro = billing?.plan === "pro";
+  const promoPlan = billing?.status === "promo";
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -146,15 +166,17 @@ function UpgradePage() {
             {pro ? (
               <div className="space-y-3">
                 <p className="text-xs text-success">
-                  Pro is active
+                  {promoPlan ? "Pro unlocked with a promo code" : "Pro is active"}
                   {billing?.currentPeriodEnd
                     ? ` · renews ${new Date(billing.currentPeriodEnd).toLocaleDateString()}`
                     : ""}
                 </p>
-                <Button variant="outline" size="sm" disabled={busy} onClick={() => void stop()}>
-                  {busy ? <Loader2 className="size-4 animate-spin" /> : null}
-                  Cancel subscription
-                </Button>
+                {promoPlan ? null : (
+                  <Button variant="outline" size="sm" disabled={busy} onClick={() => void stop()}>
+                    {busy ? <Loader2 className="size-4 animate-spin" /> : null}
+                    Cancel subscription
+                  </Button>
+                )}
               </div>
             ) : (
               <Button className="w-full" disabled={busy} onClick={() => void upgrade()}>
@@ -162,6 +184,30 @@ function UpgradePage() {
                 Upgrade with PayPal
               </Button>
             )}
+          </div>
+        </div>
+      )}
+
+      {pro ? null : (
+        <div className="surface-card mt-4 space-y-3 p-5">
+          <div>
+            <p className="text-sm font-semibold">Enter promo code</p>
+            <p className="text-xs text-muted-foreground">Have a code? Redeem it for free access.</p>
+          </div>
+          <div className="flex gap-2">
+            <Input
+              value={promo}
+              onChange={(e) => setPromo(e.target.value)}
+              placeholder="Promo code"
+              aria-label="Promo code"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void applyPromo();
+              }}
+            />
+            <Button variant="secondary" disabled={redeeming || !promo.trim()} onClick={() => void applyPromo()}>
+              {redeeming ? <Loader2 className="size-4 animate-spin" /> : null}
+              Apply
+            </Button>
           </div>
         </div>
       )}
