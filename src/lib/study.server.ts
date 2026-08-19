@@ -297,7 +297,34 @@ ${doc.extracted_text.slice(0, 60000)}`,
     }
   }
 
+  // Remember the course itself, so later uploads and chats already know the class.
+  if (doc.class_id) {
+    const facts = [
+      `Class on file: ${parsed.course_code ? parsed.course_code + " — " : ""}${parsed.course_name ?? "unnamed course"}.`,
+      parsed.professor ? `Professor: ${parsed.professor}.` : "",
+      parsed.office_hours ? `Office hours: ${parsed.office_hours}.` : "",
+      parsed.attendance_policy ? `Attendance policy: ${parsed.attendance_policy}` : "",
+      parsed.late_work_policy ? `Late work policy: ${parsed.late_work_policy}` : "",
+      parsed.makeup_policy ? `Make-up policy: ${parsed.makeup_policy}` : "",
+      parsed.required_materials ? `Required materials: ${parsed.required_materials}` : "",
+      Array.isArray(parsed.grading_breakdown) && parsed.grading_breakdown.length
+        ? `Grade weights: ${parsed.grading_breakdown.map((g) => `${g.name} ${g.weight}%`).join(", ")}.`
+        : "",
+      parsed.other_policies ? `Other policies: ${parsed.other_policies}` : "",
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .slice(0, 2000);
+    await supabase.from("ai_memory").insert({
+      user_id: userId,
+      class_id: doc.class_id,
+      kind: "syllabus",
+      content: facts,
+    });
+  }
+
   return { syllabus: parsed, eventsCreated, classId: doc.class_id, createdClass };
+
 }
 
 /* ------------------------------------------------------------------ tutor */
