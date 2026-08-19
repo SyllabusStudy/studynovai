@@ -130,20 +130,24 @@ function UpgradePage() {
             </div>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <Item>{FREE_LIMITS.classes} classes</Item>
-              <Item>{FREE_LIMITS.assignment_help} AI assignment helps per day</Item>
-              <Item>{FREE_LIMITS.snap} SnapQuick photo scans per day</Item>
+              <Item>{FREE_LIMITS.assignment_help} AI assignment helps every {FREE_WINDOW_HOURS} hours</Item>
+              <Item>{FREE_LIMITS.snap} SnapQuick photo scans every {FREE_WINDOW_HOURS} hours</Item>
+              <Item>{FREE_LIMITS.video} QuickVideo import every {FREE_WINDOW_HOURS} hours</Item>
               <Item>Syllabus import, calendar, flashcards & quizzes</Item>
             </ul>
             {billing && !pro ? (
               <div className="rounded-lg border border-border p-3 text-xs text-muted-foreground">
                 <p>
-                  Today: {billing.usage.assignment_help}/{FREE_LIMITS.assignment_help} assignment helps ·{" "}
+                  Last {FREE_WINDOW_HOURS}h: {billing.usage.assignment_help}/{FREE_LIMITS.assignment_help} assignment helps ·{" "}
                   {billing.usage.snap}/{FREE_LIMITS.snap} scans ·{" "}
                   {billing.usage.video}/{FREE_LIMITS.video} video imports
                 </p>
                 <p className="mt-1">
                   Classes: {billing.usage.classes}/{FREE_LIMITS.classes}
                 </p>
+                {nextReset ? (
+                  <p className="mt-1">Next free use unlocks in {nextReset}.</p>
+                ) : null}
               </div>
             ) : null}
             {pro ? (
