@@ -48,6 +48,7 @@ function iso(d: Date) {
 
 function CalendarPage() {
   const { user } = useAuth();
+  const qc = useQueryClient();
   const { data: events = [], isLoading } = useEvents(user?.id);
   const { data: classes = [] } = useClasses(user?.id);
   const classById = new Map(classes.map((c) => [c.id, c]));
