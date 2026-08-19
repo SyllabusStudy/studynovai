@@ -92,7 +92,7 @@ function SettingsPage() {
         <div>
           <p className="text-sm font-semibold">Plan & billing</p>
           <p className="text-xs text-muted-foreground">
-            See your usage or go unlimited for $20/month with PayPal.
+            See your usage or go unlimited for $5.99/month.
           </p>
         </div>
         <Button asChild variant="outline" size="sm">

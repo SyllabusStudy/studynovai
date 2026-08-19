@@ -119,7 +119,7 @@ function UpgradePage() {
     <div className="mx-auto max-w-3xl">
       <PageHeader
         title="Plans & billing"
-        description="Start free, go unlimited whenever you're ready. Paid securely with PayPal."
+        description="Start free, go unlimited whenever you're ready. Secure card checkout."
       />
 
       {isLoading ? (
@@ -254,7 +254,7 @@ function UpgradePage() {
       )}
 
       <p className="mt-6 text-center text-xs text-muted-foreground">
-        Billing is handled by PayPal. Cancel anytime — you keep Pro until the end of the paid month.{" "}
+        Billing is secure and card-based. Cancel anytime — you keep Pro until the end of the paid month.{" "}
         <button className="underline" onClick={() => navigate({ to: "/settings" })}>
           Back to settings
         </button>
