@@ -200,7 +200,7 @@ export type ClassContext = {
   events: Array<{ title: string; type: string; date: string }>;
 };
 
-const DOC_CHAR_BUDGET = 8000;
+const DOC_CHAR_BUDGET = 24000;
 
 export async function buildClassContext(
   supabase: DB,
@@ -214,12 +214,14 @@ export async function buildClassContext(
     { data: events },
     { data: quizzes },
     { data: memory },
+    { data: categories },
   ] = await Promise.all([
       supabase.from("classes").select("*").eq("user_id", userId),
       supabase
         .from("documents")
-        .select("id,class_id,file_name,is_syllabus,extracted_text,syllabus_data")
-        .eq("user_id", userId),
+        .select("id,class_id,file_name,is_syllabus,extracted_text,syllabus_data,created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false }),
       supabase.from("assignments").select("*").eq("user_id", userId),
       supabase.from("calendar_events").select("*").eq("user_id", userId),
       supabase
@@ -235,12 +237,27 @@ export async function buildClassContext(
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(60),
+      supabase.from("grade_categories").select("class_id,name,weight").eq("user_id", userId),
     ]);
 
 
   const relevantClasses = (classes ?? []).filter((c) => !classId || c.id === classId);
   const classNames = relevantClasses.map((c) => `${c.course_code ?? ""} ${c.class_name}`.trim());
   const lines: string[] = [];
+
+  // Class memory: the class of the newest uploaded document is the student's
+  // current focus, so they never have to restate which course they mean.
+  if (!classId) {
+    const newest = (docs ?? []).find((d) => d.class_id);
+    const focus = relevantClasses.find((c) => c.id === newest?.class_id);
+    if (focus) {
+      lines.push(
+        `## CURRENT FOCUS CLASS: ${focus.course_code ? focus.course_code + " — " : ""}${focus.class_name}`,
+        `The student's most recent upload was "${newest?.file_name}" for this class. When they ask something without naming a class, assume this one and answer directly instead of asking which class they mean.`,
+        "",
+      );
+    }
+  }
 
   for (const c of relevantClasses) {
     lines.push(
@@ -254,8 +271,18 @@ export async function buildClassContext(
     if (c.makeup_policy) lines.push(`Make-up exam policy (from syllabus): ${c.makeup_policy}`);
     if (c.required_materials) lines.push(`Required materials: ${c.required_materials}`);
 
-    const classDocs = (docs ?? []).filter((d) => d.class_id === c.id);
-    const budget = Math.max(3000, Math.floor(DOC_CHAR_BUDGET / Math.max(relevantClasses.length, 1)));
+    const cats = (categories ?? []).filter((g) => g.class_id === c.id);
+    if (cats.length) {
+      lines.push(
+        `Grade weights (from syllabus): ${cats.map((g) => `${g.name} ${g.weight}%`).join(", ")}`,
+      );
+    }
+
+    // Syllabi first so course-wide facts always survive the budget.
+    const classDocs = (docs ?? [])
+      .filter((d) => d.class_id === c.id)
+      .sort((a, b) => Number(b.is_syllabus) - Number(a.is_syllabus));
+    const budget = Math.max(6000, Math.floor(DOC_CHAR_BUDGET / Math.max(relevantClasses.length, 1)));
     for (const d of classDocs) {
       const text = (d.extracted_text ?? "").slice(0, budget);
       if (!text) continue;
@@ -270,7 +297,7 @@ export async function buildClassContext(
       lines.push("### ASSIGNMENTS");
       for (const a of ca) {
         lines.push(
-          `- ${a.title} | due ${a.due_date ?? "n/a"} | ${a.status} | ${a.points_earned ?? "—"}/${a.points_possible ?? "—"} pts${a.category ? ` | category ${a.category}` : ""}`,
+          `- ${a.title} | due ${a.due_date ?? "n/a"} | ${a.status} | priority ${a.priority ?? "—"} | ${a.points_earned ?? "—"}/${a.points_possible ?? "—"} pts${a.category ? ` | category ${a.category}` : ""}${a.description ? `\n  details: ${String(a.description).slice(0, 800)}` : ""}`,
         );
       }
     }
@@ -278,7 +305,10 @@ export async function buildClassContext(
     const ce = (events ?? []).filter((e) => e.class_id === c.id);
     if (ce.length) {
       lines.push("### CALENDAR");
-      for (const e of ce) lines.push(`- ${e.event_date} ${e.event_type}: ${e.title}`);
+      for (const e of ce)
+        lines.push(
+          `- ${e.event_date}${e.event_time ? ` at ${e.event_time}` : ""} ${e.event_type}: ${e.title}${e.description ? ` — ${String(e.description).slice(0, 400)}` : ""}`,
+        );
     }
 
     const cq = (quizzes ?? []).filter((q) => q.class_id === c.id);
@@ -302,6 +332,7 @@ export async function buildClassContext(
   return { contextText: lines.join("\n"), classes: classNames };
 
 }
+
 
 const MODE_INSTRUCTIONS: Record<string, string> = {
   explain: "Explain the concept in simple, plain language with a concrete example. Keep it tight.",
@@ -340,6 +371,8 @@ export function tutorSystemPrompt(mode: string, contextText: string): string {
     "- You MAY teach general academic subject matter from your own knowledge; just don't fabricate course-specific facts.",
     "- Be concise by default, use markdown headings/bullets, and never pretend to remember something absent from the context.",
     "- You have long-term memory of this student below. Use it naturally; do not say you cannot remember past chats.",
+    "- You already know which class each uploaded document belongs to. If the student does not name a class, use the CURRENT FOCUS CLASS (or the class whose materials match what they asked about) and answer. Never ask \"which class?\" when the context makes it obvious.",
+
     "",
     PLAIN_STYLE,
     "",
