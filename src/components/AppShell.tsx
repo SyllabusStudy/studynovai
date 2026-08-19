@@ -174,23 +174,29 @@ function TopBar({ onMenu, onSearch }: { onMenu: () => void; onSearch: () => void
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/85 px-4 backdrop-blur sm:px-6">
-      <Button variant="ghost" size="icon" className="lg:hidden" onClick={onMenu} aria-label="Open menu">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="shrink-0 lg:hidden"
+        onClick={onMenu}
+        aria-label="Open menu"
+      >
         <Menu className="size-5" />
       </Button>
 
       <button
         onClick={onSearch}
-        className="flex h-9 flex-1 max-w-sm items-center gap-2 rounded-lg border border-input bg-card px-3 text-sm text-muted-foreground transition-colors hover:border-ring"
+        className="flex h-9 min-w-0 flex-1 max-w-sm items-center gap-2 rounded-lg border border-input bg-card px-3 text-sm text-muted-foreground transition-colors hover:border-ring"
       >
-        <Search className="size-4" />
+        <Search className="size-4 shrink-0" />
         <span className="truncate">Search classes, notes, deadlines…</span>
       </button>
 
-      <div className="ml-auto flex items-center gap-1">
+      <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1">
         <NotificationBell />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label="Profile menu">
+            <Button variant="ghost" size="icon" className="shrink-0" aria-label="Profile menu">
               <Avatar className="size-8">
                 <AvatarFallback className="bg-secondary text-xs font-semibold text-secondary-foreground">
                   {initials}
