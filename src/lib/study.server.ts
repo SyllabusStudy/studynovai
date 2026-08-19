@@ -135,6 +135,7 @@ type SyllabusResult = {
   makeup_policy: string | null;
   required_materials: string | null;
   grading_breakdown: Array<{ name: string; weight: number }>;
+  policies: Array<{ title: string; details: string }>;
   dates: Array<{
     title: string;
     date: string;
@@ -146,6 +147,50 @@ type SyllabusResult = {
 };
 
 type SyllabusDate = SyllabusResult["dates"][number];
+type SyllabusPolicy = SyllabusResult["policies"][number];
+
+const POLICY_RULES = [
+  "COMPLETENESS IS THE MOST IMPORTANT THING for policies. Capture EVERY rule, requirement, expectation or procedure stated anywhere in the syllabus — do not summarize or merge them.",
+  "Typical policy topics to look for (include any others you find): attendance, tardiness, participation, late work, extensions, make-up work, missed exams, grading scale, rounding, extra credit, curve, dropped grades, homework submission format, exam rules, proctoring, calculators/notes allowed, academic integrity/plagiarism/AI use, phones and laptops, classroom conduct, communication and email response time, office hours, tutoring/help resources, required materials and textbooks, accessibility/disability accommodations, Title IX, religious observance, withdrawal/drop rules, incomplete grades, technology requirements, lab safety, group work rules, recording lectures, syllabus change clause.",
+  "Each policy entry: a short title (2-5 words) and details that quote or closely paraphrase the syllabus wording, keeping every specific number, deadline, penalty, percentage and exception.",
+  "If a policy has multiple parts (e.g. 3 late-work tiers), keep all parts in the details.",
+  "Never invent a policy that is not in the text.",
+].join("\n");
+
+/** Second focused pass: sweeps the syllabus for every policy statement, chunk by chunk. */
+async function sweepSyllabusPolicies(text: string): Promise<SyllabusPolicy[]> {
+  const chunkSize = 18000;
+  const chunks: string[] = [];
+  for (let i = 0; i < text.length && chunks.length < 4; i += chunkSize) {
+    chunks.push(text.slice(i, i + chunkSize));
+  }
+
+  const results = await Promise.all(
+    chunks.map(async (chunk) => {
+      try {
+        const raw = await callAI(
+          [
+            {
+              role: "system",
+              content:
+                "You are a meticulous syllabus policy extractor. Reply with json only. Plain text details, no markdown, no symbols like $ or LaTeX. Never invent policies.",
+            },
+            {
+              role: "user",
+              content: `${POLICY_RULES}\n\nReply with exactly: {"policies":[{"title":string,"details":string}]}\n\nSYLLABUS TEXT (part):\n${chunk}`,
+            },
+          ],
+          { maxTokens: 8000, temperature: 0 },
+        );
+        return parseJsonBlock<{ policies?: SyllabusPolicy[] }>(raw).policies ?? [];
+      } catch {
+        return [];
+      }
+    }),
+  );
+  return results.flat();
+}
+
 
 const DATE_RULES = [
   "COMPLETENESS IS THE MOST IMPORTANT THING. Extract EVERY dated item in the syllabus, with no exceptions and no summarizing:",
@@ -206,7 +251,7 @@ export async function runSyllabusAnalysis(supabase: DB, userId: string, document
 
   const today = new Date().toISOString().slice(0, 10);
   const syllabusText = doc.extracted_text.slice(0, 60000);
-  const [raw, swept] = await Promise.all([
+  const [raw, swept, sweptPolicies] = await Promise.all([
     callAI(
       [
         {
@@ -217,9 +262,11 @@ export async function runSyllabusAnalysis(supabase: DB, userId: string, document
         {
           role: "user",
           content: `Today is ${today}. Extract this json shape:
-{"course_name":string|null,"course_code":string|null,"professor":string|null,"professor_email":string|null,"office_hours":string|null,"attendance_policy":string|null,"late_work_policy":string|null,"makeup_policy":string|null,"required_materials":string|null,"other_policies":string|null,"grading_breakdown":[{"name":string,"weight":number}],"dates":[{"title":string,"date":"YYYY-MM-DD","time":"HH:MM"|null,"type":"exam"|"quiz"|"assignment"|"project"|"presentation"|"final"|"other","description":string|null}]}
+{"course_name":string|null,"course_code":string|null,"professor":string|null,"professor_email":string|null,"office_hours":string|null,"attendance_policy":string|null,"late_work_policy":string|null,"makeup_policy":string|null,"required_materials":string|null,"other_policies":string|null,"policies":[{"title":string,"details":string}],"grading_breakdown":[{"name":string,"weight":number}],"dates":[{"title":string,"date":"YYYY-MM-DD","time":"HH:MM"|null,"type":"exam"|"quiz"|"assignment"|"project"|"presentation"|"final"|"other","description":string|null}]}
 
 ${DATE_RULES}
+
+${POLICY_RULES}
 
 SYLLABUS TEXT:
 ${syllabusText}`,
@@ -228,6 +275,7 @@ ${syllabusText}`,
       { maxTokens: 12000, temperature: 0 },
     ),
     sweepSyllabusDates(syllabusText, today),
+    sweepSyllabusPolicies(syllabusText),
   ]);
 
   const parsed = parseJsonBlock<SyllabusResult>(raw);
@@ -243,6 +291,27 @@ ${syllabusText}`,
     mergedDates.push(d);
   }
   parsed.dates = mergedDates;
+
+  const mergedPolicies: SyllabusPolicy[] = [];
+  const policyKeys = new Set<string>();
+  for (const p of [...(parsed.policies ?? []), ...sweptPolicies]) {
+    if (!p?.title || !p?.details) continue;
+    const title = String(p.title).trim();
+    const details = String(p.details).trim();
+    const key = `${title.toLowerCase()}|${details.slice(0, 80).toLowerCase()}`;
+    if (policyKeys.has(key)) continue;
+    // Same topic already captured with the same or longer wording? Keep the longer one.
+    const sameTitle = mergedPolicies.find((m) => m.title.toLowerCase() === title.toLowerCase());
+    if (sameTitle) {
+      if (details.length > sameTitle.details.length) sameTitle.details = details;
+      continue;
+    }
+    policyKeys.add(key);
+    mergedPolicies.push({ title, details });
+  }
+  parsed.policies = mergedPolicies;
+
+
 
 
 
@@ -388,10 +457,14 @@ ${syllabusText}`,
         ? `Grade weights: ${parsed.grading_breakdown.map((g) => `${g.name} ${g.weight}%`).join(", ")}.`
         : "",
       parsed.other_policies ? `Other policies: ${parsed.other_policies}` : "",
+      Array.isArray(parsed.policies) && parsed.policies.length
+        ? `Full policy list: ${parsed.policies.map((p) => `${p.title}: ${p.details}`).join(" | ")}`
+        : "",
+
     ]
       .filter(Boolean)
       .join(" ")
-      .slice(0, 2000);
+      .slice(0, 6000);
     await supabase.from("ai_memory").insert({
       user_id: userId,
       class_id: doc.class_id,
