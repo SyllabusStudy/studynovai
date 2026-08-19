@@ -570,3 +570,45 @@ async function sourceText(
     .map((d) => `### ${d.file_name}\n${(d.extracted_text ?? "").slice(0, 20000)}`)
     .join("\n\n");
 }
+
+/** Real homework + upcoming deadlines for a class, as prompt context. */
+async function deadlineContext(
+  supabase: DB,
+  userId: string,
+  classId: string,
+  assignmentId: string | null,
+): Promise<string> {
+  const today = new Date().toISOString().slice(0, 10);
+  let q = supabase
+    .from("assignments")
+    .select("title,description,due_date,category,status")
+    .eq("user_id", userId)
+    .eq("class_id", classId);
+  if (assignmentId) q = q.eq("id", assignmentId);
+  else q = q.neq("status", "completed").gte("due_date", today).order("due_date").limit(6);
+  const { data: hw } = await q;
+
+  let events: Array<{ title: string; event_date: string; event_type: string; description: string | null }> = [];
+  if (!assignmentId) {
+    const { data } = await supabase
+      .from("calendar_events")
+      .select("title,event_date,event_type,description")
+      .eq("user_id", userId)
+      .eq("class_id", classId)
+      .gte("event_date", today)
+      .order("event_date")
+      .limit(6);
+    events = data ?? [];
+  }
+
+  return [
+    ...(hw ?? []).map(
+      (a) =>
+        `- Homework: ${a.title}${a.due_date ? ` (due ${a.due_date})` : ""}${a.category ? ` [${a.category}]` : ""}${a.description ? ` — ${a.description}` : ""}`,
+    ),
+    ...events.map(
+      (e) =>
+        `- Upcoming ${e.event_type}: ${e.title} on ${e.event_date}${e.description ? ` — ${e.description}` : ""}`,
+    ),
+  ].join("\n");
+}
