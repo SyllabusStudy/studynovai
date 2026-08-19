@@ -52,7 +52,9 @@ function CalendarPage() {
   const { data: events = [], isLoading } = useEvents(user?.id);
   const { data: classes = [] } = useClasses(user?.id);
   const classById = new Map(classes.map((c) => [c.id, c]));
+  const [selected, setSelected] = useState<string | null>(null);
   const [cursor, setCursor] = useState(() => {
+
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
