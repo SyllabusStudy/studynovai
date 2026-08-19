@@ -323,37 +323,7 @@ export async function runFlashcardGeneration(
   // Optionally aim the deck at the student's real homework / upcoming deadlines.
   let homework = "";
   if (input.assignmentId || input.matchHomework) {
-    const today = new Date().toISOString().slice(0, 10);
-    let q = supabase
-      .from("assignments")
-      .select("title,description,due_date,category,status")
-      .eq("user_id", userId)
-      .eq("class_id", input.classId);
-    if (input.assignmentId) q = q.eq("id", input.assignmentId);
-    else q = q.neq("status", "completed").gte("due_date", today).order("due_date").limit(6);
-    const { data: hw } = await q;
-
-    let events: Array<{ title: string; event_date: string; event_type: string }> = [];
-    if (!input.assignmentId) {
-      const { data } = await supabase
-        .from("calendar_events")
-        .select("title,event_date,event_type")
-        .eq("user_id", userId)
-        .eq("class_id", input.classId)
-        .gte("event_date", today)
-        .order("event_date")
-        .limit(6);
-      events = data ?? [];
-    }
-
-    const lines = [
-      ...(hw ?? []).map(
-        (a) =>
-          `- Homework: ${a.title}${a.due_date ? ` (due ${a.due_date})` : ""}${a.category ? ` [${a.category}]` : ""}${a.description ? ` — ${a.description}` : ""}`,
-      ),
-      ...events.map((e) => `- Upcoming ${e.event_type}: ${e.title} on ${e.event_date}`),
-    ];
-    homework = lines.join("\n");
+    homework = await deadlineContext(supabase, userId, input.classId, input.assignmentId ?? null);
     if (!homework && input.assignmentId) throw new Error("That assignment could not be found.");
   }
 
