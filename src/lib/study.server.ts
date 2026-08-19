@@ -335,6 +335,7 @@ export async function runFlashcardGeneration(
     topic?: string | null | undefined;
     assignmentId?: string | null | undefined;
     matchHomework?: boolean | undefined;
+    deck?: string | null | undefined;
   },
 ) {
   const source = await sourceText(supabase, userId, input.classId, input.documentId ?? null);
@@ -342,6 +343,7 @@ export async function runFlashcardGeneration(
 
   // Optionally aim the deck at the student's real homework / upcoming deadlines.
   let homework = "";
+  let deckHint = "";
   if (input.assignmentId || input.matchHomework) {
     const today = new Date().toISOString().slice(0, 10);
     let q = supabase
@@ -374,18 +376,20 @@ export async function runFlashcardGeneration(
       ...events.map((e) => `- Upcoming ${e.event_type}: ${e.title} on ${e.event_date}`),
     ];
     homework = lines.join("\n");
+    if (input.assignmentId && hw?.[0]) deckHint = hw[0].title;
     if (!homework && input.assignmentId) throw new Error("That assignment could not be found.");
   }
 
-  const raw = await callAI([
-    {
-      role: "system",
-      content:
-        "You create high-quality college study flashcards from the student's own course material and reply with json only.",
-    },
-    {
-      role: "user",
-      content: `Create exactly ${input.count} ${input.difficulty} flashcards${input.topic ? ` focused on: ${input.topic}` : ""} from the material below. Fronts are short prompts/questions, backs are precise answers (1-3 sentences). Only use facts present in the material.
+  const raw = await callAI(
+    [
+      {
+        role: "system",
+        content:
+          "You create high-quality college study flashcards from the student's own course material and reply with json only. Plain text only: no LaTeX, no $ signs, no backslash math commands. Write math like (x+2)/3, x^2, sqrt(9).",
+      },
+      {
+        role: "user",
+        content: `Create exactly ${input.count} ${input.difficulty} flashcards${input.topic ? ` focused on: ${input.topic}` : ""} from the material below. Fronts are short prompts/questions, backs are precise answers (1-2 sentences). Only use facts present in the material.
 ${
   homework
     ? `Prioritise the concepts, skills and problem types the student needs for this homework and these upcoming deadlines. Set each card's "topic" to the homework or deadline it supports:\n${homework}\n`
@@ -393,17 +397,30 @@ ${
 }Return json: {"cards":[{"front":string,"back":string,"topic":string}]}
 
 MATERIAL:
-${source.slice(0, 45000)}`,
-    },
-  ]);
+${source.slice(0, 20000)}`,
+      },
+    ],
+    { maxTokens: 4000 },
+  );
 
   const parsed = parseJsonBlock<{ cards: Array<{ front: string; back: string; topic?: string }> }>(raw);
+  const stamp = new Date().toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  const deck =
+    (input.deck ?? "").trim() ||
+    `${deckHint || input.topic || (homework ? "Homework focus" : "All materials")} · ${stamp}`;
+
   const rows = (parsed.cards ?? [])
     .filter((c) => c?.front && c?.back)
     .slice(0, input.count)
     .map((c) => ({
       user_id: userId,
       class_id: input.classId,
+      deck,
       front: c.front,
       back: c.back,
       topic: c.topic ?? input.topic ?? null,
@@ -414,7 +431,7 @@ ${source.slice(0, 45000)}`,
 
   const { error } = await supabase.from("flashcards").insert(rows);
   if (error) throw new Error(error.message);
-  return { created: rows.length };
+  return { created: rows.length, deck };
 }
 
 /* ------------------------------------------------------------------ quizzes */
