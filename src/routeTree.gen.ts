@@ -33,6 +33,7 @@ import { Route as AuthenticatedQuickvideoIndexRouteImport } from './routes/_auth
 import { Route as AuthenticatedQuickvideoNoteIdRouteImport } from './routes/_authenticated/quickvideo/$noteId'
 import { Route as AuthenticatedQuizzesIndexRouteImport } from './routes/_authenticated/quizzes/index'
 import { Route as AuthenticatedQuizzesQuizIdRouteImport } from './routes/_authenticated/quizzes/$quizId'
+import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -162,6 +163,12 @@ const AuthenticatedQuizzesQuizIdRoute =
     path: '/quizzes/$quizId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicPaymentsWebhookRoute =
+  ApiPublicPaymentsWebhookRouteImport.update({
+    id: '/api/public/payments/webhook',
+    path: '/api/public/payments/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -187,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/flashcards/': typeof AuthenticatedFlashcardsIndexRoute
   '/quickvideo/': typeof AuthenticatedQuickvideoIndexRoute
   '/quizzes/': typeof AuthenticatedQuizzesIndexRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -212,6 +220,7 @@ export interface FileRoutesByTo {
   '/flashcards': typeof AuthenticatedFlashcardsIndexRoute
   '/quickvideo': typeof AuthenticatedQuickvideoIndexRoute
   '/quizzes': typeof AuthenticatedQuizzesIndexRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -239,6 +248,7 @@ export interface FileRoutesById {
   '/_authenticated/flashcards/': typeof AuthenticatedFlashcardsIndexRoute
   '/_authenticated/quickvideo/': typeof AuthenticatedQuickvideoIndexRoute
   '/_authenticated/quizzes/': typeof AuthenticatedQuizzesIndexRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -266,6 +276,7 @@ export interface FileRouteTypes {
     | '/flashcards/'
     | '/quickvideo/'
     | '/quizzes/'
+    | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -291,6 +302,7 @@ export interface FileRouteTypes {
     | '/flashcards'
     | '/quickvideo'
     | '/quizzes'
+    | '/api/public/payments/webhook'
   id:
     | '__root__'
     | '/'
@@ -317,6 +329,7 @@ export interface FileRouteTypes {
     | '/_authenticated/flashcards/'
     | '/_authenticated/quickvideo/'
     | '/_authenticated/quizzes/'
+    | '/api/public/payments/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -326,6 +339,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   FeaturesFlashcardsRoute: typeof FeaturesFlashcardsRoute
+  ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -498,6 +512,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedQuizzesQuizIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/payments/webhook': {
+      id: '/api/public/payments/webhook'
+      path: '/api/public/payments/webhook'
+      fullPath: '/api/public/payments/webhook'
+      preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -553,6 +574,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   FeaturesFlashcardsRoute: FeaturesFlashcardsRoute,
+  ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

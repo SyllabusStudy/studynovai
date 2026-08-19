@@ -2,7 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { FREE_LIMITS, FREE_WINDOW_HOURS, USAGE_LABELS, type BillingState, type UsageKind } from "./plan";
-import { cancelSubscription, ensureProPlanId, getSubscription, createProSubscription } from "./paypal.server";
+import type Stripe from "stripe";
+import { createStripeClient, getStripeErrorMessage, type StripeEnv } from "./stripe.server";
 
 type DB = SupabaseClient<Database>;
 
@@ -118,53 +119,129 @@ export async function loadBilling(supabase: DB, userId: string): Promise<Billing
   };
 }
 
-export async function startCheckout(userId: string, origin: string) {
-  const planId = await ensureProPlanId(supabaseAdmin as never);
-  return createProSubscription(
-    planId,
-    userId,
-    `${origin}/upgrade?paypal=success`,
-    `${origin}/upgrade?paypal=cancel`,
-  );
+/** Finds (or creates) the Stripe customer that carries this user's id. */
+async function resolveOrCreateCustomer(
+  stripe: Stripe,
+  options: { email?: string; userId: string },
+): Promise<string> {
+  if (!/^[a-zA-Z0-9_-]+$/.test(options.userId)) throw new Error("Invalid userId");
+  const found = await stripe.customers.search({
+    query: `metadata['userId']:'${options.userId}'`,
+    limit: 1,
+  });
+  if (found.data.length && found.data[0]) return found.data[0].id;
+  if (options.email) {
+    const existing = await stripe.customers.list({ email: options.email, limit: 1 });
+    const customer = existing.data[0];
+    if (customer) {
+      if (customer.metadata?.["userId"] !== options.userId) {
+        await stripe.customers.update(customer.id, {
+          metadata: { ...customer.metadata, userId: options.userId },
+        });
+      }
+      return customer.id;
+    }
+  }
+  const created = await stripe.customers.create({
+    ...(options.email ? { email: options.email } : {}),
+    metadata: { userId: options.userId },
+  });
+  return created.id;
 }
 
-const ACTIVE_STATUSES = new Set(["ACTIVE", "APPROVED"]);
+/** Creates an embedded Stripe Checkout session for the Pro subscription. */
+export async function startCheckout(args: {
+  environment: StripeEnv;
+  userId: string;
+  email?: string;
+  priceId: string;
+  returnUrl: string;
+}): Promise<{ clientSecret: string } | { error: string }> {
+  try {
+    const stripe = createStripeClient(args.environment);
+    const prices = await stripe.prices.list({ lookup_keys: [args.priceId] });
+    const price = prices.data[0];
+    if (!price) throw new Error("Price not found");
 
-/** Reads the true state from PayPal and stores it. Never trusts the client. */
-export async function syncSubscription(userId: string, subscriptionId: string) {
-  const sub = await getSubscription(subscriptionId);
-  if (sub.custom_id && sub.custom_id !== userId) {
-    throw new Error("That subscription belongs to a different account.");
+    const customerId = await resolveOrCreateCustomer(stripe, {
+      userId: args.userId,
+      ...(args.email ? { email: args.email } : {}),
+    });
+
+    const session = await stripe.checkout.sessions.create({
+      line_items: [{ price: price.id, quantity: 1 }],
+      mode: "subscription",
+      ui_mode: "embedded_page",
+      return_url: args.returnUrl,
+      customer: customerId,
+      managed_payments: { enabled: true },
+      metadata: { userId: args.userId, managed_payments: "true" },
+      subscription_data: { metadata: { userId: args.userId } },
+    } as Stripe.Checkout.SessionCreateParams);
+
+    return { clientSecret: session.client_secret ?? "" };
+  } catch (error) {
+    return { error: getStripeErrorMessage(error) };
   }
-  const active = ACTIVE_STATUSES.has(sub.status);
-  const { error } = await supabaseAdmin.from("subscriptions").upsert({
-    user_id: userId,
-    plan: active ? "pro" : "free",
-    status: active ? "active" : sub.status.toLowerCase(),
-    paypal_subscription_id: sub.id,
-    current_period_end: sub.billing_info?.next_billing_time ?? null,
+}
+
+const STRIPE_ACTIVE = new Set(["active", "trialing", "past_due"]);
+
+/** Reads the true state from Stripe after checkout and stores it. */
+export async function syncCheckoutSession(
+  environment: StripeEnv,
+  userId: string,
+  sessionId: string,
+) {
+  const stripe = createStripeClient(environment);
+  const session = await stripe.checkout.sessions.retrieve(sessionId, {
+    expand: ["subscription"],
   });
+  if (session.metadata?.["userId"] && session.metadata["userId"] !== userId) {
+    throw new Error("That checkout belongs to a different account.");
+  }
+  const sub = session.subscription;
+  if (!sub || typeof sub === "string") {
+    return { plan: "free" as const, status: session.status ?? "open" };
+  }
+  const item = sub.items?.data?.[0];
+  const periodEnd = item?.current_period_end ?? null;
+  const active = STRIPE_ACTIVE.has(sub.status);
+  const { error } = await supabaseAdmin.from("subscriptions").upsert(
+    {
+      user_id: userId,
+      plan: active ? "pro" : "free",
+      status: sub.status,
+      stripe_subscription_id: sub.id,
+      stripe_customer_id: typeof sub.customer === "string" ? sub.customer : sub.customer.id,
+      environment,
+      cancel_at_period_end: sub.cancel_at_period_end ?? false,
+      current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+    },
+    { onConflict: "user_id" },
+  );
   if (error) throw new Error(error.message);
   return { plan: active ? ("pro" as const) : ("free" as const), status: sub.status };
 }
 
-export async function cancelPro(supabase: DB, userId: string) {
+export async function cancelPro(supabase: DB, userId: string, environment: StripeEnv) {
   const { data } = await supabase
     .from("subscriptions")
-    .select("paypal_subscription_id")
+    .select("stripe_subscription_id")
     .eq("user_id", userId)
     .maybeSingle();
-  if (data?.paypal_subscription_id) {
+  if (data?.stripe_subscription_id) {
     try {
-      await cancelSubscription(data.paypal_subscription_id);
+      const stripe = createStripeClient(environment);
+      await stripe.subscriptions.cancel(data.stripe_subscription_id);
     } catch {
-      // already cancelled on PayPal's side — still drop back to free locally
+      // already cancelled on Stripe's side — still drop back to free locally
     }
   }
   const { error } = await supabaseAdmin
     .from("subscriptions")
     .upsert(
-      { user_id: userId, plan: "free", status: "cancelled" },
+      { user_id: userId, plan: "free", status: "canceled", cancel_at_period_end: false },
       { onConflict: "user_id" },
     );
   if (error) throw new Error(error.message);

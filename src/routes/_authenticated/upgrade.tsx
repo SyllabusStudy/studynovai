@@ -8,8 +8,11 @@ import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { PRO_PRICE_USD, FREE_LIMITS, FREE_WINDOW_HOURS } from "@/lib/plan";
 import { Input } from "@/components/ui/input";
-import { cancelProPlan, confirmProCheckout, getBilling, redeemPromo, startProCheckout } from "@/lib/billing.functions";
+import { cancelProPlan, confirmProCheckout, getBilling, redeemPromo } from "@/lib/billing.functions";
 import { useAuth } from "@/lib/auth";
+import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
+import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
+import { getStripeEnvironment, PRO_PRICE_ID } from "@/lib/stripe";
 
 export const Route = createFileRoute("/_authenticated/upgrade")({
   head: () => ({
@@ -33,7 +36,7 @@ function UpgradePage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
-  const start = useServerFn(startProCheckout);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const confirm = useServerFn(confirmProCheckout);
   const cancel = useServerFn(cancelProPlan);
   const loadBilling = useServerFn(getBilling);
@@ -47,19 +50,21 @@ function UpgradePage() {
     queryFn: () => loadBilling({}),
   });
 
-  // PayPal sends the student back here with ?subscription_id=...
+  // Checkout returns the student here with ?session_id=...
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const subscriptionId = params.get("subscription_id");
-    if (!subscriptionId) return;
+    const sessionId = params.get("session_id");
+    if (!sessionId) return;
     window.history.replaceState({}, "", "/upgrade");
     void (async () => {
       setBusy(true);
       try {
-        const res = await confirm({ data: { subscriptionId } });
+        const res = await confirm({
+          data: { sessionId, environment: getStripeEnvironment() },
+        });
         await qc.invalidateQueries({ queryKey: ["billing"] });
         if (res.plan === "pro") toast.success("You're on Pro — everything is unlimited now.");
-        else toast.error(`PayPal reported the subscription as ${res.status.toLowerCase()}.`);
+        else toast.error(`Your payment came back as ${res.status.toLowerCase()}.`);
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Could not confirm your subscription.");
       } finally {
@@ -68,35 +73,10 @@ function UpgradePage() {
     })();
   }, [confirm, qc]);
 
-  async function upgrade() {
-    // Open the tab while this function is still handling the click. Waiting for
-    // the server first can make mobile browsers treat it as an unsolicited popup.
-    const checkoutWindow = window.open("about:blank", "_blank");
-    if (checkoutWindow) {
-      checkoutWindow.document.title = "Opening PayPal…";
-      checkoutWindow.document.body.textContent = "Opening secure PayPal checkout…";
-    } else {
-      toast.error("Your browser blocked the payment tab. Allow pop-ups, then try again.");
-      return;
-    }
-    setBusy(true);
-    try {
-      const { approveUrl } = await start({ data: { origin: window.location.origin } });
-      checkoutWindow.location.replace(approveUrl);
-      toast.info("Secure checkout opened in a new tab.");
-    } catch (e) {
-      checkoutWindow.close();
-      toast.error(e instanceof Error ? e.message : "Could not start PayPal checkout.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-
   async function stop() {
     setBusy(true);
     try {
-      await cancel({});
+      await cancel({ data: { environment: getStripeEnvironment() } });
       await qc.invalidateQueries({ queryKey: ["billing"] });
       toast.success("Subscription cancelled.");
     } catch (e) {
@@ -139,7 +119,7 @@ function UpgradePage() {
     <div className="mx-auto max-w-3xl">
       <PageHeader
         title="Plans & billing"
-        description="Start free, go unlimited whenever you're ready. Paid securely with PayPal."
+        description="Start free, go unlimited whenever you're ready. Secure card checkout."
       />
 
       {isLoading ? (
@@ -218,14 +198,36 @@ function UpgradePage() {
                 )}
               </div>
             ) : (
-              <Button className="w-full" disabled={busy} onClick={() => void upgrade()}>
+              <Button
+                className="w-full"
+                disabled={busy || checkoutOpen}
+                onClick={() => setCheckoutOpen(true)}
+              >
                 {busy ? <Loader2 className="size-4 animate-spin" /> : null}
-                Upgrade with PayPal
+                Upgrade to Pro
               </Button>
             )}
           </div>
         </div>
       )}
+
+      {!pro && checkoutOpen ? (
+        <div className="surface-card mt-4 p-4">
+          <PaymentTestModeBanner />
+          <StripeEmbeddedCheckout
+            priceId={PRO_PRICE_ID}
+            returnUrl={`${window.location.origin}/upgrade?session_id={CHECKOUT_SESSION_ID}`}
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mt-3"
+            onClick={() => setCheckoutOpen(false)}
+          >
+            Cancel
+          </Button>
+        </div>
+      ) : null}
 
       {pro ? null : (
         <div className="surface-card mt-4 space-y-3 p-5">
@@ -252,7 +254,7 @@ function UpgradePage() {
       )}
 
       <p className="mt-6 text-center text-xs text-muted-foreground">
-        Billing is handled by PayPal. Cancel anytime — you keep Pro until the end of the paid month.{" "}
+        Billing is secure and card-based. Cancel anytime — you keep Pro until the end of the paid month.{" "}
         <button className="underline" onClick={() => navigate({ to: "/settings" })}>
           Back to settings
         </button>

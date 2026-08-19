@@ -453,30 +453,6 @@ export type Database = {
           },
         ]
       }
-      paypal_config: {
-        Row: {
-          created_at: string
-          id: string
-          plan_id: string | null
-          product_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id: string
-          plan_id?: string | null
-          product_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          plan_id?: string | null
-          product_id?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           created_at: string
@@ -609,29 +585,38 @@ export type Database = {
       }
       subscriptions: {
         Row: {
+          cancel_at_period_end: boolean
           created_at: string
           current_period_end: string | null
-          paypal_subscription_id: string | null
+          environment: string
           plan: string
           status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          cancel_at_period_end?: boolean
           created_at?: string
           current_period_end?: string | null
-          paypal_subscription_id?: string | null
+          environment?: string
           plan?: string
           status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          cancel_at_period_end?: boolean
           created_at?: string
           current_period_end?: string | null
-          paypal_subscription_id?: string | null
+          environment?: string
           plan?: string
           status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           updated_at?: string
           user_id?: string
         }
