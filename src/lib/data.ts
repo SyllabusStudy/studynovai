@@ -179,3 +179,45 @@ export function classLabel(c?: ClassRow | null): string {
   if (!c) return "General";
   return c.course_code || c.class_name;
 }
+
+/** Human label for a document's AI processing state. */
+export function documentStatusLabel(d: DocumentRow): string {
+  switch (d.processing_status) {
+    case "ready":
+    case "completed":
+      return "Ready for AI";
+    case "failed":
+      return d.processing_error || "Processing failed";
+    case "unsupported":
+      return d.processing_error || "No readable text found";
+    default:
+      return "Processing…";
+  }
+}
+
+export function documentIsReady(d: DocumentRow): boolean {
+  return d.processing_status === "ready" || d.processing_status === "completed";
+}
+
+/**
+ * Remove a class and everything attached to it. The tables have no database-level
+ * cascade, so children are cleared explicitly first.
+ */
+export async function deleteClassCascade(userId: string, classId: string) {
+  const children = [
+    "flashcards",
+    "quizzes",
+    "calendar_events",
+    "assignments",
+    "grade_categories",
+    "study_progress",
+    "ai_conversations",
+    "documents",
+  ] as const;
+  for (const table of children) {
+    const { error } = await supabase.from(table).delete().eq("user_id", userId).eq("class_id", classId);
+    if (error) throw new Error(error.message);
+  }
+  const { error } = await supabase.from("classes").delete().eq("user_id", userId).eq("id", classId);
+  if (error) throw new Error(error.message);
+}
