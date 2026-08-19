@@ -103,8 +103,8 @@ function Dashboard() {
         ))}
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+      <div className="mt-6 grid min-w-0 gap-6 lg:grid-cols-3">
+        <div className="min-w-0 lg:col-span-2">
           <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-muted-foreground">
             Due soon
           </h2>
