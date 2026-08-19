@@ -181,8 +181,28 @@ function Dashboard() {
             {plan ? "Regenerate plan" : "Build my plan"}
           </Button>
           {plan ? (
-            <div className="mt-4 text-sm">
-              <Markdown content={plan} />
+            <div className="mt-4 space-y-3 text-sm">
+              {plan.summary ? <Markdown content={plan.summary} /> : null}
+              {plan.tasks?.length ? (
+                <ul className="space-y-2">
+                  {plan.tasks.map((t, i) => (
+                    <li key={i} className="rounded-lg border border-border/60 p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm font-semibold">{t.title}</p>
+                        {t.minutes ? (
+                          <span className="shrink-0 text-xs text-muted-foreground">
+                            {t.minutes} min
+                          </span>
+                        ) : null}
+                      </div>
+                      {t.class ? (
+                        <p className="mt-0.5 text-xs text-muted-foreground">{t.class}</p>
+                      ) : null}
+                      {t.detail ? <p className="mt-1.5 text-sm">{t.detail}</p> : null}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
             </div>
           ) : null}
         </div>
