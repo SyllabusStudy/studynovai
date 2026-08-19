@@ -4,6 +4,7 @@ import {
   BookOpen,
   Bot,
   Camera,
+  Crown,
   Brain,
   CalendarDays,
   CheckSquare,
