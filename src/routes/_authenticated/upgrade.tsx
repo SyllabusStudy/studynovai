@@ -72,12 +72,30 @@ function UpgradePage() {
     setBusy(true);
     try {
       const { approveUrl } = await start({ data: { origin: window.location.origin } });
+      // PayPal refuses to render inside an iframe (the editor preview), which shows
+      // its "things don't appear to be working" page. Always send checkout to the
+      // top-level window, falling back to a new tab when that is blocked.
+      const inFrame = window.top !== window.self;
+      if (inFrame) {
+        const opened = window.open(approveUrl, "_blank", "noopener,noreferrer");
+        if (!opened) {
+          try {
+            window.top!.location.href = approveUrl;
+          } catch {
+            window.location.href = approveUrl;
+          }
+        }
+        toast.info("PayPal checkout opened in a new tab.");
+        setBusy(false);
+        return;
+      }
       window.location.href = approveUrl;
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not start PayPal checkout.");
       setBusy(false);
     }
   }
+
 
   async function stop() {
     setBusy(true);

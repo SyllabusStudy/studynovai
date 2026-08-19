@@ -17,6 +17,8 @@ export type ChatMessage = {
   content: string | ContentBlock[];
 };
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 export async function callAI(
   messages: ChatMessage[],
   opts?: { model?: string; maxTokens?: number; temperature?: number; reasoningEffort?: string; _retry?: boolean },
@@ -24,30 +26,48 @@ export async function callAI(
   const key = process.env["LOVABLE_API_KEY"];
   if (!key) throw new Error("AI is not configured for this project yet.");
 
-  const res = await fetch(GATEWAY, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Lovable-API-Key": key,
-      "X-Lovable-AIG-SDK": "fetch",
-    },
-    body: JSON.stringify({
-      model: opts?.model ?? CHAT_MODEL,
-      messages,
-      temperature: opts?.temperature ?? 0.3,
-      // Skip internal "thinking" so the whole token budget goes to the answer
-      // (thinking tokens were eating the budget and returning empty content).
-      reasoning_effort: opts?.reasoningEffort ?? "none",
-      ...(opts?.maxTokens ? { max_tokens: opts.maxTokens } : {}),
-    }),
+  const payload = JSON.stringify({
+    model: opts?.model ?? CHAT_MODEL,
+    messages,
+    temperature: opts?.temperature ?? 0.3,
+    // Skip internal "thinking" so the whole token budget goes to the answer
+    // (thinking tokens were eating the budget and returning empty content).
+    reasoning_effort: opts?.reasoningEffort ?? "none",
+    ...(opts?.maxTokens ? { max_tokens: opts.maxTokens } : {}),
   });
 
-  if (!res.ok) {
-    const body = await res.text();
-    if (res.status === 429) throw new Error("The AI is busy right now. Please try again in a moment.");
-    if (res.status === 402) throw new Error("AI credits are exhausted for this workspace.");
-    throw new Error(`AI request failed (${res.status}): ${body.slice(0, 400)}`);
+  // Transient upstream hiccups (429 / 5xx) are retried with backoff so a single
+  // blip doesn't surface as a failure to the student.
+  const delays = [700, 1800, 3500];
+  let res: Response | null = null;
+  for (let attempt = 0; attempt <= delays.length; attempt++) {
+    res = await fetch(GATEWAY, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Lovable-API-Key": key,
+        "X-Lovable-AIG-SDK": "fetch",
+      },
+      body: payload,
+    });
+    if (res.ok) break;
+    const transient = res.status === 429 || res.status >= 500;
+    if (!transient || attempt === delays.length) break;
+    const retryAfter = Number(res.headers.get("retry-after"));
+    await sleep(Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : delays[attempt]!);
   }
+
+  if (!res || !res.ok) {
+    const status = res?.status ?? 0;
+    const body = res ? await res.text() : "";
+    if (status === 429 || status >= 500) {
+      throw new Error("The AI service is busy right now. Please try again in a moment.");
+    }
+    if (status === 402) throw new Error("AI credits are exhausted for this workspace.");
+    if (status === 403) throw new Error("AI access is blocked for this workspace right now.");
+    throw new Error(`AI request failed (${status}): ${body.slice(0, 400)}`);
+  }
+
 
   const bodyText = await res.text();
   if (!bodyText.trim()) throw new Error("The AI returned an empty response. Please try again.");
