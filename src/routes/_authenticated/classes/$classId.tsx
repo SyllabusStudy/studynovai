@@ -58,9 +58,10 @@ function ClassDetail() {
           </span>
         }
         description={[klass.course_code, klass.professor, klass.semester].filter(Boolean).join(" · ")}
+        actions={<DeleteClassButton classId={classId} className={klass.class_name} redirectTo="/classes" />}
       />
 
-      <Tabs defaultValue="materials">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="flex-wrap">
           <TabsTrigger value="materials">Materials</TabsTrigger>
           <TabsTrigger value="deadlines">Deadlines</TabsTrigger>
@@ -76,18 +77,19 @@ function ClassDetail() {
           ) : (
             <ul className="space-y-2">
               {documents.map((d) => (
-                <li key={d.id} className="surface-card flex items-center gap-3 p-4">
-                  <FileText className="size-4 text-primary" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold">{d.file_name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {d.is_syllabus ? "Syllabus · " : ""}
-                      {d.processing_status === "completed"
-                        ? "Ready for AI"
-                        : d.processing_status === "failed"
-                          ? d.processing_error || "Processing failed"
-                          : "Processing…"}
-                    </p>
+                <li key={d.id} className="surface-card p-4">
+                  <div className="flex items-center gap-3">
+                    <FileText className="size-4 text-primary" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold">{d.file_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {d.is_syllabus ? "Syllabus · " : ""}
+                        {documentStatusLabel(d)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <DocumentActions doc={d} />
                   </div>
                 </li>
               ))}
