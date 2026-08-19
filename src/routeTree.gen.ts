@@ -16,13 +16,14 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedAssignmentsRouteImport } from './routes/_authenticated/assignments'
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated/calendar'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedFlashcardsRouteImport } from './routes/_authenticated/flashcards'
 import { Route as AuthenticatedGradesRouteImport } from './routes/_authenticated/grades'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedSnapquickRouteImport } from './routes/_authenticated/snapquick'
 import { Route as AuthenticatedTutorRouteImport } from './routes/_authenticated/tutor'
 import { Route as AuthenticatedClassesIndexRouteImport } from './routes/_authenticated/classes/index'
 import { Route as AuthenticatedClassesClassIdRouteImport } from './routes/_authenticated/classes/$classId'
+import { Route as AuthenticatedFlashcardsIndexRouteImport } from './routes/_authenticated/flashcards/index'
+import { Route as AuthenticatedFlashcardsDeckRouteImport } from './routes/_authenticated/flashcards/$deck'
 import { Route as AuthenticatedQuizzesIndexRouteImport } from './routes/_authenticated/quizzes/index'
 import { Route as AuthenticatedQuizzesQuizIdRouteImport } from './routes/_authenticated/quizzes/$quizId'
 
@@ -61,11 +62,6 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedFlashcardsRoute = AuthenticatedFlashcardsRouteImport.update({
-  id: '/flashcards',
-  path: '/flashcards',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedGradesRoute = AuthenticatedGradesRouteImport.update({
   id: '/grades',
   path: '/grades',
@@ -98,6 +94,18 @@ const AuthenticatedClassesClassIdRoute =
     path: '/classes/$classId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedFlashcardsIndexRoute =
+  AuthenticatedFlashcardsIndexRouteImport.update({
+    id: '/flashcards/',
+    path: '/flashcards/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedFlashcardsDeckRoute =
+  AuthenticatedFlashcardsDeckRouteImport.update({
+    id: '/flashcards/$deck',
+    path: '/flashcards/$deck',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedQuizzesIndexRoute =
   AuthenticatedQuizzesIndexRouteImport.update({
     id: '/quizzes/',
@@ -118,14 +126,15 @@ export interface FileRoutesByFullPath {
   '/assignments': typeof AuthenticatedAssignmentsRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/flashcards': typeof AuthenticatedFlashcardsRoute
   '/grades': typeof AuthenticatedGradesRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/snapquick': typeof AuthenticatedSnapquickRoute
   '/tutor': typeof AuthenticatedTutorRoute
   '/classes/$classId': typeof AuthenticatedClassesClassIdRoute
+  '/flashcards/$deck': typeof AuthenticatedFlashcardsDeckRoute
   '/quizzes/$quizId': typeof AuthenticatedQuizzesQuizIdRoute
   '/classes/': typeof AuthenticatedClassesIndexRoute
+  '/flashcards/': typeof AuthenticatedFlashcardsIndexRoute
   '/quizzes/': typeof AuthenticatedQuizzesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -135,14 +144,15 @@ export interface FileRoutesByTo {
   '/assignments': typeof AuthenticatedAssignmentsRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/flashcards': typeof AuthenticatedFlashcardsRoute
   '/grades': typeof AuthenticatedGradesRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/snapquick': typeof AuthenticatedSnapquickRoute
   '/tutor': typeof AuthenticatedTutorRoute
   '/classes/$classId': typeof AuthenticatedClassesClassIdRoute
+  '/flashcards/$deck': typeof AuthenticatedFlashcardsDeckRoute
   '/quizzes/$quizId': typeof AuthenticatedQuizzesQuizIdRoute
   '/classes': typeof AuthenticatedClassesIndexRoute
+  '/flashcards': typeof AuthenticatedFlashcardsIndexRoute
   '/quizzes': typeof AuthenticatedQuizzesIndexRoute
 }
 export interface FileRoutesById {
@@ -154,14 +164,15 @@ export interface FileRoutesById {
   '/_authenticated/assignments': typeof AuthenticatedAssignmentsRoute
   '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/flashcards': typeof AuthenticatedFlashcardsRoute
   '/_authenticated/grades': typeof AuthenticatedGradesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/snapquick': typeof AuthenticatedSnapquickRoute
   '/_authenticated/tutor': typeof AuthenticatedTutorRoute
   '/_authenticated/classes/$classId': typeof AuthenticatedClassesClassIdRoute
+  '/_authenticated/flashcards/$deck': typeof AuthenticatedFlashcardsDeckRoute
   '/_authenticated/quizzes/$quizId': typeof AuthenticatedQuizzesQuizIdRoute
   '/_authenticated/classes/': typeof AuthenticatedClassesIndexRoute
+  '/_authenticated/flashcards/': typeof AuthenticatedFlashcardsIndexRoute
   '/_authenticated/quizzes/': typeof AuthenticatedQuizzesIndexRoute
 }
 export interface FileRouteTypes {
@@ -173,14 +184,15 @@ export interface FileRouteTypes {
     | '/assignments'
     | '/calendar'
     | '/dashboard'
-    | '/flashcards'
     | '/grades'
     | '/settings'
     | '/snapquick'
     | '/tutor'
     | '/classes/$classId'
+    | '/flashcards/$deck'
     | '/quizzes/$quizId'
     | '/classes/'
+    | '/flashcards/'
     | '/quizzes/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -190,14 +202,15 @@ export interface FileRouteTypes {
     | '/assignments'
     | '/calendar'
     | '/dashboard'
-    | '/flashcards'
     | '/grades'
     | '/settings'
     | '/snapquick'
     | '/tutor'
     | '/classes/$classId'
+    | '/flashcards/$deck'
     | '/quizzes/$quizId'
     | '/classes'
+    | '/flashcards'
     | '/quizzes'
   id:
     | '__root__'
@@ -208,14 +221,15 @@ export interface FileRouteTypes {
     | '/_authenticated/assignments'
     | '/_authenticated/calendar'
     | '/_authenticated/dashboard'
-    | '/_authenticated/flashcards'
     | '/_authenticated/grades'
     | '/_authenticated/settings'
     | '/_authenticated/snapquick'
     | '/_authenticated/tutor'
     | '/_authenticated/classes/$classId'
+    | '/_authenticated/flashcards/$deck'
     | '/_authenticated/quizzes/$quizId'
     | '/_authenticated/classes/'
+    | '/_authenticated/flashcards/'
     | '/_authenticated/quizzes/'
   fileRoutesById: FileRoutesById
 }
@@ -277,13 +291,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/flashcards': {
-      id: '/_authenticated/flashcards'
-      path: '/flashcards'
-      fullPath: '/flashcards'
-      preLoaderRoute: typeof AuthenticatedFlashcardsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/grades': {
       id: '/_authenticated/grades'
       path: '/grades'
@@ -326,6 +333,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClassesClassIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/flashcards/': {
+      id: '/_authenticated/flashcards/'
+      path: '/flashcards'
+      fullPath: '/flashcards/'
+      preLoaderRoute: typeof AuthenticatedFlashcardsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/flashcards/$deck': {
+      id: '/_authenticated/flashcards/$deck'
+      path: '/flashcards/$deck'
+      fullPath: '/flashcards/$deck'
+      preLoaderRoute: typeof AuthenticatedFlashcardsDeckRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/quizzes/': {
       id: '/_authenticated/quizzes/'
       path: '/quizzes'
@@ -347,14 +368,15 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAssignmentsRoute: typeof AuthenticatedAssignmentsRoute
   AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedFlashcardsRoute: typeof AuthenticatedFlashcardsRoute
   AuthenticatedGradesRoute: typeof AuthenticatedGradesRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSnapquickRoute: typeof AuthenticatedSnapquickRoute
   AuthenticatedTutorRoute: typeof AuthenticatedTutorRoute
   AuthenticatedClassesClassIdRoute: typeof AuthenticatedClassesClassIdRoute
+  AuthenticatedFlashcardsDeckRoute: typeof AuthenticatedFlashcardsDeckRoute
   AuthenticatedQuizzesQuizIdRoute: typeof AuthenticatedQuizzesQuizIdRoute
   AuthenticatedClassesIndexRoute: typeof AuthenticatedClassesIndexRoute
+  AuthenticatedFlashcardsIndexRoute: typeof AuthenticatedFlashcardsIndexRoute
   AuthenticatedQuizzesIndexRoute: typeof AuthenticatedQuizzesIndexRoute
 }
 
@@ -362,14 +384,15 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAssignmentsRoute: AuthenticatedAssignmentsRoute,
   AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedFlashcardsRoute: AuthenticatedFlashcardsRoute,
   AuthenticatedGradesRoute: AuthenticatedGradesRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSnapquickRoute: AuthenticatedSnapquickRoute,
   AuthenticatedTutorRoute: AuthenticatedTutorRoute,
   AuthenticatedClassesClassIdRoute: AuthenticatedClassesClassIdRoute,
+  AuthenticatedFlashcardsDeckRoute: AuthenticatedFlashcardsDeckRoute,
   AuthenticatedQuizzesQuizIdRoute: AuthenticatedQuizzesQuizIdRoute,
   AuthenticatedClassesIndexRoute: AuthenticatedClassesIndexRoute,
+  AuthenticatedFlashcardsIndexRoute: AuthenticatedFlashcardsIndexRoute,
   AuthenticatedQuizzesIndexRoute: AuthenticatedQuizzesIndexRoute,
 }
 
