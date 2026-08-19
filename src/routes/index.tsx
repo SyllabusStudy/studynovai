@@ -19,19 +19,21 @@ import { useTheme } from "@/lib/theme";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "StudyMate AI — Your AI-powered college companion" },
+      { title: "StudyMate AI – AI Study Assistant for College Students" },
       {
         name: "description",
         content:
           "Upload your syllabus, get an instant semester calendar, AI-generated flashcards and quizzes, and a tutor that answers from your own course materials.",
       },
-      { property: "og:title", content: "StudyMate AI — Your AI-powered college companion" },
+      { name: "robots", content: "index, follow" },
+      { property: "og:title", content: "StudyMate AI – AI Study Assistant for College Students" },
       {
         property: "og:description",
         content:
           "Upload your syllabus, get an instant semester calendar, AI flashcards and quizzes, and a tutor grounded in your own notes.",
       },
     ],
+    links: [{ rel: "canonical", href: "https://studymateaicollege.lovable.app/" }],
   }),
   component: Landing,
 });
