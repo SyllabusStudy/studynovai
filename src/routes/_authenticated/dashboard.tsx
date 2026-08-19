@@ -96,7 +96,7 @@ function Dashboard() {
         description="Here's where your semester stands right now."
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <InstallAppButton size="sm" />
+            <InstallAppButton className="hidden sm:inline-flex" />
             <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold">
               <Flame className="size-3.5 text-warning" /> {profile?.study_streak ?? 0} day streak
             </span>
