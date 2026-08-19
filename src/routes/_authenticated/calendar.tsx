@@ -84,8 +84,14 @@ function CalendarPage() {
       <PageHeader
         title="Calendar"
         description="Colour-coded per class, built from your syllabi and anything you add."
-        actions={<NewEventDialog />}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <SyllabusCsvExport label="Export CSV" />
+            <NewEventDialog />
+          </div>
+        }
       />
+
 
       <div className="mb-3 flex items-center gap-2">
         <Button
