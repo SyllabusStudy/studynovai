@@ -1,4 +1,4 @@
-export const PRO_PRICE_USD = 20;
+export const PRO_PRICE_USD = 5.99;
 
 export const FREE_LIMITS = {
   classes: 3,
