@@ -49,6 +49,7 @@ export function DocumentUploader({
           .insert({
             user_id: user.id,
             class_id: classId,
+            assignment_id: assignmentId,
             file_name: file.name,
             file_size: file.size,
             file_type: file.type || null,
@@ -109,19 +110,20 @@ export function DocumentUploader({
     >
       <FileUp className="mx-auto size-6 text-primary" />
       <p className="mt-3 text-sm font-semibold">
-        {syllabusOnly ? "Drop a syllabus PDF here" : "Drop course materials here"}
+        {title ?? (syllabusOnly ? "Drop a syllabus PDF here" : "Drop course materials here")}
       </p>
       <p className="mt-1 text-xs text-muted-foreground">
-        {syllabusOnly
-          ? "We read the PDF, create the class, and fill in your exams, homework and grade weights automatically."
-          : "PDF, images, slides, docs or notes. We extract the text for your AI tutor."}
+        {hint ??
+          (syllabusOnly
+            ? "We read the PDF, create the class, and fill in your exams, homework and grade weights automatically."
+            : "PDF, images, slides, docs or notes. We extract the text for your AI tutor.")}
       </p>
       <div className="mt-4 flex flex-wrap items-center justify-center gap-4">
         <Button size="sm" disabled={busy} onClick={() => inputRef.current?.click()}>
           {busy ? <Loader2 className="size-4 animate-spin" /> : null}
           Choose files
         </Button>
-        <div className={cn("flex items-center gap-2", syllabusOnly && "hidden")}>
+        <div className={cn("flex items-center gap-2", (syllabusOnly || assignmentId) && "hidden")}>
           <Switch id="is-syllabus" checked={isSyllabus} onCheckedChange={setIsSyllabus} />
           <Label htmlFor="is-syllabus" className="text-xs">
             This is a syllabus
