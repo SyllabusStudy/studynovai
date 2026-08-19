@@ -205,23 +205,46 @@ export async function runSyllabusAnalysis(supabase: DB, userId: string, document
   if (!doc.extracted_text) throw new Error("This document has no readable text yet.");
 
   const today = new Date().toISOString().slice(0, 10);
-  const raw = await callAI([
-    {
-      role: "system",
-      content:
-        "You extract structured data from a college syllabus and reply with json only. Use null for anything that is genuinely not stated in the syllabus — never guess or invent policies, dates or weights. Dates must be ISO YYYY-MM-DD; infer the year from the syllabus term when possible, otherwise use the upcoming occurrence relative to today.",
-    },
-    {
-      role: "user",
-      content: `Today is ${today}. Extract this json shape:
-{"course_name":string|null,"course_code":string|null,"professor":string|null,"professor_email":string|null,"office_hours":string|null,"attendance_policy":string|null,"late_work_policy":string|null,"makeup_policy":string|null,"required_materials":string|null,"other_policies":string|null,"grading_breakdown":[{"name":string,"weight":number}],"dates":[{"title":string,"date":"YYYY-MM-DD","type":"exam"|"quiz"|"assignment"|"project"|"presentation"|"final"|"other","description":string|null}]}
+  const syllabusText = doc.extracted_text.slice(0, 60000);
+  const [raw, swept] = await Promise.all([
+    callAI(
+      [
+        {
+          role: "system",
+          content:
+            "You extract structured data from a college syllabus and reply with json only. Use null for anything that is genuinely not stated in the syllabus — never guess or invent policies, dates or weights. Dates must be ISO YYYY-MM-DD; infer the year from the syllabus term when possible, otherwise use the upcoming occurrence relative to today.",
+        },
+        {
+          role: "user",
+          content: `Today is ${today}. Extract this json shape:
+{"course_name":string|null,"course_code":string|null,"professor":string|null,"professor_email":string|null,"office_hours":string|null,"attendance_policy":string|null,"late_work_policy":string|null,"makeup_policy":string|null,"required_materials":string|null,"other_policies":string|null,"grading_breakdown":[{"name":string,"weight":number}],"dates":[{"title":string,"date":"YYYY-MM-DD","time":"HH:MM"|null,"type":"exam"|"quiz"|"assignment"|"project"|"presentation"|"final"|"other","description":string|null}]}
+
+${DATE_RULES}
 
 SYLLABUS TEXT:
-${doc.extracted_text.slice(0, 60000)}`,
-    },
+${syllabusText}`,
+        },
+      ],
+      { maxTokens: 12000, temperature: 0 },
+    ),
+    sweepSyllabusDates(syllabusText, today),
   ]);
 
   const parsed = parseJsonBlock<SyllabusResult>(raw);
+
+  // Merge both passes so nothing the first pass skipped or truncated is lost.
+  const mergedDates: SyllabusDate[] = [];
+  const dateKeys = new Set<string>();
+  for (const d of [...(parsed.dates ?? []), ...swept]) {
+    if (!d?.title || !d?.date) continue;
+    const key = `${String(d.title).trim().toLowerCase()}|${d.date}`;
+    if (dateKeys.has(key)) continue;
+    dateKeys.add(key);
+    mergedDates.push(d);
+  }
+  parsed.dates = mergedDates;
+
+
 
   await supabase
     .from("documents")
