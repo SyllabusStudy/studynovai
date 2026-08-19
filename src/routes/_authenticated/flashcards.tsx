@@ -217,6 +217,15 @@ function FlashcardsPage() {
             </SelectContent>
           </Select>
         </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="deckName">Deck name (optional)</Label>
+          <Input
+            id="deckName"
+            placeholder="Auto-named by topic + time"
+            value={deckName}
+            onChange={(e) => setDeckName(e.target.value)}
+          />
+        </div>
         <div className="sm:col-span-2 lg:col-span-5">
           <Button onClick={generate} disabled={busy} className="gap-1.5">
             {busy ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
@@ -224,6 +233,33 @@ function FlashcardsPage() {
           </Button>
         </div>
       </div>
+
+      {decks.length > 0 ? (
+        <div className="mt-6 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-muted-foreground">Decks:</span>
+          {decks.map((d) => (
+            <Button
+              key={d.name}
+              size="sm"
+              variant={d.name === selectedDeck ? "default" : "outline"}
+              onClick={() => {
+                setActiveDeck(d.name);
+                setIndex(0);
+                setFlipped(false);
+              }}
+            >
+              {d.name} · {d.size}
+            </Button>
+          ))}
+          {selectedDeck ? (
+            <DeleteButton
+              label="deck"
+              description={`All ${deck.length} cards in "${selectedDeck}" will be removed. Your other decks stay.`}
+              onDelete={deleteDeck}
+            />
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="mt-6">
         {isLoading ? (
