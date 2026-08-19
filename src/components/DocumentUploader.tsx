@@ -15,9 +15,15 @@ import { cn } from "@/lib/utils";
 export function DocumentUploader({
   classId = null,
   syllabusOnly = false,
+  assignmentId = null,
+  title,
+  hint,
 }: {
   classId?: string | null;
   syllabusOnly?: boolean;
+  assignmentId?: string | null;
+  title?: string;
+  hint?: string;
 }) {
   const { user } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -27,6 +33,7 @@ export function DocumentUploader({
   const qc = useQueryClient();
   const runProcess = useServerFn(processDocument);
   const runSyllabus = useServerFn(analyzeSyllabus);
+
 
   async function upload(files: FileList | null) {
     if (!files?.length || !user) return;
