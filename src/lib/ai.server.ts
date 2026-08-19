@@ -307,7 +307,7 @@ export async function buildClassContext(
       lines.push("### CALENDAR");
       for (const e of ce)
         lines.push(
-          `- ${e.event_date}${e.event_time ? ` at ${e.event_time}` : ""} ${e.event_type}: ${e.title}${e.location ? ` | ${e.location}` : ""}${e.description ? ` — ${String(e.description).slice(0, 400)}` : ""}`,
+          `- ${e.event_date}${e.event_time ? ` at ${e.event_time}` : ""} ${e.event_type}: ${e.title}${e.description ? ` — ${String(e.description).slice(0, 400)}` : ""}`,
         );
     }
 
