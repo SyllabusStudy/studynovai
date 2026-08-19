@@ -20,7 +20,12 @@ async function token(): Promise<string> {
     },
     body: "grant_type=client_credentials",
   });
-  const json = (await res.json()) as { access_token?: string; error_description?: string };
+  const tokenText = await res.text();
+  const json = (tokenText.trim() ? JSON.parse(tokenText) : {}) as {
+    access_token?: string;
+    error_description?: string;
+  };
+
   if (!res.ok || !json.access_token) {
     throw new Error(json.error_description ?? "Could not authenticate with PayPal.");
   }
