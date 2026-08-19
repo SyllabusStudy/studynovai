@@ -95,9 +95,12 @@ function Dashboard() {
         title={`Welcome back${profile?.name ? `, ${profile.name.split(" ")[0]}` : ""}`}
         description="Here's where your semester stands right now."
         actions={
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold">
-            <Flame className="size-3.5 text-warning" /> {profile?.study_streak ?? 0} day streak
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <InstallAppButton size="sm" />
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold">
+              <Flame className="size-3.5 text-warning" /> {profile?.study_streak ?? 0} day streak
+            </span>
+          </div>
         }
       />
 
