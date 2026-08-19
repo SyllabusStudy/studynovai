@@ -55,6 +55,44 @@ export type Database = {
           },
         ]
       }
+      ai_memory: {
+        Row: {
+          class_id: string | null
+          content: string
+          created_at: string
+          id: string
+          kind: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          class_id?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          kind?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          class_id?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_memory_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assignments: {
         Row: {
           category: string | null
@@ -305,6 +343,7 @@ export type Database = {
           back: string
           class_id: string | null
           created_at: string
+          deck: string | null
           difficulty: string
           front: string
           id: string
@@ -318,6 +357,7 @@ export type Database = {
           back: string
           class_id?: string | null
           created_at?: string
+          deck?: string | null
           difficulty?: string
           front: string
           id?: string
@@ -331,6 +371,7 @@ export type Database = {
           back?: string
           class_id?: string | null
           created_at?: string
+          deck?: string | null
           difficulty?: string
           front?: string
           id?: string
