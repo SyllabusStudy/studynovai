@@ -3,6 +3,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   BookOpen,
   Bot,
+  Camera,
   Brain,
   CalendarDays,
   CheckSquare,
@@ -48,10 +49,11 @@ const NAV = [
   { to: "/quizzes", label: "Quizzes", icon: FileQuestion },
   { to: "/grades", label: "Grades", icon: ChartColumn },
   { to: "/tutor", label: "AI Tutor", icon: Bot },
+  { to: "/snapquick", label: "SnapQuick", icon: Camera },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
-const MOBILE_NAV = [NAV[0], NAV[1], NAV[2], NAV[3], NAV[7]] as const;
+const MOBILE_NAV = [NAV[0], NAV[1], NAV[3], NAV[8], NAV[7]] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);

@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { ClassChip } from "@/components/ClassBadge";
 import { DeleteButton } from "@/components/DeleteButton";
+import { AssignmentHelp } from "@/components/AssignmentHelp";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,7 +68,7 @@ function AssignmentsPage() {
     <div>
       <PageHeader
         title="Assignments"
-        description="Everything you owe, sorted by what's due next."
+        description="Everything you owe, sorted by what's due next. Attach a PDF or screenshot and AI helps you solve it."
         actions={<NewAssignmentDialog />}
       />
 
@@ -102,6 +103,7 @@ function AssignmentsPage() {
                     label={classLabel(classById.get(a.class_id))}
                   />
                 ) : null}
+                <AssignmentHelp assignmentId={a.id} classId={a.class_id} title={a.title} />
                 <DeleteButton
                   label="assignment"
                   description={`"${a.title}" will be removed from your list.`}
