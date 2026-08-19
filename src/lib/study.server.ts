@@ -138,11 +138,61 @@ type SyllabusResult = {
   dates: Array<{
     title: string;
     date: string;
+    time?: string | null;
     type: "exam" | "quiz" | "assignment" | "project" | "presentation" | "final" | "other";
     description?: string | null;
   }>;
   other_policies: string | null;
 };
+
+type SyllabusDate = SyllabusResult["dates"][number];
+
+const DATE_RULES = [
+  "COMPLETENESS IS THE MOST IMPORTANT THING. Extract EVERY dated item in the syllabus, with no exceptions and no summarizing:",
+  "- exams, midterms, finals, quizzes, tests",
+  "- homework, problem sets, labs, papers, essays, projects, presentations, discussion posts, reading responses",
+  "- readings or chapters tied to a specific date, and weekly schedule / course-calendar rows",
+  "- drop deadlines, withdrawal deadlines, holidays, no-class days, review sessions, field trips, guest lectures",
+  "Walk the syllabus top to bottom, including tables, week-by-week schedules, appendices and footnotes. If a schedule table has 15 rows, return 15 dated items.",
+  "If a row lists several items for one date (e.g. 'Quiz 3 + HW 5 due'), return them as SEPARATE entries.",
+  "Include a time in 24h HH:MM when the syllabus states one (e.g. 'due by 11:59pm' -> \"23:59\"), otherwise null.",
+  "Only skip an item if it truly has no identifiable date.",
+].join("\n");
+
+/** Second focused pass: sweeps the syllabus text for any dated item the first pass may have skipped. */
+async function sweepSyllabusDates(text: string, today: string): Promise<SyllabusDate[]> {
+  const chunkSize = 18000;
+  const chunks: string[] = [];
+  for (let i = 0; i < text.length && chunks.length < 4; i += chunkSize) {
+    chunks.push(text.slice(i, i + chunkSize));
+  }
+
+  const results = await Promise.all(
+    chunks.map(async (chunk) => {
+      try {
+        const raw = await callAI(
+          [
+            {
+              role: "system",
+              content:
+                "You are a meticulous syllabus date extractor. Reply with json only. Never invent dates. Dates must be ISO YYYY-MM-DD; infer the year from the syllabus term, otherwise the next upcoming occurrence relative to today.",
+            },
+            {
+              role: "user",
+              content: `Today is ${today}.\n${DATE_RULES}\n\nReply with exactly: {"dates":[{"title":string,"date":"YYYY-MM-DD","time":"HH:MM"|null,"type":"exam"|"quiz"|"assignment"|"project"|"presentation"|"final"|"other","description":string|null}]}\n\nSYLLABUS TEXT (part):\n${chunk}`,
+            },
+          ],
+          { maxTokens: 8000, temperature: 0 },
+        );
+        return parseJsonBlock<{ dates?: SyllabusDate[] }>(raw).dates ?? [];
+      } catch {
+        return [];
+      }
+    }),
+  );
+  return results.flat();
+}
+
 
 export async function runSyllabusAnalysis(supabase: DB, userId: string, documentId: string) {
   const { data: doc } = await supabase
