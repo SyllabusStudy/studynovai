@@ -265,11 +265,14 @@ export async function runTutorChat(
     else conversationId = null;
   }
 
-  const reply = await callAI([
-    { role: "system", content: tutorSystemPrompt(input.mode, contextText) },
-    ...history.slice(-12).map((m) => ({ role: m.role, content: m.content })),
-    { role: "user", content: input.message },
-  ]);
+  const reply = await callAI(
+    [
+      { role: "system", content: tutorSystemPrompt(input.mode, contextText) },
+      ...history.slice(-8).map((m) => ({ role: m.role, content: m.content })),
+      { role: "user", content: input.message },
+    ],
+    { maxTokens: 1200 },
+  );
 
   const now = new Date().toISOString();
   const messages: TutorMessage[] = [
@@ -278,25 +281,41 @@ export async function runTutorChat(
     { role: "assistant", content: reply, at: now },
   ];
 
+  const savers: Array<PromiseLike<unknown>> = [
+    // Long-term memory: one compact note per exchange, readable in every future chat.
+    supabase.from("ai_memory").insert({
+      user_id: userId,
+      class_id: input.classId ?? null,
+      kind: "chat",
+      content: `Student asked: ${input.message.slice(0, 220)} | You answered: ${reply.replace(/\s+/g, " ").slice(0, 320)}`,
+    }),
+  ];
+
   if (conversationId) {
-    await supabase
-      .from("ai_conversations")
-      .update({ messages: messages as never, study_mode: input.mode })
-      .eq("id", conversationId)
-      .eq("user_id", userId);
+    savers.push(
+      supabase
+        .from("ai_conversations")
+        .update({ messages: messages as never, study_mode: input.mode })
+        .eq("id", conversationId)
+        .eq("user_id", userId),
+    );
+    await Promise.all(savers);
   } else {
     const title = input.message.slice(0, 60);
-    const { data: created } = await supabase
-      .from("ai_conversations")
-      .insert({
-        user_id: userId,
-        class_id: input.classId ?? null,
-        title,
-        study_mode: input.mode,
-        messages: messages as never,
-      })
-      .select("id")
-      .single();
+    const [{ data: created }] = await Promise.all([
+      supabase
+        .from("ai_conversations")
+        .insert({
+          user_id: userId,
+          class_id: input.classId ?? null,
+          title,
+          study_mode: input.mode,
+          messages: messages as never,
+        })
+        .select("id")
+        .single(),
+      ...savers,
+    ]);
     conversationId = created?.id ?? null;
   }
 
