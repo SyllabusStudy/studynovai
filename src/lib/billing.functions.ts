@@ -31,3 +31,11 @@ export const cancelProPlan = createServerFn({ method: "POST" })
     const { cancelPro } = await import("./billing.server");
     return cancelPro(context.supabase, context.userId);
   });
+
+export const redeemPromo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ code: z.string().min(3).max(60) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { redeemPromoCode } = await import("./billing.server");
+    return redeemPromoCode(context.userId, data.code);
+  });
