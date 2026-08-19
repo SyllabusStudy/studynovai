@@ -230,6 +230,8 @@ export type Database = {
       }
       documents: {
         Row: {
+          ai_help: string | null
+          assignment_id: string | null
           class_id: string | null
           created_at: string
           extracted_text: string | null
@@ -240,11 +242,14 @@ export type Database = {
           is_syllabus: boolean
           processing_error: string | null
           processing_status: string
+          source: string
           storage_path: string
           syllabus_data: Json | null
           user_id: string
         }
         Insert: {
+          ai_help?: string | null
+          assignment_id?: string | null
           class_id?: string | null
           created_at?: string
           extracted_text?: string | null
@@ -255,11 +260,14 @@ export type Database = {
           is_syllabus?: boolean
           processing_error?: string | null
           processing_status?: string
+          source?: string
           storage_path: string
           syllabus_data?: Json | null
           user_id: string
         }
         Update: {
+          ai_help?: string | null
+          assignment_id?: string | null
           class_id?: string | null
           created_at?: string
           extracted_text?: string | null
@@ -270,11 +278,19 @@ export type Database = {
           is_syllabus?: boolean
           processing_error?: string | null
           processing_status?: string
+          source?: string
           storage_path?: string
           syllabus_data?: Json | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "documents_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "documents_class_id_fkey"
             columns: ["class_id"]
