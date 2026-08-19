@@ -4,6 +4,7 @@ import {
   BookOpen,
   Bot,
   Camera,
+  Crown,
   Brain,
   CalendarDays,
   CheckSquare,
@@ -50,6 +51,7 @@ const NAV = [
   { to: "/grades", label: "Grades", icon: ChartColumn },
   { to: "/tutor", label: "AI Tutor", icon: Bot },
   { to: "/snapquick", label: "SnapQuick", icon: Camera },
+  { to: "/upgrade", label: "Upgrade", icon: Crown },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 

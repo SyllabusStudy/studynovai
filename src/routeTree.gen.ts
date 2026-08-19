@@ -20,6 +20,7 @@ import { Route as AuthenticatedGradesRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedSnapquickRouteImport } from './routes/_authenticated/snapquick'
 import { Route as AuthenticatedTutorRouteImport } from './routes/_authenticated/tutor'
+import { Route as AuthenticatedUpgradeRouteImport } from './routes/_authenticated/upgrade'
 import { Route as AuthenticatedClassesIndexRouteImport } from './routes/_authenticated/classes/index'
 import { Route as AuthenticatedClassesClassIdRouteImport } from './routes/_authenticated/classes/$classId'
 import { Route as AuthenticatedFlashcardsIndexRouteImport } from './routes/_authenticated/flashcards/index'
@@ -82,6 +83,11 @@ const AuthenticatedTutorRoute = AuthenticatedTutorRouteImport.update({
   path: '/tutor',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedUpgradeRoute = AuthenticatedUpgradeRouteImport.update({
+  id: '/upgrade',
+  path: '/upgrade',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedClassesIndexRoute =
   AuthenticatedClassesIndexRouteImport.update({
     id: '/classes/',
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/snapquick': typeof AuthenticatedSnapquickRoute
   '/tutor': typeof AuthenticatedTutorRoute
+  '/upgrade': typeof AuthenticatedUpgradeRoute
   '/classes/$classId': typeof AuthenticatedClassesClassIdRoute
   '/flashcards/$deck': typeof AuthenticatedFlashcardsDeckRoute
   '/quizzes/$quizId': typeof AuthenticatedQuizzesQuizIdRoute
@@ -148,6 +155,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/snapquick': typeof AuthenticatedSnapquickRoute
   '/tutor': typeof AuthenticatedTutorRoute
+  '/upgrade': typeof AuthenticatedUpgradeRoute
   '/classes/$classId': typeof AuthenticatedClassesClassIdRoute
   '/flashcards/$deck': typeof AuthenticatedFlashcardsDeckRoute
   '/quizzes/$quizId': typeof AuthenticatedQuizzesQuizIdRoute
@@ -168,6 +176,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/snapquick': typeof AuthenticatedSnapquickRoute
   '/_authenticated/tutor': typeof AuthenticatedTutorRoute
+  '/_authenticated/upgrade': typeof AuthenticatedUpgradeRoute
   '/_authenticated/classes/$classId': typeof AuthenticatedClassesClassIdRoute
   '/_authenticated/flashcards/$deck': typeof AuthenticatedFlashcardsDeckRoute
   '/_authenticated/quizzes/$quizId': typeof AuthenticatedQuizzesQuizIdRoute
@@ -188,6 +197,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/snapquick'
     | '/tutor'
+    | '/upgrade'
     | '/classes/$classId'
     | '/flashcards/$deck'
     | '/quizzes/$quizId'
@@ -206,6 +216,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/snapquick'
     | '/tutor'
+    | '/upgrade'
     | '/classes/$classId'
     | '/flashcards/$deck'
     | '/quizzes/$quizId'
@@ -225,6 +236,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/snapquick'
     | '/_authenticated/tutor'
+    | '/_authenticated/upgrade'
     | '/_authenticated/classes/$classId'
     | '/_authenticated/flashcards/$deck'
     | '/_authenticated/quizzes/$quizId'
@@ -319,6 +331,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTutorRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/upgrade': {
+      id: '/_authenticated/upgrade'
+      path: '/upgrade'
+      fullPath: '/upgrade'
+      preLoaderRoute: typeof AuthenticatedUpgradeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/classes/': {
       id: '/_authenticated/classes/'
       path: '/classes'
@@ -372,6 +391,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSnapquickRoute: typeof AuthenticatedSnapquickRoute
   AuthenticatedTutorRoute: typeof AuthenticatedTutorRoute
+  AuthenticatedUpgradeRoute: typeof AuthenticatedUpgradeRoute
   AuthenticatedClassesClassIdRoute: typeof AuthenticatedClassesClassIdRoute
   AuthenticatedFlashcardsDeckRoute: typeof AuthenticatedFlashcardsDeckRoute
   AuthenticatedQuizzesQuizIdRoute: typeof AuthenticatedQuizzesQuizIdRoute
@@ -388,6 +408,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSnapquickRoute: AuthenticatedSnapquickRoute,
   AuthenticatedTutorRoute: AuthenticatedTutorRoute,
+  AuthenticatedUpgradeRoute: AuthenticatedUpgradeRoute,
   AuthenticatedClassesClassIdRoute: AuthenticatedClassesClassIdRoute,
   AuthenticatedFlashcardsDeckRoute: AuthenticatedFlashcardsDeckRoute,
   AuthenticatedQuizzesQuizIdRoute: AuthenticatedQuizzesQuizIdRoute,

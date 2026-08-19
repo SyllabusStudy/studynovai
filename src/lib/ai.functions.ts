@@ -120,7 +120,13 @@ export const assignmentHelp = createServerFn({ method: "POST" })
       })
       .parse(d),
   )
-  .handler(async ({ data, context }) => runAssignmentHelp(context.supabase, context.userId, data));
+  .handler(async ({ data, context }) => {
+    const { assertQuota, recordUsage } = await import("./billing.server");
+    await assertQuota(context.supabase, context.userId, "assignment_help");
+    const result = await runAssignmentHelp(context.supabase, context.userId, data);
+    await recordUsage(context.supabase, context.userId, "assignment_help");
+    return result;
+  });
 
 export const snapHelp = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -133,4 +139,10 @@ export const snapHelp = createServerFn({ method: "POST" })
       })
       .parse(d),
   )
-  .handler(async ({ data, context }) => runSnapHelp(context.supabase, context.userId, data));
+  .handler(async ({ data, context }) => {
+    const { assertQuota, recordUsage } = await import("./billing.server");
+    await assertQuota(context.supabase, context.userId, "snap");
+    const result = await runSnapHelp(context.supabase, context.userId, data);
+    await recordUsage(context.supabase, context.userId, "snap");
+    return result;
+  });
