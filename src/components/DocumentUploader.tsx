@@ -62,7 +62,7 @@ export function DocumentUploader({
 
         await qc.invalidateQueries({ queryKey: ["documents"] });
         try {
-          await runProcess({ data: { documentId: row.id } });
+          const processed = await runProcess({ data: { documentId: row.id } });
           if (syllabusOnly || isSyllabus) {
             const result = await runSyllabus({ data: { documentId: row.id } });
             await qc.invalidateQueries({ queryKey: ["events"] });
@@ -75,9 +75,13 @@ export function DocumentUploader({
             } else {
               toast.success(`${file.name}: added ${result?.eventsCreated ?? 0} dates to your calendar`);
             }
+          } else if (processed?.linkedClass) {
+            await qc.invalidateQueries({ queryKey: ["classes"] });
+            toast.success(`${file.name} filed under ${processed.linkedClass.class_name}`);
           } else {
             toast.success(`${file.name} processed`);
           }
+
         } catch (e) {
           toast.error(e instanceof Error ? e.message : "AI processing failed");
         }
