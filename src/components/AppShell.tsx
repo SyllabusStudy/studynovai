@@ -38,8 +38,13 @@ import { cn } from "@/lib/utils";
 import { signOut, useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
 import { daysUntil, formatDate, relativeDay, urgencyDot, useAssignments, useEvents, useProfile } from "@/lib/data";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { ShieldCheck } from "lucide-react";
+import { checkAdmin } from "@/lib/admin.functions";
 import { AskAiDock } from "@/components/AskAiDock";
 import { GlobalSearch } from "@/components/GlobalSearch";
+
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
