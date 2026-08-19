@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { ClassChip } from "@/components/ClassBadge";
 import { Markdown } from "@/components/Markdown";
+import { InstallAppButton } from "@/components/InstallAppButton";
 import { Button } from "@/components/ui/button";
 import { studyCoach } from "@/lib/ai.functions";
 import { useAuth } from "@/lib/auth";
@@ -94,9 +95,12 @@ function Dashboard() {
         title={`Welcome back${profile?.name ? `, ${profile.name.split(" ")[0]}` : ""}`}
         description="Here's where your semester stands right now."
         actions={
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold">
-            <Flame className="size-3.5 text-warning" /> {profile?.study_streak ?? 0} day streak
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <InstallAppButton className="hidden sm:inline-flex" />
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold">
+              <Flame className="size-3.5 text-warning" /> {profile?.study_streak ?? 0} day streak
+            </span>
+          </div>
         }
       />
 
