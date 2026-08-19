@@ -70,6 +70,8 @@ export const generateQuiz = createServerFn({ method: "POST" })
         difficulty: z.string().default("medium"),
         types: z.array(z.string()).min(1),
         title: z.string().max(120).nullable().optional(),
+        assignmentId: z.string().uuid().nullable().optional(),
+        matchHomework: z.boolean().optional(),
       })
       .parse(d),
   )
