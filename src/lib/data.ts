@@ -204,6 +204,14 @@ export function documentIsReady(d: DocumentRow): boolean {
  * cascade, so children are cleared explicitly first.
  */
 export async function deleteClassCascade(userId: string, classId: string) {
+  const { data: docs } = await supabase
+    .from("documents")
+    .select("storage_path")
+    .eq("user_id", userId)
+    .eq("class_id", classId);
+  const paths = (docs ?? []).map((d) => d.storage_path).filter(Boolean);
+  if (paths.length) await supabase.storage.from("course-materials").remove(paths);
+
   const children = [
     "flashcards",
     "quizzes",
