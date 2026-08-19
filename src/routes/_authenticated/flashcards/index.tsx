@@ -1,8 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Brain, Loader2, RotateCcw, Sparkles } from "lucide-react";
+import { Brain, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
@@ -23,17 +23,19 @@ import { DIFFICULTIES } from "@/lib/constants";
 import { useAuth } from "@/lib/auth";
 import { classLabel, useAssignments, useClasses, useDocuments, useFlashcards } from "@/lib/data";
 
-export const Route = createFileRoute("/_authenticated/flashcards")({
+export const Route = createFileRoute("/_authenticated/flashcards/")({
   head: () => ({
     meta: [
       { title: "Flashcards — StudyMate AI" },
-      { name: "description", content: "AI-generated flashcards from your own chapters, notes and slides." },
+      { name: "description", content: "AI-generated flashcard decks from your own chapters, notes and slides." },
       { property: "og:title", content: "Flashcards — StudyMate AI" },
-      { property: "og:description", content: "AI flashcards generated from your own course materials." },
+      { property: "og:description", content: "AI flashcard decks generated from your own course materials." },
     ],
   }),
   component: FlashcardsPage,
 });
+
+export const UNGROUPED = "Earlier cards";
 
 function FlashcardsPage() {
   const { user } = useAuth();
@@ -48,10 +50,7 @@ function FlashcardsPage() {
   const [count, setCount] = useState(15);
   const [difficulty, setDifficulty] = useState<string>("medium");
   const [deckName, setDeckName] = useState("");
-  const [activeDeck, setActiveDeck] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [index, setIndex] = useState(0);
-  const [flipped, setFlipped] = useState(false);
   const run = useServerFn(generateFlashcards);
 
   const openAssignments = useMemo(
@@ -60,21 +59,19 @@ function FlashcardsPage() {
   );
 
   const decks = useMemo(() => {
-    const map = new Map<string, number>();
+    const map = new Map<string, { size: number; reviewed: number; created: string }>();
     for (const c of cards) {
-      const key = c.deck ?? "Earlier cards";
-      map.set(key, (map.get(key) ?? 0) + 1);
+      const key = c.deck ?? UNGROUPED;
+      const entry = map.get(key) ?? { size: 0, reviewed: 0, created: c.created_at };
+      entry.size += 1;
+      entry.reviewed += c.times_reviewed > 0 ? 1 : 0;
+      if (c.created_at > entry.created) entry.created = c.created_at;
+      map.set(key, entry);
     }
-    return [...map.entries()].map(([name, size]) => ({ name, size }));
+    return [...map.entries()]
+      .map(([name, v]) => ({ name, ...v }))
+      .sort((a, b) => b.created.localeCompare(a.created));
   }, [cards]);
-
-  const selectedDeck = activeDeck && decks.some((d) => d.name === activeDeck) ? activeDeck : decks[0]?.name ?? null;
-
-  const deck = useMemo(
-    () => (selectedDeck ? cards.filter((c) => (c.deck ?? "Earlier cards") === selectedDeck) : []),
-    [cards, selectedDeck],
-  );
-  const current = deck[index];
 
   async function generate() {
     if (!classId) {
@@ -95,10 +92,7 @@ function FlashcardsPage() {
         },
       });
       await qc.invalidateQueries({ queryKey: ["flashcards"] });
-      setActiveDeck(result.deck);
       setDeckName("");
-      setIndex(0);
-      setFlipped(false);
       toast.success(`New deck ready: ${result.deck}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Generation failed");
@@ -107,36 +101,23 @@ function FlashcardsPage() {
     }
   }
 
-  async function deleteDeck() {
-    if (!selectedDeck) return;
-    const ids = deck.map((c) => c.id);
-    const { error } = await supabase.from("flashcards").delete().in("id", ids);
+  async function deleteDeck(name: string) {
+    let q = supabase.from("flashcards").delete();
+    q = name === UNGROUPED ? q.is("deck", null) : q.eq("deck", name);
+    if (classId) q = q.eq("class_id", classId);
+    const { error } = await q;
     if (error) throw new Error(error.message);
     await qc.invalidateQueries({ queryKey: ["flashcards"] });
-    setActiveDeck(null);
-    setIndex(0);
-    setFlipped(false);
-  }
-
-  async function review(correct: boolean) {
-    if (!current) return;
-    await supabase
-      .from("flashcards")
-      .update({
-        times_reviewed: current.times_reviewed + 1,
-        times_correct: current.times_correct + (correct ? 1 : 0),
-      })
-      .eq("id", current.id);
-    await qc.invalidateQueries({ queryKey: ["flashcards"] });
-    setFlipped(false);
-    setIndex((i) => (i + 1) % Math.max(deck.length, 1));
   }
 
   return (
     <div>
-      <PageHeader title="Flashcards" description="Generate a deck from your materials, aimed at the homework that's actually due." />
+      <PageHeader
+        title="Flashcards"
+        description="Every generation becomes its own deck, so new cards never mix into an old set."
+      />
 
-      <div className="surface-card grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="surface-card grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
         <div className="space-y-1.5">
           <Label>Class</Label>
           <Select
@@ -222,87 +203,53 @@ function FlashcardsPage() {
           <Label htmlFor="deckName">Deck name (optional)</Label>
           <Input
             id="deckName"
-            placeholder="Auto-named by topic + time"
+            placeholder="Auto-named for you"
             value={deckName}
             onChange={(e) => setDeckName(e.target.value)}
           />
         </div>
-        <div className="sm:col-span-2 lg:col-span-5">
+        <div className="sm:col-span-2 lg:col-span-3">
           <Button onClick={generate} disabled={busy} className="gap-1.5">
             {busy ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-            Generate flashcards
+            Generate a new deck
           </Button>
         </div>
       </div>
 
-      {decks.length > 0 ? (
-        <div className="mt-6 flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-muted-foreground">Decks:</span>
+      <h2 className="mt-8 mb-3 text-sm font-semibold text-muted-foreground">Your decks</h2>
+      {isLoading ? (
+        <Loader2 className="size-5 animate-spin text-primary" />
+      ) : decks.length === 0 ? (
+        <EmptyState
+          icon={Brain}
+          title="No decks yet"
+          description="Pick a class and generate your first deck from your uploaded materials."
+        />
+      ) : (
+        <ul className="space-y-2">
           {decks.map((d) => (
-            <Button
-              key={d.name}
-              size="sm"
-              variant={d.name === selectedDeck ? "default" : "outline"}
-              onClick={() => {
-                setActiveDeck(d.name);
-                setIndex(0);
-                setFlipped(false);
-              }}
-            >
-              {d.name} · {d.size}
-            </Button>
+            <li key={d.name} className="surface-card flex items-center gap-3 p-4">
+              <Brain className="size-4 shrink-0 text-primary" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold">{d.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {d.size} cards · {d.reviewed} reviewed
+                </p>
+              </div>
+              <Button asChild size="sm" variant="outline">
+                <Link to="/flashcards/$deck" params={{ deck: encodeURIComponent(d.name) }}>
+                  {d.reviewed > 0 ? "Review" : "Study"}
+                </Link>
+              </Button>
+              <DeleteButton
+                label="deck"
+                description={`All ${d.size} cards in "${d.name}" will be removed. Your other decks stay.`}
+                onDelete={() => deleteDeck(d.name)}
+              />
+            </li>
           ))}
-          {selectedDeck ? (
-            <DeleteButton
-              label="deck"
-              description={`All ${deck.length} cards in "${selectedDeck}" will be removed. Your other decks stay.`}
-              onDelete={deleteDeck}
-            />
-          ) : null}
-        </div>
-      ) : null}
-
-      <div className="mt-6">
-        {isLoading ? (
-          <Loader2 className="size-5 animate-spin text-primary" />
-        ) : deck.length === 0 || !current ? (
-          <EmptyState
-            icon={Brain}
-            title="No flashcards yet"
-            description="Pick a class and generate your first deck from your uploaded materials."
-          />
-        ) : (
-          <div className="mx-auto max-w-2xl">
-            <button
-              type="button"
-              onClick={() => setFlipped((f) => !f)}
-              className="surface-card flex min-h-52 w-full items-center justify-center p-8 text-center text-lg font-semibold"
-            >
-              {flipped ? current.back : current.front}
-            </button>
-            <p className="mt-3 text-center text-xs text-muted-foreground">
-              Card {index + 1} of {deck.length} · tap to flip
-            </p>
-            <div className="mt-4 flex justify-center gap-2">
-              <Button variant="outline" onClick={() => void review(false)}>
-                Still learning
-              </Button>
-              <Button onClick={() => void review(true)}>Got it</Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Restart deck"
-                onClick={() => {
-                  setIndex(0);
-                  setFlipped(false);
-                }}
-              >
-                <RotateCcw className="size-4" />
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
+        </ul>
+      )}
     </div>
   );
 }
