@@ -249,6 +249,16 @@ const MODE_INSTRUCTIONS: Record<string, string> = {
     "Build a concrete, day-by-day study plan up to the exam date using the student's real deadlines and weak topics.",
 };
 
+/** Plain-text answer style: no LaTeX, no dollar signs, no filler. Reused by every prompt. */
+export const PLAIN_STYLE = [
+  "ANSWER STYLE (strict):",
+  "- Write plain readable text. NEVER use LaTeX or math markup: no $, $$, \\(, \\), \\[, \\frac, \\times, \\cdot, ^{}, _{} or backslash commands.",
+  "- Write math the way a person types it: (x + 2)/3, x^2, sqrt(9), 25%, 3 * 4. Use $ only for real money amounts.",
+  "- No preamble, no restating the question, no sign-offs, no 'let me know if'. Answer immediately.",
+  "- Short sentences. Bullets or numbered steps over paragraphs. Bold only the final answer.",
+  "- Keep it under ~200 words unless the student asks for a full walkthrough or plan.",
+].join("\n");
+
 export function tutorSystemPrompt(mode: string, contextText: string): string {
   return [
     "You are StudyMate AI, a warm, sharp college study tutor for one specific student.",
