@@ -54,6 +54,7 @@ export const generateFlashcards = createServerFn({ method: "POST" })
         topic: z.string().max(200).nullable().optional(),
         assignmentId: z.string().uuid().nullable().optional(),
         matchHomework: z.boolean().optional(),
+        deck: z.string().max(80).nullable().optional(),
       })
       .parse(d),
   )
