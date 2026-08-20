@@ -64,6 +64,9 @@ function AuthPage() {
           if (signIn.error) throw signIn.error;
         }
         toast.success("Account created. Welcome to StudyMate AI!");
+        if (typeof window !== "undefined" && "gtag_report_conversion" in window) {
+          (window as any).gtag_report_conversion();
+        }
         navigate({ to: "/dashboard" });
 
       } else if (mode === "login") {
