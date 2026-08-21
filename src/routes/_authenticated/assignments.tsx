@@ -152,13 +152,26 @@ function NewAssignmentDialog() {
       class_id: form.class_id || null,
       priority: form.priority,
     });
+    if (!error && form.due_date) {
+      await supabase.from("calendar_events").insert({
+        user_id: user.id,
+        class_id: form.class_id || null,
+        title: `Due: ${form.title}`,
+        event_type: "assignment",
+        event_date: form.due_date,
+        description: "Auto-added from your assignments list",
+      });
+    }
     setBusy(false);
     if (error) {
       toast.error(error.message);
       return;
     }
     await qc.invalidateQueries({ queryKey: ["assignments"] });
-    toast.success("Assignment added");
+    await qc.invalidateQueries({ queryKey: ["events"] });
+    await qc.invalidateQueries({ queryKey: ["calendar_events"] });
+    toast.success(form.due_date ? "Assignment added to your calendar" : "Assignment added");
+
     setOpen(false);
     setForm({ title: "", due_date: "", class_id: "", priority: "medium" });
   }
