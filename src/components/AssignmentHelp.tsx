@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Markdown } from "@/components/Markdown";
+import { Hint } from "@/components/Hint";
 import { DocumentUploader } from "@/components/DocumentUploader";
 import { DocumentList } from "@/components/DocumentList";
 import { DocumentSplitView } from "@/components/DocumentSplitView";
@@ -94,6 +95,9 @@ export function AssignmentHelp({
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label>Category (keeps AI work organized)</Label>
+              <Hint id="assignment-category" point="down">
+                Pick a category so StudyMate files its saved work under the right kind of task.
+              </Hint>
               <Select value={category ?? ""} onValueChange={(v) => void setCategory(v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Pick a category" />
@@ -114,9 +118,10 @@ export function AssignmentHelp({
               title="Attach the assignment (PDF or screenshot)"
               hint="StudyMate reads it, then walks you through the questions — no extra clicks."
             />
-            <p className="text-xs text-muted-foreground">
-              Tap a file name to see it side by side with the AI's answer.
-            </p>
+            <Hint id="assignment-open-file" point="down">
+              Click a file name below to open it side by side — your PDF or image on the left, the
+              AI's explanation on the right.
+            </Hint>
             <DocumentList documents={docs} onSelect={(d) => setSelected(d)} />
 
             <div className="flex flex-col gap-2 sm:flex-row">

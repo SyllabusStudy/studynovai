@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { FileVideo, Loader2, Sparkles, Upload, Video, Youtube } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
+import { Hint } from "@/components/Hint";
 import { EmptyState } from "@/components/EmptyState";
 import { DeleteButton } from "@/components/DeleteButton";
 import { supabase } from "@/integrations/supabase/client";
@@ -115,6 +116,11 @@ function QuickVideoPage() {
         title="QuickVideo"
         description="Drop in a YouTube link or a lecture recording. StudyMate watches it, writes your notes, then answers anything you ask about it."
       />
+
+      <Hint id="quickvideo-link" point="down" className="mb-4">
+        Paste a YouTube lecture link here — StudyMate writes the notes, then you can ask it
+        anything about the video.
+      </Hint>
 
       <div className="surface-card grid gap-4 p-5 lg:grid-cols-[1fr_minmax(0,14rem)_auto]">
         <div className="space-y-1.5">
