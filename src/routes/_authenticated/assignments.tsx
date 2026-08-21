@@ -103,7 +103,12 @@ function AssignmentsPage() {
                     label={classLabel(classById.get(a.class_id))}
                   />
                 ) : null}
-                <AssignmentHelp assignmentId={a.id} classId={a.class_id} title={a.title} />
+                <AssignmentHelp
+                  assignmentId={a.id}
+                  classId={a.class_id}
+                  title={a.title}
+                  category={a.category}
+                />
                 <DeleteButton
                   label="assignment"
                   description={`"${a.title}" will be removed from your list.`}

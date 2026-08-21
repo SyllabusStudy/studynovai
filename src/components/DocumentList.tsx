@@ -11,7 +11,13 @@ export function documentStatusLabel(d: DocumentRow): string {
   return "Reading…";
 }
 
-export function DocumentList({ documents }: { documents: DocumentRow[] }) {
+export function DocumentList({
+  documents,
+  onSelect,
+}: {
+  documents: DocumentRow[];
+  onSelect?: (d: DocumentRow) => void;
+}) {
   const qc = useQueryClient();
 
   async function remove(d: DocumentRow) {
@@ -30,13 +36,30 @@ export function DocumentList({ documents }: { documents: DocumentRow[] }) {
       {documents.map((d) => (
         <li key={d.id} className="surface-card flex items-center gap-3 p-4">
           <FileText className="size-4 shrink-0 text-primary" />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">{d.file_name}</p>
-            <p className="text-xs text-muted-foreground">
-              {d.is_syllabus ? "Syllabus · " : ""}
-              {documentStatusLabel(d)}
-            </p>
-          </div>
+          {onSelect ? (
+            <button
+              type="button"
+              onClick={() => onSelect(d)}
+              className="min-w-0 flex-1 text-left"
+            >
+              <p className="truncate text-sm font-semibold underline-offset-2 hover:underline">
+                {d.file_name}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {d.is_syllabus ? "Syllabus · " : ""}
+                {documentStatusLabel(d)}
+                {d.ai_help ? " · AI work saved" : ""}
+              </p>
+            </button>
+          ) : (
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold">{d.file_name}</p>
+              <p className="text-xs text-muted-foreground">
+                {d.is_syllabus ? "Syllabus · " : ""}
+                {documentStatusLabel(d)}
+              </p>
+            </div>
+          )}
           <DeleteButton
             label={d.is_syllabus ? "syllabus" : "file"}
             description={`"${d.file_name}" and its extracted text will be removed.`}
