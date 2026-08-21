@@ -5,6 +5,7 @@ import { BookOpen, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
+import { Hint } from "@/components/Hint";
 import { SyllabusCsvExport } from "@/components/SyllabusCsvExport";
 import { EmptyState } from "@/components/EmptyState";
 import { ClassDot } from "@/components/ClassBadge";
@@ -59,6 +60,10 @@ function ClassesPage() {
 
       <section className="mb-6">
         <h2 className="mb-2 text-sm font-bold tracking-tight">Import a syllabus PDF</h2>
+        <Hint id="classes-syllabus" point="down" className="mb-2">
+          Start here: drop your syllabus PDF in the box below and StudyMate builds the class,
+          exams, homework and grade weights for you.
+        </Hint>
         <DocumentUploader syllabusOnly />
       </section>
 

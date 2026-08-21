@@ -5,6 +5,7 @@ import { Camera, ImageUp, Loader2, RotateCcw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { snapHelp } from "@/lib/ai.functions";
 import { PageHeader } from "@/components/PageHeader";
+import { Hint } from "@/components/Hint";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Markdown } from "@/components/Markdown";
@@ -115,6 +116,11 @@ function SnapQuickPage() {
         title="SnapQuick"
         description="Point your camera at any worksheet, problem set or whiteboard — StudyMate reads it and explains every question."
       />
+
+      <Hint id="snapquick-camera" point="down" className="mb-4">
+        Take or upload a photo of your work, then hit scan — every question gets identified and
+        explained on the right.
+      </Hint>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,22rem)_1fr]">
         <div className="space-y-4">

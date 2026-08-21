@@ -5,6 +5,7 @@ import { CheckSquare, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
+import { Hint } from "@/components/Hint";
 import { EmptyState } from "@/components/EmptyState";
 import { ClassChip } from "@/components/ClassBadge";
 import { DeleteButton } from "@/components/DeleteButton";
@@ -71,6 +72,11 @@ function AssignmentsPage() {
         description="Everything you owe, sorted by what's due next. Attach a PDF or screenshot and AI helps you solve it."
         actions={<NewAssignmentDialog />}
       />
+
+      <Hint id="assignments-ai-help" point="down" className="mb-4">
+        Tap <strong>AI help</strong> on any assignment to attach a PDF or screenshot — StudyMate
+        reads it and walks you through the questions.
+      </Hint>
 
       {isLoading ? (
         <Loader2 className="size-5 animate-spin text-primary" />
