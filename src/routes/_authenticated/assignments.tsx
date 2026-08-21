@@ -121,8 +121,16 @@ function AssignmentsPage() {
                   onDelete={async () => {
                     const { error } = await supabase.from("assignments").delete().eq("id", a.id);
                     if (error) throw new Error(error.message);
+                    await supabase
+                      .from("calendar_events")
+                      .delete()
+                      .eq("title", `Due: ${a.title}`)
+                      .eq("event_type", "assignment");
                     await qc.invalidateQueries({ queryKey: ["assignments"] });
+                    await qc.invalidateQueries({ queryKey: ["events"] });
+                    await qc.invalidateQueries({ queryKey: ["calendar_events"] });
                   }}
+
                 />
               </li>
             );
@@ -152,13 +160,26 @@ function NewAssignmentDialog() {
       class_id: form.class_id || null,
       priority: form.priority,
     });
+    if (!error && form.due_date) {
+      await supabase.from("calendar_events").insert({
+        user_id: user.id,
+        class_id: form.class_id || null,
+        title: `Due: ${form.title}`,
+        event_type: "assignment",
+        event_date: form.due_date,
+        description: "Auto-added from your assignments list",
+      });
+    }
     setBusy(false);
     if (error) {
       toast.error(error.message);
       return;
     }
     await qc.invalidateQueries({ queryKey: ["assignments"] });
-    toast.success("Assignment added");
+    await qc.invalidateQueries({ queryKey: ["events"] });
+    await qc.invalidateQueries({ queryKey: ["calendar_events"] });
+    toast.success(form.due_date ? "Assignment added to your calendar" : "Assignment added");
+
     setOpen(false);
     setForm({ title: "", due_date: "", class_id: "", priority: "medium" });
   }
