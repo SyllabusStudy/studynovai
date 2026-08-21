@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ClassChip } from "@/components/ClassBadge";
 import { Markdown } from "@/components/Markdown";
 import { InstallAppButton } from "@/components/InstallAppButton";
+import { Hint } from "@/components/Hint";
 import { Button } from "@/components/ui/button";
 import { studyCoach } from "@/lib/ai.functions";
 import { useAuth } from "@/lib/auth";
