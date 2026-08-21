@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { ClassDot } from "@/components/ClassBadge";
+import { Hint } from "@/components/Hint";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,6 +56,10 @@ function GradesPage() {
         description="Add your syllabus weights, log scores, and see where you stand."
         actions={<NewCategoryDialog />}
       />
+
+      <Hint id="grades-weights" point="down" className="mb-4">
+        Add the categories from your syllabus — like Exams 40%, Homework 30% — then mark assignment scores to see your live weighted grade.
+      </Hint>
 
       {classes.length === 0 ? (
         <EmptyState

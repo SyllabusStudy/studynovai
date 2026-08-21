@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ClassChip } from "@/components/ClassBadge";
 import { Markdown } from "@/components/Markdown";
 import { InstallAppButton } from "@/components/InstallAppButton";
+import { Hint } from "@/components/Hint";
 import { Button } from "@/components/ui/button";
 import { studyCoach } from "@/lib/ai.functions";
 import { useAuth } from "@/lib/auth";
@@ -103,6 +104,10 @@ function Dashboard() {
           </div>
         }
       />
+
+      <Hint id="dashboard-start" point="down" className="mb-4">
+        This is your home base — stats update automatically, and the study plan pulls from every syllabus, assignment and note you've uploaded.
+      </Hint>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((s) => (

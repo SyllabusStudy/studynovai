@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { DeleteButton } from "@/components/DeleteButton";
+import { Hint } from "@/components/Hint";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,6 +88,10 @@ function QuizzesPage() {
   return (
     <div>
       <PageHeader title="Quizzes" description="Practice with questions written from your own material." />
+
+      <Hint id="quizzes-source" point="down" className="mb-4">
+        Select a class and the exact chapters or notes you want quizzed on — StudyMate writes questions only from your own uploads.
+      </Hint>
 
       <div className="surface-card grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-1.5">

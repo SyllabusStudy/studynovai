@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
+import { Hint } from "@/components/Hint";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -87,6 +88,10 @@ function SettingsPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <PageHeader title="Settings" description="Your profile, plan, reminders and appearance." />
+
+      <Hint id="settings-profile" point="down" className="mb-4">
+        Fill in your school and major — the AI uses this to tailor explanations and reminders to you.
+      </Hint>
 
       <div className="surface-card mb-4 flex items-center justify-between gap-4 p-5">
         <div>

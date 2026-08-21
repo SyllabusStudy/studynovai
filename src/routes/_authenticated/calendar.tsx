@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { SyllabusCsvExport } from "@/components/SyllabusCsvExport";
 import { ClassDot } from "@/components/ClassBadge";
 import { DeleteButton } from "@/components/DeleteButton";
+import { Hint } from "@/components/Hint";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -93,6 +94,9 @@ function CalendarPage() {
         }
       />
 
+      <Hint id="calendar-click" point="down" className="mb-4">
+        Tap any day on the calendar to see the exact time and details for every event scheduled that day.
+      </Hint>
 
       <div className="mb-3 flex items-center gap-2">
         <Button
