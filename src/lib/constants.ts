@@ -73,3 +73,13 @@ export const DIFFICULTIES = ["easy", "medium", "hard", "exam"] as const;
 
 export const ACCEPTED_UPLOAD_TYPES =
   ".pdf,.png,.jpg,.jpeg,.webp,.heic,.doc,.docx,.ppt,.pptx,.txt,.md";
+
+export const ASSIGNMENT_CATEGORIES = [
+  { key: "homework", label: "Homework" },
+  { key: "essay", label: "Essay / writing" },
+  { key: "lab", label: "Lab report" },
+  { key: "project", label: "Project" },
+  { key: "reading", label: "Reading" },
+  { key: "exam_prep", label: "Exam prep" },
+  { key: "other", label: "Other" },
+] as const;
