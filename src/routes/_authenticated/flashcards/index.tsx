@@ -118,6 +118,10 @@ function FlashcardsPage() {
         description="Every generation becomes its own deck, so new cards never mix into an old set."
       />
 
+      <Hint id="flashcards-deck" point="down" className="mb-4">
+        Pick a class, choose a source or let it use all your materials, then hit generate — each set gets its own deck name so nothing overlaps.
+      </Hint>
+
       <div className="surface-card grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
         <div className="space-y-1.5">
           <Label>Class</Label>

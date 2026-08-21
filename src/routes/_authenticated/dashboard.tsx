@@ -105,6 +105,10 @@ function Dashboard() {
         }
       />
 
+      <Hint id="dashboard-start" point="down" className="mb-4">
+        This is your home base — stats update automatically, and the study plan pulls from every syllabus, assignment and note you've uploaded.
+      </Hint>
+
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((s) => (
           <div key={s.label} className="surface-card p-4">

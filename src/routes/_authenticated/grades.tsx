@@ -57,6 +57,10 @@ function GradesPage() {
         actions={<NewCategoryDialog />}
       />
 
+      <Hint id="grades-weights" point="down" className="mb-4">
+        Add the categories from your syllabus — like Exams 40%, Homework 30% — then mark assignment scores to see your live weighted grade.
+      </Hint>
+
       {classes.length === 0 ? (
         <EmptyState
           icon={ChartColumn}
