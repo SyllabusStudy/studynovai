@@ -121,8 +121,16 @@ function AssignmentsPage() {
                   onDelete={async () => {
                     const { error } = await supabase.from("assignments").delete().eq("id", a.id);
                     if (error) throw new Error(error.message);
+                    await supabase
+                      .from("calendar_events")
+                      .delete()
+                      .eq("title", `Due: ${a.title}`)
+                      .eq("event_type", "assignment");
                     await qc.invalidateQueries({ queryKey: ["assignments"] });
+                    await qc.invalidateQueries({ queryKey: ["events"] });
+                    await qc.invalidateQueries({ queryKey: ["calendar_events"] });
                   }}
+
                 />
               </li>
             );
