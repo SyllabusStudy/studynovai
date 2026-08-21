@@ -94,7 +94,7 @@ export function AssignmentHelp({
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label>Category (keeps AI work organized)</Label>
-              <Select value={category ?? undefined} onValueChange={(v) => void setCategory(v)}>
+              <Select value={category ?? ""} onValueChange={(v) => void setCategory(v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Pick a category" />
                 </SelectTrigger>
