@@ -11,7 +11,13 @@ export function documentStatusLabel(d: DocumentRow): string {
   return "Reading…";
 }
 
-export function DocumentList({ documents }: { documents: DocumentRow[] }) {
+export function DocumentList({
+  documents,
+  onSelect,
+}: {
+  documents: DocumentRow[];
+  onSelect?: (d: DocumentRow) => void;
+}) {
   const qc = useQueryClient();
 
   async function remove(d: DocumentRow) {
