@@ -150,7 +150,15 @@ export const snapHelp = createServerFn({ method: "POST" })
 
 export const markupDocument = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ documentId: z.string().uuid() }).parse(d))
+  .inputValidator((d) =>
+    z
+      .object({
+        documentId: z.string().uuid(),
+        pageImages: z.array(z.string().max(6_000_000)).max(3).nullable().optional(),
+      })
+      .parse(d),
+  )
+
   .handler(async ({ data, context }) =>
     runDocumentMarkup(context.supabase, context.userId, data),
   );

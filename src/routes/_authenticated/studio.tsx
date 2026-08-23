@@ -41,22 +41,41 @@ function StudioPage() {
   const [source, setSource] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [loadingSource, setLoadingSource] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  function pick(file: File | undefined) {
+
+  async function pick(file: File | undefined) {
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error("Pick an image file (PNG or JPG).");
+    const isPdf = file.type.includes("pdf") || file.name.toLowerCase().endsWith(".pdf");
+    if (!file.type.startsWith("image/") && !isPdf) {
+      toast.error("Pick an image (PNG or JPG) or a PDF.");
       return;
     }
-    if (file.size > 8_000_000) {
-      toast.error("That image is too large — keep it under 8MB.");
+    if (file.size > 12_000_000) {
+      toast.error("That file is too large — keep it under 12MB.");
+      return;
+    }
+    if (isPdf) {
+      setLoadingSource(true);
+      try {
+        const { renderPdfPages } = await import("@/lib/pdf-render");
+        const pages = await renderPdfPages(file, 1);
+        if (!pages.length) throw new Error("empty");
+        setSource(pages[0]!.dataUrl);
+        toast.success("Using page 1 of that PDF");
+      } catch {
+        toast.error("Could not read that PDF.");
+      } finally {
+        setLoadingSource(false);
+      }
       return;
     }
     const reader = new FileReader();
     reader.onload = () => setSource(String(reader.result));
     reader.readAsDataURL(file);
   }
+
 
   async function run() {
     if (prompt.trim().length < 2) {
@@ -85,13 +104,14 @@ function StudioPage() {
     <div>
       <PageHeader
         title="AI Image Studio"
-        description="Make a study diagram from a description, or upload an image and tell the AI how to change it."
+        description="Make a study diagram from a description, or upload an image or PDF page and tell the AI how to change it."
       />
 
       <Hint id="studio-intro" point="down" className="mb-4">
-        Describe a diagram to create one from scratch — or upload a photo first and the AI edits that
-        image instead.
+        Describe a diagram to create one from scratch — or upload a photo or PDF first and the AI works
+        from that page instead.
       </Hint>
+
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="surface-card space-y-4 p-4">
@@ -120,37 +140,45 @@ function StudioPage() {
           </div>
 
           <div className="space-y-2">
-            <Label>Optional: edit one of your own images</Label>
+            <Label>Optional: work from your own image or PDF</Label>
             <input
               ref={fileRef}
               type="file"
-              accept="image/*"
+              accept="image/*,application/pdf,.pdf"
               className="hidden"
-              onChange={(e) => pick(e.target.files?.[0])}
+              onChange={(e) => void pick(e.target.files?.[0])}
             />
             {source ? (
               <div className="relative w-fit">
-                <img src={source} alt="Image to edit" className="max-h-40 rounded-lg border border-border" />
+                <img src={source} alt="File to edit" className="max-h-40 rounded-lg border border-border" />
                 <Button
                   variant="secondary"
                   size="icon"
                   className="absolute -right-2 -top-2 size-7"
-                  aria-label="Remove uploaded image"
+                  aria-label="Remove uploaded file"
                   onClick={() => setSource(null)}
                 >
                   <X className="size-4" />
                 </Button>
               </div>
             ) : (
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => fileRef.current?.click()}>
-                <Upload className="size-4" /> Upload an image
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                disabled={loadingSource}
+                onClick={() => fileRef.current?.click()}
+              >
+                {loadingSource ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
+                Upload an image or PDF
               </Button>
             )}
           </div>
 
-          <Button onClick={() => void run()} disabled={busy} className="w-full gap-1.5">
+          <Button onClick={() => void run()} disabled={busy || loadingSource} className="w-full gap-1.5">
             {busy ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
             {source ? "Edit this image" : "Generate image"}
+
           </Button>
         </div>
 

@@ -970,9 +970,12 @@ export type DocMarker = {
   label: string;
   note: string;
   quote?: string | null;
-  /** Normalized 0-1 box, images only. */
+  /** 1-based page the box belongs to (PDFs); 1 for images. */
+  page?: number;
+  /** Normalized 0-1 box on that page/image. */
   box?: { x: number; y: number; w: number; h: number } | null;
 };
+
 
 const MARKUP_RULES = [
   "You mark up a student's assignment file so they can see exactly what each part is asking.",
@@ -986,7 +989,7 @@ const MARKUP_RULES = [
 export async function runDocumentMarkup(
   supabase: DB,
   userId: string,
-  input: { documentId: string },
+  input: { documentId: string; pageImages?: string[] | null | undefined },
 ) {
   const { data: doc } = await supabase
     .from("documents")
@@ -996,38 +999,56 @@ export async function runDocumentMarkup(
     .single();
   if (!doc) throw new Error("File not found.");
 
-  const { data: file, error: dlError } = await supabase.storage
-    .from("course-materials")
-    .download(doc.storage_path);
-  if (dlError || !file) throw new Error("Could not open that file.");
+  const pageImages = (input.pageImages ?? []).filter((s) => s.startsWith("data:image/")).slice(0, 3);
 
-  const mime = doc.file_type ?? file.type ?? "";
-  const isImage = mime.startsWith("image/");
-  const base64 = bytesToBase64(new Uint8Array(await file.arrayBuffer()));
+  let content: Array<Record<string, unknown>>;
+  let schema: string;
 
-  const schema = isImage
-    ? `Return ONLY JSON: {"markers":[{"label":"...","note":"...","box":{"x":0.12,"y":0.30,"w":0.40,"h":0.08}}]}
+  if (pageImages.length) {
+    // PDF rendered to page images in the browser, so boxes can be drawn on it.
+    schema = `Return ONLY JSON: {"markers":[{"label":"...","note":"...","page":1,"box":{"x":0.12,"y":0.30,"w":0.40,"h":0.08}}]}
+page is which page image the marker is on (1 = first image given). box is the region on that page, as fractions of its width/height from the top-left corner. Be accurate: the box must sit exactly over the text or figure you describe.`;
+    content = [
+      {
+        type: "text",
+        text: `Mark up these ${pageImages.length} page(s) of the file. Give 4 to 12 markers, in reading order.\n${schema}`,
+      },
+      ...pageImages.map((url) => ({ type: "image_url" as const, image_url: { url } })),
+    ];
+  } else {
+    const mime = doc.file_type ?? "";
+    const { data: file, error: dlError } = await supabase.storage
+      .from("course-materials")
+      .download(doc.storage_path);
+    if (dlError || !file) throw new Error("Could not open that file.");
+    const type = mime || file.type || "";
+    const isImage = type.startsWith("image/");
+    const base64 = bytesToBase64(new Uint8Array(await file.arrayBuffer()));
+
+    schema = isImage
+      ? `Return ONLY JSON: {"markers":[{"label":"...","note":"...","box":{"x":0.12,"y":0.30,"w":0.40,"h":0.08}}]}
 box is the region on the image, as fractions of the width/height from the top-left corner. Be accurate: the box must sit over the exact text or figure you are describing.`
-    : `Return ONLY JSON: {"markers":[{"label":"...","note":"...","quote":"the exact short phrase from the document"}]}`;
+      : `Return ONLY JSON: {"markers":[{"label":"...","note":"...","quote":"the exact short phrase from the document"}]}`;
+
+    content = [
+      { type: "text", text: `Mark up this file. Give 4 to 12 markers, in reading order.\n${schema}` },
+      isImage
+        ? { type: "image_url" as const, image_url: { url: `data:${type};base64,${base64}` } }
+        : {
+            type: "file" as const,
+            file: { filename: doc.file_name, file_data: `data:application/pdf;base64,${base64}` },
+          },
+    ];
+  }
 
   const raw = await callAI(
     [
       { role: "system", content: MARKUP_RULES },
-      {
-        role: "user",
-        content: [
-          { type: "text", text: `Mark up this file. Give 4 to 12 markers, in reading order.\n${schema}` },
-          isImage
-            ? { type: "image_url" as const, image_url: { url: `data:${mime};base64,${base64}` } }
-            : {
-                type: "file" as const,
-                file: { filename: doc.file_name, file_data: `data:application/pdf;base64,${base64}` },
-              },
-        ],
-      },
+      { role: "user", content: content as never },
     ],
     { maxTokens: 2200 },
   );
+
 
   const parsed = parseJsonBlock<{ markers?: Array<Omit<DocMarker, "n">> }>(raw);
   const markers: DocMarker[] = (parsed.markers ?? [])
@@ -1038,6 +1059,8 @@ box is the region on the image, as fractions of the width/height from the top-le
       label: String(m.label).slice(0, 60),
       note: String(m.note ?? "").slice(0, 400),
       quote: m.quote ? String(m.quote).slice(0, 200) : null,
+      page: typeof m.page === "number" && m.page >= 1 ? Math.min(Math.round(m.page), 3) : 1,
+
       box:
         m.box && [m.box.x, m.box.y, m.box.w, m.box.h].every((v) => typeof v === "number")
           ? {
