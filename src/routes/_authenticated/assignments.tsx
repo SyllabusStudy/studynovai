@@ -121,6 +121,8 @@ function AssignmentsPage() {
                   onDelete={async () => {
                     const { error } = await supabase.from("assignments").delete().eq("id", a.id);
                     if (error) throw new Error(error.message);
+                    // Linked events cascade automatically; this clears older
+                    // entries created before events were linked.
                     await supabase
                       .from("calendar_events")
                       .delete()
@@ -153,17 +155,23 @@ function NewAssignmentDialog() {
     e.preventDefault();
     if (!user) return;
     setBusy(true);
-    const { error } = await supabase.from("assignments").insert({
-      user_id: user.id,
-      title: form.title,
-      due_date: form.due_date || null,
-      class_id: form.class_id || null,
-      priority: form.priority,
-    });
+    const { data: created, error } = await supabase
+      .from("assignments")
+      .insert({
+        user_id: user.id,
+        title: form.title,
+        due_date: form.due_date || null,
+        class_id: form.class_id || null,
+        priority: form.priority,
+      })
+      .select("id")
+      .maybeSingle();
     if (!error && form.due_date) {
+      // Linked to the assignment so the calendar entry can open its AI help.
       await supabase.from("calendar_events").insert({
         user_id: user.id,
         class_id: form.class_id || null,
+        assignment_id: created?.id ?? null,
         title: `Due: ${form.title}`,
         event_type: "assignment",
         event_date: form.due_date,

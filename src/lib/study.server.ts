@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import {
   buildClassContext,
+  bytesToBase64,
   callAI,
   extractTextFromFile,
   parseJsonBlock,
@@ -960,4 +961,101 @@ export async function runSnapHelp(
   ]);
 
   return { reply };
+}
+
+/* ------------------------------------------------------------------ file mark-up */
+
+export type DocMarker = {
+  n: number;
+  label: string;
+  note: string;
+  quote?: string | null;
+  /** Normalized 0-1 box, images only. */
+  box?: { x: number; y: number; w: number; h: number } | null;
+};
+
+const MARKUP_RULES = [
+  "You mark up a student's assignment file so they can see exactly what each part is asking.",
+  "Find every question, problem, instruction, key term, due date, point value or trap on the page.",
+  "For each one give a very short label (max 6 words) and a one or two sentence plain note that explains what it means or what to do.",
+  "\n",
+  PLAIN_STYLE,
+].join(" ");
+
+/** Asks the AI to point out and mark specific spots in an uploaded assignment file. */
+export async function runDocumentMarkup(
+  supabase: DB,
+  userId: string,
+  input: { documentId: string },
+) {
+  const { data: doc } = await supabase
+    .from("documents")
+    .select("*")
+    .eq("id", input.documentId)
+    .eq("user_id", userId)
+    .single();
+  if (!doc) throw new Error("File not found.");
+
+  const { data: file, error: dlError } = await supabase.storage
+    .from("course-materials")
+    .download(doc.storage_path);
+  if (dlError || !file) throw new Error("Could not open that file.");
+
+  const mime = doc.file_type ?? file.type ?? "";
+  const isImage = mime.startsWith("image/");
+  const base64 = bytesToBase64(new Uint8Array(await file.arrayBuffer()));
+
+  const schema = isImage
+    ? `Return ONLY JSON: {"markers":[{"label":"...","note":"...","box":{"x":0.12,"y":0.30,"w":0.40,"h":0.08}}]}
+box is the region on the image, as fractions of the width/height from the top-left corner. Be accurate: the box must sit over the exact text or figure you are describing.`
+    : `Return ONLY JSON: {"markers":[{"label":"...","note":"...","quote":"the exact short phrase from the document"}]}`;
+
+  const raw = await callAI(
+    [
+      { role: "system", content: MARKUP_RULES },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: `Mark up this file. Give 4 to 12 markers, in reading order.\n${schema}` },
+          isImage
+            ? { type: "image_url" as const, image_url: { url: `data:${mime};base64,${base64}` } }
+            : {
+                type: "file" as const,
+                file: { filename: doc.file_name, file_data: `data:application/pdf;base64,${base64}` },
+              },
+        ],
+      },
+    ],
+    { maxTokens: 2200 },
+  );
+
+  const parsed = parseJsonBlock<{ markers?: Array<Omit<DocMarker, "n">> }>(raw);
+  const markers: DocMarker[] = (parsed.markers ?? [])
+    .filter((m) => m && typeof m.label === "string")
+    .slice(0, 14)
+    .map((m, i) => ({
+      n: i + 1,
+      label: String(m.label).slice(0, 60),
+      note: String(m.note ?? "").slice(0, 400),
+      quote: m.quote ? String(m.quote).slice(0, 200) : null,
+      box:
+        m.box && [m.box.x, m.box.y, m.box.w, m.box.h].every((v) => typeof v === "number")
+          ? {
+              x: Math.min(Math.max(m.box.x, 0), 1),
+              y: Math.min(Math.max(m.box.y, 0), 1),
+              w: Math.min(Math.max(m.box.w, 0.02), 1),
+              h: Math.min(Math.max(m.box.h, 0.02), 1),
+            }
+          : null,
+    }));
+
+  if (!markers.length) throw new Error("The AI could not find anything to mark on this file.");
+
+  await supabase
+    .from("documents")
+    .update({ annotations: markers })
+    .eq("id", doc.id)
+    .eq("user_id", userId);
+
+  return { markers };
 }

@@ -154,6 +154,7 @@ export type Database = {
       }
       calendar_events: {
         Row: {
+          assignment_id: string | null
           class_id: string | null
           created_at: string
           description: string | null
@@ -167,6 +168,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assignment_id?: string | null
           class_id?: string | null
           created_at?: string
           description?: string | null
@@ -180,6 +182,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assignment_id?: string | null
           class_id?: string | null
           created_at?: string
           description?: string | null
@@ -193,6 +196,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "calendar_events_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "calendar_events_class_id_fkey"
             columns: ["class_id"]
@@ -269,6 +279,7 @@ export type Database = {
       documents: {
         Row: {
           ai_help: string | null
+          annotations: Json | null
           assignment_id: string | null
           class_id: string | null
           created_at: string
@@ -287,6 +298,7 @@ export type Database = {
         }
         Insert: {
           ai_help?: string | null
+          annotations?: Json | null
           assignment_id?: string | null
           class_id?: string | null
           created_at?: string
@@ -305,6 +317,7 @@ export type Database = {
         }
         Update: {
           ai_help?: string | null
+          annotations?: Json | null
           assignment_id?: string | null
           class_id?: string | null
           created_at?: string

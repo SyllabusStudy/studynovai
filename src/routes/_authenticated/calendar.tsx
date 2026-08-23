@@ -29,7 +29,8 @@ import {
 } from "@/components/ui/select";
 import { EVENT_TYPES, EVENT_TYPE_LABELS } from "@/lib/constants";
 import { useAuth } from "@/lib/auth";
-import { classLabel, formatDate, useClasses, useEvents } from "@/lib/data";
+import { AssignmentHelp } from "@/components/AssignmentHelp";
+import { classLabel, formatDate, useAssignments, useClasses, useEvents } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
@@ -53,7 +54,9 @@ function CalendarPage() {
   const qc = useQueryClient();
   const { data: events = [], isLoading } = useEvents(user?.id);
   const { data: classes = [] } = useClasses(user?.id);
+  const { data: assignments = [] } = useAssignments(user?.id);
   const classById = new Map(classes.map((c) => [c.id, c]));
+  const assignmentById = new Map(assignments.map((a) => [a.id, a]));
   const [selected, setSelected] = useState<string | null>(null);
   const [cursor, setCursor] = useState(() => {
 
@@ -95,7 +98,8 @@ function CalendarPage() {
       />
 
       <Hint id="calendar-click" point="down" className="mb-4">
-        Tap any day on the calendar to see the exact time and details for every event scheduled that day.
+        Tap any day to see the exact time and details. Assignment due dates carry an
+        <strong> AI help</strong> button that opens the file and the AI's explanation.
       </Hint>
 
       <div className="mb-3 flex items-center gap-2">
@@ -183,6 +187,14 @@ function CalendarPage() {
                       <p className="mt-1 text-xs text-muted-foreground">{e.description}</p>
                     ) : null}
                   </div>
+                  {e.assignment_id && assignmentById.get(e.assignment_id) ? (
+                    <AssignmentHelp
+                      assignmentId={e.assignment_id}
+                      classId={assignmentById.get(e.assignment_id)!.class_id}
+                      title={assignmentById.get(e.assignment_id)!.title}
+                      category={assignmentById.get(e.assignment_id)!.category}
+                    />
+                  ) : null}
                   <DeleteButton
                     label="event"
                     description={`"${e.title}" will be removed from your calendar.`}
@@ -218,7 +230,17 @@ function CalendarPage() {
                 </p>
               </div>
               {e.class_id ? (
-                <span className="text-xs text-muted-foreground">{classLabel(classById.get(e.class_id))}</span>
+                <span className="hidden text-xs text-muted-foreground sm:inline">
+                  {classLabel(classById.get(e.class_id))}
+                </span>
+              ) : null}
+              {e.assignment_id && assignmentById.get(e.assignment_id) ? (
+                <AssignmentHelp
+                  assignmentId={e.assignment_id}
+                  classId={assignmentById.get(e.assignment_id)!.class_id}
+                  title={assignmentById.get(e.assignment_id)!.title}
+                  category={assignmentById.get(e.assignment_id)!.category}
+                />
               ) : null}
               <DeleteButton
                 label="event"
