@@ -1016,7 +1016,7 @@ page is which page image the marker is on (1 = first image given). box is the re
       ...pageImages.map((url) => ({ type: "image_url" as const, image_url: { url } })),
     ];
   } else {
-    const mime = doc.file_type ?? (await Promise.resolve(""));
+    const mime = doc.file_type ?? "";
     const { data: file, error: dlError } = await supabase.storage
       .from("course-materials")
       .download(doc.storage_path);
