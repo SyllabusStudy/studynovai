@@ -1059,6 +1059,8 @@ box is the region on the image, as fractions of the width/height from the top-le
       label: String(m.label).slice(0, 60),
       note: String(m.note ?? "").slice(0, 400),
       quote: m.quote ? String(m.quote).slice(0, 200) : null,
+      page: typeof m.page === "number" && m.page >= 1 ? Math.min(Math.round(m.page), 3) : 1,
+
       box:
         m.box && [m.box.x, m.box.y, m.box.w, m.box.h].every((v) => typeof v === "number")
           ? {
