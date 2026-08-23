@@ -138,31 +138,36 @@ export function DocumentSplitView({
                 <Loader2 className="size-5 animate-spin text-primary" />
               </div>
             ) : isImage ? (
-              <div className="relative w-full">
-                <img src={url} alt={doc?.file_name ?? "Uploaded file"} className="w-full rounded-lg" />
-                {boxed.map((m) => (
-                  <button
-                    type="button"
-                    key={m.n}
-                    onClick={() => setActive(m.n)}
-                    aria-label={`Marker ${m.n}: ${m.label}`}
-                    className={`absolute rounded-md border-2 transition-colors ${
-                      active === m.n
-                        ? "border-primary bg-primary/25"
-                        : "border-primary/70 bg-primary/10 hover:bg-primary/20"
-                    }`}
-                    style={{
-                      left: `${m.box!.x * 100}%`,
-                      top: `${m.box!.y * 100}%`,
-                      width: `${m.box!.w * 100}%`,
-                      height: `${m.box!.h * 100}%`,
-                    }}
-                  >
-                    <span className="absolute -left-2 -top-2 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-                      {m.n}
-                    </span>
-                  </button>
+              <MarkedPage
+                src={url}
+                alt={doc?.file_name ?? "Uploaded file"}
+                markers={boxed.filter((m) => (m.page ?? 1) === 1)}
+                active={active}
+                onSelect={setActive}
+              />
+            ) : pages.length ? (
+              <div className="space-y-3">
+                {pages.map((p) => (
+                  <div key={p.page} className="space-y-1">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                      Page {p.page}
+                    </p>
+                    <MarkedPage
+                      src={p.dataUrl}
+                      alt={`Page ${p.page} of ${doc?.file_name ?? "file"}`}
+                      markers={boxed.filter((m) => (m.page ?? 1) === p.page)}
+                      active={active}
+                      onSelect={setActive}
+                    />
+                  </div>
                 ))}
+                <a href={url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-primary underline">
+                  Open full PDF <ExternalLink className="size-3" />
+                </a>
+              </div>
+            ) : pagesBusy ? (
+              <div className="flex h-40 flex-col items-center justify-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="size-5 animate-spin text-primary" /> Opening your PDF…
               </div>
             ) : (
               <div className="space-y-2">
@@ -172,6 +177,7 @@ export function DocumentSplitView({
                 </a>
               </div>
             )}
+
           </div>
 
           {/* Right: AI mark-up + discussion */}
