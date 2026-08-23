@@ -38,6 +38,8 @@ export function DocumentSplitView({
 }) {
   const qc = useQueryClient();
   const [url, setUrl] = useState<string | null>(null);
+  const [pages, setPages] = useState<RenderedPage[]>([]);
+  const [pagesBusy, setPagesBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [marking, setMarking] = useState(false);
   const [markers, setMarkers] = useState<Marker[]>([]);
@@ -47,25 +49,40 @@ export function DocumentSplitView({
   const runHelp = useServerFn(assignmentHelp);
   const runMarkup = useServerFn(markupDocument);
 
+  const isImage = (doc?.file_type ?? "").startsWith("image/");
+  const isPdf = (doc?.file_type ?? "").includes("pdf") || (doc?.file_name ?? "").toLowerCase().endsWith(".pdf");
+
   useEffect(() => {
     setAnswer(doc?.ai_help ?? null);
     setMarkers(readMarkers(doc?.annotations));
     setActive(null);
     setUrl(null);
+    setPages([]);
     if (!doc || !open) return;
     let alive = true;
     void supabase.storage
       .from("course-materials")
       .createSignedUrl(doc.storage_path, 3600)
-      .then(({ data }) => {
-        if (alive) setUrl(data?.signedUrl ?? null);
+      .then(async ({ data }) => {
+        if (!alive) return;
+        const signed = data?.signedUrl ?? null;
+        setUrl(signed);
+        if (!signed || !isPdf) return;
+        setPagesBusy(true);
+        try {
+          const rendered = await renderPdfPages(signed, 3);
+          if (alive) setPages(rendered);
+        } catch {
+          /* fall back to the embedded viewer */
+        } finally {
+          if (alive) setPagesBusy(false);
+        }
       });
     return () => {
       alive = false;
     };
-  }, [doc, open]);
+  }, [doc, open, isPdf]);
 
-  const isImage = (doc?.file_type ?? "").startsWith("image/");
   const boxed = markers.filter((m) => m.box);
 
   async function ask() {
@@ -88,7 +105,12 @@ export function DocumentSplitView({
     if (!doc) return;
     setMarking(true);
     try {
-      const result = await runMarkup({ data: { documentId: doc.id } });
+      const result = await runMarkup({
+        data: {
+          documentId: doc.id,
+          pageImages: pages.length ? pages.map((p) => p.dataUrl) : null,
+        },
+      });
       setMarkers(readMarkers(result.markers));
       await qc.invalidateQueries({ queryKey: ["documents"] });
     } catch (e) {
@@ -97,6 +119,7 @@ export function DocumentSplitView({
       setMarking(false);
     }
   }
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
