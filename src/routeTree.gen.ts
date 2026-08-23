@@ -24,6 +24,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedSnapquickRouteImport } from './routes/_authenticated/snapquick'
 import { Route as AuthenticatedTutorRouteImport } from './routes/_authenticated/tutor'
 import { Route as AuthenticatedUpgradeRouteImport } from './routes/_authenticated/upgrade'
+import { Route as ApiAiImageRouteImport } from './routes/api/ai-image'
 import { Route as FeaturesFlashcardsRouteImport } from './routes/features.flashcards'
 import { Route as AuthenticatedClassesIndexRouteImport } from './routes/_authenticated/classes/index'
 import { Route as AuthenticatedClassesClassIdRouteImport } from './routes/_authenticated/classes/$classId'
@@ -110,6 +111,11 @@ const AuthenticatedUpgradeRoute = AuthenticatedUpgradeRouteImport.update({
   path: '/upgrade',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiAiImageRoute = ApiAiImageRouteImport.update({
+  id: '/api/ai-image',
+  path: '/api/ai-image',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FeaturesFlashcardsRoute = FeaturesFlashcardsRouteImport.update({
   id: '/features/flashcards',
   path: '/features/flashcards',
@@ -185,6 +191,7 @@ export interface FileRoutesByFullPath {
   '/snapquick': typeof AuthenticatedSnapquickRoute
   '/tutor': typeof AuthenticatedTutorRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
+  '/api/ai-image': typeof ApiAiImageRoute
   '/features/flashcards': typeof FeaturesFlashcardsRoute
   '/classes/$classId': typeof AuthenticatedClassesClassIdRoute
   '/flashcards/$deck': typeof AuthenticatedFlashcardsDeckRoute
@@ -211,6 +218,7 @@ export interface FileRoutesByTo {
   '/snapquick': typeof AuthenticatedSnapquickRoute
   '/tutor': typeof AuthenticatedTutorRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
+  '/api/ai-image': typeof ApiAiImageRoute
   '/features/flashcards': typeof FeaturesFlashcardsRoute
   '/classes/$classId': typeof AuthenticatedClassesClassIdRoute
   '/flashcards/$deck': typeof AuthenticatedFlashcardsDeckRoute
@@ -239,6 +247,7 @@ export interface FileRoutesById {
   '/_authenticated/snapquick': typeof AuthenticatedSnapquickRoute
   '/_authenticated/tutor': typeof AuthenticatedTutorRoute
   '/_authenticated/upgrade': typeof AuthenticatedUpgradeRoute
+  '/api/ai-image': typeof ApiAiImageRoute
   '/features/flashcards': typeof FeaturesFlashcardsRoute
   '/_authenticated/classes/$classId': typeof AuthenticatedClassesClassIdRoute
   '/_authenticated/flashcards/$deck': typeof AuthenticatedFlashcardsDeckRoute
@@ -267,6 +276,7 @@ export interface FileRouteTypes {
     | '/snapquick'
     | '/tutor'
     | '/upgrade'
+    | '/api/ai-image'
     | '/features/flashcards'
     | '/classes/$classId'
     | '/flashcards/$deck'
@@ -293,6 +303,7 @@ export interface FileRouteTypes {
     | '/snapquick'
     | '/tutor'
     | '/upgrade'
+    | '/api/ai-image'
     | '/features/flashcards'
     | '/classes/$classId'
     | '/flashcards/$deck'
@@ -320,6 +331,7 @@ export interface FileRouteTypes {
     | '/_authenticated/snapquick'
     | '/_authenticated/tutor'
     | '/_authenticated/upgrade'
+    | '/api/ai-image'
     | '/features/flashcards'
     | '/_authenticated/classes/$classId'
     | '/_authenticated/flashcards/$deck'
@@ -338,6 +350,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  ApiAiImageRoute: typeof ApiAiImageRoute
   FeaturesFlashcardsRoute: typeof FeaturesFlashcardsRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
@@ -448,6 +461,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/upgrade'
       preLoaderRoute: typeof AuthenticatedUpgradeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/ai-image': {
+      id: '/api/ai-image'
+      path: '/api/ai-image'
+      fullPath: '/api/ai-image'
+      preLoaderRoute: typeof ApiAiImageRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/features/flashcards': {
       id: '/features/flashcards'
@@ -573,6 +593,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  ApiAiImageRoute: ApiAiImageRoute,
   FeaturesFlashcardsRoute: FeaturesFlashcardsRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }
