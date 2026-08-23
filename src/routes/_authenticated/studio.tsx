@@ -41,7 +41,9 @@ function StudioPage() {
   const [source, setSource] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [loadingSource, setLoadingSource] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
 
   async function pick(file: File | undefined) {
     if (!file) return;
