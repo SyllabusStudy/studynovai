@@ -258,3 +258,50 @@ export function DocumentSplitView({
     </Dialog>
   );
 }
+
+/** One page (or image) of the file with the AI's marks drawn on top of it. */
+function MarkedPage({
+  src,
+  alt,
+  markers,
+  active,
+  onSelect,
+}: {
+  src: string;
+  alt: string;
+  markers: Marker[];
+  active: number | null;
+  onSelect: (n: number) => void;
+}) {
+  return (
+    <div className="relative w-full">
+      <img src={src} alt={alt} className="w-full rounded-lg border border-border bg-background" />
+      {markers.map((m) => (
+        <button
+          type="button"
+          key={m.n}
+          onClick={() => onSelect(m.n)}
+          aria-label={`Mark ${m.n}: ${m.label}`}
+          title={m.label}
+          className={`absolute rounded-sm border-2 transition-all ${
+            active === m.n
+              ? "border-primary bg-primary/30 ring-2 ring-primary/40"
+              : "border-primary/60 bg-primary/15 hover:bg-primary/25"
+          }`}
+          style={{
+            left: `${m.box!.x * 100}%`,
+            top: `${m.box!.y * 100}%`,
+            width: `${m.box!.w * 100}%`,
+            height: `${m.box!.h * 100}%`,
+          }}
+        >
+          <span className="absolute -left-2 -top-2 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shadow">
+            {m.n}
+          </span>
+          <span className="absolute inset-x-0 bottom-0 h-[2px] bg-primary/70" />
+        </button>
+      ))}
+    </div>
+  );
+}
+
