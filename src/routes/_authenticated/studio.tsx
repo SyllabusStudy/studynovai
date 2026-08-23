@@ -43,20 +43,37 @@ function StudioPage() {
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  function pick(file: File | undefined) {
+  async function pick(file: File | undefined) {
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error("Pick an image file (PNG or JPG).");
+    const isPdf = file.type.includes("pdf") || file.name.toLowerCase().endsWith(".pdf");
+    if (!file.type.startsWith("image/") && !isPdf) {
+      toast.error("Pick an image (PNG or JPG) or a PDF.");
       return;
     }
-    if (file.size > 8_000_000) {
-      toast.error("That image is too large — keep it under 8MB.");
+    if (file.size > 12_000_000) {
+      toast.error("That file is too large — keep it under 12MB.");
+      return;
+    }
+    if (isPdf) {
+      setLoadingSource(true);
+      try {
+        const { renderPdfPages } = await import("@/lib/pdf-render");
+        const pages = await renderPdfPages(file, 1);
+        if (!pages.length) throw new Error("empty");
+        setSource(pages[0].dataUrl);
+        toast.success("Using page 1 of that PDF");
+      } catch {
+        toast.error("Could not read that PDF.");
+      } finally {
+        setLoadingSource(false);
+      }
       return;
     }
     const reader = new FileReader();
     reader.onload = () => setSource(String(reader.result));
     reader.readAsDataURL(file);
   }
+
 
   async function run() {
     if (prompt.trim().length < 2) {
