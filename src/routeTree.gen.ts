@@ -22,6 +22,7 @@ import { Route as AuthenticatedFeedbackRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedGradesRouteImport } from './routes/_authenticated/grades'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedSnapquickRouteImport } from './routes/_authenticated/snapquick'
+import { Route as AuthenticatedStudioRouteImport } from './routes/_authenticated/studio'
 import { Route as AuthenticatedTutorRouteImport } from './routes/_authenticated/tutor'
 import { Route as AuthenticatedUpgradeRouteImport } from './routes/_authenticated/upgrade'
 import { Route as ApiAiImageRouteImport } from './routes/api/ai-image'
@@ -99,6 +100,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
 const AuthenticatedSnapquickRoute = AuthenticatedSnapquickRouteImport.update({
   id: '/snapquick',
   path: '/snapquick',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedStudioRoute = AuthenticatedStudioRouteImport.update({
+  id: '/studio',
+  path: '/studio',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedTutorRoute = AuthenticatedTutorRouteImport.update({
@@ -189,6 +195,7 @@ export interface FileRoutesByFullPath {
   '/grades': typeof AuthenticatedGradesRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/snapquick': typeof AuthenticatedSnapquickRoute
+  '/studio': typeof AuthenticatedStudioRoute
   '/tutor': typeof AuthenticatedTutorRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
   '/api/ai-image': typeof ApiAiImageRoute
@@ -216,6 +223,7 @@ export interface FileRoutesByTo {
   '/grades': typeof AuthenticatedGradesRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/snapquick': typeof AuthenticatedSnapquickRoute
+  '/studio': typeof AuthenticatedStudioRoute
   '/tutor': typeof AuthenticatedTutorRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
   '/api/ai-image': typeof ApiAiImageRoute
@@ -245,6 +253,7 @@ export interface FileRoutesById {
   '/_authenticated/grades': typeof AuthenticatedGradesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/snapquick': typeof AuthenticatedSnapquickRoute
+  '/_authenticated/studio': typeof AuthenticatedStudioRoute
   '/_authenticated/tutor': typeof AuthenticatedTutorRoute
   '/_authenticated/upgrade': typeof AuthenticatedUpgradeRoute
   '/api/ai-image': typeof ApiAiImageRoute
@@ -274,6 +283,7 @@ export interface FileRouteTypes {
     | '/grades'
     | '/settings'
     | '/snapquick'
+    | '/studio'
     | '/tutor'
     | '/upgrade'
     | '/api/ai-image'
@@ -301,6 +311,7 @@ export interface FileRouteTypes {
     | '/grades'
     | '/settings'
     | '/snapquick'
+    | '/studio'
     | '/tutor'
     | '/upgrade'
     | '/api/ai-image'
@@ -329,6 +340,7 @@ export interface FileRouteTypes {
     | '/_authenticated/grades'
     | '/_authenticated/settings'
     | '/_authenticated/snapquick'
+    | '/_authenticated/studio'
     | '/_authenticated/tutor'
     | '/_authenticated/upgrade'
     | '/api/ai-image'
@@ -448,6 +460,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSnapquickRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/studio': {
+      id: '/_authenticated/studio'
+      path: '/studio'
+      fullPath: '/studio'
+      preLoaderRoute: typeof AuthenticatedStudioRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/tutor': {
       id: '/_authenticated/tutor'
       path: '/tutor'
@@ -551,6 +570,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedGradesRoute: typeof AuthenticatedGradesRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSnapquickRoute: typeof AuthenticatedSnapquickRoute
+  AuthenticatedStudioRoute: typeof AuthenticatedStudioRoute
   AuthenticatedTutorRoute: typeof AuthenticatedTutorRoute
   AuthenticatedUpgradeRoute: typeof AuthenticatedUpgradeRoute
   AuthenticatedClassesClassIdRoute: typeof AuthenticatedClassesClassIdRoute
@@ -572,6 +592,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedGradesRoute: AuthenticatedGradesRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSnapquickRoute: AuthenticatedSnapquickRoute,
+  AuthenticatedStudioRoute: AuthenticatedStudioRoute,
   AuthenticatedTutorRoute: AuthenticatedTutorRoute,
   AuthenticatedUpgradeRoute: AuthenticatedUpgradeRoute,
   AuthenticatedClassesClassIdRoute: AuthenticatedClassesClassIdRoute,
