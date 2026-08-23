@@ -196,10 +196,11 @@ export function DocumentSplitView({
             {markers.length ? (
               <div className="space-y-2">
                 <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                  {isImage
-                    ? "Tap a number on the file or in this list"
+                  {boxed.length
+                    ? "Tap a highlight on the file or in this list"
                     : "What the AI spotted in this file"}
                 </p>
+
                 <ol className="space-y-2">
                   {markers.map((m) => (
                     <li key={m.n}>
