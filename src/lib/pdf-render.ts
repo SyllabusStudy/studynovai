@@ -37,7 +37,7 @@ export async function renderPdfPages(
     if (!ctx) continue;
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    await page.render({ canvas, canvasContext: ctx, viewport }).promise;
+    await page.render({ canvasContext: ctx, viewport }).promise;
     out.push({
       page: i,
       dataUrl: canvas.toDataURL("image/jpeg", 0.82),
