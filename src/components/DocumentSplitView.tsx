@@ -5,6 +5,7 @@ import { Loader2, Sparkles, ExternalLink, Highlighter } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { assignmentHelp, markupDocument } from "@/lib/ai.functions";
+import { renderPdfPages, type RenderedPage } from "@/lib/pdf-render";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -16,6 +17,7 @@ type Marker = {
   label: string;
   note: string;
   quote?: string | null;
+  page?: number;
   box?: { x: number; y: number; w: number; h: number } | null;
 };
 
@@ -23,6 +25,7 @@ function readMarkers(value: unknown): Marker[] {
   if (!Array.isArray(value)) return [];
   return (value as Marker[]).filter((m) => m && typeof m.label === "string");
 }
+
 
 export function DocumentSplitView({
   document: doc,
