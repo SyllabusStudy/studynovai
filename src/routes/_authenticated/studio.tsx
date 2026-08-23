@@ -104,13 +104,14 @@ function StudioPage() {
     <div>
       <PageHeader
         title="AI Image Studio"
-        description="Make a study diagram from a description, or upload an image and tell the AI how to change it."
+        description="Make a study diagram from a description, or upload an image or PDF page and tell the AI how to change it."
       />
 
       <Hint id="studio-intro" point="down" className="mb-4">
-        Describe a diagram to create one from scratch — or upload a photo first and the AI edits that
-        image instead.
+        Describe a diagram to create one from scratch — or upload a photo or PDF first and the AI works
+        from that page instead.
       </Hint>
+
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="surface-card space-y-4 p-4">
