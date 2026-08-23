@@ -62,7 +62,7 @@ function StudioPage() {
         const { renderPdfPages } = await import("@/lib/pdf-render");
         const pages = await renderPdfPages(file, 1);
         if (!pages.length) throw new Error("empty");
-        setSource(pages[0].dataUrl);
+        setSource(pages[0]!.dataUrl);
         toast.success("Using page 1 of that PDF");
       } catch {
         toast.error("Could not read that PDF.");

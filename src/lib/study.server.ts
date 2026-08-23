@@ -989,7 +989,7 @@ const MARKUP_RULES = [
 export async function runDocumentMarkup(
   supabase: DB,
   userId: string,
-  input: { documentId: string; pageImages?: string[] | null },
+  input: { documentId: string; pageImages?: string[] | null | undefined },
 ) {
   const { data: doc } = await supabase
     .from("documents")
