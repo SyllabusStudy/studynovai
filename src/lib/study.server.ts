@@ -970,9 +970,12 @@ export type DocMarker = {
   label: string;
   note: string;
   quote?: string | null;
-  /** Normalized 0-1 box, images only. */
+  /** 1-based page the box belongs to (PDFs); 1 for images. */
+  page?: number;
+  /** Normalized 0-1 box on that page/image. */
   box?: { x: number; y: number; w: number; h: number } | null;
 };
+
 
 const MARKUP_RULES = [
   "You mark up a student's assignment file so they can see exactly what each part is asking.",
