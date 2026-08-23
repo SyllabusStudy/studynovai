@@ -64,7 +64,8 @@ function StudioPage() {
         if (!pages.length) throw new Error("empty");
         setSource(pages[0]!.dataUrl);
         toast.success("Using page 1 of that PDF");
-      } catch {
+      } catch (e) {
+        console.error("pdf render failed", e);
         toast.error("Could not read that PDF.");
       } finally {
         setLoadingSource(false);
