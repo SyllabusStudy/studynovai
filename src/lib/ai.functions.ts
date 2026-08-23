@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
   runAssignmentHelp,
   runDocumentExtraction,
+  runDocumentMarkup,
   runFlashcardGeneration,
   runQuizGeneration,
   runShortAnswerGrading,
@@ -146,3 +147,10 @@ export const snapHelp = createServerFn({ method: "POST" })
     await recordUsage(context.supabase, context.userId, "snap");
     return result;
   });
+
+export const markupDocument = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ documentId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) =>
+    runDocumentMarkup(context.supabase, context.userId, data),
+  );
