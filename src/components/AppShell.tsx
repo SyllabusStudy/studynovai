@@ -210,7 +210,7 @@ function TopBar({ onMenu, onSearch }: { onMenu: () => void; onSearch: () => void
 
       <button
         onClick={onSearch}
-        className="flex h-9 min-w-0 flex-1 max-w-sm items-center gap-2 rounded-lg border border-input bg-card px-3 text-sm text-muted-foreground transition-colors hover:border-ring"
+        className="flex h-10 min-w-0 flex-1 max-w-sm items-center gap-2 rounded-full border border-input bg-card px-4 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
       >
         <Search className="size-4 shrink-0" />
         <span className="truncate">Search classes, notes, deadlines…</span>
