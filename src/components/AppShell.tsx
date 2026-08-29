@@ -126,12 +126,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 function BrandBlock() {
   return (
     <div className="flex h-16 items-center gap-2.5 border-b border-sidebar-border px-5">
-      <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+      <span className="flex size-9 items-center justify-center rounded-2xl bg-sidebar-primary text-sidebar-primary-foreground shadow-card">
         <Sparkles className="size-5" />
       </span>
       <span className="leading-tight">
-        <span className="block text-sm font-extrabold tracking-tight">StudyMate AI</span>
-        <span className="block text-[11px] text-muted-foreground">Your college companion</span>
+        <span className="block font-display text-sm font-extrabold tracking-tight">StudyMate AI</span>
+        <span className="block text-[11px] text-sidebar-foreground/60">Study smarter, stress less</span>
       </span>
     </div>
   );
