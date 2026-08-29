@@ -104,11 +104,18 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Link
                   to={item.to}
                   className={cn(
-                    "flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors",
+                    "flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold transition-colors",
                     active ? "text-primary" : "text-muted-foreground",
                   )}
                 >
-                  <item.icon className="size-5" />
+                  <span
+                    className={cn(
+                      "flex size-9 items-center justify-center rounded-xl transition-colors",
+                      active ? "bg-primary/12" : "bg-transparent",
+                    )}
+                  >
+                    <item.icon className="size-5" />
+                  </span>
                   {item.label.replace("My ", "")}
                 </Link>
               </li>
