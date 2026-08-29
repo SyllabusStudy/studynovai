@@ -104,11 +104,18 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Link
                   to={item.to}
                   className={cn(
-                    "flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors",
+                    "flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold transition-colors",
                     active ? "text-primary" : "text-muted-foreground",
                   )}
                 >
-                  <item.icon className="size-5" />
+                  <span
+                    className={cn(
+                      "flex size-9 items-center justify-center rounded-xl transition-colors",
+                      active ? "bg-primary/12" : "bg-transparent",
+                    )}
+                  >
+                    <item.icon className="size-5" />
+                  </span>
                   {item.label.replace("My ", "")}
                 </Link>
               </li>
@@ -126,12 +133,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 function BrandBlock() {
   return (
     <div className="flex h-16 items-center gap-2.5 border-b border-sidebar-border px-5">
-      <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+      <span className="flex size-9 items-center justify-center rounded-2xl bg-sidebar-primary text-sidebar-primary-foreground shadow-card">
         <Sparkles className="size-5" />
       </span>
       <span className="leading-tight">
-        <span className="block text-sm font-extrabold tracking-tight">StudyMate AI</span>
-        <span className="block text-[11px] text-muted-foreground">Your college companion</span>
+        <span className="block font-display text-sm font-extrabold tracking-tight">StudyMate AI</span>
+        <span className="block text-[11px] text-sidebar-foreground/60">Study smarter, stress less</span>
       </span>
     </div>
   );
@@ -161,10 +168,10 @@ function NavList({ pathname, onNavigate }: { pathname: string; onNavigate?: () =
                 to={item.to}
                 onClick={onNavigate}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
                   active
-                    ? "bg-sidebar-primary/12 text-sidebar-primary"
-                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                    ? "bg-sidebar-primary/15 text-sidebar-primary shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--color-sidebar-primary),transparent_70%)]"
+                    : "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 )}
               >
                 <item.icon className="size-4.5" />
@@ -210,7 +217,7 @@ function TopBar({ onMenu, onSearch }: { onMenu: () => void; onSearch: () => void
 
       <button
         onClick={onSearch}
-        className="flex h-9 min-w-0 flex-1 max-w-sm items-center gap-2 rounded-lg border border-input bg-card px-3 text-sm text-muted-foreground transition-colors hover:border-ring"
+        className="flex h-10 min-w-0 flex-1 max-w-sm items-center gap-2 rounded-full border border-input bg-card px-4 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
       >
         <Search className="size-4 shrink-0" />
         <span className="truncate">Search classes, notes, deadlines…</span>
