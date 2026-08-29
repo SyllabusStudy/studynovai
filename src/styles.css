@@ -235,10 +235,31 @@
 
   h1,
   h2,
-  h3 {
-    letter-spacing: -0.02em;
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.022em;
+  }
+
+  /* Friendly, rounded interactive surfaces across the app. */
+  button,
+  [role="button"] {
+    font-family: var(--font-sans);
   }
 }
+
+@utility soft-panel {
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-card);
+}
+
+@utility mint-glow {
+  box-shadow: var(--shadow-pop);
+}
+
 
 @utility text-gradient-brand {
   background-image: linear-gradient(
