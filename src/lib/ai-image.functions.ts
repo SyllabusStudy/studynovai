@@ -39,7 +39,7 @@ export const generateAiImage = createServerFn({ method: "POST" })
         });
       }
       const res = await fetch(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent",
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent",
         {
           method: "POST",
           headers: { "Content-Type": "application/json", "x-goog-api-key": cfg.key },
@@ -64,7 +64,7 @@ export const generateAiImage = createServerFn({ method: "POST" })
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${cfg.key}` },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash-image",
+          model: "google/gemini-3-pro-image-preview",
           messages: [{ role: "user", content }],
           modalities: ["image", "text"],
         }),
