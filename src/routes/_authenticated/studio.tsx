@@ -85,13 +85,7 @@ function StudioPage() {
     setBusy(true);
     setResult(null);
     try {
-      const res = await fetch("/api/ai-image", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, imageDataUrl: source }),
-      });
-      if (!res.ok) throw new Error((await res.text()) || "Image request failed");
-      const { image } = (await res.json()) as { image: string };
+      const { image } = await makeImage({ data: { prompt, imageDataUrl: source } });
       setResult(image);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not make that image");
