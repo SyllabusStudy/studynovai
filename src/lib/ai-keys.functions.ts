@@ -36,7 +36,7 @@ export const getAiKeyStatus = createServerFn({ method: "POST" })
 export const saveAiKey = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({ provider: providerSchema, apiKey: z.string().min(20).max(300) }).parse(d),
+    z.object({ provider: providerSchema, apiKey: z.string().min(12).max(300) }).parse(d),
   )
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("user_ai_keys").upsert(

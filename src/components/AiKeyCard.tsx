@@ -191,7 +191,7 @@ export function AiKeyCard() {
         <Button
           type="button"
           size="sm"
-          disabled={apiKey.trim().length < 20 || saving.isPending}
+          disabled={apiKey.trim().length < 12 || saving.isPending}
           onClick={() => saving.mutate()}
         >
           {saving.isPending ? <Loader2 className="size-4 animate-spin" /> : null}
