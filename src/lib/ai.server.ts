@@ -121,37 +121,48 @@ export async function callAI(
   const endpoint = chatEndpoint(cfg.provider);
 
 
-  const payload = JSON.stringify({
-    model: chatModel(cfg.provider),
-    messages,
-    temperature: opts?.temperature ?? 0.3,
-    ...(opts?.maxTokens ? { max_tokens: opts.maxTokens } : {}),
-    // OpenRouter needs the file-parser plugin enabled to read PDF attachments.
-    ...(cfg.provider === "openrouter" && hasFilePart(messages)
-      ? { plugins: [{ id: "file-parser", pdf: { engine: "pdf-text" } }] }
-      : {}),
-  });
+  // Model candidates: if a provider retires the primary model (404), fall back.
+  const models =
+    cfg.provider === "google"
+      ? GEMINI_MODELS
+      : cfg.provider === "openrouter"
+        ? GEMINI_MODELS.map((m) => `google/${m}`)
+        : [chatModel(cfg.provider)];
 
+  const buildPayload = (model: string) =>
+    JSON.stringify({
+      model,
+      messages,
+      temperature: opts?.temperature ?? 0.3,
+      ...(opts?.maxTokens ? { max_tokens: opts.maxTokens } : {}),
+      // OpenRouter needs the file-parser plugin enabled to read PDF attachments.
+      ...(cfg.provider === "openrouter" && hasFilePart(messages)
+        ? { plugins: [{ id: "file-parser", pdf: { engine: "pdf-text" } }] }
+        : {}),
+    });
 
   // Transient upstream hiccups (429 / 5xx) are retried with backoff so a single
   // blip doesn't surface as a failure to the student.
   const delays = [700, 1800, 3500];
   let res: Response | null = null;
-  for (let attempt = 0; attempt <= delays.length; attempt++) {
-    res = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${cfg.key}`,
-      },
-      body: payload,
-    });
+  outer: for (const model of models) {
+    for (let attempt = 0; attempt <= delays.length; attempt++) {
+      res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${cfg.key}`,
+        },
+        body: buildPayload(model),
+      });
 
-    if (res.ok) break;
-    const transient = res.status === 429 || res.status >= 500;
-    if (!transient || attempt === delays.length) break;
-    const retryAfter = Number(res.headers.get("retry-after"));
-    await sleep(Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : delays[attempt]!);
+      if (res.ok) break outer;
+      if (res.status === 404) continue outer;
+      const transient = res.status === 429 || res.status >= 500;
+      if (!transient || attempt === delays.length) break outer;
+      const retryAfter = Number(res.headers.get("retry-after"));
+      await sleep(Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : delays[attempt]!);
+    }
   }
 
   if (!res || !res.ok) {
