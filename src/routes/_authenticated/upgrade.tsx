@@ -134,7 +134,7 @@ function UpgradePage() {
               <p className="mt-1 text-2xl font-bold">$0</p>
             </div>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <Item>{FREE_LIMITS.classes} classes</Item>
+              <Item>Unlimited classes</Item>
               <Item>{FREE_LIMITS.assignment_help} AI assignment helps every {FREE_WINDOW_HOURS} hours</Item>
               <Item>{FREE_LIMITS.snap} SnapQuick photo scans every {FREE_WINDOW_HOURS} hours</Item>
               <Item>{FREE_LIMITS.video} QuickVideo import every {FREE_WINDOW_HOURS} hours</Item>
