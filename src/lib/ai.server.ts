@@ -62,9 +62,14 @@ export async function callAI(
     if (status === 429 || status >= 500) {
       throw new Error("The AI service is busy right now. Please try again in a moment.");
     }
-    if (status === 402) throw new Error("AI credits are exhausted for this workspace.");
-    if (status === 403) throw new Error("AI access is blocked for this workspace right now.");
+    if (status === 401 || status === 403) {
+      throw new Error("Your AI API key was rejected. Check it in Settings → AI key.");
+    }
+    if (status === 402) {
+      throw new Error("Your AI provider account is out of credit or billing is not set up.");
+    }
     throw new Error(`AI request failed (${status}): ${body.slice(0, 400)}`);
+
   }
 
 
