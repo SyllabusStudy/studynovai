@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { withUserAiKey } from "./ai-key.server";
 import {
   runAssignmentHelp,
   runDocumentExtraction,
@@ -19,14 +20,18 @@ export const processDocument = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ documentId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) =>
-    runDocumentExtraction(context.supabase, context.userId, data.documentId),
+    withUserAiKey(context.supabase, context.userId, () =>
+      runDocumentExtraction(context.supabase, context.userId, data.documentId),
+    ),
   );
 
 export const analyzeSyllabus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ documentId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) =>
-    runSyllabusAnalysis(context.supabase, context.userId, data.documentId),
+    withUserAiKey(context.supabase, context.userId, () =>
+      runSyllabusAnalysis(context.supabase, context.userId, data.documentId),
+    ),
   );
 
 export const tutorChat = createServerFn({ method: "POST" })
@@ -41,7 +46,11 @@ export const tutorChat = createServerFn({ method: "POST" })
       })
       .parse(d),
   )
-  .handler(async ({ data, context }) => runTutorChat(context.supabase, context.userId, data));
+  .handler(async ({ data, context }) =>
+    withUserAiKey(context.supabase, context.userId, () =>
+      runTutorChat(context.supabase, context.userId, data),
+    ),
+  );
 
 export const generateFlashcards = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -60,7 +69,9 @@ export const generateFlashcards = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) =>
-    runFlashcardGeneration(context.supabase, context.userId, data),
+    withUserAiKey(context.supabase, context.userId, () =>
+      runFlashcardGeneration(context.supabase, context.userId, data),
+    ),
   );
 
 export const generateQuiz = createServerFn({ method: "POST" })
@@ -77,7 +88,11 @@ export const generateQuiz = createServerFn({ method: "POST" })
       })
       .parse(d),
   )
-  .handler(async ({ data, context }) => runQuizGeneration(context.supabase, context.userId, data));
+  .handler(async ({ data, context }) =>
+    withUserAiKey(context.supabase, context.userId, () =>
+      runQuizGeneration(context.supabase, context.userId, data),
+    ),
+  );
 
 export const gradeShortAnswer = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -90,7 +105,9 @@ export const gradeShortAnswer = createServerFn({ method: "POST" })
       })
       .parse(d),
   )
-  .handler(async ({ data }) => runShortAnswerGrading(data));
+  .handler(async ({ data, context }) =>
+    withUserAiKey(context.supabase, context.userId, () => runShortAnswerGrading(data)),
+  );
 
 export const studyCoach = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -102,13 +119,19 @@ export const studyCoach = createServerFn({ method: "POST" })
       })
       .parse(d),
   )
-  .handler(async ({ data, context }) => runStudyCoach(context.supabase, context.userId, data));
+  .handler(async ({ data, context }) =>
+    withUserAiKey(context.supabase, context.userId, () =>
+      runStudyCoach(context.supabase, context.userId, data),
+    ),
+  );
 
 export const createStudyPlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ eventId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) =>
-    runStudyPlanEvents(context.supabase, context.userId, data),
+    withUserAiKey(context.supabase, context.userId, () =>
+      runStudyPlanEvents(context.supabase, context.userId, data),
+    ),
   );
 
 export const assignmentHelp = createServerFn({ method: "POST" })
@@ -124,7 +147,9 @@ export const assignmentHelp = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { assertQuota, recordUsage } = await import("./billing.server");
     await assertQuota(context.supabase, context.userId, "assignment_help");
-    const result = await runAssignmentHelp(context.supabase, context.userId, data);
+    const result = await withUserAiKey(context.supabase, context.userId, () =>
+      runAssignmentHelp(context.supabase, context.userId, data),
+    );
     await recordUsage(context.supabase, context.userId, "assignment_help");
     return result;
   });
@@ -143,7 +168,9 @@ export const snapHelp = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { assertQuota, recordUsage } = await import("./billing.server");
     await assertQuota(context.supabase, context.userId, "snap");
-    const result = await runSnapHelp(context.supabase, context.userId, data);
+    const result = await withUserAiKey(context.supabase, context.userId, () =>
+      runSnapHelp(context.supabase, context.userId, data),
+    );
     await recordUsage(context.supabase, context.userId, "snap");
     return result;
   });
@@ -160,5 +187,7 @@ export const markupDocument = createServerFn({ method: "POST" })
   )
 
   .handler(async ({ data, context }) =>
-    runDocumentMarkup(context.supabase, context.userId, data),
+    withUserAiKey(context.supabase, context.userId, () =>
+      runDocumentMarkup(context.supabase, context.userId, data),
+    ),
   );
