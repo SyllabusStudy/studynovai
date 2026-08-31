@@ -4,7 +4,8 @@ export const PRO_PRICE_USD = 5.99;
 export const FREE_WINDOW_HOURS = 5;
 
 export const FREE_LIMITS = {
-  classes: 3,
+  /** -1 = unlimited: classes are free for everyone. */
+  classes: -1,
   assignment_help: 2,
   snap: 4,
   video: 1,

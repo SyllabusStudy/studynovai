@@ -134,7 +134,7 @@ function UpgradePage() {
               <p className="mt-1 text-2xl font-bold">$0</p>
             </div>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <Item>{FREE_LIMITS.classes} classes</Item>
+              <Item>Unlimited classes</Item>
               <Item>{FREE_LIMITS.assignment_help} AI assignment helps every {FREE_WINDOW_HOURS} hours</Item>
               <Item>{FREE_LIMITS.snap} SnapQuick photo scans every {FREE_WINDOW_HOURS} hours</Item>
               <Item>{FREE_LIMITS.video} QuickVideo import every {FREE_WINDOW_HOURS} hours</Item>
@@ -147,9 +147,8 @@ function UpgradePage() {
                   {billing.usage.snap}/{FREE_LIMITS.snap} scans ·{" "}
                   {billing.usage.video}/{FREE_LIMITS.video} video imports
                 </p>
-                <p className="mt-1">
-                  Classes: {billing.usage.classes}/{FREE_LIMITS.classes}
-                </p>
+                <p className="mt-1">Classes: {billing.usage.classes} (unlimited)</p>
+
                 {nextReset ? (
                   <p className="mt-1">Next free use unlocks in {nextReset}.</p>
                 ) : null}
