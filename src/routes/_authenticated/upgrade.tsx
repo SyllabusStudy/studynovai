@@ -147,9 +147,8 @@ function UpgradePage() {
                   {billing.usage.snap}/{FREE_LIMITS.snap} scans ·{" "}
                   {billing.usage.video}/{FREE_LIMITS.video} video imports
                 </p>
-                <p className="mt-1">
-                  Classes: {billing.usage.classes}/{FREE_LIMITS.classes}
-                </p>
+                <p className="mt-1">Classes: {billing.usage.classes} (unlimited)</p>
+
                 {nextReset ? (
                   <p className="mt-1">Next free use unlocks in {nextReset}.</p>
                 ) : null}
