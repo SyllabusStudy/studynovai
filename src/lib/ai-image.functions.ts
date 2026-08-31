@@ -78,6 +78,12 @@ export const generateAiImage = createServerFn({ method: "POST" })
       return { image: url };
     }
 
+    if (cfg.provider !== "openai") {
+      throw new Error(
+        "Image tools need a Google AI Studio, OpenRouter or OpenAI key. Switch your key in Settings → AI key.",
+      );
+    }
+
     // OpenAI: gpt-image-1 (generation only through this JSON endpoint).
     if (source) {
       throw new Error(

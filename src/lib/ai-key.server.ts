@@ -2,7 +2,20 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
-export type AiProvider = "google" | "openai" | "openrouter";
+export const AI_PROVIDERS = [
+  "google",
+  "openai",
+  "openrouter",
+  "anthropic",
+  "groq",
+  "deepseek",
+  "xai",
+  "mistral",
+  "together",
+  "perplexity",
+] as const;
+
+export type AiProvider = (typeof AI_PROVIDERS)[number];
 
 export type AiKeyConfig = { provider: AiProvider; key: string };
 
@@ -35,9 +48,7 @@ export async function loadUserAiKey(
     .eq("user_id", userId)
     .maybeSingle();
   if (!data?.api_key) throw new Error(AI_KEY_HELP);
-  const provider = (["google", "openai", "openrouter"] as const).includes(
-    data.provider as AiProvider,
-  )
+  const provider = AI_PROVIDERS.includes(data.provider as AiProvider)
     ? (data.provider as AiProvider)
     : "google";
   return { provider, key: data.api_key };
@@ -60,6 +71,20 @@ export function chatEndpoint(provider: AiProvider): string {
       return "https://api.openai.com/v1/chat/completions";
     case "openrouter":
       return "https://openrouter.ai/api/v1/chat/completions";
+    case "anthropic":
+      return "https://api.anthropic.com/v1/chat/completions";
+    case "groq":
+      return "https://api.groq.com/openai/v1/chat/completions";
+    case "deepseek":
+      return "https://api.deepseek.com/chat/completions";
+    case "xai":
+      return "https://api.x.ai/v1/chat/completions";
+    case "mistral":
+      return "https://api.mistral.ai/v1/chat/completions";
+    case "together":
+      return "https://api.together.xyz/v1/chat/completions";
+    case "perplexity":
+      return "https://api.perplexity.ai/chat/completions";
     default:
       return "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
   }
@@ -71,6 +96,20 @@ export function chatModel(provider: AiProvider): string {
       return "gpt-4.1-mini";
     case "openrouter":
       return "google/gemini-2.5-flash";
+    case "anthropic":
+      return "claude-sonnet-4-5";
+    case "groq":
+      return "llama-3.3-70b-versatile";
+    case "deepseek":
+      return "deepseek-chat";
+    case "xai":
+      return "grok-4-fast";
+    case "mistral":
+      return "mistral-medium-latest";
+    case "together":
+      return "meta-llama/Llama-3.3-70B-Instruct-Turbo";
+    case "perplexity":
+      return "sonar";
     default:
       return "gemini-2.5-flash";
   }
@@ -80,10 +119,24 @@ export const PROVIDER_LABELS: Record<AiProvider, string> = {
   google: "Google AI Studio (Gemini)",
   openai: "OpenAI",
   openrouter: "OpenRouter",
+  anthropic: "Anthropic (Claude)",
+  groq: "Groq",
+  deepseek: "DeepSeek",
+  xai: "xAI (Grok)",
+  mistral: "Mistral AI",
+  together: "Together AI",
+  perplexity: "Perplexity",
 };
 
 export const PROVIDER_HELP: Record<AiProvider, string> = {
   google: "Free key from aistudio.google.com/apikey — starts with AIza.",
   openai: "Key from platform.openai.com/api-keys — starts with sk-.",
   openrouter: "Key from openrouter.ai/keys — starts with sk-or-.",
+  anthropic: "Key from console.anthropic.com — starts with sk-ant-.",
+  groq: "Free fast key from console.groq.com/keys — starts with gsk_.",
+  deepseek: "Key from platform.deepseek.com — very low cost.",
+  xai: "Key from console.x.ai — starts with xai-.",
+  mistral: "Key from console.mistral.ai — free tier available.",
+  together: "Key from api.together.ai/settings/api-keys.",
+  perplexity: "Key from perplexity.ai/settings/api — answers include web search.",
 };
