@@ -306,7 +306,12 @@ export async function runSyllabusAnalysis(supabase: DB, userId: string, document
     .eq("user_id", userId)
     .single();
   if (!doc) throw new Error("Document not found.");
-  if (!doc.extracted_text) throw new Error("This document has no readable text yet.");
+  if (!doc.extracted_text)
+    throw new Error(
+      doc.processing_error ??
+        "We couldn't read any text out of that syllabus. If it's a scanned PDF, try a clearer scan or a photo of each page.",
+    );
+
 
   const today = new Date().toISOString().slice(0, 10);
   const syllabusText = doc.extracted_text.slice(0, 60000);
