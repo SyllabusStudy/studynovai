@@ -23,7 +23,9 @@ export const generateAiImage = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }): Promise<{ image: string }> => {
-    const cfg = await loadUserAiKey(context.supabase, context.userId);
+    const stored = await loadUserAiKey(context.supabase, context.userId);
+    // Trust the key's own shape over whatever provider was picked in the dropdown.
+    const cfg = { ...stored, provider: detectProvider(stored.key) ?? stored.provider };
     const { prompt } = data;
     const source = data.imageDataUrl ?? null;
 
@@ -38,15 +40,24 @@ export const generateAiImage = createServerFn({ method: "POST" })
           },
         });
       }
-      const res = await fetch(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "x-goog-api-key": cfg.key },
-          body: JSON.stringify({ contents: [{ parts }] }),
-        },
-      );
-      if (!res.ok) throw new Error(await imageError(res));
+      const imageModels = [
+        "gemini-2.5-flash-image",
+        "gemini-3-pro-image-preview",
+        "gemini-2.0-flash-preview-image-generation",
+      ];
+      let res: Response | null = null;
+      for (const model of imageModels) {
+        res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-goog-api-key": cfg.key },
+            body: JSON.stringify({ contents: [{ parts }] }),
+          },
+        );
+        if (res.ok || (res.status !== 404 && res.status !== 400)) break;
+      }
+      if (!res || !res.ok) throw new Error(await imageError(res!));
       const json = (await res.json()) as {
         candidates?: Array<{
           content?: { parts?: Array<{ inlineData?: { data?: string; mimeType?: string } }> };
