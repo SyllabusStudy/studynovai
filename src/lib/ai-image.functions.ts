@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { loadUserAiKey } from "./ai-key.server";
+import { detectProvider, loadUserAiKey } from "./ai-key.server";
 
 /**
  * Generates or edits an image with the student's own AI key, so image work
