@@ -60,32 +60,38 @@ async function callGeminiNative(
     if (parts.length) contents.push({ role: m.role === "assistant" ? "model" : "user", parts });
   }
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-      body: JSON.stringify({
-        contents,
-        ...(system.length ? { systemInstruction: { parts: [{ text: system.join("\n\n") }] } } : {}),
-        generationConfig: {
-          temperature: opts?.temperature ?? 0.3,
-          ...(opts?.maxTokens ? { maxOutputTokens: opts.maxTokens } : {}),
-        },
-      }),
+  const body = JSON.stringify({
+    contents,
+    ...(system.length ? { systemInstruction: { parts: [{ text: system.join("\n\n") }] } } : {}),
+    generationConfig: {
+      temperature: opts?.temperature ?? 0.3,
+      ...(opts?.maxTokens ? { maxOutputTokens: opts.maxTokens } : {}),
     },
-  );
+  });
 
-  if (!res.ok) {
-    const status = res.status;
-    const body = await res.text();
+  let res: Response | null = null;
+  for (const model of GEMINI_MODELS) {
+    res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+        body,
+      },
+    );
+    if (res.ok || res.status !== 404) break;
+  }
+
+  if (!res || !res.ok) {
+    const status = res?.status ?? 0;
+    const text = res ? await res.text() : "";
     if (status === 429 || status >= 500) {
       throw new Error("The AI service is busy right now. Please try again in a moment.");
     }
     if (status === 401 || status === 403) {
       throw new Error("Your AI API key was rejected. Check it in Settings → AI key.");
     }
-    throw new Error(`AI request failed (${status}): ${body.slice(0, 300)}`);
+    throw new Error(`AI request failed (${status}): ${text.slice(0, 300)}`);
   }
 
   const data = (await res.json()) as {
