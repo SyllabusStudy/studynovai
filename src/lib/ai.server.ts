@@ -1,10 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { chatEndpoint, chatModel, requireAiKey } from "./ai-key.server";
 
 type DB = SupabaseClient<Database>;
 
-const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-export const CHAT_MODEL = "google/gemini-3.5-flash";
+export const CHAT_MODEL = "gemini-2.5-flash";
+
 
 type ContentBlock =
   | { type: "text"; text: string }
@@ -23,16 +24,14 @@ export async function callAI(
   messages: ChatMessage[],
   opts?: { model?: string; maxTokens?: number; temperature?: number; reasoningEffort?: string; _retry?: boolean },
 ): Promise<string> {
-  const key = process.env["LOVABLE_API_KEY"];
-  if (!key) throw new Error("AI is not configured for this project yet.");
+  // The student's own API key — the app never spends the workspace's AI credits.
+  const cfg = requireAiKey();
+  const endpoint = chatEndpoint(cfg.provider);
 
   const payload = JSON.stringify({
-    model: opts?.model ?? CHAT_MODEL,
+    model: chatModel(cfg.provider),
     messages,
     temperature: opts?.temperature ?? 0.3,
-    // Skip internal "thinking" so the whole token budget goes to the answer
-    // (thinking tokens were eating the budget and returning empty content).
-    reasoning_effort: opts?.reasoningEffort ?? "none",
     ...(opts?.maxTokens ? { max_tokens: opts.maxTokens } : {}),
   });
 
@@ -41,15 +40,15 @@ export async function callAI(
   const delays = [700, 1800, 3500];
   let res: Response | null = null;
   for (let attempt = 0; attempt <= delays.length; attempt++) {
-    res = await fetch(GATEWAY, {
+    res = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Lovable-API-Key": key,
-        "X-Lovable-AIG-SDK": "fetch",
+        Authorization: `Bearer ${cfg.key}`,
       },
       body: payload,
     });
+
     if (res.ok) break;
     const transient = res.status === 429 || res.status >= 500;
     if (!transient || attempt === delays.length) break;
@@ -63,9 +62,14 @@ export async function callAI(
     if (status === 429 || status >= 500) {
       throw new Error("The AI service is busy right now. Please try again in a moment.");
     }
-    if (status === 402) throw new Error("AI credits are exhausted for this workspace.");
-    if (status === 403) throw new Error("AI access is blocked for this workspace right now.");
+    if (status === 401 || status === 403) {
+      throw new Error("Your AI API key was rejected. Check it in Settings → AI key.");
+    }
+    if (status === 402) {
+      throw new Error("Your AI provider account is out of credit or billing is not set up.");
+    }
     throw new Error(`AI request failed (${status}): ${body.slice(0, 400)}`);
+
   }
 
 

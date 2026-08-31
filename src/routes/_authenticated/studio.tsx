@@ -7,6 +7,8 @@ import { Hint } from "@/components/Hint";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useServerFn } from "@tanstack/react-start";
+import { generateAiImage } from "@/lib/ai-image.functions";
 
 export const Route = createFileRoute("/_authenticated/studio")({
   head: () => ({
@@ -37,6 +39,7 @@ const IDEAS = [
 ];
 
 function StudioPage() {
+  const makeImage = useServerFn(generateAiImage);
   const [prompt, setPrompt] = useState("");
   const [source, setSource] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
@@ -85,13 +88,7 @@ function StudioPage() {
     setBusy(true);
     setResult(null);
     try {
-      const res = await fetch("/api/ai-image", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, imageDataUrl: source }),
-      });
-      if (!res.ok) throw new Error((await res.text()) || "Image request failed");
-      const { image } = (await res.json()) as { image: string };
+      const { image } = await makeImage({ data: { prompt, imageDataUrl: source } });
       setResult(image);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not make that image");
