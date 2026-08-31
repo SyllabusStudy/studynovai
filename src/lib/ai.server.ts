@@ -1,6 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { chatEndpoint, chatModel, requireAiKey } from "./ai-key.server";
+import {
+  authHeaders,
+  candidateProviders,
+  chatEndpoint,
+  chatModel,
+  requireAiKey,
+  type AiProvider,
+} from "./ai-key.server";
 
 type DB = SupabaseClient<Database>;
 
