@@ -379,7 +379,7 @@ async function sweepSyllabusDates(text: string, today: string): Promise<Syllabus
             },
             {
               role: "user",
-              content: `Today is ${today}.\n${DATE_RULES}\n\nReply with exactly: {"dates":[{"title":string,"date":"YYYY-MM-DD","time":"HH:MM"|null,"type":"exam"|"quiz"|"assignment"|"project"|"presentation"|"final"|"other","description":string|null}]}\n\nSYLLABUS TEXT (part):\n${chunk}`,
+              content: `Today is ${today}.\n${DATE_RULES}\n\nReply with exactly: {"dates":[{"title":string,"date":"YYYY-MM-DD","time":"HH:MM"|null,"type":"exam"|"quiz"|"assignment"|"project"|"presentation"|"final"|"other","description":string|null,"repeat":"weekly"|"biweekly"|"daily"|"monthly"|null,"repeat_days":string[]|null,"repeat_until":"YYYY-MM-DD"|null}]}\n\nSYLLABUS TEXT (part):\n${chunk}`,
             },
           ],
           { maxTokens: 8000, temperature: 0 },
@@ -417,7 +417,7 @@ export async function runSyllabusAnalysis(supabase: DB, userId: string, document
         {
           role: "user",
           content: `Today is ${today}. Extract this json shape:
-{"course_name":string|null,"course_code":string|null,"professor":string|null,"professor_email":string|null,"office_hours":string|null,"attendance_policy":string|null,"late_work_policy":string|null,"makeup_policy":string|null,"required_materials":string|null,"other_policies":string|null,"policies":[{"title":string,"details":string}],"grading_breakdown":[{"name":string,"weight":number}],"dates":[{"title":string,"date":"YYYY-MM-DD","time":"HH:MM"|null,"type":"exam"|"quiz"|"assignment"|"project"|"presentation"|"final"|"other","description":string|null}]}
+{"course_name":string|null,"course_code":string|null,"professor":string|null,"professor_email":string|null,"office_hours":string|null,"attendance_policy":string|null,"late_work_policy":string|null,"makeup_policy":string|null,"required_materials":string|null,"other_policies":string|null,"term_start_date":"YYYY-MM-DD"|null,"term_end_date":"YYYY-MM-DD"|null,"policies":[{"title":string,"details":string}],"grading_breakdown":[{"name":string,"weight":number}],"dates":[{"title":string,"date":"YYYY-MM-DD","time":"HH:MM"|null,"type":"exam"|"quiz"|"assignment"|"project"|"presentation"|"final"|"other","description":string|null,"repeat":"weekly"|"biweekly"|"daily"|"monthly"|null,"repeat_days":string[]|null,"repeat_until":"YYYY-MM-DD"|null}]}
 
 ${DATE_RULES}
 
@@ -445,7 +445,7 @@ ${syllabusText}`,
     dateKeys.add(key);
     mergedDates.push(d);
   }
-  parsed.dates = mergedDates;
+  parsed.dates = expandRecurringDates(mergedDates, today, parsed.term_end_date ?? null);
 
   const mergedPolicies: SyllabusPolicy[] = [];
   const policyKeys = new Set<string>();
