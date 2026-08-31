@@ -1,6 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { chatEndpoint, chatModel, requireAiKey } from "./ai-key.server";
+import {
+  authHeaders,
+  candidateProviders,
+  chatEndpoint,
+  chatModel,
+  requireAiKey,
+  type AiProvider,
+} from "./ai-key.server";
 
 type DB = SupabaseClient<Database>;
 
@@ -115,70 +122,76 @@ export async function callAI(
 ): Promise<string> {
   // The student's own API key — the app never spends the workspace's AI credits.
   const cfg = requireAiKey();
-  if (cfg.provider === "google" && hasFilePart(messages)) {
+  const providers = candidateProviders(cfg.provider, cfg.key);
+  if (providers[0] === "google" && hasFilePart(messages)) {
     return callGeminiNative(cfg.key, messages, opts);
   }
-  const endpoint = chatEndpoint(cfg.provider);
 
-
-  // Model candidates: if a provider retires the primary model (404), fall back.
-  const models =
-    cfg.provider === "google"
-      ? GEMINI_MODELS
-      : cfg.provider === "openrouter"
-        ? GEMINI_MODELS.map((m) => `google/${m}`)
-        : [chatModel(cfg.provider)];
-
-  const buildPayload = (model: string) =>
+  const buildPayload = (provider: AiProvider, model: string) =>
     JSON.stringify({
       model,
       messages,
       temperature: opts?.temperature ?? 0.3,
       ...(opts?.maxTokens ? { max_tokens: opts.maxTokens } : {}),
       // OpenRouter needs the file-parser plugin enabled to read PDF attachments.
-      ...(cfg.provider === "openrouter" && hasFilePart(messages)
+      ...(provider === "openrouter" && hasFilePart(messages)
         ? { plugins: [{ id: "file-parser", pdf: { engine: "pdf-text" } }] }
         : {}),
     });
+
+  const modelsFor = (provider: AiProvider) =>
+    provider === "google"
+      ? GEMINI_MODELS
+      : provider === "openrouter"
+        ? GEMINI_MODELS.map((m) => `google/${m}`)
+        : [chatModel(provider)];
 
   // Transient upstream hiccups (429 / 5xx) are retried with backoff so a single
   // blip doesn't surface as a failure to the student.
   const delays = [700, 1800, 3500];
   let res: Response | null = null;
-  outer: for (const model of models) {
-    for (let attempt = 0; attempt <= delays.length; attempt++) {
-      res = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${cfg.key}`,
-        },
-        body: buildPayload(model),
-      });
+  let lastBody = "";
+  let lastStatus = 0;
 
-      if (res.ok) break outer;
-      if (res.status === 404) continue outer;
-      const transient = res.status === 429 || res.status >= 500;
-      if (!transient || attempt === delays.length) break outer;
-      const retryAfter = Number(res.headers.get("retry-after"));
-      await sleep(Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : delays[attempt]!);
+  outer: for (const provider of providers) {
+    const endpoint = chatEndpoint(provider);
+    for (const model of modelsFor(provider)) {
+      for (let attempt = 0; attempt <= delays.length; attempt++) {
+        res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders(provider, cfg.key) },
+          body: buildPayload(provider, model),
+        });
+
+        if (res.ok) break outer;
+        lastStatus = res.status;
+        lastBody = await res.text();
+        // Wrong provider / unknown model for this key: try the next combination.
+        if ([400, 401, 403, 404, 422].includes(res.status)) break;
+        const transient = res.status === 429 || res.status >= 500;
+        if (!transient || attempt === delays.length) break outer;
+        const retryAfter = Number(res.headers.get("retry-after"));
+        await sleep(
+          Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : delays[attempt]!,
+        );
+      }
     }
   }
 
   if (!res || !res.ok) {
-    const status = res?.status ?? 0;
-    const body = res ? await res.text() : "";
+    const status = lastStatus || res?.status || 0;
     if (status === 429 || status >= 500) {
       throw new Error("The AI service is busy right now. Please try again in a moment.");
     }
     if (status === 401 || status === 403) {
-      throw new Error("Your AI API key was rejected. Check it in Settings → AI key.");
+      throw new Error(
+        "None of the AI providers accepted this key. Paste a fresh key in Settings → AI key (a free Google AI Studio key starting with AIza works well).",
+      );
     }
     if (status === 402) {
       throw new Error("Your AI provider account is out of credit or billing is not set up.");
     }
-    throw new Error(`AI request failed (${status}): ${body.slice(0, 400)}`);
-
+    throw new Error(`AI request failed (${status}): ${lastBody.slice(0, 400)}`);
   }
 
 

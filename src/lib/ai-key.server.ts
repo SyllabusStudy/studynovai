@@ -115,6 +115,46 @@ export function chatModel(provider: AiProvider): string {
   }
 }
 
+/**
+ * Keys are recognised by their shape, so a student who picks the wrong provider
+ * in the dropdown still gets a working AI instead of "key was rejected".
+ */
+export function detectProvider(key: string): AiProvider | null {
+  const k = key.trim();
+  if (/^AIza/.test(k)) return "google";
+  if (/^sk-or-/.test(k)) return "openrouter";
+  if (/^sk-ant-/.test(k)) return "anthropic";
+  if (/^gsk_/.test(k)) return "groq";
+  if (/^xai-/.test(k)) return "xai";
+  if (/^pplx-/.test(k)) return "perplexity";
+  if (/^sk-/.test(k)) return "openai";
+  return null;
+}
+
+/**
+ * Providers to try for this key, best guess first. Ambiguous keys (bare hex
+ * strings, sk-... which several providers use) fall through to the rest.
+ */
+export function candidateProviders(stored: AiProvider, key: string): AiProvider[] {
+  const detected = detectProvider(key);
+  const ordered = [detected, stored, ...AI_PROVIDERS].filter(Boolean) as AiProvider[];
+  return [...new Set(ordered)];
+}
+
+/** Correct auth headers per provider (Anthropic does not use Bearer tokens). */
+export function authHeaders(provider: AiProvider, key: string): Record<string, string> {
+  if (provider === "anthropic") {
+    return {
+      "x-api-key": key,
+      "anthropic-version": "2023-06-01",
+    };
+  }
+  if (provider === "google") {
+    return { Authorization: `Bearer ${key}`, "x-goog-api-key": key };
+  }
+  return { Authorization: `Bearer ${key}` };
+}
+
 export const PROVIDER_LABELS: Record<AiProvider, string> = {
   google: "Google AI Studio (Gemini)",
   openai: "OpenAI",
