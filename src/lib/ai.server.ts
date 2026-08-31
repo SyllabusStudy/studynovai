@@ -20,20 +20,109 @@ export type ChatMessage = {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * Google's OpenAI-compatible endpoint rejects `file` content parts (PDFs), so
+ * for Gemini keys we translate the conversation to the native generateContent
+ * API, which accepts inline PDF/image data.
+ */
+async function callGeminiNative(
+  key: string,
+  messages: ChatMessage[],
+  opts?: { maxTokens?: number; temperature?: number },
+): Promise<string> {
+  const system: string[] = [];
+  const contents: Array<{ role: "user" | "model"; parts: unknown[] }> = [];
+
+  for (const m of messages) {
+    if (m.role === "system") {
+      if (typeof m.content === "string") system.push(m.content);
+      else for (const b of m.content) if (b.type === "text") system.push(b.text);
+      continue;
+    }
+    const parts: unknown[] = [];
+    if (typeof m.content === "string") {
+      parts.push({ text: m.content });
+    } else {
+      for (const b of m.content) {
+        if (b.type === "text") parts.push({ text: b.text });
+        else if (b.type === "image_url") {
+          const match = /^data:([^;]+);base64,(.*)$/s.exec(b.image_url.url);
+          if (match) parts.push({ inline_data: { mime_type: match[1], data: match[2] } });
+        } else if (b.type === "file") {
+          const match = /^data:([^;]+);base64,(.*)$/s.exec(b.file.file_data);
+          if (match) parts.push({ inline_data: { mime_type: match[1], data: match[2] } });
+        }
+      }
+    }
+    if (parts.length) contents.push({ role: m.role === "assistant" ? "model" : "user", parts });
+  }
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+      body: JSON.stringify({
+        contents,
+        ...(system.length ? { systemInstruction: { parts: [{ text: system.join("\n\n") }] } } : {}),
+        generationConfig: {
+          temperature: opts?.temperature ?? 0.3,
+          ...(opts?.maxTokens ? { maxOutputTokens: opts.maxTokens } : {}),
+        },
+      }),
+    },
+  );
+
+  if (!res.ok) {
+    const status = res.status;
+    const body = await res.text();
+    if (status === 429 || status >= 500) {
+      throw new Error("The AI service is busy right now. Please try again in a moment.");
+    }
+    if (status === 401 || status === 403) {
+      throw new Error("Your AI API key was rejected. Check it in Settings → AI key.");
+    }
+    throw new Error(`AI request failed (${status}): ${body.slice(0, 300)}`);
+  }
+
+  const data = (await res.json()) as {
+    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+  };
+  return (data.candidates?.[0]?.content?.parts ?? [])
+    .map((p) => p.text ?? "")
+    .join("")
+    .trim();
+}
+
+function hasFilePart(messages: ChatMessage[]): boolean {
+  return messages.some(
+    (m) => typeof m.content !== "string" && m.content.some((b) => b.type === "file"),
+  );
+}
+
 export async function callAI(
   messages: ChatMessage[],
   opts?: { model?: string; maxTokens?: number; temperature?: number; reasoningEffort?: string; _retry?: boolean },
 ): Promise<string> {
   // The student's own API key — the app never spends the workspace's AI credits.
   const cfg = requireAiKey();
+  if (cfg.provider === "google" && hasFilePart(messages)) {
+    return callGeminiNative(cfg.key, messages, opts);
+  }
   const endpoint = chatEndpoint(cfg.provider);
+
 
   const payload = JSON.stringify({
     model: chatModel(cfg.provider),
     messages,
     temperature: opts?.temperature ?? 0.3,
     ...(opts?.maxTokens ? { max_tokens: opts.maxTokens } : {}),
+    // OpenRouter needs the file-parser plugin enabled to read PDF attachments.
+    ...(cfg.provider === "openrouter" && hasFilePart(messages)
+      ? { plugins: [{ id: "file-parser", pdf: { engine: "pdf-text" } }] }
+      : {}),
   });
+
 
   // Transient upstream hiccups (429 / 5xx) are retried with backoff so a single
   // blip doesn't surface as a failure to the student.
