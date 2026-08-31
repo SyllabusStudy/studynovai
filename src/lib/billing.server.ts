@@ -114,7 +114,7 @@ export async function loadBilling(supabase: DB, userId: string): Promise<Billing
           assignment_help: FREE_LIMITS.assignment_help,
           snap: FREE_LIMITS.snap,
           video: FREE_LIMITS.video,
-          classes: FREE_LIMITS.classes,
+          classes: -1,
         },
   };
 }
