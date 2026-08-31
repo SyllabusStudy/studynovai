@@ -4,7 +4,10 @@ import { chatEndpoint, chatModel, requireAiKey } from "./ai-key.server";
 
 type DB = SupabaseClient<Database>;
 
-export const CHAT_MODEL = "gemini-2.5-flash";
+export const CHAT_MODEL = "gemini-3.6-flash";
+
+/** Newest first — if Google retires one, the next is tried automatically. */
+const GEMINI_MODELS = ["gemini-3.6-flash", "gemini-flash-latest", "gemini-2.5-flash"];
 
 
 type ContentBlock =
