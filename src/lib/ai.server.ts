@@ -4,7 +4,10 @@ import { chatEndpoint, chatModel, requireAiKey } from "./ai-key.server";
 
 type DB = SupabaseClient<Database>;
 
-export const CHAT_MODEL = "gemini-2.5-flash";
+export const CHAT_MODEL = "gemini-3.6-flash";
+
+/** Newest first — if Google retires one, the next is tried automatically. */
+const GEMINI_MODELS = ["gemini-3.6-flash", "gemini-flash-latest", "gemini-2.5-flash"];
 
 
 type ContentBlock =
@@ -57,32 +60,38 @@ async function callGeminiNative(
     if (parts.length) contents.push({ role: m.role === "assistant" ? "model" : "user", parts });
   }
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-      body: JSON.stringify({
-        contents,
-        ...(system.length ? { systemInstruction: { parts: [{ text: system.join("\n\n") }] } } : {}),
-        generationConfig: {
-          temperature: opts?.temperature ?? 0.3,
-          ...(opts?.maxTokens ? { maxOutputTokens: opts.maxTokens } : {}),
-        },
-      }),
+  const body = JSON.stringify({
+    contents,
+    ...(system.length ? { systemInstruction: { parts: [{ text: system.join("\n\n") }] } } : {}),
+    generationConfig: {
+      temperature: opts?.temperature ?? 0.3,
+      ...(opts?.maxTokens ? { maxOutputTokens: opts.maxTokens } : {}),
     },
-  );
+  });
 
-  if (!res.ok) {
-    const status = res.status;
-    const body = await res.text();
+  let res: Response | null = null;
+  for (const model of GEMINI_MODELS) {
+    res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+        body,
+      },
+    );
+    if (res.ok || res.status !== 404) break;
+  }
+
+  if (!res || !res.ok) {
+    const status = res?.status ?? 0;
+    const text = res ? await res.text() : "";
     if (status === 429 || status >= 500) {
       throw new Error("The AI service is busy right now. Please try again in a moment.");
     }
     if (status === 401 || status === 403) {
       throw new Error("Your AI API key was rejected. Check it in Settings → AI key.");
     }
-    throw new Error(`AI request failed (${status}): ${body.slice(0, 300)}`);
+    throw new Error(`AI request failed (${status}): ${text.slice(0, 300)}`);
   }
 
   const data = (await res.json()) as {
@@ -112,37 +121,48 @@ export async function callAI(
   const endpoint = chatEndpoint(cfg.provider);
 
 
-  const payload = JSON.stringify({
-    model: chatModel(cfg.provider),
-    messages,
-    temperature: opts?.temperature ?? 0.3,
-    ...(opts?.maxTokens ? { max_tokens: opts.maxTokens } : {}),
-    // OpenRouter needs the file-parser plugin enabled to read PDF attachments.
-    ...(cfg.provider === "openrouter" && hasFilePart(messages)
-      ? { plugins: [{ id: "file-parser", pdf: { engine: "pdf-text" } }] }
-      : {}),
-  });
+  // Model candidates: if a provider retires the primary model (404), fall back.
+  const models =
+    cfg.provider === "google"
+      ? GEMINI_MODELS
+      : cfg.provider === "openrouter"
+        ? GEMINI_MODELS.map((m) => `google/${m}`)
+        : [chatModel(cfg.provider)];
 
+  const buildPayload = (model: string) =>
+    JSON.stringify({
+      model,
+      messages,
+      temperature: opts?.temperature ?? 0.3,
+      ...(opts?.maxTokens ? { max_tokens: opts.maxTokens } : {}),
+      // OpenRouter needs the file-parser plugin enabled to read PDF attachments.
+      ...(cfg.provider === "openrouter" && hasFilePart(messages)
+        ? { plugins: [{ id: "file-parser", pdf: { engine: "pdf-text" } }] }
+        : {}),
+    });
 
   // Transient upstream hiccups (429 / 5xx) are retried with backoff so a single
   // blip doesn't surface as a failure to the student.
   const delays = [700, 1800, 3500];
   let res: Response | null = null;
-  for (let attempt = 0; attempt <= delays.length; attempt++) {
-    res = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${cfg.key}`,
-      },
-      body: payload,
-    });
+  outer: for (const model of models) {
+    for (let attempt = 0; attempt <= delays.length; attempt++) {
+      res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${cfg.key}`,
+        },
+        body: buildPayload(model),
+      });
 
-    if (res.ok) break;
-    const transient = res.status === 429 || res.status >= 500;
-    if (!transient || attempt === delays.length) break;
-    const retryAfter = Number(res.headers.get("retry-after"));
-    await sleep(Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : delays[attempt]!);
+      if (res.ok) break outer;
+      if (res.status === 404) continue outer;
+      const transient = res.status === 429 || res.status >= 500;
+      if (!transient || attempt === delays.length) break outer;
+      const retryAfter = Number(res.headers.get("retry-after"));
+      await sleep(Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : delays[attempt]!);
+    }
   }
 
   if (!res || !res.ok) {

@@ -95,7 +95,7 @@ export function chatModel(provider: AiProvider): string {
     case "openai":
       return "gpt-4.1-mini";
     case "openrouter":
-      return "google/gemini-2.5-flash";
+      return "google/gemini-3.6-flash";
     case "anthropic":
       return "claude-sonnet-4-5";
     case "groq":
@@ -111,7 +111,7 @@ export function chatModel(provider: AiProvider): string {
     case "perplexity":
       return "sonar";
     default:
-      return "gemini-2.5-flash";
+      return "gemini-3.6-flash";
   }
 }
 
