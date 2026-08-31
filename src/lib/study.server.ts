@@ -354,6 +354,8 @@ const DATE_RULES = [
   "Walk the syllabus top to bottom, including tables, week-by-week schedules, appendices and footnotes. If a schedule table has 15 rows, return 15 dated items.",
   "If a row lists several items for one date (e.g. 'Quiz 3 + HW 5 due'), return them as SEPARATE entries.",
   "Include a time in 24h HH:MM when the syllabus states one (e.g. 'due by 11:59pm' -> \"23:59\"), otherwise null.",
+  "RECURRING ITEMS: when something happens on a repeating schedule (\"every week\", \"weekly quiz\", \"every Saturday\", \"Mondays and Wednesdays\", \"every other Friday\", \"daily reading\"), return ONE entry whose date is the FIRST occurrence, and set repeat to \"weekly\" | \"biweekly\" | \"daily\" | \"monthly\", repeat_days to the weekday names it lands on (e.g. [\"saturday\"] or [\"monday\",\"wednesday\"]), and repeat_until to the last date it applies (usually the end of the term) or null.",
+  "For non-repeating items set repeat, repeat_days and repeat_until to null.",
   "Only skip an item if it truly has no identifiable date.",
 ].join("\n");
 
