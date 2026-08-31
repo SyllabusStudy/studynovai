@@ -1,10 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { chatEndpoint, chatModel, requireAiKey } from "./ai-key.server";
 
 type DB = SupabaseClient<Database>;
 
-const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-export const CHAT_MODEL = "google/gemini-3.5-flash";
+export const CHAT_MODEL = "gemini-2.5-flash";
+
 
 type ContentBlock =
   | { type: "text"; text: string }
