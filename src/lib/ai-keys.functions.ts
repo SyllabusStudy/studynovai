@@ -2,7 +2,18 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const providerSchema = z.enum(["google", "openai", "openrouter"]);
+const providerSchema = z.enum([
+  "google",
+  "openai",
+  "openrouter",
+  "anthropic",
+  "groq",
+  "deepseek",
+  "xai",
+  "mistral",
+  "together",
+  "perplexity",
+]);
 
 /** Whether the student has stored their own AI key (never returns the key itself). */
 export const getAiKeyStatus = createServerFn({ method: "POST" })
@@ -25,7 +36,7 @@ export const getAiKeyStatus = createServerFn({ method: "POST" })
 export const saveAiKey = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({ provider: providerSchema, apiKey: z.string().min(20).max(300) }).parse(d),
+    z.object({ provider: providerSchema, apiKey: z.string().min(12).max(300) }).parse(d),
   )
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("user_ai_keys").upsert(

@@ -15,7 +15,17 @@ import {
 } from "@/components/ui/select";
 import { deleteAiKey, getAiKeyStatus, saveAiKey } from "@/lib/ai-keys.functions";
 
-type Provider = "google" | "openai" | "openrouter";
+type Provider =
+  | "google"
+  | "openai"
+  | "openrouter"
+  | "anthropic"
+  | "groq"
+  | "deepseek"
+  | "xai"
+  | "mistral"
+  | "together"
+  | "perplexity";
 
 const PROVIDERS: Array<{ value: Provider; label: string; help: string; link: string }> = [
   {
@@ -33,8 +43,50 @@ const PROVIDERS: Array<{ value: Provider; label: string; help: string; link: str
   {
     value: "openrouter",
     label: "OpenRouter",
-    help: "Key starts with sk-or-. One key for many models.",
+    help: "Key starts with sk-or-. One key for many models, plus image support.",
     link: "https://openrouter.ai/keys",
+  },
+  {
+    value: "anthropic",
+    label: "Anthropic (Claude)",
+    help: "Key starts with sk-ant-. Great for essays and long documents. No image generation.",
+    link: "https://console.anthropic.com/settings/keys",
+  },
+  {
+    value: "groq",
+    label: "Groq",
+    help: "Free and very fast (Llama 3.3). Key starts with gsk_. No image generation.",
+    link: "https://console.groq.com/keys",
+  },
+  {
+    value: "deepseek",
+    label: "DeepSeek",
+    help: "Very low cost per answer. No image generation.",
+    link: "https://platform.deepseek.com/api_keys",
+  },
+  {
+    value: "xai",
+    label: "xAI (Grok)",
+    help: "Key starts with xai-. Fast Grok models. No image generation.",
+    link: "https://console.x.ai",
+  },
+  {
+    value: "mistral",
+    label: "Mistral AI",
+    help: "Free tier available. No image generation.",
+    link: "https://console.mistral.ai/api-keys",
+  },
+  {
+    value: "together",
+    label: "Together AI",
+    help: "Open models with free credits to start. No image generation.",
+    link: "https://api.together.ai/settings/api-keys",
+  },
+  {
+    value: "perplexity",
+    label: "Perplexity",
+    help: "Answers can include live web search. No image generation.",
+    link: "https://www.perplexity.ai/settings/api",
   },
 ];
 
@@ -139,7 +191,7 @@ export function AiKeyCard() {
         <Button
           type="button"
           size="sm"
-          disabled={apiKey.trim().length < 20 || saving.isPending}
+          disabled={apiKey.trim().length < 12 || saving.isPending}
           onClick={() => saving.mutate()}
         >
           {saving.isPending ? <Loader2 className="size-4 animate-spin" /> : null}
