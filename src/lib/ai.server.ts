@@ -117,7 +117,12 @@ export async function callAI(
     messages,
     temperature: opts?.temperature ?? 0.3,
     ...(opts?.maxTokens ? { max_tokens: opts.maxTokens } : {}),
+    // OpenRouter needs the file-parser plugin enabled to read PDF attachments.
+    ...(cfg.provider === "openrouter" && hasFilePart(messages)
+      ? { plugins: [{ id: "file-parser", pdf: { engine: "pdf-text" } }] }
+      : {}),
   });
+
 
   // Transient upstream hiccups (429 / 5xx) are retried with backoff so a single
   // blip doesn't surface as a failure to the student.
