@@ -143,12 +143,164 @@ type SyllabusResult = {
     time?: string | null;
     type: "exam" | "quiz" | "assignment" | "project" | "presentation" | "final" | "other";
     description?: string | null;
+    /** "weekly" | "biweekly" | "daily" | "monthly" — set when the syllabus says it repeats. */
+    repeat?: string | null;
+    /** Weekday names the item repeats on, e.g. ["saturday"] or ["monday","wednesday"]. */
+    repeat_days?: string[] | null;
+    /** Last date the repetition applies to (usually the end of the term). */
+    repeat_until?: string | null;
   }>;
+  term_start_date?: string | null;
+  term_end_date?: string | null;
   other_policies: string | null;
 };
 
 type SyllabusDate = SyllabusResult["dates"][number];
 type SyllabusPolicy = SyllabusResult["policies"][number];
+
+const WEEKDAYS: Record<string, number> = {
+  sunday: 0,
+  sun: 0,
+  monday: 1,
+  mon: 1,
+  tuesday: 2,
+  tue: 2,
+  tues: 2,
+  wednesday: 3,
+  wed: 3,
+  thursday: 4,
+  thu: 4,
+  thur: 4,
+  thurs: 4,
+  friday: 5,
+  fri: 5,
+  saturday: 6,
+  sat: 6,
+};
+
+function isoDate(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function parseIso(s: string) {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y!, (m ?? 1) - 1, d ?? 1);
+}
+
+/**
+ * Turns "every week", "every Saturday", "Mondays and Wednesdays" items into one
+ * calendar entry per occurrence, so the calendar shows the whole recurring series.
+ */
+function expandRecurringDates(dates: SyllabusDate[], today: string, termEnd?: string | null): SyllabusDate[] {
+  const out: SyllabusDate[] = [];
+  const seen = new Set<string>();
+  const push = (d: SyllabusDate) => {
+    const key = `${String(d.title).trim().toLowerCase()}|${d.date}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(d);
+  };
+
+  for (const item of dates) {
+    if (!item?.title || !/^\d{4}-\d{2}-\d{2}$/.test(String(item.date))) continue;
+
+    const repeatRaw = String(item.repeat ?? "").toLowerCase();
+    const text = `${item.title} ${item.description ?? ""}`.toLowerCase();
+    const impliedWeekly = /\b(every|each)\s+(week|other week|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b|\bweekly\b|\bbiweekly\b/.test(text);
+    const repeat =
+      repeatRaw === "weekly" || repeatRaw === "biweekly" || repeatRaw === "daily" || repeatRaw === "monthly"
+        ? repeatRaw
+        : impliedWeekly
+          ? /other week|biweekly/.test(`${repeatRaw} ${text}`)
+            ? "biweekly"
+            : "weekly"
+          : null;
+
+    if (!repeat) {
+      push(item);
+      continue;
+    }
+
+    // Which weekdays? Explicit list, else names in the text, else the start date's weekday.
+    const start = parseIso(item.date);
+    const named = new Set<number>();
+    for (const name of item.repeat_days ?? []) {
+      const n = WEEKDAYS[String(name).trim().toLowerCase()];
+      if (n !== undefined) named.add(n);
+    }
+    if (named.size === 0) {
+      for (const [name, n] of Object.entries(WEEKDAYS)) {
+        if (name.length > 3 && new RegExp(`\\b${name}s?\\b`).test(text)) named.add(n);
+      }
+    }
+    const days = named.size ? [...named] : [start.getDay()];
+
+    // How far out? repeat_until, else term end, else 16 weeks from the start.
+    const limitStr =
+      (item.repeat_until && /^\d{4}-\d{2}-\d{2}$/.test(item.repeat_until) && item.repeat_until) ||
+      (termEnd && /^\d{4}-\d{2}-\d{2}$/.test(termEnd) && termEnd) ||
+      isoDate(new Date(start.getFullYear(), start.getMonth(), start.getDate() + 112));
+    const limit = parseIso(limitStr);
+    if (limit < start) {
+      push(item);
+      continue;
+    }
+
+    const stepDays = repeat === "daily" ? 1 : repeat === "biweekly" ? 14 : repeat === "monthly" ? 0 : 7;
+    const occurrences: string[] = [];
+
+    if (repeat === "monthly") {
+      const cursor = new Date(start);
+      while (cursor <= limit && occurrences.length < 60) {
+        occurrences.push(isoDate(cursor));
+        cursor.setMonth(cursor.getMonth() + 1);
+      }
+    } else if (repeat === "daily") {
+      const cursor = new Date(start);
+      while (cursor <= limit && occurrences.length < 200) {
+        occurrences.push(isoDate(cursor));
+        cursor.setDate(cursor.getDate() + 1);
+      }
+    } else {
+      // Weekly / biweekly on each named weekday.
+      for (const day of days) {
+        const first = new Date(start);
+        first.setDate(first.getDate() + ((day - start.getDay() + 7) % 7));
+        const cursor = new Date(first);
+        let guard = 0;
+        while (cursor <= limit && guard < 60) {
+          occurrences.push(isoDate(cursor));
+          cursor.setDate(cursor.getDate() + stepDays);
+          guard += 1;
+        }
+      }
+    }
+
+    occurrences.sort();
+    if (!occurrences.length) {
+      push(item);
+      continue;
+    }
+
+    const baseTitle = String(item.title).trim();
+    occurrences.forEach((date, i) => {
+      push({
+        ...item,
+        title: occurrences.length > 1 ? `${baseTitle} (${i + 1})` : baseTitle,
+        date,
+        repeat: null,
+        repeat_days: null,
+        repeat_until: null,
+        description: item.description ?? `Repeats ${repeat} — from your syllabus.`,
+      });
+    });
+  }
+
+  // Keep the calendar tidy: drop far-past occurrences of expanded series.
+  const cutoff = isoDate(new Date(parseIso(today).getTime() - 1000 * 60 * 60 * 24 * 60));
+  return out.filter((d) => d.date >= cutoff);
+}
+
 
 const POLICY_RULES = [
   "COMPLETENESS IS THE MOST IMPORTANT THING for policies. Capture EVERY rule, requirement, expectation or procedure stated anywhere in the syllabus — do not summarize or merge them.",
