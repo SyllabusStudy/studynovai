@@ -10,6 +10,8 @@ import { EmptyState } from "@/components/EmptyState";
 import { ClassChip } from "@/components/ClassBadge";
 import { DeleteButton } from "@/components/DeleteButton";
 import { AssignmentHelp } from "@/components/AssignmentHelp";
+import { ReminderSelect } from "@/components/ReminderSelect";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
