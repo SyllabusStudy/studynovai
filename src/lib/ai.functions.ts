@@ -128,11 +128,15 @@ export const studyCoach = createServerFn({ method: "POST" })
       })
       .parse(d),
   )
-  .handler(async ({ data, context }) =>
-    withUserAiKey(context.supabase, context.userId, () =>
+  .handler(async ({ data, context }) => {
+    if (!(await hasUserAiKey(context.supabase, context.userId))) {
+      return { summary: AI_KEY_HELP, tasks: [], needsAiKey: true };
+    }
+    const result = await withUserAiKey(context.supabase, context.userId, () =>
       runStudyCoach(context.supabase, context.userId, data),
-    ),
-  );
+    );
+    return { ...result, needsAiKey: false };
+  });
 
 export const createStudyPlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
