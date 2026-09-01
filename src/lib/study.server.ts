@@ -249,10 +249,12 @@ export async function runSyllabusAnalysis(supabase: DB, userId: string, document
 
   const today = new Date().toISOString().slice(0, 10);
   const syllabusText = doc.extracted_text.slice(0, 60000);
-  // One single AI request per syllabus — the extra "sweep" passes used to fire up
-  // to 8 more calls, which burned free-tier quota fast.
+  // Full extraction, free-tier friendly: one main pass over the whole syllabus,
+  // plus at most two combined follow-up sweeps (dates AND policies in the same
+  // call) for long syllabi where a single response would truncate.
   const swept: SyllabusDate[] = [];
   const sweptPolicies: SyllabusPolicy[] = [];
+
   const raw = await callAI(
     [
       {
