@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/select";
 import { PRIORITIES } from "@/lib/constants";
 import { useAuth } from "@/lib/auth";
-import { classLabel, daysUntil, relativeDay, urgencyDot, useAssignments, useClasses } from "@/lib/data";
+import { classLabel, daysUntil, relativeDay, urgencyDot, useAssignments, useClasses, useProfile } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/assignments")({
@@ -152,7 +152,12 @@ function NewAssignmentDialog() {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ title: "", due_date: "", class_id: "", priority: "medium" });
+  const { data: profile } = useProfile(user?.id);
+  const savedDefault = profile?.default_reminder_minutes ?? 1440;
   const [reminder, setReminder] = useState<number | null>(null);
+  useEffect(() => {
+    setReminder((prev) => (prev === null ? savedDefault : prev));
+  }, [savedDefault]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -195,7 +200,7 @@ function NewAssignmentDialog() {
 
     setOpen(false);
     setForm({ title: "", due_date: "", class_id: "", priority: "medium" });
-    setReminder(null);
+    setReminder(savedDefault);
   }
 
 
