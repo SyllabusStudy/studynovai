@@ -11,17 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { REMINDER_OPTIONS } from "@/lib/constants";
+import { ReminderSelect } from "@/components/ReminderSelect";
+import { notificationPermission, requestNotificationPermission } from "@/lib/reminders";
 import { useAuth } from "@/lib/auth";
 import { useProfile } from "@/lib/data";
 import { useTheme } from "@/lib/theme";
+
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
