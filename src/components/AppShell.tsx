@@ -41,7 +41,7 @@ import { useTheme } from "@/lib/theme";
 import { daysUntil, formatDate, relativeDay, urgencyDot, useAssignments, useEvents, useProfile } from "@/lib/data";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Image as ImageIcon, ShieldCheck, Video } from "lucide-react";
+import { GraduationCap, Image as ImageIcon, ShieldCheck, Video } from "lucide-react";
 import { checkAdmin } from "@/lib/admin.functions";
 import { AskAiDock } from "@/components/AskAiDock";
 import { GlobalSearch } from "@/components/GlobalSearch";
@@ -59,6 +59,7 @@ const NAV = [
   { to: "/snapquick", label: "SnapQuick", icon: Camera },
   { to: "/quickvideo", label: "QuickVideo", icon: Video },
   { to: "/studio", label: "AI Images", icon: ImageIcon },
+  { to: "/school", label: "School links", icon: GraduationCap },
   { to: "/upgrade", label: "Upgrade", icon: Crown },
   { to: "/feedback", label: "Feedback", icon: MessageSquare },
   { to: "/settings", label: "Settings", icon: Settings },

@@ -15,6 +15,13 @@
       "when": 1788230307176,
       "tag": "0001_remove_free_class_limit",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788232667869,
+      "tag": "0002_create_school_links",
+      "breakpoints": true
     }
   ]
 }
