@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { withUserAiKey } from "./ai-key.server";
+import { AI_KEY_HELP, hasUserAiKey, withUserAiKey } from "./ai-key.server";
 import {
   runAssignmentHelp,
   runDocumentExtraction,
@@ -154,6 +154,9 @@ export const assignmentHelp = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
+    if (!(await hasUserAiKey(context.supabase, context.userId))) {
+      return { reply: AI_KEY_HELP };
+    }
     const { assertQuota, recordUsage } = await import("./billing.server");
     await assertQuota(context.supabase, context.userId, "assignment_help");
     const result = await withUserAiKey(context.supabase, context.userId, () =>
@@ -175,6 +178,9 @@ export const snapHelp = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
+    if (!(await hasUserAiKey(context.supabase, context.userId))) {
+      return { reply: AI_KEY_HELP };
+    }
     const { assertQuota, recordUsage } = await import("./billing.server");
     await assertQuota(context.supabase, context.userId, "snap");
     const result = await withUserAiKey(context.supabase, context.userId, () =>

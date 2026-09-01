@@ -54,6 +54,19 @@ export async function loadUserAiKey(
   return { provider, key: data.api_key };
 }
 
+/** True when the student has saved their own key (no throw). */
+export async function hasUserAiKey(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+): Promise<boolean> {
+  const { data } = await supabase
+    .from("user_ai_keys")
+    .select("api_key")
+    .eq("user_id", userId)
+    .maybeSingle();
+  return Boolean(data?.api_key);
+}
+
 /** Runs `fn` with the caller's own AI key available to every nested AI call. */
 export async function withUserAiKey<T>(
   supabase: SupabaseClient<Database>,
