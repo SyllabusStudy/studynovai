@@ -41,14 +41,20 @@ function SettingsPage() {
   const { data: profile } = useProfile(user?.id);
   const { theme, toggle } = useTheme();
   const [busy, setBusy] = useState(false);
+  const [perm, setPerm] = useState<NotificationPermission | "unsupported">("default");
   const [form, setForm] = useState({
     name: "",
     school: "",
     major: "",
     graduation_year: "",
-    default_reminder_days: 3,
+    default_reminder_minutes: 1440,
     notify_email: true,
+    notify_push: true,
   });
+
+  useEffect(() => {
+    setPerm(notificationPermission());
+  }, []);
 
   useEffect(() => {
     if (!profile) return;
@@ -57,10 +63,19 @@ function SettingsPage() {
       school: profile.school ?? "",
       major: profile.major ?? "",
       graduation_year: profile.graduation_year ?? "",
-      default_reminder_days: profile.default_reminder_days,
+      default_reminder_minutes: profile.default_reminder_minutes ?? 1440,
       notify_email: profile.notify_email,
+      notify_push: profile.notify_push,
     });
   }, [profile]);
+
+  async function enablePush() {
+    const result = await requestNotificationPermission();
+    setPerm(result);
+    if (result === "granted") toast.success("Reminders on — we'll notify you before each deadline.");
+    else if (result === "denied")
+      toast.error("Notifications are blocked. Allow them for this site in your browser settings.");
+  }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -73,8 +88,10 @@ function SettingsPage() {
         school: form.school || null,
         major: form.major || null,
         graduation_year: form.graduation_year || null,
-        default_reminder_days: form.default_reminder_days,
+        default_reminder_minutes: form.default_reminder_minutes,
+        default_reminder_days: Math.max(1, Math.round(form.default_reminder_minutes / 1440)),
         notify_email: form.notify_email,
+        notify_push: form.notify_push,
       })
       .eq("id", user.id);
     setBusy(false);
@@ -85,6 +102,7 @@ function SettingsPage() {
     await qc.invalidateQueries({ queryKey: ["profile"] });
     toast.success("Settings saved");
   }
+
 
   return (
     <div className="mx-auto max-w-2xl">
