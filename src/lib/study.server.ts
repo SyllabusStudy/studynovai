@@ -452,8 +452,10 @@ ${syllabusText}`,
 
       if (rows.length) {
         const { error } = await supabase.from("calendar_events").insert(rows);
-        if (!error) eventsCreated = rows.length;
+        if (error) throw new Error(`Could not add the syllabus dates to your calendar: ${error.message}`);
+        eventsCreated = rows.length;
       }
+
 
       const assignmentRows = valid
         .filter((d) => ["assignment", "project", "presentation"].includes(d.type))
