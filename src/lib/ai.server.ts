@@ -77,16 +77,19 @@ async function callGeminiNative(
   });
 
   let res: Response | null = null;
-  for (const model of GEMINI_MODELS) {
-    res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-        body,
-      },
-    );
-    if (res.ok || res.status !== 404) break;
+  for (const headers of [
+    { "Content-Type": "application/json", "x-goog-api-key": key },
+    { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+  ]) {
+    for (const model of GEMINI_MODELS) {
+      res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        { method: "POST", headers, body },
+      );
+      if (res.ok) break;
+      if (res.status !== 404) break;
+    }
+    if (res?.ok || (res?.status !== 401 && res?.status !== 403)) break;
   }
 
   if (!res || !res.ok) {
@@ -95,10 +98,7 @@ async function callGeminiNative(
     if (status === 429 || status >= 500) {
       throw new Error("The AI service is busy right now. Please try again in a moment.");
     }
-    if (status === 401 || status === 403) {
-      throw new Error("Your AI API key was rejected. Check it in Settings → AI key.");
-    }
-    throw new Error(`AI request failed (${status}): ${text.slice(0, 300)}`);
+    throw await providerError(new Response(text, { status }), "Google AI Studio");
   }
 
   const data = (await res.json()) as {
