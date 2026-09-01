@@ -105,6 +105,7 @@ export type Database = {
           points_possible: number | null
           priority: string
           reminder_days: number | null
+          reminder_minutes: number | null
           status: string
           title: string
           updated_at: string
@@ -121,6 +122,7 @@ export type Database = {
           points_possible?: number | null
           priority?: string
           reminder_days?: number | null
+          reminder_minutes?: number | null
           status?: string
           title: string
           updated_at?: string
@@ -137,6 +139,7 @@ export type Database = {
           points_possible?: number | null
           priority?: string
           reminder_days?: number | null
+          reminder_minutes?: number | null
           status?: string
           title?: string
           updated_at?: string
@@ -163,6 +166,7 @@ export type Database = {
           event_type: string
           id: string
           reminder_days: number | null
+          reminder_minutes: number | null
           source_document: string | null
           title: string
           user_id: string
@@ -177,6 +181,7 @@ export type Database = {
           event_type?: string
           id?: string
           reminder_days?: number | null
+          reminder_minutes?: number | null
           source_document?: string | null
           title: string
           user_id: string
@@ -191,6 +196,7 @@ export type Database = {
           event_type?: string
           id?: string
           reminder_days?: number | null
+          reminder_minutes?: number | null
           source_document?: string | null
           title?: string
           user_id?: string
@@ -470,6 +476,7 @@ export type Database = {
         Row: {
           created_at: string
           default_reminder_days: number
+          default_reminder_minutes: number
           email: string | null
           graduation_year: string | null
           id: string
@@ -477,6 +484,7 @@ export type Database = {
           major: string | null
           name: string | null
           notify_email: boolean
+          notify_push: boolean
           school: string | null
           study_streak: number
           updated_at: string
@@ -484,6 +492,7 @@ export type Database = {
         Insert: {
           created_at?: string
           default_reminder_days?: number
+          default_reminder_minutes?: number
           email?: string | null
           graduation_year?: string | null
           id: string
@@ -491,6 +500,7 @@ export type Database = {
           major?: string | null
           name?: string | null
           notify_email?: boolean
+          notify_push?: boolean
           school?: string | null
           study_streak?: number
           updated_at?: string
@@ -498,6 +508,7 @@ export type Database = {
         Update: {
           created_at?: string
           default_reminder_days?: number
+          default_reminder_minutes?: number
           email?: string | null
           graduation_year?: string | null
           id?: string
@@ -505,6 +516,7 @@ export type Database = {
           major?: string | null
           name?: string | null
           notify_email?: boolean
+          notify_push?: boolean
           school?: string | null
           study_streak?: number
           updated_at?: string
@@ -560,6 +572,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      reminder_deliveries: {
+        Row: {
+          channel: string
+          created_at: string
+          id: string
+          remind_at: string
+          source_id: string
+          source_kind: string
+          user_id: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          id?: string
+          remind_at: string
+          source_id: string
+          source_kind: string
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          id?: string
+          remind_at?: string
+          source_id?: string
+          source_kind?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       school_links: {
         Row: {
