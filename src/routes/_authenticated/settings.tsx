@@ -160,24 +160,35 @@ function SettingsPage() {
               placeholder="2029"
             />
           </div>
-          <div className="space-y-1.5">
-            <Label>Default reminder</Label>
-            <Select
-              value={String(form.default_reminder_days)}
-              onValueChange={(v) => setForm({ ...form, default_reminder_days: Number(v) })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {REMINDER_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={String(o.value)}>
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <ReminderSelect
+            label="Default reminder"
+            allowDefault={false}
+            value={form.default_reminder_minutes}
+            onChange={(v) => setForm({ ...form, default_reminder_minutes: v ?? 1440 })}
+          />
+        </div>
+        <div className="rounded-lg border border-border p-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold">Phone & desktop reminders</p>
+              <p className="text-xs text-muted-foreground">
+                {perm === "unsupported"
+                  ? "This browser can't show notifications."
+                  : perm === "granted"
+                    ? "Notifications are allowed on this device."
+                    : "Allow notifications to get alerts before each deadline."}
+              </p>
+            </div>
+            <Switch
+              checked={form.notify_push}
+              onCheckedChange={(v) => setForm({ ...form, notify_push: v })}
+            />
           </div>
+          {perm !== "granted" && perm !== "unsupported" ? (
+            <Button type="button" variant="outline" size="sm" className="mt-3" onClick={enablePush}>
+              Turn on notifications
+            </Button>
+          ) : null}
         </div>
         <div className="flex items-center justify-between rounded-lg border border-border p-3">
           <div>
@@ -189,6 +200,7 @@ function SettingsPage() {
             onCheckedChange={(v) => setForm({ ...form, notify_email: v })}
           />
         </div>
+
         <div className="flex items-center justify-between rounded-lg border border-border p-3">
           <div>
             <p className="text-sm font-semibold">Dark mode</p>
