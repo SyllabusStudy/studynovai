@@ -315,17 +315,20 @@ export async function runSyllabusAnalysis(supabase: DB, userId: string, document
 
   const today = new Date().toISOString().slice(0, 10);
   const syllabusText = doc.extracted_text.slice(0, 60000);
-  const [raw, swept, sweptPolicies] = await Promise.all([
-    callAI(
-      [
-        {
-          role: "system",
-          content:
-            "You extract structured data from a college syllabus and reply with json only. Use null for anything that is genuinely not stated in the syllabus — never guess or invent policies, dates or weights. Dates must be ISO YYYY-MM-DD; infer the year from the syllabus term when possible, otherwise use the upcoming occurrence relative to today.",
-        },
-        {
-          role: "user",
-          content: `Today is ${today}. Extract this json shape:
+  // One single AI request per syllabus — the extra "sweep" passes used to fire up
+  // to 8 more calls, which burned free-tier quota fast.
+  const swept: SyllabusDate[] = [];
+  const sweptPolicies: SyllabusPolicy[] = [];
+  const raw = await callAI(
+    [
+      {
+        role: "system",
+        content:
+          "You extract structured data from a college syllabus and reply with json only. Use null for anything that is genuinely not stated in the syllabus — never guess or invent policies, dates or weights. Dates must be ISO YYYY-MM-DD; infer the year from the syllabus term when possible, otherwise use the upcoming occurrence relative to today.",
+      },
+      {
+        role: "user",
+        content: `Today is ${today}. Extract this json shape:
 {"course_name":string|null,"course_code":string|null,"professor":string|null,"professor_email":string|null,"office_hours":string|null,"attendance_policy":string|null,"late_work_policy":string|null,"makeup_policy":string|null,"required_materials":string|null,"other_policies":string|null,"term_start_date":"YYYY-MM-DD"|null,"term_end_date":"YYYY-MM-DD"|null,"policies":[{"title":string,"details":string}],"grading_breakdown":[{"name":string,"weight":number}],"dates":[{"title":string,"date":"YYYY-MM-DD","time":"HH:MM"|null,"type":"exam"|"quiz"|"assignment"|"project"|"presentation"|"final"|"other","description":string|null,"repeat":"weekly"|"biweekly"|"daily"|"monthly"|null,"repeat_days":string[]|null,"repeat_until":"YYYY-MM-DD"|null}]}
 
 ${DATE_RULES}
@@ -334,13 +337,11 @@ ${POLICY_RULES}
 
 SYLLABUS TEXT:
 ${syllabusText}`,
-        },
-      ],
-      { maxTokens: 12000, temperature: 0 },
-    ),
-    sweepSyllabusDates(syllabusText, today),
-    sweepSyllabusPolicies(syllabusText),
-  ]);
+      },
+    ],
+    { maxTokens: 12000, temperature: 0 },
+  );
+
 
   const parsed = parseJsonBlock<SyllabusResult>(raw);
 
