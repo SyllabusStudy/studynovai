@@ -20,10 +20,10 @@ export const Route = createFileRoute("/_authenticated/upgrade")({
       { title: "Upgrade to Pro — StudyMate AI" },
       {
         name: "description",
-        content: `Go unlimited for $${PRO_PRICE_USD}/month: unlimited classes, AI assignment help and SnapQuick scans.`,
+        content: `Get unlimited AI assignment help and SnapQuick scans for $${PRO_PRICE_USD}/month.`,
       },
       { property: "og:title", content: "Upgrade to StudyMate AI Pro" },
-      { property: "og:description", content: "Unlimited classes, AI assignment help and photo scans." },
+      { property: "og:description", content: "Unlimited AI assignment help and photo scans." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -176,7 +176,6 @@ function UpgradePage() {
               </p>
             </div>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <Item>Unlimited classes</Item>
               <Item>Unlimited AI assignment help</Item>
               <Item>Unlimited SnapQuick photo scans</Item>
               <Item>Unlimited tutor chats, flashcards & quizzes</Item>
