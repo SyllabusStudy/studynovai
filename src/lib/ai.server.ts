@@ -93,9 +93,11 @@ async function callGeminiNative(
   if (!res || !res.ok) {
     const status = res?.status ?? 0;
     const text = res ? await res.text() : "";
-    if (status === 429 || status >= 500) {
+    if (status === 429) throw new Error(FREE_LIMIT_MESSAGE);
+    if (status >= 500) {
       throw new Error("The AI service is busy right now. Please try again in a moment.");
     }
+
     throw await providerError(new Response(text, { status }), "Google AI Studio");
   }
 
