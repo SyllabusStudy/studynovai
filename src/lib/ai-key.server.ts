@@ -121,7 +121,7 @@ export function chatModel(provider: AiProvider): string {
  */
 export function detectProvider(key: string): AiProvider | null {
   const k = key.trim();
-  if (/^AIza/.test(k)) return "google";
+  if (/^(AIza|AQ\.)/.test(k)) return "google";
   if (/^sk-or-/.test(k)) return "openrouter";
   if (/^sk-ant-/.test(k)) return "anthropic";
   if (/^gsk_/.test(k)) return "groq";

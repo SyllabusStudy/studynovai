@@ -24,7 +24,7 @@ export const generateAiImage = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<{ image: string }> => {
     const stored = await loadUserAiKey(context.supabase, context.userId);
-    // Trust the key's own shape over whatever provider was picked in the dropdown.
+    // Trust provider-specific key formats over an accidentally selected dropdown value.
     const cfg = { ...stored, provider: detectProvider(stored.key) ?? stored.provider };
     const { prompt } = data;
     const source = data.imageDataUrl ?? null;
@@ -46,16 +46,19 @@ export const generateAiImage = createServerFn({ method: "POST" })
         "gemini-2.0-flash-preview-image-generation",
       ];
       let res: Response | null = null;
-      for (const model of imageModels) {
-        res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "x-goog-api-key": cfg.key },
-            body: JSON.stringify({ contents: [{ parts }] }),
-          },
-        );
-        if (res.ok || (res.status !== 404 && res.status !== 400)) break;
+      const body = JSON.stringify({ contents: [{ parts }] });
+      for (const headers of [
+        { "Content-Type": "application/json", "x-goog-api-key": cfg.key },
+        { "Content-Type": "application/json", Authorization: `Bearer ${cfg.key}` },
+      ]) {
+        for (const model of imageModels) {
+          res = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+            { method: "POST", headers, body },
+          );
+          if (res.ok || (res.status !== 404 && res.status !== 400)) break;
+        }
+        if (res?.ok || (res?.status !== 401 && res?.status !== 403)) break;
       }
       if (!res || !res.ok) throw new Error(await imageError(res!));
       const json = (await res.json()) as {
@@ -116,12 +119,19 @@ export const generateAiImage = createServerFn({ method: "POST" })
 
 async function imageError(res: Response): Promise<string> {
   const body = await res.text();
+  let detail = body.slice(0, 240);
+  try {
+    const parsed = JSON.parse(body) as { error?: { message?: string }; message?: string };
+    detail = parsed.error?.message ?? parsed.message ?? detail;
+  } catch {
+    // Keep the bounded provider response when it is not JSON.
+  }
   if (res.status === 401 || res.status === 403) {
-    return "Your AI API key was rejected. Check it in Settings → AI key.";
+    return `Your AI provider did not authorize this request: ${detail || "check the key and its API permissions."}`;
   }
   if (res.status === 402) return "Your AI provider account is out of credit.";
   if (res.status === 429 || res.status >= 500) {
     return "The image service is busy right now. Try again in a moment.";
   }
-  return `The image could not be created (${res.status}): ${body.slice(0, 200)}`;
+  return `The image could not be created (${res.status}): ${detail}`;
 }
