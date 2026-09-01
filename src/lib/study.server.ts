@@ -249,10 +249,12 @@ export async function runSyllabusAnalysis(supabase: DB, userId: string, document
 
   const today = new Date().toISOString().slice(0, 10);
   const syllabusText = doc.extracted_text.slice(0, 60000);
-  // One single AI request per syllabus — the extra "sweep" passes used to fire up
-  // to 8 more calls, which burned free-tier quota fast.
+  // Full extraction, free-tier friendly: one main pass over the whole syllabus,
+  // plus at most two combined follow-up sweeps (dates AND policies in the same
+  // call) for long syllabi where a single response would truncate.
   const swept: SyllabusDate[] = [];
   const sweptPolicies: SyllabusPolicy[] = [];
+
   const raw = await callAI(
     [
       {
@@ -276,8 +278,43 @@ ${syllabusText}`,
     { maxTokens: 12000, temperature: 0 },
   );
 
-
   const parsed = parseJsonBlock<SyllabusResult>(raw);
+
+  // Long syllabi only: sweep the parts past the first ~20k characters so nothing
+  // in late schedule tables or policy appendices is lost. Sequential and capped
+  // at two extra calls, so free-tier rate limits are respected.
+  if (syllabusText.length > 20000) {
+    const rest = syllabusText.slice(20000);
+    const chunkSize = 20000;
+    for (let i = 0, calls = 0; i < rest.length && calls < 2; i += chunkSize, calls++) {
+      const chunk = rest.slice(i, i + chunkSize);
+      try {
+        const sweepRaw = await callAI(
+          [
+            {
+              role: "system",
+              content:
+                "You are a meticulous syllabus extractor. Reply with json only. Never invent dates or policies. Dates must be ISO YYYY-MM-DD.",
+            },
+            {
+              role: "user",
+              content: `Today is ${today}.\n${DATE_RULES}\n\n${POLICY_RULES}\n\nReply with exactly: {"dates":[{"title":string,"date":"YYYY-MM-DD","time":"HH:MM"|null,"type":"exam"|"quiz"|"assignment"|"project"|"presentation"|"final"|"other","description":string|null,"repeat":null,"repeat_days":null,"repeat_until":null}],"policies":[{"title":string,"details":string}]}\n\nSYLLABUS TEXT (later part):\n${chunk}`,
+            },
+          ],
+          { maxTokens: 8000, temperature: 0 },
+        );
+        const sweepParsed = parseJsonBlock<{
+          dates?: SyllabusDate[];
+          policies?: SyllabusPolicy[];
+        }>(sweepRaw);
+        swept.push(...(sweepParsed.dates ?? []));
+        sweptPolicies.push(...(sweepParsed.policies ?? []));
+      } catch {
+        break;
+      }
+    }
+  }
+
 
   // Merge both passes so nothing the first pass skipped or truncated is lost.
   const mergedDates: SyllabusDate[] = [];
