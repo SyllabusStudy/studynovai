@@ -95,7 +95,7 @@ export function chatModel(provider: AiProvider): string {
     case "openai":
       return "gpt-4.1-mini";
     case "openrouter":
-      return "google/gemini-3.6-flash";
+      return "openrouter/auto";
     case "anthropic":
       return "claude-sonnet-4-5";
     case "groq":
@@ -103,15 +103,15 @@ export function chatModel(provider: AiProvider): string {
     case "deepseek":
       return "deepseek-chat";
     case "xai":
-      return "grok-4-fast";
+      return "grok-3-mini";
     case "mistral":
-      return "mistral-medium-latest";
+      return "mistral-small-latest";
     case "together":
       return "meta-llama/Llama-3.3-70B-Instruct-Turbo";
     case "perplexity":
       return "sonar";
     default:
-      return "gemini-3.6-flash";
+      return "gemini-flash-latest";
   }
 }
 
@@ -137,8 +137,12 @@ export function detectProvider(key: string): AiProvider | null {
  */
 export function candidateProviders(stored: AiProvider, key: string): AiProvider[] {
   const detected = detectProvider(key);
-  const ordered = [detected, stored, ...AI_PROVIDERS].filter(Boolean) as AiProvider[];
-  return [...new Set(ordered)];
+  // Only provider-specific prefixes are authoritative. A generic `sk-` key is
+  // used by several vendors, so keep the student's selected provider instead
+  // of incorrectly sending it to OpenAI first. Never spray a private key at
+  // every provider endpoint.
+  const specific = detected && detected !== "openai" ? detected : null;
+  return [specific ?? stored];
 }
 
 /** Correct auth headers per provider (Anthropic does not use Bearer tokens). */

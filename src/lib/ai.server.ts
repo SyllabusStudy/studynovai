@@ -11,10 +11,10 @@ import {
 
 type DB = SupabaseClient<Database>;
 
-export const CHAT_MODEL = "gemini-3.6-flash";
+export const CHAT_MODEL = "gemini-flash-latest";
 
 /** Newest first — if Google retires one, the next is tried automatically. */
-const GEMINI_MODELS = ["gemini-3.6-flash", "gemini-flash-latest", "gemini-2.5-flash"];
+const GEMINI_MODELS = ["gemini-flash-latest", "gemini-2.5-flash"];
 
 
 type ContentBlock =
@@ -116,6 +116,87 @@ function hasFilePart(messages: ChatMessage[]): boolean {
   );
 }
 
+function anthropicContent(content: ChatMessage["content"]): unknown {
+  if (typeof content === "string") return content;
+  return content.flatMap((block) => {
+    if (block.type === "text") return [{ type: "text", text: block.text }];
+    if (block.type === "image_url" || block.type === "file") {
+      const dataUrl = block.type === "image_url" ? block.image_url.url : block.file.file_data;
+      const match = /^data:([^;]+);base64,(.*)$/s.exec(dataUrl);
+      if (!match) return [];
+      if (block.type === "file" && match[1] === "application/pdf") {
+        return [{
+          type: "document",
+          source: { type: "base64", media_type: match[1], data: match[2] },
+        }];
+      }
+      return [{
+        type: "image",
+        source: { type: "base64", media_type: match[1], data: match[2] },
+      }];
+    }
+    return [];
+  });
+}
+
+async function callAnthropic(
+  key: string,
+  messages: ChatMessage[],
+  opts?: { maxTokens?: number; temperature?: number },
+): Promise<string> {
+  const system = messages
+    .filter((message) => message.role === "system")
+    .map((message) => typeof message.content === "string" ? message.content : message.content
+      .filter((block) => block.type === "text")
+      .map((block) => block.type === "text" ? block.text : "")
+      .join("\n"))
+    .join("\n\n");
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": key,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: chatModel("anthropic"),
+      max_tokens: opts?.maxTokens ?? 2048,
+      temperature: opts?.temperature ?? 0.3,
+      ...(system ? { system } : {}),
+      messages: messages
+        .filter((message) => message.role !== "system")
+        .map((message) => ({
+          role: message.role === "assistant" ? "assistant" : "user",
+          content: anthropicContent(message.content),
+        })),
+    }),
+  });
+  if (!res.ok) throw await providerError(res, "Anthropic");
+  const data = (await res.json()) as { content?: Array<{ type?: string; text?: string }> };
+  const text = data.content?.filter((part) => part.type === "text").map((part) => part.text ?? "").join("").trim();
+  if (!text) throw new Error("Anthropic returned an empty response. Please try again.");
+  return text;
+}
+
+async function providerError(res: Response, provider: string): Promise<Error> {
+  const raw = await res.text();
+  let detail = raw.slice(0, 300);
+  try {
+    const parsed = JSON.parse(raw) as { error?: { message?: string } | string; message?: string };
+    detail = typeof parsed.error === "string"
+      ? parsed.error
+      : parsed.error?.message ?? parsed.message ?? detail;
+  } catch {
+    // Keep the bounded response text when the provider did not return JSON.
+  }
+  if (res.status === 401 || res.status === 403) {
+    return new Error(`${provider} rejected this API key. Confirm the selected provider and paste a new key in Settings → AI key.`);
+  }
+  if (res.status === 402) return new Error(`${provider}: ${detail || "Billing or credits are required."}`);
+  if (res.status === 429) return new Error(`${provider} is rate-limiting this key. Wait a moment and try again.`);
+  return new Error(`${provider} request failed (${res.status}): ${detail}`);
+}
+
 export async function callAI(
   messages: ChatMessage[],
   opts?: { model?: string; maxTokens?: number; temperature?: number; reasoningEffort?: string; _retry?: boolean },
@@ -123,8 +204,11 @@ export async function callAI(
   // The student's own API key — the app never spends the workspace's AI credits.
   const cfg = requireAiKey();
   const providers = candidateProviders(cfg.provider, cfg.key);
-  if (providers[0] === "google" && hasFilePart(messages)) {
+  if (providers[0] === "google") {
     return callGeminiNative(cfg.key, messages, opts);
+  }
+  if (providers[0] === "anthropic") {
+    return callAnthropic(cfg.key, messages, opts);
   }
 
   const buildPayload = (provider: AiProvider, model: string) =>
@@ -140,11 +224,7 @@ export async function callAI(
     });
 
   const modelsFor = (provider: AiProvider) =>
-    provider === "google"
-      ? GEMINI_MODELS
-      : provider === "openrouter"
-        ? GEMINI_MODELS.map((m) => `google/${m}`)
-        : [chatModel(provider)];
+    [chatModel(provider)];
 
   // Transient upstream hiccups (429 / 5xx) are retried with backoff so a single
   // blip doesn't surface as a failure to the student.
@@ -166,7 +246,7 @@ export async function callAI(
         if (res.ok) break outer;
         lastStatus = res.status;
         lastBody = await res.text();
-        // Wrong provider / unknown model for this key: try the next combination.
+         // A bad request/model/key is terminal; retrying it cannot fix it.
         if ([400, 401, 403, 404, 422].includes(res.status)) break;
         const transient = res.status === 429 || res.status >= 500;
         if (!transient || attempt === delays.length) break outer;
@@ -183,15 +263,14 @@ export async function callAI(
     if (status === 429 || status >= 500) {
       throw new Error("The AI service is busy right now. Please try again in a moment.");
     }
-    if (status === 401 || status === 403) {
-      throw new Error(
-        "None of the AI providers accepted this key. Paste a fresh key in Settings → AI key (a free Google AI Studio key starting with AIza works well).",
-      );
-    }
+    if (status === 401 || status === 403) throw await providerError(
+      new Response(lastBody, { status }),
+      providers[0] ?? cfg.provider,
+    );
     if (status === 402) {
       throw new Error("Your AI provider account is out of credit or billing is not set up.");
     }
-    throw new Error(`AI request failed (${status}): ${lastBody.slice(0, 400)}`);
+    throw await providerError(new Response(lastBody, { status }), providers[0] ?? cfg.provider);
   }
 
 
