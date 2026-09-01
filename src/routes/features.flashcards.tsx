@@ -120,7 +120,7 @@ function FlashcardsFeature() {
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
             Free plan: unlimited classes, 2 AI assignment helps and 4 SnapQuick scans a day. Pro is
-            $5.99/month for unlimited everything.
+            $5.99/month for unlimited AI usage.
           </p>
         </div>
 
