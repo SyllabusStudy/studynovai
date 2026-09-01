@@ -39,6 +39,7 @@ import { cn } from "@/lib/utils";
 import { signOut, useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
 import { daysUntil, formatDate, relativeDay, urgencyDot, useAssignments, useEvents, useProfile } from "@/lib/data";
+import { useReminderEngine } from "@/lib/reminders";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { GraduationCap, Image as ImageIcon, ShieldCheck, Video } from "lucide-react";
