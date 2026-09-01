@@ -11,10 +11,15 @@ import {
 
 type DB = SupabaseClient<Database>;
 
-export const CHAT_MODEL = "gemini-flash-latest";
+export const CHAT_MODEL = "gemini-flash-lite-latest";
 
-/** Newest first — if Google retires one, the next is tried automatically. */
-const GEMINI_MODELS = ["gemini-flash-latest", "gemini-2.5-flash"];
+/** Free-tier Gemini models only, cheapest first. Both are free — no paid fallback. */
+const GEMINI_MODELS = ["gemini-flash-lite-latest", "gemini-flash-latest"];
+
+/** Shown when a free tier's quota is used up — nothing is ever charged instead. */
+export const FREE_LIMIT_MESSAGE =
+  "You've hit your provider's free AI limit for now. Wait a few minutes and try again — nothing was charged.";
+
 
 
 type ContentBlock =
