@@ -40,27 +40,17 @@ export const generateAiImage = createServerFn({ method: "POST" })
           },
         });
       }
-      const imageModels = [
-        "gemini-2.5-flash-image",
-        "gemini-3-pro-image-preview",
-        "gemini-2.0-flash-preview-image-generation",
-      ];
-      let res: Response | null = null;
-      const body = JSON.stringify({ contents: [{ parts }] });
-      for (const headers of [
-        { "Content-Type": "application/json", "x-goog-api-key": cfg.key },
-        { "Content-Type": "application/json", Authorization: `Bearer ${cfg.key}` },
-      ]) {
-        for (const model of imageModels) {
-          res = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-            { method: "POST", headers, body },
-          );
-          if (res.ok || (res.status !== 404 && res.status !== 400)) break;
-        }
-        if (res?.ok || (res?.status !== 401 && res?.status !== 403)) break;
-      }
-      if (!res || !res.ok) throw new Error(await imageError(res!));
+      // One free-tier image model, one request — no paid fallback chain.
+      const res = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-goog-api-key": cfg.key },
+          body: JSON.stringify({ contents: [{ parts }] }),
+        },
+      );
+      if (!res.ok) throw new Error(await imageError(res));
+
       const json = (await res.json()) as {
         candidates?: Array<{
           content?: { parts?: Array<{ inlineData?: { data?: string; mimeType?: string } }> };
