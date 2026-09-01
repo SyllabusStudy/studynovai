@@ -98,14 +98,20 @@ export function chatEndpoint(provider: AiProvider): string {
   }
 }
 
+/**
+ * One model per provider, always the free-tier / cheapest option. No paid
+ * fallback chain: if the free model is unavailable the request fails with a
+ * plain message instead of quietly upgrading to a billed model.
+ */
 export function chatModel(provider: AiProvider): string {
   switch (provider) {
     case "openai":
-      return "gpt-4.1-mini";
+      return "gpt-4.1-nano";
     case "openrouter":
-      return "openrouter/auto";
+      // ":free" suffix — OpenRouter never bills these.
+      return "meta-llama/llama-3.3-70b-instruct:free";
     case "anthropic":
-      return "claude-sonnet-4-5";
+      return "claude-3-5-haiku-latest";
     case "groq":
       return "llama-3.3-70b-versatile";
     case "deepseek":
@@ -115,13 +121,14 @@ export function chatModel(provider: AiProvider): string {
     case "mistral":
       return "mistral-small-latest";
     case "together":
-      return "meta-llama/Llama-3.3-70B-Instruct-Turbo";
+      return "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free";
     case "perplexity":
       return "sonar";
     default:
-      return "gemini-flash-latest";
+      return "gemini-flash-lite-latest";
   }
 }
+
 
 /**
  * Keys are recognised by their shape, so a student who picks the wrong provider

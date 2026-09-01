@@ -40,27 +40,17 @@ export const generateAiImage = createServerFn({ method: "POST" })
           },
         });
       }
-      const imageModels = [
-        "gemini-2.5-flash-image",
-        "gemini-3-pro-image-preview",
-        "gemini-2.0-flash-preview-image-generation",
-      ];
-      let res: Response | null = null;
-      const body = JSON.stringify({ contents: [{ parts }] });
-      for (const headers of [
-        { "Content-Type": "application/json", "x-goog-api-key": cfg.key },
-        { "Content-Type": "application/json", Authorization: `Bearer ${cfg.key}` },
-      ]) {
-        for (const model of imageModels) {
-          res = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-            { method: "POST", headers, body },
-          );
-          if (res.ok || (res.status !== 404 && res.status !== 400)) break;
-        }
-        if (res?.ok || (res?.status !== 401 && res?.status !== 403)) break;
-      }
-      if (!res || !res.ok) throw new Error(await imageError(res!));
+      // One free-tier image model, one request — no paid fallback chain.
+      const res = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-goog-api-key": cfg.key },
+          body: JSON.stringify({ contents: [{ parts }] }),
+        },
+      );
+      if (!res.ok) throw new Error(await imageError(res));
+
       const json = (await res.json()) as {
         candidates?: Array<{
           content?: { parts?: Array<{ inlineData?: { data?: string; mimeType?: string } }> };
@@ -129,9 +119,9 @@ async function imageError(res: Response): Promise<string> {
   if (res.status === 401 || res.status === 403) {
     return `Your AI provider did not authorize this request: ${detail || "check the key and its API permissions."}`;
   }
-  if (res.status === 402) return "Your AI provider account is out of credit.";
-  if (res.status === 429 || res.status >= 500) {
-    return "The image service is busy right now. Try again in a moment.";
+  if (res.status === 402 || res.status === 429) {
+    return "You've hit your provider's free AI limit for now. Try again later — nothing was charged.";
   }
+  if (res.status >= 500) return "The image service is busy right now. Try again in a moment.";
   return `The image could not be created (${res.status}): ${detail}`;
 }

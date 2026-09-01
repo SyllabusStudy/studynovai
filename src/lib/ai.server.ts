@@ -11,10 +11,15 @@ import {
 
 type DB = SupabaseClient<Database>;
 
-export const CHAT_MODEL = "gemini-flash-latest";
+export const CHAT_MODEL = "gemini-flash-lite-latest";
 
-/** Newest first — if Google retires one, the next is tried automatically. */
-const GEMINI_MODELS = ["gemini-flash-latest", "gemini-2.5-flash"];
+/** Free-tier Gemini models only, cheapest first. Both are free — no paid fallback. */
+const GEMINI_MODELS = ["gemini-flash-lite-latest", "gemini-flash-latest"];
+
+/** Shown when a free tier's quota is used up — nothing is ever charged instead. */
+export const FREE_LIMIT_MESSAGE =
+  "You've hit your provider's free AI limit for now. Wait a few minutes and try again — nothing was charged.";
+
 
 
 type ContentBlock =
@@ -28,7 +33,6 @@ export type ChatMessage = {
   content: string | ContentBlock[];
 };
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
  * Google's OpenAI-compatible endpoint rejects `file` content parts (PDFs), so
@@ -88,9 +92,11 @@ async function callGeminiNative(
   if (!res || !res.ok) {
     const status = res?.status ?? 0;
     const text = res ? await res.text() : "";
-    if (status === 429 || status >= 500) {
+    if (status === 429) throw new Error(FREE_LIMIT_MESSAGE);
+    if (status >= 500) {
       throw new Error("The AI service is busy right now. Please try again in a moment.");
     }
+
     throw await providerError(new Response(text, { status }), "Google AI Studio");
   }
 
@@ -224,56 +230,25 @@ export async function callAI(
         : {}),
     });
 
-  const modelsFor = (provider: AiProvider) =>
-    [chatModel(provider)];
+  // Exactly one request per operation: one provider, one free model, no retries
+  // and no paid fallback, so a study action can never fan out into extra calls.
+  const provider = providers[0] ?? cfg.provider;
+  const res = await fetch(chatEndpoint(provider), {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders(provider, cfg.key) },
+    body: buildPayload(provider, chatModel(provider)),
+  });
 
-  // Transient upstream hiccups (429 / 5xx) are retried with backoff so a single
-  // blip doesn't surface as a failure to the student.
-  const delays = [700, 1800, 3500];
-  let res: Response | null = null;
-  let lastBody = "";
-  let lastStatus = 0;
-
-  outer: for (const provider of providers) {
-    const endpoint = chatEndpoint(provider);
-    for (const model of modelsFor(provider)) {
-      for (let attempt = 0; attempt <= delays.length; attempt++) {
-        res = await fetch(endpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", ...authHeaders(provider, cfg.key) },
-          body: buildPayload(provider, model),
-        });
-
-        if (res.ok) break outer;
-        lastStatus = res.status;
-        lastBody = await res.text();
-         // A bad request/model/key is terminal; retrying it cannot fix it.
-        if ([400, 401, 403, 404, 422].includes(res.status)) break;
-        const transient = res.status === 429 || res.status >= 500;
-        if (!transient || attempt === delays.length) break outer;
-        const retryAfter = Number(res.headers.get("retry-after"));
-        await sleep(
-          Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : delays[attempt]!,
-        );
-      }
-    }
-  }
-
-  if (!res || !res.ok) {
-    const status = lastStatus || res?.status || 0;
-    if (status === 429 || status >= 500) {
+  if (!res.ok) {
+    const status = res.status;
+    const lastBody = await res.text();
+    if (status === 429) throw new Error(FREE_LIMIT_MESSAGE);
+    if (status >= 500) {
       throw new Error("The AI service is busy right now. Please try again in a moment.");
     }
-    if (status === 401 || status === 403) throw await providerError(
-      new Response(lastBody, { status }),
-      providers[0] ?? cfg.provider,
-    );
-    if (status === 402) {
-      throw new Error("Your AI provider account is out of credit or billing is not set up.");
-    }
-    throw await providerError(new Response(lastBody, { status }), providers[0] ?? cfg.provider);
+    if (status === 402) throw new Error(FREE_LIMIT_MESSAGE);
+    throw await providerError(new Response(lastBody, { status }), provider);
   }
-
 
   const bodyText = await res.text();
   if (!bodyText.trim()) throw new Error("The AI returned an empty response. Please try again.");
@@ -284,15 +259,7 @@ export async function callAI(
     throw new Error("The AI response was incomplete. Please try again.");
   }
   const content = data.choices?.[0]?.message?.content?.trim() ?? "";
-  if (!content && !opts?._retry) {
-    // One automatic retry with a bigger budget instead of bubbling an empty reply to the user.
-    return callAI(messages, {
-      ...opts,
-      maxTokens: Math.max((opts?.maxTokens ?? 900) * 2, 1800),
-      reasoningEffort: "none",
-      _retry: true,
-    });
-  }
+
   return content;
 }
 
@@ -597,7 +564,7 @@ export const PLAIN_STYLE = [
   "- Write math the way a person types it: (x + 2)/3, x^2, sqrt(9), 25%, 3 * 4. Use $ only for real money amounts.",
   "- No preamble, no restating the question, no sign-offs, no 'let me know if'. Answer immediately.",
   "- Short sentences. Bullets or numbered steps over paragraphs. Bold only the final answer.",
-  "- Keep it under ~200 words unless the student asks for a full walkthrough or plan.",
+  "- Be as short as possible: under ~120 words unless the student explicitly asks for a full walkthrough or plan. Never pad.",
 ].join("\n");
 
 export function tutorSystemPrompt(mode: string, contextText: string): string {

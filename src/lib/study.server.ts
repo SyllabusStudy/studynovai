@@ -214,39 +214,6 @@ const POLICY_RULES = [
   "Never invent a policy that is not in the text.",
 ].join("\n");
 
-/** Second focused pass: sweeps the syllabus for every policy statement, chunk by chunk. */
-async function sweepSyllabusPolicies(text: string): Promise<SyllabusPolicy[]> {
-  const chunkSize = 18000;
-  const chunks: string[] = [];
-  for (let i = 0; i < text.length && chunks.length < 4; i += chunkSize) {
-    chunks.push(text.slice(i, i + chunkSize));
-  }
-
-  const results = await Promise.all(
-    chunks.map(async (chunk) => {
-      try {
-        const raw = await callAI(
-          [
-            {
-              role: "system",
-              content:
-                "You are a meticulous syllabus policy extractor. Reply with json only. Plain text details, no markdown, no symbols like $ or LaTeX. Never invent policies.",
-            },
-            {
-              role: "user",
-              content: `${POLICY_RULES}\n\nReply with exactly: {"policies":[{"title":string,"details":string}]}\n\nSYLLABUS TEXT (part):\n${chunk}`,
-            },
-          ],
-          { maxTokens: 8000, temperature: 0 },
-        );
-        return parseJsonBlock<{ policies?: SyllabusPolicy[] }>(raw).policies ?? [];
-      } catch {
-        return [];
-      }
-    }),
-  );
-  return results.flat();
-}
 
 
 const DATE_RULES = [
@@ -263,39 +230,6 @@ const DATE_RULES = [
   "Only skip an item if it truly has no identifiable date.",
 ].join("\n");
 
-/** Second focused pass: sweeps the syllabus text for any dated item the first pass may have skipped. */
-async function sweepSyllabusDates(text: string, today: string): Promise<SyllabusDate[]> {
-  const chunkSize = 18000;
-  const chunks: string[] = [];
-  for (let i = 0; i < text.length && chunks.length < 4; i += chunkSize) {
-    chunks.push(text.slice(i, i + chunkSize));
-  }
-
-  const results = await Promise.all(
-    chunks.map(async (chunk) => {
-      try {
-        const raw = await callAI(
-          [
-            {
-              role: "system",
-              content:
-                "You are a meticulous syllabus date extractor. Reply with json only. Never invent dates. Dates must be ISO YYYY-MM-DD; infer the year from the syllabus term, otherwise the next upcoming occurrence relative to today.",
-            },
-            {
-              role: "user",
-              content: `Today is ${today}.\n${DATE_RULES}\n\nReply with exactly: {"dates":[{"title":string,"date":"YYYY-MM-DD","time":"HH:MM"|null,"type":"exam"|"quiz"|"assignment"|"project"|"presentation"|"final"|"other","description":string|null,"repeat":"weekly"|"biweekly"|"daily"|"monthly"|null,"repeat_days":string[]|null,"repeat_until":"YYYY-MM-DD"|null}]}\n\nSYLLABUS TEXT (part):\n${chunk}`,
-            },
-          ],
-          { maxTokens: 8000, temperature: 0 },
-        );
-        return parseJsonBlock<{ dates?: SyllabusDate[] }>(raw).dates ?? [];
-      } catch {
-        return [];
-      }
-    }),
-  );
-  return results.flat();
-}
 
 
 export async function runSyllabusAnalysis(supabase: DB, userId: string, documentId: string) {
@@ -315,17 +249,20 @@ export async function runSyllabusAnalysis(supabase: DB, userId: string, document
 
   const today = new Date().toISOString().slice(0, 10);
   const syllabusText = doc.extracted_text.slice(0, 60000);
-  const [raw, swept, sweptPolicies] = await Promise.all([
-    callAI(
-      [
-        {
-          role: "system",
-          content:
-            "You extract structured data from a college syllabus and reply with json only. Use null for anything that is genuinely not stated in the syllabus — never guess or invent policies, dates or weights. Dates must be ISO YYYY-MM-DD; infer the year from the syllabus term when possible, otherwise use the upcoming occurrence relative to today.",
-        },
-        {
-          role: "user",
-          content: `Today is ${today}. Extract this json shape:
+  // One single AI request per syllabus — the extra "sweep" passes used to fire up
+  // to 8 more calls, which burned free-tier quota fast.
+  const swept: SyllabusDate[] = [];
+  const sweptPolicies: SyllabusPolicy[] = [];
+  const raw = await callAI(
+    [
+      {
+        role: "system",
+        content:
+          "You extract structured data from a college syllabus and reply with json only. Use null for anything that is genuinely not stated in the syllabus — never guess or invent policies, dates or weights. Dates must be ISO YYYY-MM-DD; infer the year from the syllabus term when possible, otherwise use the upcoming occurrence relative to today.",
+      },
+      {
+        role: "user",
+        content: `Today is ${today}. Extract this json shape:
 {"course_name":string|null,"course_code":string|null,"professor":string|null,"professor_email":string|null,"office_hours":string|null,"attendance_policy":string|null,"late_work_policy":string|null,"makeup_policy":string|null,"required_materials":string|null,"other_policies":string|null,"term_start_date":"YYYY-MM-DD"|null,"term_end_date":"YYYY-MM-DD"|null,"policies":[{"title":string,"details":string}],"grading_breakdown":[{"name":string,"weight":number}],"dates":[{"title":string,"date":"YYYY-MM-DD","time":"HH:MM"|null,"type":"exam"|"quiz"|"assignment"|"project"|"presentation"|"final"|"other","description":string|null,"repeat":"weekly"|"biweekly"|"daily"|"monthly"|null,"repeat_days":string[]|null,"repeat_until":"YYYY-MM-DD"|null}]}
 
 ${DATE_RULES}
@@ -334,13 +271,11 @@ ${POLICY_RULES}
 
 SYLLABUS TEXT:
 ${syllabusText}`,
-        },
-      ],
-      { maxTokens: 12000, temperature: 0 },
-    ),
-    sweepSyllabusDates(syllabusText, today),
-    sweepSyllabusPolicies(syllabusText),
-  ]);
+      },
+    ],
+    { maxTokens: 12000, temperature: 0 },
+  );
+
 
   const parsed = parseJsonBlock<SyllabusResult>(raw);
 
