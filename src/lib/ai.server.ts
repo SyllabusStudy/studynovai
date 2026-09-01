@@ -33,7 +33,6 @@ export type ChatMessage = {
   content: string | ContentBlock[];
 };
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
  * Google's OpenAI-compatible endpoint rejects `file` content parts (PDFs), so
