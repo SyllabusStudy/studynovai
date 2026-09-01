@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, ChevronLeft, ChevronRight, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -31,7 +31,7 @@ import {
 import { EVENT_TYPES, EVENT_TYPE_LABELS } from "@/lib/constants";
 import { useAuth } from "@/lib/auth";
 import { AssignmentHelp } from "@/components/AssignmentHelp";
-import { classLabel, formatDate, useAssignments, useClasses, useEvents } from "@/lib/data";
+import { classLabel, formatDate, useAssignments, useClasses, useEvents, useProfile } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
@@ -266,7 +266,12 @@ function NewEventDialog() {
   const { data: classes = [] } = useClasses(user?.id);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const { data: profile } = useProfile(user?.id);
+  const savedDefault = profile?.default_reminder_minutes ?? 1440;
   const [reminder, setReminder] = useState<number | null>(null);
+  useEffect(() => {
+    setReminder((prev) => (prev === null ? savedDefault : prev));
+  }, [savedDefault]);
   const [form, setForm] = useState({ title: "", event_date: "", event_time: "", event_type: "exam", class_id: "" });
 
   async function submit(e: React.FormEvent) {
@@ -291,7 +296,7 @@ function NewEventDialog() {
     toast.success("Event added");
     setOpen(false);
     setForm({ title: "", event_date: "", event_time: "", event_type: "exam", class_id: "" });
-    setReminder(null);
+    setReminder(savedDefault);
   }
 
 
