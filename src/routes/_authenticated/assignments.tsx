@@ -150,6 +150,7 @@ function NewAssignmentDialog() {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ title: "", due_date: "", class_id: "", priority: "medium" });
+  const [reminder, setReminder] = useState<number | null>(null);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -163,6 +164,7 @@ function NewAssignmentDialog() {
         due_date: form.due_date || null,
         class_id: form.class_id || null,
         priority: form.priority,
+        reminder_minutes: reminder,
       })
       .select("id")
       .maybeSingle();
@@ -176,6 +178,7 @@ function NewAssignmentDialog() {
         event_type: "assignment",
         event_date: form.due_date,
         description: "Auto-added from your assignments list",
+        reminder_minutes: reminder,
       });
     }
     setBusy(false);
@@ -190,7 +193,9 @@ function NewAssignmentDialog() {
 
     setOpen(false);
     setForm({ title: "", due_date: "", class_id: "", priority: "medium" });
+    setReminder(null);
   }
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
