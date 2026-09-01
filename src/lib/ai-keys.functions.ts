@@ -1,8 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { callAI } from "./ai.server";
-import { withAiKeyConfig } from "./ai-key.server";
 
 const providerSchema = z.enum([
   "google",
@@ -42,6 +40,10 @@ export const saveAiKey = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const apiKey = data.apiKey.trim();
+    const [{ callAI }, { withAiKeyConfig }] = await Promise.all([
+      import("./ai.server"),
+      import("./ai-key.server"),
+    ]);
     await withAiKeyConfig({ provider: data.provider, key: apiKey }, () =>
       callAI(
         [{ role: "user", content: "Reply with OK." }],
