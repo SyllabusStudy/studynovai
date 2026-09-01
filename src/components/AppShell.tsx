@@ -39,6 +39,7 @@ import { cn } from "@/lib/utils";
 import { signOut, useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
 import { daysUntil, formatDate, relativeDay, urgencyDot, useAssignments, useEvents, useProfile } from "@/lib/data";
+import { useReminderEngine } from "@/lib/reminders";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { GraduationCap, Image as ImageIcon, ShieldCheck, Video } from "lucide-react";
@@ -264,6 +265,8 @@ function NotificationBell() {
   const { user } = useAuth();
   const { data: assignments = [] } = useAssignments(user?.id);
   const { data: events = [] } = useEvents(user?.id);
+  const { data: profile } = useProfile(user?.id);
+  useReminderEngine(user?.id, assignments, events, profile);
 
   const items = [
     ...assignments
@@ -273,14 +276,14 @@ function NotificationBell() {
         title: a.title,
         date: a.due_date,
         kind: "Assignment",
-        reminder: a.reminder_days ?? 3,
+        reminder: Math.ceil((a.reminder_minutes ?? 1440) / 1440),
       })),
     ...events.map((e) => ({
       id: e.id,
       title: e.title,
       date: e.event_date,
       kind: e.event_type,
-      reminder: e.reminder_days ?? 3,
+      reminder: Math.ceil((e.reminder_minutes ?? 1440) / 1440),
     })),
   ]
     .filter((i) => {

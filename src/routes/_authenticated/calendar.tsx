@@ -9,6 +9,7 @@ import { SyllabusCsvExport } from "@/components/SyllabusCsvExport";
 import { ClassDot } from "@/components/ClassBadge";
 import { DeleteButton } from "@/components/DeleteButton";
 import { Hint } from "@/components/Hint";
+import { ReminderSelect } from "@/components/ReminderSelect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -265,6 +266,7 @@ function NewEventDialog() {
   const { data: classes = [] } = useClasses(user?.id);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [reminder, setReminder] = useState<number | null>(null);
   const [form, setForm] = useState({ title: "", event_date: "", event_time: "", event_type: "exam", class_id: "" });
 
   async function submit(e: React.FormEvent) {
@@ -278,6 +280,7 @@ function NewEventDialog() {
       event_time: form.event_time || null,
       event_type: form.event_type,
       class_id: form.class_id || null,
+      reminder_minutes: reminder,
     });
     setBusy(false);
     if (error) {
@@ -288,7 +291,9 @@ function NewEventDialog() {
     toast.success("Event added");
     setOpen(false);
     setForm({ title: "", event_date: "", event_time: "", event_type: "exam", class_id: "" });
+    setReminder(null);
   }
+
 
 
   return (
@@ -348,7 +353,9 @@ function NewEventDialog() {
                 </SelectContent>
               </Select>
             </div>
+            <ReminderSelect value={reminder} onChange={setReminder} />
           </div>
+
           {classes.length > 0 ? (
             <div className="space-y-1.5">
               <Label>Class</Label>

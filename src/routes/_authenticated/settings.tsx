@@ -11,17 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { REMINDER_OPTIONS } from "@/lib/constants";
+import { ReminderSelect } from "@/components/ReminderSelect";
+import { notificationPermission, requestNotificationPermission } from "@/lib/reminders";
 import { useAuth } from "@/lib/auth";
 import { useProfile } from "@/lib/data";
 import { useTheme } from "@/lib/theme";
+
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
@@ -41,14 +36,20 @@ function SettingsPage() {
   const { data: profile } = useProfile(user?.id);
   const { theme, toggle } = useTheme();
   const [busy, setBusy] = useState(false);
+  const [perm, setPerm] = useState<NotificationPermission | "unsupported">("default");
   const [form, setForm] = useState({
     name: "",
     school: "",
     major: "",
     graduation_year: "",
-    default_reminder_days: 3,
+    default_reminder_minutes: 1440,
     notify_email: true,
+    notify_push: true,
   });
+
+  useEffect(() => {
+    setPerm(notificationPermission());
+  }, []);
 
   useEffect(() => {
     if (!profile) return;
@@ -57,10 +58,19 @@ function SettingsPage() {
       school: profile.school ?? "",
       major: profile.major ?? "",
       graduation_year: profile.graduation_year ?? "",
-      default_reminder_days: profile.default_reminder_days,
+      default_reminder_minutes: profile.default_reminder_minutes ?? 1440,
       notify_email: profile.notify_email,
+      notify_push: profile.notify_push,
     });
   }, [profile]);
+
+  async function enablePush() {
+    const result = await requestNotificationPermission();
+    setPerm(result);
+    if (result === "granted") toast.success("Reminders on — we'll notify you before each deadline.");
+    else if (result === "denied")
+      toast.error("Notifications are blocked. Allow them for this site in your browser settings.");
+  }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -73,8 +83,10 @@ function SettingsPage() {
         school: form.school || null,
         major: form.major || null,
         graduation_year: form.graduation_year || null,
-        default_reminder_days: form.default_reminder_days,
+        default_reminder_minutes: form.default_reminder_minutes,
+        default_reminder_days: Math.max(1, Math.round(form.default_reminder_minutes / 1440)),
         notify_email: form.notify_email,
+        notify_push: form.notify_push,
       })
       .eq("id", user.id);
     setBusy(false);
@@ -85,6 +97,7 @@ function SettingsPage() {
     await qc.invalidateQueries({ queryKey: ["profile"] });
     toast.success("Settings saved");
   }
+
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -142,24 +155,35 @@ function SettingsPage() {
               placeholder="2029"
             />
           </div>
-          <div className="space-y-1.5">
-            <Label>Default reminder</Label>
-            <Select
-              value={String(form.default_reminder_days)}
-              onValueChange={(v) => setForm({ ...form, default_reminder_days: Number(v) })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {REMINDER_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={String(o.value)}>
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <ReminderSelect
+            label="Default reminder"
+            allowDefault={false}
+            value={form.default_reminder_minutes}
+            onChange={(v) => setForm({ ...form, default_reminder_minutes: v ?? 1440 })}
+          />
+        </div>
+        <div className="rounded-lg border border-border p-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold">Phone & desktop reminders</p>
+              <p className="text-xs text-muted-foreground">
+                {perm === "unsupported"
+                  ? "This browser can't show notifications."
+                  : perm === "granted"
+                    ? "Notifications are allowed on this device."
+                    : "Allow notifications to get alerts before each deadline."}
+              </p>
+            </div>
+            <Switch
+              checked={form.notify_push}
+              onCheckedChange={(v) => setForm({ ...form, notify_push: v })}
+            />
           </div>
+          {perm !== "granted" && perm !== "unsupported" ? (
+            <Button type="button" variant="outline" size="sm" className="mt-3" onClick={enablePush}>
+              Turn on notifications
+            </Button>
+          ) : null}
         </div>
         <div className="flex items-center justify-between rounded-lg border border-border p-3">
           <div>
@@ -171,6 +195,7 @@ function SettingsPage() {
             onCheckedChange={(v) => setForm({ ...form, notify_email: v })}
           />
         </div>
+
         <div className="flex items-center justify-between rounded-lg border border-border p-3">
           <div>
             <p className="text-sm font-semibold">Dark mode</p>
