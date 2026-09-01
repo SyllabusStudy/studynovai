@@ -118,25 +118,32 @@ function hasFilePart(messages: ChatMessage[]): boolean {
 
 function anthropicContent(content: ChatMessage["content"]): unknown {
   if (typeof content === "string") return content;
-  return content.flatMap((block) => {
-    if (block.type === "text") return [{ type: "text", text: block.text }];
+  const parts: unknown[] = [];
+  for (const block of content) {
+    if (block.type === "text") {
+      parts.push({ type: "text", text: block.text });
+      continue;
+    }
     if (block.type === "image_url" || block.type === "file") {
       const dataUrl = block.type === "image_url" ? block.image_url.url : block.file.file_data;
       const match = /^data:([^;]+);base64,(.*)$/s.exec(dataUrl);
-      if (!match) return [];
+      const mediaType = match?.[1];
+      const data = match?.[2];
+      if (!mediaType || !data) continue;
       if (block.type === "file" && match[1] === "application/pdf") {
-        return [{
+        parts.push({
           type: "document",
-          source: { type: "base64", media_type: match[1], data: match[2] },
-        }];
+          source: { type: "base64", media_type: mediaType, data },
+        });
+        continue;
       }
-      return [{
+      parts.push({
         type: "image",
-        source: { type: "base64", media_type: match[1], data: match[2] },
-      }];
+        source: { type: "base64", media_type: mediaType, data },
+      });
     }
-    return [];
-  });
+  }
+  return parts;
 }
 
 async function callAnthropic(
