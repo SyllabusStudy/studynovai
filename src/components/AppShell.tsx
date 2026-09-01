@@ -264,6 +264,8 @@ function NotificationBell() {
   const { user } = useAuth();
   const { data: assignments = [] } = useAssignments(user?.id);
   const { data: events = [] } = useEvents(user?.id);
+  const { data: profile } = useProfile(user?.id);
+  useReminderEngine(user?.id, assignments, events, profile);
 
   const items = [
     ...assignments
