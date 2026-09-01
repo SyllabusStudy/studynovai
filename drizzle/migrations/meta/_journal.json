@@ -8,6 +8,13 @@
       "when": 1788210618657,
       "tag": "0000_create_user_ai_keys",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788230307176,
+      "tag": "0001_remove_free_class_limit",
+      "breakpoints": true
     }
   ]
 }
