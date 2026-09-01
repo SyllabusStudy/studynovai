@@ -81,6 +81,15 @@ export function TutorChat({
       const result = await send({
         data: { message, mode, classId: targetClass, conversationId },
       });
+      if (result.error || !result.reply) {
+        const messageText = result.error ?? "The tutor returned an empty response.";
+        toast.error(messageText);
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: `I couldn't answer that: ${messageText}` },
+        ]);
+        return;
+      }
       setConversationId(result.conversationId);
       setMessages((prev) => [...prev, { role: "assistant", content: result.reply }]);
       queryClient.invalidateQueries({ queryKey: ["conversations"] });

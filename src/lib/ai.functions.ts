@@ -46,11 +46,20 @@ export const tutorChat = createServerFn({ method: "POST" })
       })
       .parse(d),
   )
-  .handler(async ({ data, context }) =>
-    withUserAiKey(context.supabase, context.userId, () =>
-      runTutorChat(context.supabase, context.userId, data),
-    ),
-  );
+  .handler(async ({ data, context }) => {
+    try {
+      const result = await withUserAiKey(context.supabase, context.userId, () =>
+        runTutorChat(context.supabase, context.userId, data),
+      );
+      return { ...result, error: null };
+    } catch (error) {
+      return {
+        conversationId: data.conversationId ?? null,
+        reply: null,
+        error: error instanceof Error ? error.message : "The tutor could not answer right now.",
+      };
+    }
+  });
 
 export const generateFlashcards = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
