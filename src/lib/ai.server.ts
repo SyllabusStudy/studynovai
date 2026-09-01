@@ -564,7 +564,7 @@ export const PLAIN_STYLE = [
   "- Write math the way a person types it: (x + 2)/3, x^2, sqrt(9), 25%, 3 * 4. Use $ only for real money amounts.",
   "- No preamble, no restating the question, no sign-offs, no 'let me know if'. Answer immediately.",
   "- Short sentences. Bullets or numbered steps over paragraphs. Bold only the final answer.",
-  "- Keep it under ~200 words unless the student asks for a full walkthrough or plan.",
+  "- Be as short as possible: under ~120 words unless the student explicitly asks for a full walkthrough or plan. Never pad.",
 ].join("\n");
 
 export function tutorSystemPrompt(mode: string, contextText: string): string {

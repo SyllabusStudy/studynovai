@@ -119,9 +119,9 @@ async function imageError(res: Response): Promise<string> {
   if (res.status === 401 || res.status === 403) {
     return `Your AI provider did not authorize this request: ${detail || "check the key and its API permissions."}`;
   }
-  if (res.status === 402) return "Your AI provider account is out of credit.";
-  if (res.status === 429 || res.status >= 500) {
-    return "The image service is busy right now. Try again in a moment.";
+  if (res.status === 402 || res.status === 429) {
+    return "You've hit your provider's free AI limit for now. Try again later — nothing was charged.";
   }
+  if (res.status >= 500) return "The image service is busy right now. Try again in a moment.";
   return `The image could not be created (${res.status}): ${detail}`;
 }
