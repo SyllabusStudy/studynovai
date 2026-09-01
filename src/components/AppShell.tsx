@@ -276,14 +276,14 @@ function NotificationBell() {
         title: a.title,
         date: a.due_date,
         kind: "Assignment",
-        reminder: a.reminder_days ?? 3,
+        reminder: Math.ceil((a.reminder_minutes ?? 1440) / 1440),
       })),
     ...events.map((e) => ({
       id: e.id,
       title: e.title,
       date: e.event_date,
       kind: e.event_type,
-      reminder: e.reminder_days ?? 3,
+      reminder: Math.ceil((e.reminder_minutes ?? 1440) / 1440),
     })),
   ]
     .filter((i) => {
