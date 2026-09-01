@@ -352,7 +352,9 @@ function NewEventDialog() {
                 </SelectContent>
               </Select>
             </div>
+            <ReminderSelect value={reminder} onChange={setReminder} />
           </div>
+
           {classes.length > 0 ? (
             <div className="space-y-1.5">
               <Label>Class</Label>
