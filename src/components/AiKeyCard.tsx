@@ -106,7 +106,7 @@ export function AiKeyCard() {
     onSuccess: async () => {
       setApiKey("");
       await qc.invalidateQueries({ queryKey: ["ai-key"] });
-      toast.success("AI key saved — AI features are ready");
+      toast.success("AI key verified and saved — AI features are ready");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -139,7 +139,7 @@ export function AiKeyCard() {
 
       {data?.hasKey ? (
         <div className="rounded-lg border border-border p-3 text-xs text-muted-foreground">
-          Connected: <span className="font-semibold text-foreground">{data.provider}</span> ·{" "}
+          Verified: <span className="font-semibold text-foreground">{data.provider}</span> ·{" "}
           {data.hint}
         </div>
       ) : (
@@ -195,7 +195,7 @@ export function AiKeyCard() {
           onClick={() => saving.mutate()}
         >
           {saving.isPending ? <Loader2 className="size-4 animate-spin" /> : null}
-          {data?.hasKey ? "Replace key" : "Save key"}
+           {saving.isPending ? "Testing…" : data?.hasKey ? "Test & replace key" : "Test & save key"}
         </Button>
         {data?.hasKey ? (
           <Button

@@ -64,6 +64,14 @@ export async function withUserAiKey<T>(
   return store.run(cfg, fn);
 }
 
+/** Runs a one-off provider check without persisting or exposing the credential. */
+export async function withAiKeyConfig<T>(
+  config: AiKeyConfig,
+  fn: () => Promise<T>,
+): Promise<T> {
+  return store.run(config, fn);
+}
+
 /** Chat endpoint + model naming per provider (all OpenAI-compatible). */
 export function chatEndpoint(provider: AiProvider): string {
   switch (provider) {
@@ -121,7 +129,7 @@ export function chatModel(provider: AiProvider): string {
  */
 export function detectProvider(key: string): AiProvider | null {
   const k = key.trim();
-  if (/^(AIza|AQ\.)/.test(k)) return "google";
+  if (/^AIza/.test(k)) return "google";
   if (/^sk-or-/.test(k)) return "openrouter";
   if (/^sk-ant-/.test(k)) return "anthropic";
   if (/^gsk_/.test(k)) return "groq";
@@ -136,13 +144,11 @@ export function detectProvider(key: string): AiProvider | null {
  * strings, sk-... which several providers use) fall through to the rest.
  */
 export function candidateProviders(stored: AiProvider, key: string): AiProvider[] {
-  const detected = detectProvider(key);
-  // Only provider-specific prefixes are authoritative. A generic `sk-` key is
-  // used by several vendors, so keep the student's selected provider instead
-  // of incorrectly sending it to OpenAI first. Never spray a private key at
-  // every provider endpoint.
-  const specific = detected && detected !== "openai" ? detected : null;
-  return [specific ?? stored];
+  // The explicit Settings selection is authoritative. Prefixes are useful as
+  // UI hints only: API-key formats overlap and providers can introduce new
+  // formats, so guessing here can leak a credential to the wrong service.
+  void key;
+  return [stored];
 }
 
 /** Correct auth headers per provider (Anthropic does not use Bearer tokens). */
@@ -154,7 +160,7 @@ export function authHeaders(provider: AiProvider, key: string): Record<string, s
     };
   }
   if (provider === "google") {
-    return { Authorization: `Bearer ${key}`, "x-goog-api-key": key };
+    return { "x-goog-api-key": key };
   }
   return { Authorization: `Bearer ${key}` };
 }

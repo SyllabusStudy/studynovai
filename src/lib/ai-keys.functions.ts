@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { callAI } from "./ai.server";
+import { withAiKeyConfig } from "./ai-key.server";
 
 const providerSchema = z.enum([
   "google",
@@ -39,11 +41,18 @@ export const saveAiKey = createServerFn({ method: "POST" })
     z.object({ provider: providerSchema, apiKey: z.string().min(12).max(300) }).parse(d),
   )
   .handler(async ({ data, context }) => {
+    const apiKey = data.apiKey.trim();
+    await withAiKeyConfig({ provider: data.provider, key: apiKey }, () =>
+      callAI(
+        [{ role: "user", content: "Reply with OK." }],
+        { maxTokens: 8, temperature: 0 },
+      ),
+    );
     const { error } = await context.supabase.from("user_ai_keys").upsert(
       {
         user_id: context.userId,
         provider: data.provider,
-        api_key: data.apiKey.trim(),
+        api_key: apiKey,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "user_id" },

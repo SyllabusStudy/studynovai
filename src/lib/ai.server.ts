@@ -77,19 +77,12 @@ async function callGeminiNative(
   });
 
   let res: Response | null = null;
-  for (const headers of [
-    { "Content-Type": "application/json", "x-goog-api-key": key },
-    { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-  ]) {
-    for (const model of GEMINI_MODELS) {
-      res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-        { method: "POST", headers, body },
-      );
-      if (res.ok) break;
-      if (res.status !== 404) break;
-    }
-    if (res?.ok || (res?.status !== 401 && res?.status !== 403)) break;
+  for (const model of GEMINI_MODELS) {
+    res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+      { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body },
+    );
+    if (res.ok || res.status !== 404) break;
   }
 
   if (!res || !res.ok) {
@@ -197,7 +190,8 @@ async function providerError(res: Response, provider: string): Promise<Error> {
     // Keep the bounded response text when the provider did not return JSON.
   }
   if (res.status === 401 || res.status === 403) {
-    return new Error(`${provider} rejected this API key. Confirm the selected provider and paste a new key in Settings → AI key.`);
+    const reason = detail && detail !== "{}" ? ` ${detail}` : "";
+    return new Error(`${provider} rejected this credential.${reason} Check the selected provider and key in Settings → AI key.`);
   }
   if (res.status === 402) return new Error(`${provider}: ${detail || "Billing or credits are required."}`);
   if (res.status === 429) return new Error(`${provider} is rate-limiting this key. Wait a moment and try again.`);
