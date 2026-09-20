@@ -62,10 +62,20 @@ async function callGeminiNative(
         else if (b.type === "image_url") {
           const match = /^data:([^;]+);base64,(.*)$/s.exec(b.image_url.url);
           if (match) parts.push({ inline_data: { mime_type: match[1], data: match[2] } });
+        } else if (b.type === "video_url") {
+          // Gemini accepts uploaded video as inline data, and YouTube links by URI.
+          const url = b.video_url.url;
+          const match = /^data:([^;]+);base64,(.*)$/s.exec(url);
+          if (match) {
+            parts.push({ inline_data: { mime_type: match[1], data: match[2] } });
+          } else if (/^https?:\/\//i.test(url)) {
+            parts.push({ file_data: { file_uri: url } });
+          }
         } else if (b.type === "file") {
           const match = /^data:([^;]+);base64,(.*)$/s.exec(b.file.file_data);
           if (match) parts.push({ inline_data: { mime_type: match[1], data: match[2] } });
         }
+
       }
     }
     if (parts.length) contents.push({ role: m.role === "assistant" ? "model" : "user", parts });
