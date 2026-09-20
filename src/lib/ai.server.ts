@@ -90,14 +90,26 @@ async function callGeminiNative(
     },
   });
 
+  // Video needs the fuller Flash model; the lite model can reject video parts.
+  const hasVideo = contents.some((c) =>
+    c.parts.some((p) => {
+      const part = p as { inline_data?: { mime_type?: string }; file_data?: unknown };
+      return Boolean(part.file_data) || part.inline_data?.mime_type?.startsWith("video/");
+    }),
+  );
+  const models = hasVideo ? ["gemini-flash-latest", "gemini-2.0-flash"] : GEMINI_MODELS;
+
   let res: Response | null = null;
-  for (const model of GEMINI_MODELS) {
+  for (const model of models) {
     res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
       { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body },
     );
-    if (res.ok || res.status !== 404) break;
+    if (res.ok) break;
+    // A model that cannot handle this attachment answers 400/404 — try the next one.
+    if (res.status !== 404 && !(hasVideo && res.status === 400)) break;
   }
+
 
   if (!res || !res.ok) {
     const status = res?.status ?? 0;
