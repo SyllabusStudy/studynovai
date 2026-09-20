@@ -260,6 +260,47 @@ async function noteFromMedia(
   return callAI(messages, { maxTokens: 3200, temperature: 0.2 });
 }
 
+/** Reads a non-YouTube video page's own title/description (Vimeo, Loom, etc.). */
+async function pageMetadata(url: string): Promise<{ title: string | null; description: string | null }> {
+  try {
+    const res = await fetch(url, { headers: { "User-Agent": WEB_UA } });
+    const type = res.headers.get("content-type") ?? "";
+    if (!res.ok || !type.includes("html")) return { title: null, description: null };
+    const html = (await res.text()).slice(0, 400_000);
+    const meta = (prop: string) =>
+      html.match(
+        new RegExp(`<meta[^>]+(?:property|name)=["']${prop}["'][^>]+content=["']([^"']+)["']`, "i"),
+      )?.[1] ?? null;
+    const title = meta("og:title") ?? html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1] ?? null;
+    return {
+      title: title ? decodeXml(title) : null,
+      description: meta("og:description") ?? meta("description"),
+    };
+  } catch {
+    return { title: null, description: null };
+  }
+}
+
+/** Fallback notes built from the video's own title and description only. */
+async function noteFromDescription(title: string, description: string, contextText: string) {
+  const notes = await callAI(
+    [
+      {
+        role: "system",
+        content: `${NOTE_RULES}\n\nSTUDENT COURSE CONTEXT (for wording and connections only):\n${contextText.slice(0, 4000)}`,
+      },
+      {
+        role: "user",
+        content: `The video's captions were unavailable, so work only from its title and description. Do not invent details that are not stated.\n\nTitle: ${title}\n\nDescription:\n${description.slice(0, 8000)}`,
+      },
+    ],
+    { maxTokens: 2000, temperature: 0.2 },
+  );
+  return notes.trim()
+    ? `> Captions were not available for this video, so these notes come from its title and description. Ask questions below for more detail.\n\n${notes}`
+    : "";
+}
+
 function summaryOf(notes: string) {
   const body = notes.replace(/^##\s*Summary\s*/i, "");
   const first = body
