@@ -286,7 +286,7 @@ export async function runVideoImport(
     title?: string | null | undefined;
   },
 ) {
-  const url = input.url?.trim() || null;
+  const url = input.url?.trim() ? normalizeVideoUrl(input.url) : null;
   const dataUrl = input.dataUrl || null;
   if (!url && !dataUrl) throw new Error("Paste a video link or upload a video file first.");
 
@@ -300,24 +300,41 @@ export async function runVideoImport(
   if (url) {
     const id = youtubeId(url);
     sourceType = id ? "youtube" : "url";
+    let description: string | null = null;
+    let blockedReason: string | null = null;
+
     if (id) {
       const yt = await youtubeTranscript(id);
       if (!title && yt.title) title = yt.title;
       transcript = yt.transcript;
+      description = yt.description;
+      blockedReason = yt.blockedReason;
+    } else {
+      const page = await pageMetadata(url);
+      if (!title && page.title) title = page.title;
+      description = page.description;
     }
+
     if (transcript) {
       notes = await noteFromTranscript(transcript, title || "Untitled video", contextText);
     } else {
+      // No captions: let the model watch the link itself, then fall back to the
+      // video's own title/description so the student still gets usable notes.
       try {
         notes = await noteFromMedia({ kind: "url", value: url }, title, contextText);
-      } catch (e) {
-        throw new Error(
-          id
-            ? "That YouTube video has no captions available and could not be watched directly. Try another video, or download it and upload the file here."
-            : `That video link could not be read: ${e instanceof Error ? e.message : "unknown error"}`,
-        );
+      } catch {
+        if (description && description.length > 60) {
+          notes = await noteFromDescription(title || "Untitled video", description, contextText);
+        } else {
+          throw new Error(
+            blockedReason
+              ? `YouTube would not play that video here (${blockedReason}). Try another link, or download it and upload the file.`
+              : "That video has no captions and could not be read from the link. Try a different link, or download the video and upload the file here (under 24MB).",
+          );
+        }
       }
     }
+  }
   } else if (dataUrl) {
     if (!title) title = (input.fileName ?? "").replace(/\.[a-z0-9]+$/i, "") || "Uploaded video";
     notes = await noteFromMedia({ kind: "data", value: dataUrl }, title, contextText);
