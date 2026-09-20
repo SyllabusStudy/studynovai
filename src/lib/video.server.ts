@@ -6,15 +6,22 @@ type DB = SupabaseClient<Database>;
 
 export type VideoChatTurn = { role: "user" | "assistant"; content: string };
 
+/** Normalises anything a student might paste (missing scheme, spaces, tracking junk). */
+export function normalizeVideoUrl(raw: string): string {
+  let s = raw.trim().replace(/^[<(]|[>)]$/g, "");
+  if (!/^https?:\/\//i.test(s)) s = `https://${s.replace(/^\/+/, "")}`;
+  return s;
+}
+
 export function youtubeId(url: string): string | null {
   try {
-    const u = new URL(url);
-    const host = u.hostname.replace(/^www\./, "");
+    const u = new URL(normalizeVideoUrl(url));
+    const host = u.hostname.replace(/^(www|m|music)\./, "");
     if (host === "youtu.be") return u.pathname.slice(1).split("/")[0] || null;
-    if (!host.endsWith("youtube.com")) return null;
+    if (!/(^|\.)youtube(-nocookie)?\.com$/.test(host)) return null;
     const v = u.searchParams.get("v");
-    if (v) return v;
-    const m = u.pathname.match(/\/(shorts|embed|live)\/([^/?]+)/);
+    if (v) return v.split("&")[0]!;
+    const m = u.pathname.match(/\/(shorts|embed|live|v)\/([^/?&#]+)/);
     return m?.[2] ?? null;
   } catch {
     return null;
@@ -25,77 +32,177 @@ export function youtubeId(url: string): string | null {
 type CaptionTrack = { baseUrl: string; languageCode?: string; kind?: string };
 
 const ANDROID_UA = "com.google.android.youtube/20.10.38 (Linux; U; Android 14) gzip";
+const WEB_UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36";
 const INNERTUBE_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
 
-/** Reads the video's title and caption tracks from YouTube's player API. */
-async function youtubePlayer(
-  videoId: string,
-): Promise<{ title: string | null; tracks: CaptionTrack[] }> {
+type PlayerInfo = {
+  title: string | null;
+  description: string | null;
+  tracks: CaptionTrack[];
+  blockedReason: string | null;
+};
+
+const CLIENTS = [
+  {
+    ua: ANDROID_UA,
+    client: { clientName: "ANDROID", clientVersion: "20.10.38", hl: "en", androidSdkVersion: 34 },
+  },
+  {
+    ua: WEB_UA,
+    client: { clientName: "WEB", clientVersion: "2.20240701.00.00", hl: "en" },
+  },
+  {
+    ua: "com.google.ios.youtube/20.10.4 (iPhone16,2; U; CPU iOS 17_5 like Mac OS X)",
+    client: { clientName: "IOS", clientVersion: "20.10.4", hl: "en" },
+  },
+];
+
+/** Reads title, description and caption tracks, trying several YouTube clients. */
+async function youtubePlayer(videoId: string): Promise<PlayerInfo> {
+  let best: PlayerInfo = { title: null, description: null, tracks: [], blockedReason: null };
+  for (const c of CLIENTS) {
+    try {
+      const res = await fetch(`https://www.youtube.com/youtubei/v1/player?key=${INNERTUBE_KEY}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "User-Agent": c.ua },
+        body: JSON.stringify({ context: { client: c.client }, videoId }),
+      });
+      const body = await res.text();
+      if (!body.trim()) continue;
+      const json = JSON.parse(body) as {
+        videoDetails?: { title?: string; shortDescription?: string };
+        playabilityStatus?: { status?: string; reason?: string };
+        captions?: { playerCaptionsTracklistRenderer?: { captionTracks?: CaptionTrack[] } };
+      };
+      const info: PlayerInfo = {
+        title: json.videoDetails?.title?.trim() || best.title,
+        description: json.videoDetails?.shortDescription?.trim() || best.description,
+        tracks: json.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? [],
+        blockedReason:
+          json.playabilityStatus?.status && json.playabilityStatus.status !== "OK"
+            ? json.playabilityStatus.reason ?? json.playabilityStatus.status
+            : null,
+      };
+      best = { ...info, tracks: info.tracks.length ? info.tracks : best.tracks };
+      if (best.tracks.length) return best;
+    } catch {
+      // try the next client
+    }
+  }
+  return best;
+}
+
+function stamp(seconds: number) {
+  const total = Math.max(0, Math.round(seconds));
+  return `[${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}]`;
+}
+
+/** json3 caption payload → timestamped lines. */
+function parseJson3(body: string): string {
+  const parsed = JSON.parse(body) as {
+    events?: Array<{ tStartMs?: number; segs?: Array<{ utf8?: string }> }>;
+  };
+  return (parsed.events ?? [])
+    .map((e) => {
+      const text = (e.segs ?? [])
+        .map((s) => s.utf8 ?? "")
+        .join("")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (!text) return null;
+      return `${stamp((e.tStartMs ?? 0) / 1000)} ${text}`;
+    })
+    .filter(Boolean)
+    .join("\n")
+    .trim();
+}
+
+function decodeXml(s: string) {
+  return s
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&#(\d+);/g, (_, d: string) => String.fromCharCode(Number(d)))
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Legacy XML caption payload → timestamped lines. */
+function parseXmlCaptions(body: string): string {
+  const out: string[] = [];
+  const re = /<(?:text|p)[^>]*?(?:start|t)="([\d.]+)"[^>]*>([\s\S]*?)<\/(?:text|p)>/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(body))) {
+    const raw = Number(m[1]);
+    const seconds = raw > 10_000 ? raw / 1000 : raw; // srv3/timedtext use ms
+    const text = decodeXml(m[2] ?? "");
+    if (text) out.push(`${stamp(seconds)} ${text}`);
+  }
+  return out.join("\n").trim();
+}
+
+async function fetchCaption(url: string): Promise<string | null> {
   try {
-    const res = await fetch(`https://www.youtube.com/youtubei/v1/player?key=${INNERTUBE_KEY}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "User-Agent": ANDROID_UA },
-      body: JSON.stringify({
-        context: {
-          client: { clientName: "ANDROID", clientVersion: "20.10.38", hl: "en", androidSdkVersion: 34 },
-        },
-        videoId,
-      }),
-    });
+    const res = await fetch(url, { headers: { "User-Agent": ANDROID_UA } });
     const body = await res.text();
-    if (!body.trim()) return { title: null, tracks: [] };
-    const json = JSON.parse(body) as {
-      videoDetails?: { title?: string };
-      captions?: { playerCaptionsTracklistRenderer?: { captionTracks?: CaptionTrack[] } };
-    };
-    return {
-      title: json.videoDetails?.title?.trim() ?? null,
-      tracks: json.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? [],
-    };
+    if (!body.trim()) return null;
+    const text = body.trimStart().startsWith("{") ? parseJson3(body) : parseXmlCaptions(body);
+    return text.length > 40 ? text : null;
   } catch {
-    return { title: null, tracks: [] };
+    return null;
   }
 }
 
-/** Pulls YouTube's own caption track and flattens it to timestamped plain text. */
+/**
+ * Pulls YouTube's own captions, trying every track and format YouTube offers
+ * (manual English, auto-generated, other languages auto-translated to English)
+ * before giving up.
+ */
 async function youtubeTranscript(
   videoId: string,
-): Promise<{ title: string | null; transcript: string | null }> {
-  const { title, tracks } = await youtubePlayer(videoId);
-  const track =
-    tracks.find((t) => t.languageCode?.startsWith("en") && t.kind !== "asr") ??
-    tracks.find((t) => t.languageCode?.startsWith("en")) ??
-    tracks[0];
-  if (!track?.baseUrl) return { title, transcript: null };
+): Promise<{ title: string | null; description: string | null; transcript: string | null; blockedReason: string | null }> {
+  const { title, description, tracks, blockedReason } = await youtubePlayer(videoId);
 
-  try {
-    const res = await fetch(`${track.baseUrl.replace(/&fmt=\w+/, "")}&fmt=json3`, {
-      headers: { "User-Agent": ANDROID_UA },
-    });
-    const body = await res.text();
-    if (!body.trim()) return { title, transcript: null };
-    const parsed = JSON.parse(body) as {
-      events?: Array<{ tStartMs?: number; segs?: Array<{ utf8?: string }> }>;
-    };
-    const lines = (parsed.events ?? [])
-      .map((e) => {
-        const text = (e.segs ?? [])
-          .map((s) => s.utf8 ?? "")
-          .join("")
-          .replace(/\s+/g, " ")
-          .trim();
-        if (!text) return null;
-        const total = Math.round((e.tStartMs ?? 0) / 1000);
-        const stamp = `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
-        return `[${stamp}] ${text}`;
-      })
-      .filter(Boolean) as string[];
-    const transcript = lines.join("\n").trim();
-    return { title, transcript: transcript.length > 40 ? transcript : null };
-  } catch {
-    return { title, transcript: null };
+  const ordered = [
+    ...tracks.filter((t) => t.languageCode?.startsWith("en") && t.kind !== "asr"),
+    ...tracks.filter((t) => t.languageCode?.startsWith("en") && t.kind === "asr"),
+    ...tracks.filter((t) => !t.languageCode?.startsWith("en")),
+  ];
+
+  for (const track of ordered) {
+    if (!track.baseUrl) continue;
+    const base = track.baseUrl.replace(/&fmt=\w+/, "");
+    const foreign = !track.languageCode?.startsWith("en");
+    const attempts = [
+      `${base}&fmt=json3`,
+      base,
+      `${base}&fmt=srv3`,
+      ...(foreign ? [`${base}&tlang=en&fmt=json3`, `${base}&tlang=en`] : []),
+    ];
+    for (const url of attempts) {
+      const transcript = await fetchCaption(url);
+      if (transcript) return { title, description, transcript, blockedReason };
+    }
   }
+
+  // Last resort: YouTube's public timedtext endpoint (works for some videos
+  // whose player response hides the track list).
+  for (const lang of ["en", "en-US", "en-GB"]) {
+    for (const extra of ["", "&kind=asr"]) {
+      const transcript = await fetchCaption(
+        `https://www.youtube.com/api/timedtext?v=${videoId}&lang=${lang}${extra}&fmt=json3`,
+      );
+      if (transcript) return { title, description, transcript, blockedReason };
+    }
+  }
+
+  return { title, description, transcript: null, blockedReason };
 }
+
 
 
 const NOTE_RULES = [
