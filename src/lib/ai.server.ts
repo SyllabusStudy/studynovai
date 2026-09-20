@@ -62,10 +62,20 @@ async function callGeminiNative(
         else if (b.type === "image_url") {
           const match = /^data:([^;]+);base64,(.*)$/s.exec(b.image_url.url);
           if (match) parts.push({ inline_data: { mime_type: match[1], data: match[2] } });
+        } else if (b.type === "video_url") {
+          // Gemini accepts uploaded video as inline data, and YouTube links by URI.
+          const url = b.video_url.url;
+          const match = /^data:([^;]+);base64,(.*)$/s.exec(url);
+          if (match) {
+            parts.push({ inline_data: { mime_type: match[1], data: match[2] } });
+          } else if (/^https?:\/\//i.test(url)) {
+            parts.push({ file_data: { file_uri: url } });
+          }
         } else if (b.type === "file") {
           const match = /^data:([^;]+);base64,(.*)$/s.exec(b.file.file_data);
           if (match) parts.push({ inline_data: { mime_type: match[1], data: match[2] } });
         }
+
       }
     }
     if (parts.length) contents.push({ role: m.role === "assistant" ? "model" : "user", parts });
@@ -80,14 +90,26 @@ async function callGeminiNative(
     },
   });
 
+  // Video needs the fuller Flash model; the lite model can reject video parts.
+  const hasVideo = contents.some((c) =>
+    c.parts.some((p) => {
+      const part = p as { inline_data?: { mime_type?: string }; file_data?: unknown };
+      return Boolean(part.file_data) || part.inline_data?.mime_type?.startsWith("video/");
+    }),
+  );
+  const models = hasVideo ? ["gemini-flash-latest", "gemini-2.0-flash"] : GEMINI_MODELS;
+
   let res: Response | null = null;
-  for (const model of GEMINI_MODELS) {
+  for (const model of models) {
     res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
       { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body },
     );
-    if (res.ok || res.status !== 404) break;
+    if (res.ok) break;
+    // A model that cannot handle this attachment answers 400/404 — try the next one.
+    if (res.status !== 404 && !(hasVideo && res.status === 400)) break;
   }
+
 
   if (!res || !res.ok) {
     const status = res?.status ?? 0;
