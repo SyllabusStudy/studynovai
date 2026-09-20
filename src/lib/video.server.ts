@@ -375,7 +375,6 @@ export async function runVideoImport(
         }
       }
     }
-  }
   } else if (dataUrl) {
     if (!title) title = (input.fileName ?? "").replace(/\.[a-z0-9]+$/i, "") || "Uploaded video";
     notes = await noteFromMedia({ kind: "data", value: dataUrl }, title, contextText);
