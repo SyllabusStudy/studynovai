@@ -69,7 +69,10 @@ function QuizzesPage() {
     }
     setBusy(true);
     try {
-      await run({ data: { classId, documentId: documentId || null, count, difficulty, types } });
+      await run({
+        data: { classId, documentIds, documentId: null, count, difficulty, types },
+      });
+
       await qc.invalidateQueries({ queryKey: ["quizzes"] });
       toast.success("Quiz ready");
     } catch (e) {
