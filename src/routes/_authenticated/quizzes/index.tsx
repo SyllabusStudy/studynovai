@@ -116,20 +116,35 @@ function QuizzesPage() {
           </Select>
         </div>
         <div className="space-y-1.5">
-          <Label>Source document</Label>
-          <Select value={documentId} onValueChange={setDocumentId}>
-            <SelectTrigger>
-              <SelectValue placeholder="All materials" />
-            </SelectTrigger>
-            <SelectContent>
+          <Label>Source material</Label>
+          {documents.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              {classId ? "No uploads for this class yet." : "Pick a class to choose materials."}
+            </p>
+          ) : (
+            <div className="max-h-32 space-y-1.5 overflow-y-auto rounded-xl border border-border/60 p-2.5">
+              <p className="text-xs text-muted-foreground">
+                {documentIds.length === 0
+                  ? "All materials"
+                  : `${documentIds.length} selected`}
+              </p>
               {documents.map((d) => (
-                <SelectItem key={d.id} value={d.id}>
-                  {d.file_name}
-                </SelectItem>
+                <label key={d.id} className="flex items-start gap-2 text-sm">
+                  <Checkbox
+                    checked={documentIds.includes(d.id)}
+                    onCheckedChange={(v) =>
+                      setDocumentIds((prev) =>
+                        v === true ? [...prev, d.id] : prev.filter((p) => p !== d.id),
+                      )
+                    }
+                  />
+                  <span className="break-words leading-tight">{d.file_name}</span>
+                </label>
               ))}
-            </SelectContent>
-          </Select>
+            </div>
+          )}
         </div>
+
         <div className="space-y-1.5">
           <Label htmlFor="qcount">Questions</Label>
           <Input
