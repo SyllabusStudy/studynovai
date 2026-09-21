@@ -103,7 +103,7 @@ function QuizzesPage() {
             value={classId}
             onValueChange={(v) => {
               setClassId(v);
-              setDocumentId("");
+              setDocumentIds([]);
             }}
           >
             <SelectTrigger>
