@@ -744,19 +744,20 @@ export async function runQuizGeneration(
   const source = await sourceText(supabase, userId, input.classId, picked);
   if (!source) throw new Error("Upload notes, a study guide or an assignment for this class first — syllabi are not used as study material.");
 
-  // Everything already asked for this class, so the next quiz is genuinely new.
+  // A short list of recent questions is enough to keep the next quiz fresh
+  // without slowing the request down.
   const { data: previous } = await supabase
     .from("quizzes")
     .select("questions")
     .eq("user_id", userId)
     .eq("class_id", input.classId)
     .order("created_at", { ascending: false })
-    .limit(8);
+    .limit(3);
   const asked = (previous ?? [])
     .flatMap((q) => ((q.questions as unknown as QuizQuestion[]) ?? []))
     .map((q) => q?.prompt)
     .filter((p): p is string => Boolean(p))
-    .slice(0, 120);
+    .slice(0, 40);
 
   const angles = [
     "definitions and key terms",
@@ -774,22 +775,23 @@ export async function runQuizGeneration(
       {
         role: "system",
         content:
-          "You write college quizzes from the student's own course material and reply with json only. Every answer must be verifiable from the material. Write fresh, varied questions every time — never reuse or lightly reword a question the student has already seen.",
+          "You write college quizzes from the student's own material. Reply with json only, no preamble. Keep prompts and explanations short. Never reuse a question the student already saw.",
       },
       {
         role: "user",
         content: `Write exactly ${input.count} ${input.difficulty}-difficulty questions using only these types: ${input.types.join(", ")}.
 Return json: {"title":string,"questions":[{"id":string,"type":"multiple_choice"|"true_false"|"short_answer"|"problem","prompt":string,"options":string[],"answer":string,"explanation":string,"topic":string}]}
-Rules: multiple_choice needs exactly 4 options and answer must match one option exactly. true_false options are ["True","False"]. short_answer and problem have an empty options array and a concise model answer.
-Variety rules: every question must cover a different fact or skill, spread across the whole material (not only the first pages), and lean on these angles this time: ${focus}. No two questions may test the same sentence.
-${asked.length ? `ALREADY ASKED — do not repeat or reword any of these:\n${asked.map((p) => `- ${p}`).join("\n").slice(0, 6000)}` : ""}
+Rules: multiple_choice needs exactly 4 options and answer must match one option exactly. true_false options are ["True","False"]. short_answer and problem have an empty options array and a concise model answer. Explanations: one short sentence.
+Variety: each question covers a different fact or skill, spread across the whole material, leaning on: ${focus}.
+${asked.length ? `Do not repeat these:\n${asked.map((p) => `- ${p}`).join("\n").slice(0, 1500)}` : ""}
 
 MATERIAL:
-${source.slice(0, 20000)}`,
+${source.slice(0, 9000)}`,
       },
     ],
     { temperature: 0.9 },
   );
+
 
 
   const parsed = parseJsonBlock<{ title?: string; questions: QuizQuestion[] }>(raw);
