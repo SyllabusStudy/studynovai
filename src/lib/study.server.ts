@@ -732,31 +732,65 @@ export async function runQuizGeneration(
   input: {
     classId: string;
     documentId?: string | null | undefined;
+    documentIds?: string[] | null | undefined;
     count: number;
     difficulty: string;
     types: string[];
     title?: string | null | undefined;
   },
 ) {
-  const source = await sourceText(supabase, userId, input.classId, input.documentId ?? null);
+  const picked = (input.documentIds ?? []).filter(Boolean);
+  if (!picked.length && input.documentId) picked.push(input.documentId);
+  const source = await sourceText(supabase, userId, input.classId, picked);
   if (!source) throw new Error("Upload notes, a study guide or an assignment for this class first — syllabi are not used as study material.");
 
-  const raw = await callAI([
-    {
-      role: "system",
-      content:
-        "You write college quizzes from the student's own course material and reply with json only. Every answer must be verifiable from the material.",
-    },
-    {
-      role: "user",
-      content: `Write exactly ${input.count} ${input.difficulty}-difficulty questions using only these types: ${input.types.join(", ")}.
+  // Everything already asked for this class, so the next quiz is genuinely new.
+  const { data: previous } = await supabase
+    .from("quizzes")
+    .select("questions")
+    .eq("user_id", userId)
+    .eq("class_id", input.classId)
+    .order("created_at", { ascending: false })
+    .limit(8);
+  const asked = (previous ?? [])
+    .flatMap((q) => ((q.questions as unknown as QuizQuestion[]) ?? []))
+    .map((q) => q?.prompt)
+    .filter((p): p is string => Boolean(p))
+    .slice(0, 120);
+
+  const angles = [
+    "definitions and key terms",
+    "applying ideas to new scenarios",
+    "comparing and contrasting concepts",
+    "cause and effect / why questions",
+    "worked problems and calculations",
+    "common mistakes and misconceptions",
+    "connecting two different sections of the material",
+  ];
+  const focus = angles.sort(() => Math.random() - 0.5).slice(0, 3).join("; ");
+
+  const raw = await callAI(
+    [
+      {
+        role: "system",
+        content:
+          "You write college quizzes from the student's own course material and reply with json only. Every answer must be verifiable from the material. Write fresh, varied questions every time — never reuse or lightly reword a question the student has already seen.",
+      },
+      {
+        role: "user",
+        content: `Write exactly ${input.count} ${input.difficulty}-difficulty questions using only these types: ${input.types.join(", ")}.
 Return json: {"title":string,"questions":[{"id":string,"type":"multiple_choice"|"true_false"|"short_answer"|"problem","prompt":string,"options":string[],"answer":string,"explanation":string,"topic":string}]}
 Rules: multiple_choice needs exactly 4 options and answer must match one option exactly. true_false options are ["True","False"]. short_answer and problem have an empty options array and a concise model answer.
+Variety rules: every question must cover a different fact or skill, spread across the whole material (not only the first pages), and lean on these angles this time: ${focus}. No two questions may test the same sentence.
+${asked.length ? `ALREADY ASKED — do not repeat or reword any of these:\n${asked.map((p) => `- ${p}`).join("\n").slice(0, 6000)}` : ""}
 
 MATERIAL:
 ${source.slice(0, 20000)}`,
-    },
-  ]);
+      },
+    ],
+    { temperature: 0.9 },
+  );
+
 
   const parsed = parseJsonBlock<{ title?: string; questions: QuizQuestion[] }>(raw);
   const questions = (parsed.questions ?? [])
@@ -889,8 +923,9 @@ async function sourceText(
   supabase: DB,
   userId: string,
   classId: string,
-  documentId: string | null,
+  documentId: string | string[] | null,
 ): Promise<string> {
+  const ids = Array.isArray(documentId) ? documentId.filter(Boolean) : documentId ? [documentId] : [];
   let query = supabase
     .from("documents")
     .select("file_name,extracted_text")
@@ -898,14 +933,17 @@ async function sourceText(
     .eq("class_id", classId)
     .not("extracted_text", "is", null);
   // Syllabi are schedules/policies, not study material — skip them unless the
-  // student explicitly picked that exact document.
-  if (documentId) query = query.eq("id", documentId);
+  // student explicitly picked those documents.
+  if (ids.length) query = query.in("id", ids);
   else query = query.eq("is_syllabus", false);
   const { data } = await query;
+  // Share the budget across everything the student picked.
+  const per = Math.max(3000, Math.floor(24000 / Math.max(1, (data ?? []).length)));
   return (data ?? [])
-    .map((d) => `### ${d.file_name}\n${(d.extracted_text ?? "").slice(0, 12000)}`)
+    .map((d) => `### ${d.file_name}\n${(d.extracted_text ?? "").slice(0, per)}`)
     .join("\n\n");
 }
+
 
 
 /* ------------------------------------------------------------------ assignment help */

@@ -51,7 +51,7 @@ function QuizzesPage() {
   const [classId, setClassId] = useState("");
   const { data: documents = [] } = useDocuments(user?.id, classId || undefined);
   const { data: quizzes = [], isLoading } = useQuizzes(user?.id);
-  const [documentId, setDocumentId] = useState("");
+  const [documentIds, setDocumentIds] = useState<string[]>([]);
   const [count, setCount] = useState(10);
   const [difficulty, setDifficulty] = useState<string>("medium");
   const [types, setTypes] = useState<string[]>(["multiple_choice", "true_false"]);
@@ -69,7 +69,10 @@ function QuizzesPage() {
     }
     setBusy(true);
     try {
-      await run({ data: { classId, documentId: documentId || null, count, difficulty, types } });
+      await run({
+        data: { classId, documentIds, documentId: null, count, difficulty, types },
+      });
+
       await qc.invalidateQueries({ queryKey: ["quizzes"] });
       toast.success("Quiz ready");
     } catch (e) {
@@ -100,7 +103,7 @@ function QuizzesPage() {
             value={classId}
             onValueChange={(v) => {
               setClassId(v);
-              setDocumentId("");
+              setDocumentIds([]);
             }}
           >
             <SelectTrigger>
@@ -116,20 +119,35 @@ function QuizzesPage() {
           </Select>
         </div>
         <div className="space-y-1.5">
-          <Label>Source document</Label>
-          <Select value={documentId} onValueChange={setDocumentId}>
-            <SelectTrigger>
-              <SelectValue placeholder="All materials" />
-            </SelectTrigger>
-            <SelectContent>
+          <Label>Source material</Label>
+          {documents.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              {classId ? "No uploads for this class yet." : "Pick a class to choose materials."}
+            </p>
+          ) : (
+            <div className="max-h-32 space-y-1.5 overflow-y-auto rounded-xl border border-border/60 p-2.5">
+              <p className="text-xs text-muted-foreground">
+                {documentIds.length === 0
+                  ? "All materials"
+                  : `${documentIds.length} selected`}
+              </p>
               {documents.map((d) => (
-                <SelectItem key={d.id} value={d.id}>
-                  {d.file_name}
-                </SelectItem>
+                <label key={d.id} className="flex items-start gap-2 text-sm">
+                  <Checkbox
+                    checked={documentIds.includes(d.id)}
+                    onCheckedChange={(v) =>
+                      setDocumentIds((prev) =>
+                        v === true ? [...prev, d.id] : prev.filter((p) => p !== d.id),
+                      )
+                    }
+                  />
+                  <span className="break-words leading-tight">{d.file_name}</span>
+                </label>
               ))}
-            </SelectContent>
-          </Select>
+            </div>
+          )}
         </div>
+
         <div className="space-y-1.5">
           <Label htmlFor="qcount">Questions</Label>
           <Input
