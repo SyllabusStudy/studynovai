@@ -923,8 +923,9 @@ async function sourceText(
   supabase: DB,
   userId: string,
   classId: string,
-  documentId: string | null,
+  documentId: string | string[] | null,
 ): Promise<string> {
+  const ids = Array.isArray(documentId) ? documentId.filter(Boolean) : documentId ? [documentId] : [];
   let query = supabase
     .from("documents")
     .select("file_name,extracted_text")
@@ -932,14 +933,17 @@ async function sourceText(
     .eq("class_id", classId)
     .not("extracted_text", "is", null);
   // Syllabi are schedules/policies, not study material — skip them unless the
-  // student explicitly picked that exact document.
-  if (documentId) query = query.eq("id", documentId);
+  // student explicitly picked those documents.
+  if (ids.length) query = query.in("id", ids);
   else query = query.eq("is_syllabus", false);
   const { data } = await query;
+  // Share the budget across everything the student picked.
+  const per = Math.max(3000, Math.floor(24000 / Math.max(1, (data ?? []).length)));
   return (data ?? [])
-    .map((d) => `### ${d.file_name}\n${(d.extracted_text ?? "").slice(0, 12000)}`)
+    .map((d) => `### ${d.file_name}\n${(d.extracted_text ?? "").slice(0, per)}`)
     .join("\n\n");
 }
+
 
 
 /* ------------------------------------------------------------------ assignment help */
