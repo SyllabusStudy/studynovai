@@ -940,7 +940,7 @@ async function sourceText(
   else query = query.eq("is_syllabus", false);
   const { data } = await query;
   // Share the budget across everything the student picked.
-  const per = Math.max(3000, Math.floor(24000 / Math.max(1, (data ?? []).length)));
+  const per = Math.max(1500, Math.floor(9000 / Math.max(1, (data ?? []).length)));
   return (data ?? [])
     .map((d) => `### ${d.file_name}\n${(d.extracted_text ?? "").slice(0, per)}`)
     .join("\n\n");
