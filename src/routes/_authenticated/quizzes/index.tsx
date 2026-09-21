@@ -51,7 +51,7 @@ function QuizzesPage() {
   const [classId, setClassId] = useState("");
   const { data: documents = [] } = useDocuments(user?.id, classId || undefined);
   const { data: quizzes = [], isLoading } = useQuizzes(user?.id);
-  const [documentId, setDocumentId] = useState("");
+  const [documentIds, setDocumentIds] = useState<string[]>([]);
   const [count, setCount] = useState(10);
   const [difficulty, setDifficulty] = useState<string>("medium");
   const [types, setTypes] = useState<string[]>(["multiple_choice", "true_false"]);
