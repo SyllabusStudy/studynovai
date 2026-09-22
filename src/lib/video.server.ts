@@ -465,3 +465,123 @@ export async function runVideoChat(
 
   return { reply, chat: nextChat };
 }
+
+/** Saves the student's working document (draft text and the uploaded file it came from). */
+export async function runVideoWorkSave(
+  supabase: DB,
+  userId: string,
+  input: {
+    videoNoteId: string;
+    draft?: string | null | undefined;
+    documentId?: string | null | undefined;
+    fileName?: string | null | undefined;
+  },
+) {
+  const patch: Record<string, unknown> = {};
+  if (input.draft !== undefined) patch["work_draft"] = input.draft ?? null;
+  if (input.documentId !== undefined) patch["work_document_id"] = input.documentId ?? null;
+  if (input.fileName !== undefined) patch["work_file_name"] = input.fileName ?? null;
+  if (!Object.keys(patch).length) return { saved: false };
+
+  const { error } = await supabase
+    .from("video_notes")
+    .update(patch as never)
+    .eq("id", input.videoNoteId)
+    .eq("user_id", userId);
+  if (error) throw new Error(error.message);
+  return { saved: true };
+}
+
+const WORK_MODES = {
+  answer: "Answer the questions in the student's document using the video. For each question, give the answer and one short line of reasoning. Reply in markdown. Do NOT rewrite their document.",
+  rewrite:
+    "Rewrite the student's document so it is clearer, better organised and fully backed by the video. Keep their voice and every required part.",
+  correct:
+    "Correct the student's document: fix wrong facts against the video, plus grammar and spelling. Change as little as possible.",
+  improve:
+    "Improve and expand the student's document using details, examples and terminology from the video, without inventing anything the video does not say.",
+} as const;
+
+export type VideoWorkMode = keyof typeof WORK_MODES;
+
+/**
+ * Helps the student with their own assignment document, grounded in the imported
+ * video. "answer" replies with guidance; the other modes return the edited document.
+ */
+export async function runVideoWork(
+  supabase: DB,
+  userId: string,
+  input: {
+    videoNoteId: string;
+    mode: VideoWorkMode;
+    draft: string;
+    instruction?: string | null | undefined;
+  },
+) {
+  const { data: note } = await supabase
+    .from("video_notes")
+    .select("*")
+    .eq("id", input.videoNoteId)
+    .eq("user_id", userId)
+    .single();
+  if (!note) throw new Error("Those video notes were not found.");
+
+  let uploaded = "";
+  const docId = (note as { work_document_id?: string | null }).work_document_id ?? null;
+  if (docId) {
+    const { data: doc } = await supabase
+      .from("documents")
+      .select("file_name,extracted_text")
+      .eq("id", docId)
+      .eq("user_id", userId)
+      .single();
+    if (doc?.extracted_text) {
+      uploaded = `UPLOADED ASSIGNMENT FILE (${doc.file_name}):\n${doc.extracted_text.slice(0, 14000)}`;
+    }
+  }
+
+  const editing = input.mode !== "answer";
+  const messages: ChatMessage[] = [
+    {
+      role: "system",
+      content: [
+        "You are StudyMate AI helping a college student with their own assignment, using a video they imported.",
+        WORK_MODES[input.mode],
+        editing
+          ? "Return ONLY the finished document text — no preamble, no commentary, no code fences. Keep it in the same format the student used."
+          : PLAIN_STYLE,
+        editing ? "Length: whatever the document needs." : "",
+        "",
+        `VIDEO: ${note.title}`,
+        `VIDEO NOTES:\n${(note.notes ?? "").slice(0, 10000)}`,
+        note.transcript ? `VIDEO TRANSCRIPT:\n${note.transcript.slice(0, 20000)}` : "",
+        uploaded,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    },
+    {
+      role: "user",
+      content: [
+        input.instruction?.trim() ? `My instructions: ${input.instruction.trim()}` : "",
+        `MY DOCUMENT:\n${input.draft.slice(0, 20000)}`,
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
+    },
+  ];
+
+  const reply = (await callAI(messages, { maxTokens: editing ? 2600 : 1400, temperature: 0.3 })).trim();
+  if (!reply) throw new Error("The AI reply came back empty. Please try again.");
+
+  if (editing) {
+    const cleaned = reply.replace(/^```[a-z]*\n?/i, "").replace(/```$/, "").trim();
+    await supabase
+      .from("video_notes")
+      .update({ work_draft: cleaned } as never)
+      .eq("id", note.id)
+      .eq("user_id", userId);
+    return { mode: input.mode, draft: cleaned, reply: null as string | null };
+  }
+  return { mode: input.mode, draft: null as string | null, reply };
+}

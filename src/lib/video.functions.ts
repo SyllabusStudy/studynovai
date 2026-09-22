@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { runVideoChat, runVideoImport } from "./video.server";
+import { runVideoChat, runVideoImport, runVideoWork, runVideoWorkSave } from "./video.server";
 import { withUserAiKey } from "./ai-key.server";
 
 export const importVideo = createServerFn({ method: "POST" })
