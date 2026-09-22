@@ -29,6 +29,13 @@
       "when": 1788289977712,
       "tag": "0003_reminder_lead_times",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790107361615,
+      "tag": "0004_video_notes_work_draft",
+      "breakpoints": true
     }
   ]
 }
