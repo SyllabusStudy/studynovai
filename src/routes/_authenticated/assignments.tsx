@@ -54,6 +54,8 @@ function AssignmentsPage() {
   const { data: assignments = [], isLoading } = useAssignments(user?.id);
   const { data: classes = [] } = useClasses(user?.id);
   const classById = new Map(classes.map((c) => [c.id, c]));
+  const activeAssignments = assignments.filter((a) => a.status !== "completed");
+  const doneAssignments = assignments.filter((a) => a.status === "completed");
 
   async function toggle(id: string, done: boolean) {
     const { error } = await supabase
@@ -90,56 +92,110 @@ function AssignmentsPage() {
           action={<NewAssignmentDialog />}
         />
       ) : (
-        <ul className="space-y-2">
-          {assignments.map((a) => {
-            const done = a.status === "completed";
-            return (
-              <li key={a.id} className="surface-card flex items-center gap-3 p-4">
-                <Checkbox checked={done} onCheckedChange={(v) => void toggle(a.id, v === true)} />
-                <div className="min-w-0 flex-1">
-                  <p className={cn("truncate text-sm font-semibold", done && "line-through opacity-60")}>
-                    {a.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    <span className={urgencyDot(daysUntil(a.due_date))}>●</span> {relativeDay(a.due_date)} ·{" "}
-                    {a.priority} priority
-                  </p>
-                </div>
-                {a.class_id ? (
-                  <ClassChip
-                    color={classById.get(a.class_id)?.color}
-                    label={classLabel(classById.get(a.class_id))}
-                  />
-                ) : null}
-                <AssignmentHelp
-                  assignmentId={a.id}
-                  classId={a.class_id}
-                  title={a.title}
-                  category={a.category}
-                />
-                <DeleteButton
-                  label="assignment"
-                  description={`"${a.title}" will be removed from your list.`}
-                  onDelete={async () => {
-                    const { error } = await supabase.from("assignments").delete().eq("id", a.id);
-                    if (error) throw new Error(error.message);
-                    // Linked events cascade automatically; this clears older
-                    // entries created before events were linked.
-                    await supabase
-                      .from("calendar_events")
-                      .delete()
-                      .eq("title", `Due: ${a.title}`)
-                      .eq("event_type", "assignment");
-                    await qc.invalidateQueries({ queryKey: ["assignments"] });
-                    await qc.invalidateQueries({ queryKey: ["events"] });
-                    await qc.invalidateQueries({ queryKey: ["calendar_events"] });
-                  }}
+        <div className="space-y-6">
+          {activeAssignments.length > 0 ? (
+            <ul className="space-y-2">
+              {activeAssignments.map((a) => {
+                const done = a.status === "completed";
+                return (
+                  <li key={a.id} className="surface-card flex items-center gap-3 p-4">
+                    <Checkbox checked={done} onCheckedChange={(v) => void toggle(a.id, v === true)} />
+                    <div className="min-w-0 flex-1">
+                      <p className={cn("truncate text-sm font-semibold", done && "line-through opacity-60")}>
+                        {a.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        <span className={urgencyDot(daysUntil(a.due_date))}>●</span> {relativeDay(a.due_date)} ·{" "}
+                        {a.priority} priority
+                      </p>
+                    </div>
+                    {a.class_id ? (
+                      <ClassChip
+                        color={classById.get(a.class_id)?.color}
+                        label={classLabel(classById.get(a.class_id))}
+                      />
+                    ) : null}
+                    <AssignmentHelp
+                      assignmentId={a.id}
+                      classId={a.class_id}
+                      title={a.title}
+                      category={a.category}
+                    />
+                    <DeleteButton
+                      label="assignment"
+                      description={`"${a.title}" will be removed from your list.`}
+                      onDelete={async () => {
+                        const { error } = await supabase.from("assignments").delete().eq("id", a.id);
+                        if (error) throw new Error(error.message);
+                        // Linked events cascade automatically; this clears older
+                        // entries created before events were linked.
+                        await supabase
+                          .from("calendar_events")
+                          .delete()
+                          .eq("title", `Due: ${a.title}`)
+                          .eq("event_type", "assignment");
+                        await qc.invalidateQueries({ queryKey: ["assignments"] });
+                        await qc.invalidateQueries({ queryKey: ["events"] });
+                        await qc.invalidateQueries({ queryKey: ["calendar_events"] });
+                      }}
+                    />
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <div className="surface-card p-4 text-sm text-muted-foreground">You're caught up. Finished assignments are saved below.</div>
+          )}
 
-                />
-              </li>
-            );
-          })}
-        </ul>
+          {doneAssignments.length > 0 ? (
+            <section aria-labelledby="done-assignments" className="space-y-2">
+              <h2 id="done-assignments" className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
+                Done
+              </h2>
+              <ul className="space-y-2">
+                {doneAssignments.map((a) => (
+                  <li key={a.id} className="surface-card flex items-center gap-3 p-4 opacity-80">
+                    <Checkbox checked onCheckedChange={(v) => void toggle(a.id, v === true)} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold line-through opacity-60">{a.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {relativeDay(a.due_date)} · {a.priority} priority
+                      </p>
+                    </div>
+                    {a.class_id ? (
+                      <ClassChip
+                        color={classById.get(a.class_id)?.color}
+                        label={classLabel(classById.get(a.class_id))}
+                      />
+                    ) : null}
+                    <AssignmentHelp
+                      assignmentId={a.id}
+                      classId={a.class_id}
+                      title={a.title}
+                      category={a.category}
+                    />
+                    <DeleteButton
+                      label="assignment"
+                      description={`"${a.title}" will be removed from your list.`}
+                      onDelete={async () => {
+                        const { error } = await supabase.from("assignments").delete().eq("id", a.id);
+                        if (error) throw new Error(error.message);
+                        await supabase
+                          .from("calendar_events")
+                          .delete()
+                          .eq("title", `Due: ${a.title}`)
+                          .eq("event_type", "assignment");
+                        await qc.invalidateQueries({ queryKey: ["assignments"] });
+                        await qc.invalidateQueries({ queryKey: ["events"] });
+                        await qc.invalidateQueries({ queryKey: ["calendar_events"] });
+                      }}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+        </div>
       )}
     </div>
   );
