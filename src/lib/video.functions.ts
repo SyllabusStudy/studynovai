@@ -42,3 +42,37 @@ export const videoChat = createServerFn({ method: "POST" })
       runVideoChat(context.supabase, context.userId, data),
     ),
   );
+
+export const saveVideoWork = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        videoNoteId: z.string().uuid(),
+        draft: z.string().max(200_000).nullable().optional(),
+        documentId: z.string().uuid().nullable().optional(),
+        fileName: z.string().max(200).nullable().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) =>
+    runVideoWorkSave(context.supabase, context.userId, data),
+  );
+
+export const videoWorkHelp = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        videoNoteId: z.string().uuid(),
+        mode: z.enum(["answer", "rewrite", "correct", "improve"]),
+        draft: z.string().min(1).max(60_000),
+        instruction: z.string().max(1000).nullable().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) =>
+    withUserAiKey(context.supabase, context.userId, () =>
+      runVideoWork(context.supabase, context.userId, data),
+    ),
+  );
