@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Markdown } from "@/components/Markdown";
+import { VideoWorkspace } from "@/components/VideoWorkspace";
 import { videoChat } from "@/lib/video.functions";
 import { classLabel, formatDate, useClasses, useVideoNote } from "@/lib/data";
 import { useAuth } from "@/lib/auth";
