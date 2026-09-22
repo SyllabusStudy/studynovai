@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Markdown } from "@/components/Markdown";
+import { VideoWorkspace } from "@/components/VideoWorkspace";
 import { videoChat } from "@/lib/video.functions";
 import { classLabel, formatDate, useClasses, useVideoNote } from "@/lib/data";
 import { useAuth } from "@/lib/auth";
@@ -146,6 +147,14 @@ function VideoNotePage() {
           </div>
         </div>
       </div>
+
+      <VideoWorkspace
+        key={note.id}
+        noteId={note.id}
+        classId={note.class_id}
+        initialDraft={(note as { work_draft?: string | null }).work_draft ?? ""}
+        initialFileName={(note as { work_file_name?: string | null }).work_file_name ?? null}
+      />
     </div>
   );
 }

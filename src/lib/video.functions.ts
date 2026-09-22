@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { runVideoChat, runVideoImport } from "./video.server";
+import { runVideoChat, runVideoImport, runVideoWork, runVideoWorkSave } from "./video.server";
 import { withUserAiKey } from "./ai-key.server";
 
 export const importVideo = createServerFn({ method: "POST" })
@@ -40,5 +40,39 @@ export const videoChat = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) =>
     withUserAiKey(context.supabase, context.userId, () =>
       runVideoChat(context.supabase, context.userId, data),
+    ),
+  );
+
+export const saveVideoWork = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        videoNoteId: z.string().uuid(),
+        draft: z.string().max(200_000).nullable().optional(),
+        documentId: z.string().uuid().nullable().optional(),
+        fileName: z.string().max(200).nullable().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) =>
+    runVideoWorkSave(context.supabase, context.userId, data),
+  );
+
+export const videoWorkHelp = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        videoNoteId: z.string().uuid(),
+        mode: z.enum(["answer", "rewrite", "correct", "improve"]),
+        draft: z.string().min(1).max(60_000),
+        instruction: z.string().max(1000).nullable().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) =>
+    withUserAiKey(context.supabase, context.userId, () =>
+      runVideoWork(context.supabase, context.userId, data),
     ),
   );

@@ -802,6 +802,9 @@ export type Database = {
           transcript: string | null
           updated_at: string
           user_id: string
+          work_document_id: string | null
+          work_draft: string | null
+          work_file_name: string | null
         }
         Insert: {
           chat?: Json
@@ -817,6 +820,9 @@ export type Database = {
           transcript?: string | null
           updated_at?: string
           user_id: string
+          work_document_id?: string | null
+          work_draft?: string | null
+          work_file_name?: string | null
         }
         Update: {
           chat?: Json
@@ -832,6 +838,9 @@ export type Database = {
           transcript?: string | null
           updated_at?: string
           user_id?: string
+          work_document_id?: string | null
+          work_draft?: string | null
+          work_file_name?: string | null
         }
         Relationships: [
           {
@@ -839,6 +848,13 @@ export type Database = {
             columns: ["class_id"]
             isOneToOne: false
             referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_notes_work_document_id_fkey"
+            columns: ["work_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
             referencedColumns: ["id"]
           },
         ]
