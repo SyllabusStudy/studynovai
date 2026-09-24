@@ -279,18 +279,7 @@
 }
 
 @utility magazine-canvas {
-  background-image: linear-gradient(
-    to right,
-    color-mix(in oklab, var(--color-border), transparent 70%) 1px,
-    transparent 1px
-  );
-  background-size: 25% 100%;
-}
-
-@media (max-width: 1023px) {
-  .magazine-canvas {
-    background-image: none;
-  }
+  background-image: none;
 }
 
 @utility scroll-slim {
