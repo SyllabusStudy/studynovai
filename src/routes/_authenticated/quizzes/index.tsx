@@ -161,7 +161,7 @@ function QuizzesPage() {
             id="qcount"
             type="number"
             min={5}
-            max={30}
+            max={50}
             value={count}
             onChange={(e) => setCount(Number(e.target.value))}
           />
