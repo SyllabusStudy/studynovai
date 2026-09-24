@@ -779,7 +779,7 @@ export async function runQuizGeneration(
     exam:
       "Match a rigorous college exam. At least 80% must require synthesis across sections, multi-step application, interpreting evidence or calculations, evaluating a claim, or diagnosing a realistic misconception. Include subtle but fair distinctions and no trivia.",
   };
-  const challenge = difficultyGuide[input.difficulty] ?? difficultyGuide.medium;
+  const challenge = difficultyGuide[input.difficulty] ?? difficultyGuide["medium"];
 
   const raw = await callAI(
     [
@@ -803,10 +803,10 @@ Quality rules:
 ${asked.length ? `Do not repeat these:\n${asked.map((p) => `- ${p}`).join("\n").slice(0, 1500)}` : ""}
 
 MATERIAL:
-${source.slice(0, 9000)}`,
+${source.slice(0, 14000)}`,
       },
     ],
-    { temperature: 0.9 },
+    { temperature: 0.9, maxTokens: Math.min(1200 + input.count * 220, 8000) },
   );
 
 
@@ -957,7 +957,7 @@ async function sourceText(
   else query = query.eq("is_syllabus", false);
   const { data } = await query;
   // Share the budget across everything the student picked.
-  const per = Math.max(1500, Math.floor(9000 / Math.max(1, (data ?? []).length)));
+  const per = Math.max(1500, Math.floor(14000 / Math.max(1, (data ?? []).length)));
   return (data ?? [])
     .map((d) => `### ${d.file_name}\n${(d.extracted_text ?? "").slice(0, per)}`)
     .join("\n\n");
