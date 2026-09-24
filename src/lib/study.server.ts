@@ -806,7 +806,7 @@ MATERIAL:
 ${source.slice(0, 14000)}`,
       },
     ],
-    { temperature: 0.9, maxTokens: Math.min(1200 + input.count * 220, 8000) },
+    { temperature: 0.9, maxTokens: Math.min(1200 + input.count * 220, 16000) },
   );
 
 
