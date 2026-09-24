@@ -60,6 +60,7 @@ const NAV = [
   { to: "/snapquick", label: "SnapQuick", icon: Camera },
   { to: "/quickvideo", label: "QuickVideo", icon: Video },
   { to: "/studio", label: "AI Images", icon: ImageIcon },
+  { to: "/ai-checker", label: "AI Checker", icon: ScanSearch },
   { to: "/school", label: "School links", icon: GraduationCap },
   { to: "/upgrade", label: "Upgrade", icon: Crown },
   { to: "/feedback", label: "Feedback", icon: MessageSquare },
