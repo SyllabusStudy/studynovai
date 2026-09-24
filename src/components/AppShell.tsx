@@ -42,7 +42,7 @@ import { daysUntil, formatDate, relativeDay, urgencyDot, useAssignments, useEven
 import { useReminderEngine } from "@/lib/reminders";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { GraduationCap, Image as ImageIcon, ShieldCheck, Video } from "lucide-react";
+import { GraduationCap, Image as ImageIcon, ScanSearch, ShieldCheck, Video } from "lucide-react";
 import { checkAdmin } from "@/lib/admin.functions";
 import { AskAiDock } from "@/components/AskAiDock";
 import { GlobalSearch } from "@/components/GlobalSearch";
@@ -60,6 +60,7 @@ const NAV = [
   { to: "/snapquick", label: "SnapQuick", icon: Camera },
   { to: "/quickvideo", label: "QuickVideo", icon: Video },
   { to: "/studio", label: "AI Images", icon: ImageIcon },
+  { to: "/ai-checker", label: "AI Checker", icon: ScanSearch },
   { to: "/school", label: "School links", icon: GraduationCap },
   { to: "/upgrade", label: "Upgrade", icon: Crown },
   { to: "/feedback", label: "Feedback", icon: MessageSquare },

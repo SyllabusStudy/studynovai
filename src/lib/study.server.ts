@@ -1188,3 +1188,40 @@ box is the region on the image, as fractions of the width/height from the top-le
 
   return { markers };
 }
+
+/* ------------------------------------------------------------------ ai text checker */
+
+export type AiCheckResult = {
+  aiPercent: number;
+  humanPercent: number;
+  verdict: string;
+  sections: { excerpt: string; label: "ai" | "human" | "mixed"; reason: string }[];
+};
+
+export async function runAiTextCheck(input: { text: string }): Promise<AiCheckResult> {
+  // One short call on the free model; text is capped to keep usage low.
+  const text = input.text.slice(0, 8000);
+  const raw = await callAI(
+    [
+      {
+        role: "system",
+        content:
+          'You estimate whether text was written by AI or a human. Look at phrasing patterns: uniform sentence length, generic transitions ("Moreover", "In conclusion", "delve"), hedging, lack of personal detail, list-like structure vs. typos, personal voice, uneven rhythm, specific experiences. Split the text into up to 8 passages. Reply with json only: {"aiPercent":number 0-100,"verdict":string (one sentence),"sections":[{"excerpt":string (first ~12 words of the passage, copied exactly),"label":"ai"|"human"|"mixed","reason":string (one short sentence)}]}. Be honest that this is an estimate.',
+      },
+      { role: "user", content: text },
+    ],
+    { temperature: 0.2, maxTokens: 900 },
+  );
+  const parsed = parseJsonBlock<Partial<AiCheckResult>>(raw);
+  const ai = Math.max(0, Math.min(100, Math.round(Number(parsed.aiPercent) || 0)));
+  return {
+    aiPercent: ai,
+    humanPercent: 100 - ai,
+    verdict: parsed.verdict ?? "",
+    sections: (parsed.sections ?? []).slice(0, 8).map((s) => ({
+      excerpt: String(s.excerpt ?? ""),
+      label: s.label === "ai" || s.label === "human" ? s.label : "mixed",
+      reason: String(s.reason ?? ""),
+    })),
+  };
+}

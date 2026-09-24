@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { AI_KEY_HELP, hasUserAiKey, withUserAiKey } from "./ai-key.server";
 import {
+  runAiTextCheck,
   runAssignmentHelp,
   runDocumentExtraction,
   runDocumentMarkup,
@@ -212,3 +213,20 @@ export const markupDocument = createServerFn({ method: "POST" })
       runDocumentMarkup(context.supabase, context.userId, data),
     ),
   );
+
+export const checkAiText = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ text: z.string().min(50).max(20000) }).parse(d))
+  .handler(async ({ data, context }) => {
+    if (!(await hasUserAiKey(context.supabase, context.userId))) {
+      return { result: null, error: AI_KEY_HELP };
+    }
+    try {
+      const result = await withUserAiKey(context.supabase, context.userId, () =>
+        runAiTextCheck(data),
+      );
+      return { result, error: null };
+    } catch (e) {
+      return { result: null, error: e instanceof Error ? e.message : "The checker could not run." };
+    }
+  });
