@@ -44,6 +44,13 @@ const TYPES = [
   { key: "problem", label: "Problems" },
 ];
 
+const DIFFICULTY_HINTS: Record<string, string> = {
+  easy: "Recall and core understanding",
+  medium: "Apply and connect ideas",
+  hard: "Analyze scenarios and mistakes",
+  exam: "Synthesize, evaluate, and solve",
+};
+
 function QuizzesPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -173,6 +180,7 @@ function QuizzesPage() {
               ))}
             </SelectContent>
           </Select>
+          <p className="text-xs leading-relaxed text-muted-foreground">{DIFFICULTY_HINTS[difficulty]}</p>
         </div>
         <div className="flex flex-wrap gap-4 sm:col-span-2 lg:col-span-4">
           {TYPES.map((t) => (
