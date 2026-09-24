@@ -42,7 +42,7 @@ import { daysUntil, formatDate, relativeDay, urgencyDot, useAssignments, useEven
 import { useReminderEngine } from "@/lib/reminders";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { GraduationCap, Image as ImageIcon, ShieldCheck, Video } from "lucide-react";
+import { GraduationCap, Image as ImageIcon, ScanSearch, ShieldCheck, Video } from "lucide-react";
 import { checkAdmin } from "@/lib/admin.functions";
 import { AskAiDock } from "@/components/AskAiDock";
 import { GlobalSearch } from "@/components/GlobalSearch";
