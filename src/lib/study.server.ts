@@ -769,20 +769,37 @@ export async function runQuizGeneration(
     "connecting two different sections of the material",
   ];
   const focus = angles.sort(() => Math.random() - 0.5).slice(0, 3).join("; ");
+  const difficultyGuide: Record<string, string> = {
+    easy:
+      "Test accurate recall and basic understanding. Use direct wording, but do not copy sentences from the material.",
+    medium:
+      "Test understanding plus application. At least half the questions must require applying, comparing, explaining, or connecting ideas rather than simple recall.",
+    hard:
+      "Write demanding college-level questions. At least 70% must require multi-step reasoning, analysis of a new scenario, comparison across concepts, error diagnosis, or selecting the best justification. Avoid pure definition questions unless they are part of a larger reasoning task.",
+    exam:
+      "Match a rigorous college exam. At least 80% must require synthesis across sections, multi-step application, interpreting evidence or calculations, evaluating a claim, or diagnosing a realistic misconception. Include subtle but fair distinctions and no trivia.",
+  };
+  const challenge = difficultyGuide[input.difficulty] ?? difficultyGuide.medium;
 
   const raw = await callAI(
     [
       {
         role: "system",
         content:
-          "You write college quizzes from the student's own material. Reply with json only, no preamble. Keep prompts and explanations short. Never reuse a question the student already saw.",
+          "You are an expert college assessment writer. Build fair, rigorous quizzes from the student's own material. Reply with json only, no preamble. Never reuse a question the student already saw. Difficulty must change the depth of thinking, not merely use harder vocabulary.",
       },
       {
         role: "user",
         content: `Write exactly ${input.count} ${input.difficulty}-difficulty questions using only these types: ${input.types.join(", ")}.
 Return json: {"title":string,"questions":[{"id":string,"type":"multiple_choice"|"true_false"|"short_answer"|"problem","prompt":string,"options":string[],"answer":string,"explanation":string,"topic":string}]}
 Rules: multiple_choice needs exactly 4 options and answer must match one option exactly. true_false options are ["True","False"]. short_answer and problem have an empty options array and a concise model answer. Explanations: one short sentence.
-Variety: each question covers a different fact or skill, spread across the whole material, leaning on: ${focus}.
+Difficulty standard: ${challenge}
+Quality rules:
+- Each question must test a different fact, skill, relationship, or reasoning path and spread coverage across the material.
+- For multiple choice, write one clearly best answer and three plausible distractors based on likely student mistakes. Do not use joke answers, "all/none of the above," or clues from option length.
+- Vary the correct option position across the quiz. Do not make the answer obvious by repeating words from the prompt.
+- Scenarios and problems must contain enough information to solve from the supplied material; never invent a required fact.
+- Prefer these angles for this quiz: ${focus}.
 ${asked.length ? `Do not repeat these:\n${asked.map((p) => `- ${p}`).join("\n").slice(0, 1500)}` : ""}
 
 MATERIAL:

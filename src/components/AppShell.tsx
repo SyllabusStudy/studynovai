@@ -75,7 +75,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background">
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
         <BrandBlock />
         <NavList pathname={pathname} />
         <SidebarFooter />
@@ -89,9 +89,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         </SheetContent>
       </Sheet>
 
-      <div className="lg:pl-64">
+      <div className="lg:pl-56">
         <TopBar onMenu={() => setMobileOpen(true)} onSearch={() => setSearchOpen(true)} />
-        <main className="mx-auto w-full max-w-6xl px-4 pb-28 pt-6 sm:px-6 lg:pb-14">{children}</main>
+        <main className="magazine-canvas mx-auto w-full max-w-[90rem] px-4 pb-28 pt-7 sm:px-8 lg:pb-16 lg:pt-10 xl:px-12">{children}</main>
       </div>
 
       <nav
@@ -134,13 +134,13 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 function BrandBlock() {
   return (
-    <div className="flex h-16 items-center gap-2.5 border-b border-sidebar-border px-5">
-      <span className="flex size-9 items-center justify-center rounded-2xl bg-sidebar-primary text-sidebar-primary-foreground shadow-card">
+    <div className="flex h-20 items-center gap-3 border-b border-sidebar-border px-4">
+      <span className="flex size-9 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shadow-card">
         <Sparkles className="size-5" />
       </span>
       <span className="leading-tight">
-        <span className="block font-display text-sm font-extrabold tracking-tight">StudyMate AI</span>
-        <span className="block text-[11px] text-sidebar-foreground/60">Study smarter, stress less</span>
+        <span className="block font-display text-sm font-extrabold">StudyMate AI</span>
+        <span className="block text-[10px] font-bold uppercase text-sidebar-foreground/55">Campus edition</span>
       </span>
     </div>
   );
@@ -159,8 +159,9 @@ function NavList({ pathname, onNavigate }: { pathname: string; onNavigate?: () =
     ? [...NAV, { to: "/admin", label: "Owner stats", icon: ShieldCheck } as const]
     : NAV;
   return (
-    <nav className="flex-1 overflow-y-auto p-3 scroll-slim">
-      <ul className="space-y-1">
+    <nav className="flex-1 overflow-y-auto px-3 py-5 scroll-slim">
+      <p className="mb-3 px-3 text-[10px] font-extrabold uppercase text-sidebar-foreground/45">Your desk</p>
+      <ul className="space-y-0.5">
         {items.map((item) => {
 
           const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
@@ -170,7 +171,7 @@ function NavList({ pathname, onNavigate }: { pathname: string; onNavigate?: () =
                 to={item.to}
                 onClick={onNavigate}
                 className={cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-all",
                   active
                     ? "bg-sidebar-primary/15 text-sidebar-primary shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--color-sidebar-primary),transparent_70%)]"
                     : "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
@@ -206,7 +207,7 @@ function TopBar({ onMenu, onSearch }: { onMenu: () => void; onSearch: () => void
   const initials = (profile?.name ?? user?.email ?? "S").slice(0, 1).toUpperCase();
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/85 px-4 backdrop-blur sm:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/90 px-4 backdrop-blur sm:px-8 xl:px-12">
       <Button
         variant="ghost"
         size="icon"
@@ -217,13 +218,15 @@ function TopBar({ onMenu, onSearch }: { onMenu: () => void; onSearch: () => void
         <Menu className="size-5" />
       </Button>
 
-      <button
+      <Button
+        variant="outline"
         onClick={onSearch}
-        className="flex h-10 min-w-0 flex-1 max-w-sm items-center gap-2 rounded-full border border-input bg-card px-4 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+        className="h-10 min-w-0 flex-1 max-w-md justify-start gap-2 rounded-lg bg-card px-3 text-sm font-normal text-muted-foreground shadow-none hover:border-primary/50 hover:bg-card hover:text-foreground"
       >
         <Search className="size-4 shrink-0" />
         <span className="truncate">Search classes, notes, deadlines…</span>
-      </button>
+        <span className="ml-auto hidden rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-bold sm:inline">⌘ K</span>
+      </Button>
 
       <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1">
         <NotificationBell />
