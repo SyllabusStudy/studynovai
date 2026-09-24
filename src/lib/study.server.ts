@@ -1198,6 +1198,35 @@ export type AiCheckResult = {
   sections: { excerpt: string; label: "ai" | "human" | "mixed"; reason: string }[];
 };
 
+const AI_PHRASES = [
+  "delve", "moreover", "furthermore", "in conclusion", "it is important to note", "additionally",
+  "overall,", "in today's", "plays a crucial role", "a testament to", "tapestry", "navigate the",
+  "landscape of", "foster", "underscore", "pivotal", "multifaceted", "seamless", "leverage",
+  "it's worth noting", "in summary", "ultimately,", "embark", "realm", "vital role", "showcase",
+];
+
+/** Free, local writing-pattern score (0-100, higher = more AI-like). No AI call. */
+function heuristicAiScore(text: string) {
+  const lower = text.toLowerCase();
+  const words = lower.match(/[a-z']+/g) ?? [];
+  if (words.length < 40) return null;
+  const sentences = text.split(/(?<=[.!?])\s+/).filter((x) => x.trim().split(/\s+/).length > 2);
+  const lens = sentences.map((x) => x.split(/\s+/).length);
+  const mean = lens.reduce((a, b) => a + b, 0) / Math.max(1, lens.length);
+  const sd = Math.sqrt(lens.reduce((a, b) => a + (b - mean) ** 2, 0) / Math.max(1, lens.length));
+  const burst = mean ? sd / mean : 0; // humans vary sentence length more
+  const phraseHits = AI_PHRASES.reduce((n, ph) => n + (lower.split(ph).length - 1), 0);
+  const phraseRate = (phraseHits / words.length) * 1000;
+  const personal = (lower.match(/\b(i|me|my|i'm|i've|lol|idk|kinda|gonna)\b/g) ?? []).length / words.length;
+  const informal = (text.match(/\s{2,}|\.\.\.|!!|\?\?| i /g) ?? []).length;
+  let score = 50;
+  score += burst < 0.35 ? 18 : burst < 0.5 ? 6 : -14;
+  score += Math.min(25, phraseRate * 4);
+  score -= Math.min(22, personal * 400);
+  score -= Math.min(10, informal * 3);
+  return Math.max(3, Math.min(97, Math.round(score)));
+}
+
 export async function runAiTextCheck(input: { text: string }): Promise<AiCheckResult> {
   // One short call on the free model; text is capped to keep usage low.
   const text = input.text.slice(0, 8000);
@@ -1206,14 +1235,17 @@ export async function runAiTextCheck(input: { text: string }): Promise<AiCheckRe
       {
         role: "system",
         content:
-          'You estimate whether text was written by AI or a human. Look at phrasing patterns: uniform sentence length, generic transitions ("Moreover", "In conclusion", "delve"), hedging, lack of personal detail, list-like structure vs. typos, personal voice, uneven rhythm, specific experiences. Split the text into up to 8 passages. Reply with json only: {"aiPercent":number 0-100,"verdict":string (one sentence),"sections":[{"excerpt":string (first ~12 words of the passage, copied exactly),"label":"ai"|"human"|"mixed","reason":string (one short sentence)}]}. Be honest that this is an estimate.',
+          'You estimate whether text was written by AI or a human. Look at phrasing patterns: uniform sentence length, generic transitions ("Moreover", "In conclusion", "delve"), hedging, lack of personal detail, list-like structure vs. typos, personal voice, uneven rhythm, specific experiences. Split the text into up to 8 passages. Reply with json only: {"aiPercent":number 0-100,"verdict":string (one sentence),"sections":[{"excerpt":string (first ~12 words of the passage, copied exactly),"label":"ai"|"human"|"mixed","reason":string (one short sentence)}]}. Judge carefully and consistently: short or casual human writing should score low; polished generic essay text higher. Never guess 50 by default. Be honest that this is an estimate.',
       },
       { role: "user", content: text },
     ],
-    { temperature: 0.2, maxTokens: 900 },
+    { temperature: 0, maxTokens: 900 },
   );
   const parsed = parseJsonBlock<Partial<AiCheckResult>>(raw);
-  const ai = Math.max(0, Math.min(100, Math.round(Number(parsed.aiPercent) || 0)));
+  const modelAi = Math.max(0, Math.min(100, Math.round(Number(parsed.aiPercent) || 0)));
+  const local = heuristicAiScore(text);
+  // Blend the AI judgement with the local pattern scan for steadier, repeatable scores.
+  const ai = local === null ? modelAi : Math.round(modelAi * 0.65 + local * 0.35);
   return {
     aiPercent: ai,
     humanPercent: 100 - ai,
