@@ -821,7 +821,9 @@ ${source.slice(0, 14000)}`,
         options = [...options];
         for (let j = options.length - 1; j > 0; j--) {
           const k = Math.floor(Math.random() * (j + 1));
-          [options[j], options[k]] = [options[k], options[j]];
+          const tmp = options[j]!;
+          options[j] = options[k]!;
+          options[k] = tmp;
         }
       }
       return { ...q, id: q.id || `q${i + 1}`, options };
