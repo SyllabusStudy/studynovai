@@ -815,7 +815,19 @@ ${source.slice(0, 14000)}`,
   const questions = (parsed.questions ?? [])
     .filter((q) => q?.prompt && q?.answer)
     .slice(0, input.count)
-    .map((q, i) => ({ ...q, id: q.id || `q${i + 1}`, options: q.options ?? [] }));
+    .map((q, i) => {
+      let options = q.options ?? [];
+      if (q.type === "multiple_choice" && options.length > 1) {
+        options = [...options];
+        for (let j = options.length - 1; j > 0; j--) {
+          const k = Math.floor(Math.random() * (j + 1));
+          const tmp = options[j]!;
+          options[j] = options[k]!;
+          options[k] = tmp;
+        }
+      }
+      return { ...q, id: q.id || `q${i + 1}`, options };
+    });
   if (!questions.length) throw new Error("The AI could not build a quiz from this material.");
 
   const { data, error } = await supabase
