@@ -18,7 +18,7 @@ describe("AI request retries", () => {
     await vi.runAllTimersAsync();
     expect((await pending).ok).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(fetchMock.mock.calls.map((call) => call[2])).toEqual([undefined, undefined]);
+    expect(fetchMock.mock.calls.map((call: unknown[]) => call[2])).toEqual([undefined, undefined]);
     expect(fetchMock.mock.calls[0]?.[1]).toBe(init);
     expect(fetchMock.mock.calls[1]?.[1]).toBe(init);
   });
@@ -39,7 +39,9 @@ describe("AI request retries", () => {
     const pending = fetchAiWithRetry("google", "https://example.test/ai", {});
     const caught = pending.catch((error: Error) => error);
     await vi.runAllTimersAsync();
-    expect((await caught).message).toBe(AI_CONNECTION_MESSAGE);
+    const result = await caught;
+    expect(result).toBeInstanceOf(Error);
+    if (result instanceof Error) expect(result.message).toBe(AI_CONNECTION_MESSAGE);
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
