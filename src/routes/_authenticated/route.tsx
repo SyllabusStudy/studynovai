@@ -6,6 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { OnboardingTour } from "@/components/OnboardingTour";
 import { HelpButton } from "@/components/HelpButton";
 import { InstallCard } from "@/components/InstallAppButton";
+import { checkInDevice } from "@/lib/devices";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
@@ -18,6 +19,10 @@ function AuthenticatedLayout() {
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
   }, [loading, user, navigate]);
+
+  useEffect(() => {
+    if (user) void checkInDevice(user.id).catch(() => {});
+  }, [user?.id]);
 
   if (loading || !user) {
     return (
