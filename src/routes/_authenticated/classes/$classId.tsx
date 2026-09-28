@@ -12,6 +12,7 @@ import { TutorChat } from "@/components/TutorChat";
 import { ClassTasks } from "@/components/ClassTasks";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/lib/auth";
+import { MATERIAL_CATEGORIES } from "@/lib/constants";
 import {
   formatDate,
   relativeDay,
@@ -113,10 +114,44 @@ function ClassDetail() {
           <ClassTasks userId={user?.id} classId={classId} />
         </TabsContent>
 
-        <TabsContent value="materials" className="mt-5 space-y-4">
-          <DocumentUploader classId={classId} syllabusOnly title="Upload Syllabus" />
-          <DocumentUploader classId={classId} />
-          <DocumentList documents={documents} />
+        <TabsContent value="materials" className="mt-5 space-y-8">
+          {MATERIAL_CATEGORIES.map((cat) => {
+            const docs = documents.filter(
+              (d) => (d.category ?? (d.is_syllabus ? "syllabus" : "notes")) === cat.key,
+            );
+            return (
+              <section key={cat.key} className="space-y-3">
+                <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
+                  {cat.emoji} {cat.label} <span className="font-medium">({docs.length})</span>
+                </h2>
+                {cat.key === "syllabus" ? (
+                  <DocumentUploader
+                    classId={classId}
+                    syllabusOnly
+                    title={docs.length ? "Upload another syllabus" : "Upload syllabus"}
+                    hint={docs.length ? "Adding an updated syllabus keeps your original one. New dates are added to your calendar." : undefined}
+                  />
+                ) : (
+                  <DocumentUploader
+                    classId={classId}
+                    category={cat.key}
+                    title={
+                      cat.key === "notes"
+                        ? "Upload notes, slides or study guides"
+                        : cat.key === "assignment"
+                          ? "Upload assignment files"
+                          : "Upload anything else"
+                    }
+                    hint="PDF, Word, PowerPoint, Excel, text, CSV or images. The AI tutor, flashcards and quizzes use these."
+                  />
+                )}
+                {cat.key === "assignment" ? (
+                  <Button asChild size="sm" variant="outline"><Link to="/assignments">Add assignment</Link></Button>
+                ) : null}
+                {docs.length ? <DocumentList documents={docs} showActions /> : null}
+              </section>
+            );
+          })}
         </TabsContent>
 
         <TabsContent value="grades" className="mt-5">
