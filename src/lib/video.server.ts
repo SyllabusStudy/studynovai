@@ -381,7 +381,24 @@ export async function runVideoImport(
   }
 
   if (!notes.trim()) throw new Error("The notes came back empty. Please try again.");
-  if (!title) title = "Video notes";
+  let thumbnail: string | null = null;
+  if (url) {
+    const ytId = youtubeId(url);
+    if (ytId) thumbnail = `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg`;
+    if (!title || /^video notes$/i.test(title)) {
+      try {
+        const r = await fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(url)}`);
+        if (r.ok) {
+          const j = (await r.json()) as { title?: string; thumbnail_url?: string };
+          if (j.title) title = j.title;
+          if (j.thumbnail_url) thumbnail = j.thumbnail_url;
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+  if (!title || /^video notes$/i.test(title)) title = "Untitled lecture video";
 
   const { data: row, error } = await supabase
     .from("video_notes")
@@ -391,6 +408,7 @@ export async function runVideoImport(
       title: title.slice(0, 200),
       source_type: sourceType,
       source_url: url,
+      thumbnail_url: thumbnail,
       transcript: transcript ? transcript.slice(0, 200_000) : null,
       notes,
       summary: summaryOf(notes),
