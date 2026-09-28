@@ -1,3 +1,5 @@
+import { MoreOptions } from "@/components/MoreOptions";
+import { cn } from "@/lib/utils";
 import { recordStudyActivity } from "@/lib/activity";
 import { createFileRoute } from "@tanstack/react-router";
 import { ClassActionBar } from "@/components/ClassActionBar";
@@ -8,7 +10,6 @@ import { Camera, ImageUp, Loader2, RotateCcw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { snapHelp } from "@/lib/ai.functions";
 import { PageHeader } from "@/components/PageHeader";
-import { Hint } from "@/components/Hint";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Markdown } from "@/components/Markdown";
@@ -119,125 +120,108 @@ function SnapQuickPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Stuck on a problem?"
-        description="Snap your homework. Get step-by-step help."
-      />
+      <PageHeader title="Stuck on a problem?" description="Snap your homework. Get step-by-step help." />
       <ClassActionBar />
 
-      <Hint id="snapquick-camera" point="down" className="mb-4">
-        Take or upload a photo of your work, then hit scan — every question gets identified and
-        explained on the right.
-      </Hint>
-
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,22rem)_1fr]">
-        <div className="space-y-4">
-          <div className="surface-card overflow-hidden">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,24rem)_1fr]">
+        <div className="space-y-3">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => (image ? galleryRef.current?.click() : cameraRef.current?.click())}
+            className="surface-card block w-full overflow-hidden text-left transition-colors hover:border-primary/60"
+            aria-label={image ? "Choose a different photo" : "Take a picture of your homework"}
+          >
             {image ? (
-              <img src={image} alt="Photo of your work being scanned" className="w-full object-contain" />
+              <img src={image} alt="Photo of your work being scanned" className="max-h-80 w-full object-contain" />
             ) : (
-              <div className="flex aspect-[3/4] flex-col items-center justify-center gap-3 bg-secondary/40 p-6 text-center">
-                <Camera className="size-8 text-primary" />
-                <p className="text-sm font-semibold">Snap your work</p>
-                <p className="text-xs text-muted-foreground">
-                  Use your phone camera, or pick a screenshot from this device.
-                </p>
+              <div className="flex aspect-[4/3] flex-col items-center justify-center gap-3 bg-gradient-to-b from-primary/10 to-transparent p-6 text-center">
+                <span className="flex size-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-card">
+                  <Camera className="size-8" />
+                </span>
+                <p className="font-display text-lg font-bold">Tap to snap your work</p>
+                <p className="text-xs text-muted-foreground">One photo · every question explained</p>
               </div>
             )}
-          </div>
+          </button>
 
-          <div className="flex flex-wrap gap-2">
-            <Button className="flex-1 gap-1.5" disabled={busy} onClick={() => cameraRef.current?.click()}>
-              <Camera className="size-4" /> Take a picture
+          <div className="grid grid-cols-2 gap-2">
+            <Button size="lg" className="gap-1.5" disabled={busy} onClick={() => cameraRef.current?.click()}>
+              <Camera className="size-4" /> Camera
             </Button>
-            <Button
-              variant="outline"
-              className="flex-1 gap-1.5"
-              disabled={busy}
-              onClick={() => galleryRef.current?.click()}
-            >
-              <ImageUp className="size-4" /> Upload image
+            <Button size="lg" variant="outline" className="gap-1.5" disabled={busy} onClick={() => galleryRef.current?.click()}>
+              <ImageUp className="size-4" /> Upload
             </Button>
           </div>
 
-          {image ? (
-          <div className="space-y-2">
-            <Select value={classId} onValueChange={setClassId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Which class?" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All my classes</SelectItem>
-                {classes.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {classLabel(c)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input
-              placeholder="Optional: what are you stuck on?"
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-            />
-            {image ? (
-              <Button
-                variant="secondary"
-                className="w-full gap-1.5"
-                disabled={busy}
-                onClick={() => void scan(image)}
-              >
-                {busy ? <Loader2 className="size-4 animate-spin" /> : <RotateCcw className="size-4" />}
-                Scan again
-              </Button>
-            ) : null}
-          </div>
-          ) : null}
+          <MoreOptions summary={classId === "all" ? "All classes" : classes.find((c) => c.id === classId)?.class_name}>
+            <div className="space-y-2">
+              <Select value={classId} onValueChange={setClassId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Which class?" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All my classes</SelectItem>
+                  {classes.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {classLabel(c)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                placeholder="What are you stuck on? (optional)"
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+              />
+              {image ? (
+                <Button variant="secondary" className="w-full gap-1.5" disabled={busy} onClick={() => void scan(image)}>
+                  {busy ? <Loader2 className="size-4 animate-spin" /> : <RotateCcw className="size-4" />}
+                  Scan again
+                </Button>
+              ) : null}
+            </div>
+          </MoreOptions>
 
-          <input
-            ref={cameraRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="hidden"
-            onChange={(e) => void pick(e.target.files)}
-          />
-          <input
-            ref={galleryRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => void pick(e.target.files)}
-          />
+          <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => void pick(e.target.files)} />
+          <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={(e) => void pick(e.target.files)} />
         </div>
 
-        <div className="surface-card min-h-48 p-5">
+        <div className={cn("surface-card min-h-48 p-4 sm:p-6", !busy && !answer && "hidden lg:block")}>
           {busy ? (
-            <p className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="size-4 animate-spin text-primary" /> Reading your photo…
-            </p>
+            <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+              <Loader2 className="size-7 animate-spin text-primary" />
+              <p className="text-sm font-semibold">Reading your photo…</p>
+              <p className="text-xs text-muted-foreground">Finding each question and working it out</p>
+            </div>
           ) : answer ? (
             <div className="space-y-4">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary">
+                <Sparkles className="size-4" /> Your walkthrough
+              </div>
               <Markdown content={answer} />
               {image ? (
-                <div className="flex flex-wrap gap-2 border-t border-border pt-4">
-                  <Button size="sm" variant="outline" onClick={() => void scan(image, "Explain this differently, using a simpler approach and an everyday analogy.")}>
+                <div className="grid gap-2 border-t border-border pt-4 sm:flex sm:flex-wrap">
+                  <Button variant="outline" onClick={() => void scan(image, "Explain this differently, using a simpler approach and an everyday analogy.")}>
                     Explain This Differently
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => void scan(image, "Give me one similar practice problem with different numbers, then its worked solution hidden under a 'Solution' heading.")}>
+                  <Button variant="outline" onClick={() => void scan(image, "Give me one similar practice problem with different numbers, then its worked solution hidden under a 'Solution' heading.")}>
                     Give Me a Similar Problem
                   </Button>
                 </div>
               ) : null}
             </div>
           ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-2 py-10 text-center">
-              <Sparkles className="size-6 text-primary" />
-              <p className="text-sm font-semibold">Your walkthrough shows up here</p>
-              <p className="max-w-sm text-xs text-muted-foreground">
-                SnapQuick identifies every problem in the photo, solves it step by step, and tells you what to
-                review.
-              </p>
+            <div className="flex h-full flex-col items-center justify-center gap-3 py-12 text-center">
+              <span className="flex size-12 items-center justify-center rounded-2xl bg-primary/12 text-primary">
+                <Sparkles className="size-6" />
+              </span>
+              <p className="font-display text-base font-bold">Your walkthrough shows up here</p>
+              <ol className="space-y-1 text-xs text-muted-foreground">
+                <li>1. Snap or upload a photo</li>
+                <li>2. We find every question</li>
+                <li>3. You get steps + the answer</li>
+              </ol>
             </div>
           )}
         </div>

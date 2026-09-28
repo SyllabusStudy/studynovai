@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+import { MoreOptions } from "@/components/MoreOptions";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ClassActionBar } from "@/components/ClassActionBar";
 import { useClassPicker } from "@/lib/active-class";
@@ -102,146 +104,179 @@ function QuizzesPage() {
       <PageHeader title="Quizzes" description="Test yourself with questions from your own notes." />
       <ClassActionBar hide={["quiz"]} />
 
-      <Hint id="quizzes-source" point="down" className="mb-4">
-        Select a class and the exact chapters or notes you want quizzed on — StudyNova writes questions only from your own uploads.
+      <Hint id="quizzes-source" point="down" className="mb-4 hidden sm:flex">
+        Pick a class and hit Make quiz. Choose chapters and question types under More options.
       </Hint>
 
-      <div className="surface-card grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="space-y-1.5">
-          <Label>Class</Label>
-          <Select
-            value={classId}
-            onValueChange={(v) => {
-              setClassId(v);
-              setDocumentIds([]);
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Pick a class" />
-            </SelectTrigger>
-            <SelectContent>
-              {classes.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {classLabel(c)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1.5">
-          <Label>Source material</Label>
-          {documents.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
-              {classId ? "No uploads for this class yet." : "Pick a class to choose materials."}
-            </p>
-          ) : (
-            <div className="max-h-32 space-y-1.5 overflow-y-auto rounded-xl border border-border/60 p-2.5">
-              <p className="text-xs text-muted-foreground">
-                {documentIds.length === 0
-                  ? "All materials"
-                  : `${documentIds.length} selected`}
-              </p>
-              {documents.map((d) => (
-                <label key={d.id} className="flex items-start gap-2 text-sm">
-                  <Checkbox
-                    checked={documentIds.includes(d.id)}
-                    onCheckedChange={(v) =>
-                      setDocumentIds((prev) =>
-                        v === true ? [...prev, d.id] : prev.filter((p) => p !== d.id),
-                      )
-                    }
-                  />
-                  <span className="break-words leading-tight">{d.file_name}</span>
-                </label>
-              ))}
-            </div>
-          )}
+      <section className="surface-card space-y-4 p-4 sm:p-6">
+        <div className="flex items-center gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+            <FileQuestion className="size-5" />
+          </span>
+          <div className="min-w-0">
+            <h2 className="font-display text-lg font-bold">New quiz</h2>
+            <p className="text-xs text-muted-foreground">Questions come only from your uploads</p>
+          </div>
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="qcount">Questions</Label>
-          <Input
-            id="qcount"
-            type="number"
-            min={5}
-            max={50}
-            value={count}
-            onChange={(e) => setCount(Number(e.target.value))}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Difficulty</Label>
-          <Select value={difficulty} onValueChange={setDifficulty}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {DIFFICULTIES.map((d) => (
-                <SelectItem key={d} value={d}>
-                  {d}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <p className="text-xs leading-relaxed text-muted-foreground">{DIFFICULTY_HINTS[difficulty]}</p>
-        </div>
-        <div className="flex flex-wrap gap-4 sm:col-span-2 lg:col-span-4">
-          {TYPES.map((t) => (
-            <label key={t.key} className="flex items-center gap-2 text-sm">
-              <Checkbox
-                checked={types.includes(t.key)}
-                onCheckedChange={(v) =>
-                  setTypes((prev) => (v === true ? [...prev, t.key] : prev.filter((p) => p !== t.key)))
-                }
-              />
-              {t.label}
-            </label>
-          ))}
-        </div>
-        <div className="sm:col-span-2 lg:col-span-4">
-          <Button onClick={generate} disabled={busy} className="gap-1.5">
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+          <div className="space-y-1.5">
+            <Label>Class</Label>
+            <Select
+              value={classId}
+              onValueChange={(v) => {
+                setClassId(v);
+                setDocumentIds([]);
+              }}
+            >
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Pick a class" />
+              </SelectTrigger>
+              <SelectContent>
+                {classes.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {classLabel(c)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={generate} disabled={busy} size="lg" className="h-11 w-full gap-1.5 sm:w-auto">
             {busy ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-            Generate quiz
+            {busy ? "Writing your quiz…" : "Make quiz"}
           </Button>
         </div>
-      </div>
 
-      <div className="mt-6">
-        {isLoading ? (
-          <Loader2 className="size-5 animate-spin text-primary" />
-        ) : quizzes.length === 0 ? (
-          <EmptyState
-            icon={FileQuestion}
-            title="No quizzes yet"
-            description="Pick a class and generate your first practice quiz."
-          />
-        ) : (
-          <ul className="space-y-2">
-            {quizzes.map((q) => (
-              <li key={q.id} className="surface-card flex items-center gap-3 p-4">
-                <FileQuestion className="size-4 text-primary" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">{q.title}</p>
+        <div>
+          <p className="mb-1.5 text-sm font-medium">Questions</p>
+          <div className="flex flex-wrap gap-2">
+            {[5, 10, 20, 30, 50].map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setCount(n)}
+                aria-pressed={count === n}
+                className={cn(
+                  "min-w-12 rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors",
+                  count === n ? "border-primary bg-primary text-primary-foreground" : "border-border hover:border-primary/60",
+                )}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <MoreOptions
+          summary={`${difficulty} · ${documentIds.length ? `${documentIds.length} files` : "all materials"} · ${types.length} types`}
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Source material</Label>
+              {documents.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  {classId ? "No uploads for this class yet." : "Pick a class to choose materials."}
+                </p>
+              ) : (
+                <div className="max-h-40 space-y-1.5 overflow-y-auto rounded-xl border border-border/60 p-2.5">
                   <p className="text-xs text-muted-foreground">
+                    {documentIds.length === 0 ? "All materials" : `${documentIds.length} selected`}
+                  </p>
+                  {documents.map((d) => (
+                    <label key={d.id} className="flex items-start gap-2 text-sm">
+                      <Checkbox
+                        checked={documentIds.includes(d.id)}
+                        onCheckedChange={(v) =>
+                          setDocumentIds((prev) => (v === true ? [...prev, d.id] : prev.filter((p) => p !== d.id)))
+                        }
+                      />
+                      <span className="break-words leading-tight">{d.file_name}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label>Difficulty</Label>
+                <Select value={difficulty} onValueChange={setDifficulty}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DIFFICULTIES.map((d) => (
+                      <SelectItem key={d} value={d}>
+                        {d}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs leading-relaxed text-muted-foreground">{DIFFICULTY_HINTS[difficulty]}</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="qcount">Exact number (5–50)</Label>
+                <Input id="qcount" type="number" min={5} max={50} value={count} onChange={(e) => setCount(Number(e.target.value))} />
+              </div>
+              <div className="flex flex-wrap gap-4">
+                {TYPES.map((t) => (
+                  <label key={t.key} className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={types.includes(t.key)}
+                      onCheckedChange={(v) =>
+                        setTypes((prev) => (v === true ? [...prev, t.key] : prev.filter((p) => p !== t.key)))
+                      }
+                    />
+                    {t.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        </MoreOptions>
+      </section>
+
+      <div className="mt-8 mb-3 flex items-baseline justify-between">
+        <h2 className="font-display text-lg font-bold">Your quizzes</h2>
+        {quizzes.length ? <span className="text-xs text-muted-foreground">{quizzes.length} total</span> : null}
+      </div>
+      {isLoading ? (
+        <Loader2 className="size-5 animate-spin text-primary" />
+      ) : quizzes.length === 0 ? (
+        <EmptyState icon={FileQuestion} title="No quizzes yet" description="Pick a class above and tap Make quiz." />
+      ) : (
+        <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {quizzes.map((q) => (
+            <li key={q.id} className="surface-card flex flex-col gap-3 p-4">
+              <div className="flex items-start gap-3">
+                <span
+                  className={cn(
+                    "flex size-11 shrink-0 items-center justify-center rounded-xl text-sm font-bold",
+                    q.score !== null ? "bg-primary/15 text-primary" : "bg-secondary text-muted-foreground",
+                  )}
+                >
+                  {q.score !== null ? `${q.score}%` : <FileQuestion className="size-4" />}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="line-clamp-2 text-sm font-semibold">{q.title}</p>
+                  <p className="text-xs capitalize text-muted-foreground">
                     {q.difficulty} · {formatDate(q.created_at.slice(0, 10))}
-                    {q.score !== null ? ` · scored ${q.score}%` : ""}
                   </p>
                 </div>
-                <Button asChild size="sm" variant="outline">
-                  <Link to="/quizzes/$quizId" params={{ quizId: q.id }}>
-                    {q.completed_at ? "Review" : "Start"}
-                  </Link>
-                </Button>
                 <DeleteButton
                   label="quiz"
                   description={`"${q.title}" and your answers for it will be removed.`}
                   onDelete={() => deleteQuiz(q.id)}
                 />
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+              </div>
+              <Button asChild size="sm" variant={q.completed_at ? "outline" : "default"} className="w-full">
+                <Link to="/quizzes/$quizId" params={{ quizId: q.id }}>
+                  {q.completed_at ? "Review answers" : "Start quiz"}
+                </Link>
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
