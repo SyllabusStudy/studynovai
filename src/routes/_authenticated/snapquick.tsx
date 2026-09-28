@@ -83,6 +83,7 @@ const MODES: { id: SnapMode; label: string; hint: string }[] = [
 
 const FOLLOW_UPS: { label: string; mode: SnapMode; text: string }[] = [
   { label: "Explain it easier", mode: "learn", text: "Explain it easier, like I'm a beginner." },
+  { label: "Show more steps", mode: "learn", text: "Show more steps — redo the solution with every small step written out." },
   { label: "Another method", mode: "method", text: "Show me another method for this problem." },
   { label: "Give me a hint", mode: "tutor", text: "Don't give me the answer yet — give me a hint for the next step." },
   { label: "Similar problem", mode: "practice", text: "Give me a similar problem to practice." },
