@@ -9,7 +9,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Camera, ImageUp, Loader2, Plus, Send, Sigma } from "lucide-react";
 import { toast } from "sonner";
 import { snapTutor } from "@/lib/ai.functions";
-import type { SnapMode } from "@/lib/study.server";
+type SnapMode = "learn" | "quick" | "tutor" | "practice" | "check" | "method";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
