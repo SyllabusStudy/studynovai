@@ -146,7 +146,15 @@ function SnapQuickPage() {
     const file = files?.[0];
     if (!file) return;
     try {
-      const url = await toDataUrl(file);
+      let url: string;
+      if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+        const { renderPdfPages } = await import("@/lib/pdf-render");
+        const pages = await renderPdfPages(file, 1);
+        if (!pages.length) throw new Error("That PDF has no readable pages.");
+        url = pages[0].dataUrl;
+      } else {
+        url = await toDataUrl(file);
+      }
       setImage(url);
       const prompt =
         mode === "check"
@@ -154,7 +162,7 @@ function SnapQuickPage() {
           : input.trim() || "Read the problem in this photo and teach me how to solve it.";
       void send(prompt, { img: url, fresh: true });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not read that photo");
+      toast.error(e instanceof Error ? e.message : "Could not read that file");
     }
   }
 
@@ -236,7 +244,7 @@ function SnapQuickPage() {
           </MoreOptions>
 
           <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { void pick(e.target.files); e.target.value = ""; }} />
-          <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={(e) => { void pick(e.target.files); e.target.value = ""; }} />
+          <input ref={galleryRef} type="file" accept="image/*,application/pdf,.pdf" className="hidden" onChange={(e) => { void pick(e.target.files); e.target.value = ""; }} />
         </div>
 
         <div className="surface-card flex min-h-[28rem] flex-col p-3 sm:p-5">
