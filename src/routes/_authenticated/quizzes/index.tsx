@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { ClassActionBar } from "@/components/ClassActionBar";
+import { useClassPicker } from "@/lib/active-class";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -55,7 +57,7 @@ function QuizzesPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data: classes = [] } = useClasses(user?.id);
-  const [classId, setClassId] = useState("");
+  const [classId, setClassId] = useClassPicker("");
   const { data: documents = [] } = useDocuments(user?.id, classId || undefined);
   const { data: quizzes = [], isLoading } = useQuizzes(user?.id);
   const [documentIds, setDocumentIds] = useState<string[]>([]);
@@ -97,7 +99,8 @@ function QuizzesPage() {
 
   return (
     <div>
-      <PageHeader title="Quizzes" description="Practice with questions written from your own material." />
+      <PageHeader title="Quizzes" description="Test yourself with questions from your own notes." />
+      <ClassActionBar hide={["quiz"]} />
 
       <Hint id="quizzes-source" point="down" className="mb-4">
         Select a class and the exact chapters or notes you want quizzed on — StudyNova writes questions only from your own uploads.

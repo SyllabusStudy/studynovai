@@ -1,4 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { ClassActionBar } from "@/components/ClassActionBar";
+import { useClassPicker } from "@/lib/active-class";
 import { useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -63,7 +65,7 @@ function QuickVideoPage() {
   const { data: notes = [], isLoading } = useVideoNotes(user?.id);
   const fileRef = useRef<HTMLInputElement>(null);
   const [url, setUrl] = useState("");
-  const [classId, setClassId] = useState("none");
+  const [classId, setClassId] = useClassPicker("none");
   const [busy, setBusy] = useState(false);
   const run = useServerFn(importVideo);
 
@@ -114,8 +116,9 @@ function QuickVideoPage() {
     <div>
       <PageHeader
         title="QuickVideo"
-        description="Drop in a YouTube link or a lecture recording. StudyNova watches it, writes your notes, then answers anything you ask about it."
+        description="Paste a video link and get study notes in seconds."
       />
+      <ClassActionBar />
 
       <Hint id="quickvideo-link" point="down" className="mb-4">
         Paste a YouTube lecture link here — StudyNova writes the notes, then you can ask it

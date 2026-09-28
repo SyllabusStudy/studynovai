@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ClassActionBar } from "@/components/ClassActionBar";
+import { useClassPicker } from "@/lib/active-class";
 import { useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Camera, ImageUp, Loader2, RotateCcw, Sparkles } from "lucide-react";
@@ -73,7 +75,7 @@ function SnapQuickPage() {
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const [image, setImage] = useState<string | null>(null);
-  const [classId, setClassId] = useState("all");
+  const [classId, setClassId] = useClassPicker("all");
   const [question, setQuestion] = useState("");
   const [busy, setBusy] = useState(false);
   const [answer, setAnswer] = useState<string | null>(null);
@@ -119,6 +121,7 @@ function SnapQuickPage() {
         title="Stuck on a problem?"
         description="Take a photo of your homework and StudyNova will walk you through it step by step."
       />
+      <ClassActionBar />
 
       <Hint id="snapquick-camera" point="down" className="mb-4">
         Take or upload a photo of your work, then hit scan — every question gets identified and

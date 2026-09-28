@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ClassActionBar } from "@/components/ClassActionBar";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChartColumn, Loader2, Plus } from "lucide-react";
@@ -56,6 +57,7 @@ function GradesPage() {
         description="Add your syllabus weights, log scores, and see where you stand."
         actions={<NewCategoryDialog />}
       />
+      <ClassActionBar />
 
       <Hint id="grades-weights" point="down" className="mb-4">
         Add the categories from your syllabus — like Exams 40%, Homework 30% — then mark assignment scores to see your live weighted grade.

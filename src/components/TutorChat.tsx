@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useClassPicker } from "@/lib/active-class";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { Bot, Loader2, SendHorizonal, Sparkles, User } from "lucide-react";
@@ -47,7 +48,8 @@ export function TutorChat({
 
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [classId, setClassId] = useState<string>(fixedClassId ?? "all");
+  const [pickedClassId, setClassId] = useClassPicker("all");
+  const classId = fixedClassId ?? pickedClassId;
   const [mode, setMode] = useState<string>("explain");
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);

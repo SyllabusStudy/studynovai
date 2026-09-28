@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ClassActionBar } from "@/components/ClassActionBar";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { CheckSquare, Loader2, Plus } from "lucide-react";
@@ -76,6 +77,7 @@ function AssignmentsPage() {
         description="Everything you owe, sorted by what's due next. Attach a PDF or screenshot and AI helps you solve it."
         actions={<NewAssignmentDialog />}
       />
+      <ClassActionBar />
 
       <Hint id="assignments-ai-help" point="down" className="mb-4">
         Tap <strong>AI help</strong> on any assignment to attach a PDF or screenshot — StudyNova
