@@ -66,4 +66,18 @@ describe("AI request retries", () => {
     await expect(fetchAiWithRetry("google", "https://example.test/ai", {})).rejects.toBe(abort);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+
+  it("retries an interrupted connection sequentially, without modifying the question", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn()
+      .mockRejectedValueOnce(new TypeError("network interrupted"))
+      .mockResolvedValueOnce(new Response("answered", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const init = { method: "POST", body: JSON.stringify({ question: "preserve my work" }) };
+    const pending = fetchAiWithRetry("google", "https://example.test/ai", init);
+    await vi.runAllTimersAsync();
+    expect((await pending).ok).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[1]?.[1]).toBe(init);
+  });
 });

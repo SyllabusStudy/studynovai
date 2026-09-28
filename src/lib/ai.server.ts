@@ -205,11 +205,12 @@ async function providerError(res: Response, provider: string): Promise<Error> {
   }
   if (res.status === 401 || res.status === 403) {
     const reason = detail && detail !== "{}" ? ` ${detail}` : "";
-    return new Error(`${provider} rejected this credential.${reason} Check the selected provider and key in Settings → AI key.`);
+    return new Error(`${provider} did not allow this request.${reason} Check the selected provider and key in Settings → AI key.`);
   }
-  if (res.status === 402) return new Error(`${provider}: ${detail || "Billing or credits are required."}`);
-  if (res.status === 429) return new Error(`${provider} is rate-limiting this key. Wait a moment and try again.`);
-  return new Error(`${provider} request failed (${res.status}): ${detail}`);
+  if (res.status === 402) return new Error(FREE_LIMIT_MESSAGE);
+  if (res.status === 429 || res.status >= 500) return new Error("I’m having trouble connecting right now. Your question is saved — try again in a moment.");
+  if (res.status === 404) return new Error("The selected AI model isn't available right now. Check your AI key settings.");
+  return new Error("This question couldn't be processed. Try a shorter question or a smaller file.");
 }
 
 export async function callAI(
