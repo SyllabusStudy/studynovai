@@ -34,6 +34,8 @@ export const Route = createFileRoute("/")({
         content:
           "Upload your syllabus, get an instant semester calendar, AI flashcards and quizzes, and a tutor grounded in your own notes.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [{ rel: "canonical", href: "https://studymateaicollege.lovable.app/" }],
   }),

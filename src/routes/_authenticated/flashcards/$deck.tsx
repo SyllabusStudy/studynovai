@@ -16,6 +16,8 @@ export const Route = createFileRoute("/_authenticated/flashcards/$deck")({
       { name: "description", content: "Flip through one flashcard deck built from your own course material." },
       { property: "og:title", content: "Study a deck — StudyNova" },
       { property: "og:description", content: "Review a single AI-generated flashcard deck." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: DeckPage,

@@ -34,6 +34,8 @@ export const Route = createFileRoute("/_authenticated/flashcards/")({
       { name: "description", content: "AI-generated flashcard decks from your own chapters, notes and slides." },
       { property: "og:title", content: "Flashcards — StudyNova" },
       { property: "og:description", content: "AI flashcard decks generated from your own course materials." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: FlashcardsPage,

@@ -37,6 +37,8 @@ export const Route = createFileRoute("/_authenticated/grades")({
       { name: "description", content: "Weighted grade categories, your current grade and what you need on the final." },
       { property: "og:title", content: "Grades — StudyNova" },
       { property: "og:description", content: "Current grade, weights and final-exam projections." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: GradesPage,

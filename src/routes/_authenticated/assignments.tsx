@@ -46,6 +46,8 @@ export const Route = createFileRoute("/_authenticated/assignments")({
       { name: "description", content: "Track every assignment, its due date, priority and status." },
       { property: "og:title", content: "Assignments — StudyNova" },
       { property: "og:description", content: "Track every assignment, due date and status." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: AssignmentsPage,

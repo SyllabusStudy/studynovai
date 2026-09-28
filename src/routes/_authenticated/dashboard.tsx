@@ -40,6 +40,8 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
       { name: "description", content: "Your classes, upcoming deadlines and today's AI study plan." },
       { property: "og:title", content: "Dashboard — StudyNova" },
       { property: "og:description", content: "Upcoming deadlines and today's AI study plan." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Dashboard,
