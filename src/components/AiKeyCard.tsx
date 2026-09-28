@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { deleteAiKey, getAiKeyStatus, saveAiKey } from "@/lib/ai-keys.functions";
+import apiKeyTutorial from "@/assets/gemini-api-key-guide.mp4.asset.json";
 
 type Provider =
   | "google"
@@ -134,6 +135,25 @@ export function AiKeyCard() {
             StudyNova runs the AI on your own key, so every tutor answer, flashcard set, scan and
             video note is billed to your provider account — not to anyone else.
           </p>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div>
+          <p className="text-sm font-semibold">How to get your free Gemini API key</p>
+          <p className="text-xs text-muted-foreground">Watch this quick guide, then paste your key below.</p>
+        </div>
+        <div className="overflow-hidden rounded-lg border border-border bg-muted/30">
+          <video
+            className="aspect-video w-full"
+            controls
+            playsInline
+            preload="metadata"
+            src={apiKeyTutorial.url}
+            aria-label="Tutorial showing how to get a Gemini API key for StudyNova"
+          >
+            Your browser does not support video playback.
+          </video>
         </div>
       </div>
 

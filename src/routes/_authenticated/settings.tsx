@@ -25,6 +25,8 @@ export const Route = createFileRoute("/_authenticated/settings")({
       { name: "description", content: "Update your student profile, reminder timing and appearance." },
       { property: "og:title", content: "Settings — StudyNova" },
       { property: "og:description", content: "Profile, reminders and appearance settings." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: SettingsPage,
