@@ -6,7 +6,7 @@ import { Copy, Crown, Loader2, ScanSearch, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { checkAiText, humanizeAiText } from "@/lib/ai.functions";
 import { getBilling } from "@/lib/billing.functions";
-import type { AiCheckResult } from "@/lib/study.server";
+import type { AiCheckResult } from "@/lib/ai-detect";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -42,6 +42,7 @@ function AiCheckerPage() {
   const [pro, setPro] = useState<boolean | null>(null);
   const [humanizing, setHumanizing] = useState(false);
   const [rewritten, setRewritten] = useState<Set<number>>(new Set());
+  const [openSection, setOpenSection] = useState<number | null>(null);
 
   useEffect(() => {
     loadBilling()
@@ -72,7 +73,7 @@ function AiCheckerPage() {
         if (!r) return s;
         done.add(i);
         const trail = s.text.match(/\s*$/)?.[0] ?? " ";
-        return { text: r + (trail || " "), label: s.label };
+        return { ...s, text: r + (trail || " ") };
       });
       const nextResult = { ...result, spans };
       setResult(nextResult);
@@ -94,6 +95,7 @@ function AiCheckerPage() {
     setBusy(true);
     setResult(null);
     setRewritten(new Set());
+    setOpenSection(null);
     try {
       const res = await run({ data: { text: text.slice(0, 20000) } });
       if (res.error) toast.error(res.error);
@@ -119,7 +121,7 @@ function AiCheckerPage() {
         />
         <div className="grid gap-3 sm:flex sm:items-center sm:justify-between">
           <p className="text-xs text-muted-foreground">
-            {words.toLocaleString()} words{text.length > 8000 ? " · first 8,000 characters are checked" : ""}
+            {words.toLocaleString()} words{text.length > 20000 ? " · first 20,000 characters are checked" : ""}
           </p>
           <div className="grid grid-cols-[auto_1fr] gap-2 sm:flex">
             {text ? (
@@ -140,39 +142,58 @@ function AiCheckerPage() {
           <div className="flex items-center gap-5">
             <div
               className="relative flex size-24 shrink-0 items-center justify-center rounded-full"
-              style={{ background: `conic-gradient(var(--destructive) ${result.aiPercent * 3.6}deg, color-mix(in oklab, var(--primary) 35%, transparent) 0)` }}
+              style={{ background: result.verdict === "insufficient" ? "var(--muted)" : `conic-gradient(var(--destructive) ${result.aiPercent * 3.6}deg, color-mix(in oklab, var(--primary) 35%, transparent) 0)` }}
               aria-hidden="true"
             >
               <div className="flex size-18 flex-col items-center justify-center rounded-full bg-card">
-                <span className="font-display text-xl font-bold">{result.aiPercent}%</span>
+                <span className="font-display text-xl font-bold">{result.verdict === "insufficient" ? "—" : `${result.aiPercent}%`}</span>
                 <span className="text-[10px] font-semibold uppercase text-muted-foreground">AI</span>
               </div>
             </div>
             <div className="min-w-0 space-y-1">
-              <p className="font-display text-lg font-bold">
-                {result.aiPercent >= 60 ? "Sounds mostly AI" : result.aiPercent >= 35 ? "A bit of both" : "Sounds mostly human"}
-              </p>
-              <p className="text-sm">
-                <span className="font-semibold text-destructive">{result.aiPercent}% AI</span>
-                {" · "}
-                <span className="font-semibold text-primary">{result.humanPercent}% human</span>
-              </p>
-              {result.verdict ? <p className="text-sm text-muted-foreground">{result.verdict}</p> : null}
+              <p className="font-display text-lg font-bold">{result.verdictText}</p>
+              {result.verdict === "insufficient" ? (
+                <p className="text-sm text-muted-foreground">There isn't enough writing to make a reliable assessment. Add more text (about {80} words or more).</p>
+              ) : (
+                <>
+                  <p className="text-sm">AI likelihood: <span className="font-semibold">{result.aiPercent}%</span></p>
+                  <p className="text-sm">
+                    Confidence:{" "}
+                    <span className={cn("font-semibold", result.confidence === "high" ? "text-success" : result.confidence === "medium" ? "text-warning" : "text-muted-foreground")}>
+                      {result.confidence[0]!.toUpperCase() + result.confidence.slice(1)}
+                    </span>
+                  </p>
+                </>
+              )}
+              <p className="text-xs text-muted-foreground">{result.words.toLocaleString()} words analyzed · {result.sections.length} section{result.sections.length === 1 ? "" : "s"}</p>
             </div>
           </div>
+
+          {result.cautions.length ? (
+            <div className="space-y-1 rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm">
+              {result.cautions.map((c) => <p key={c}>{c}</p>)}
+            </div>
+          ) : null}
+
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-3 text-xs">
-              <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-destructive/25" /> AI-written</span>
-              <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-primary/20" /> Human-written</span>
-              <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-warning/25" /> Mixed</span>
+              <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-destructive/25" /> Likely AI</span>
+              <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-primary/20" /> Likely human</span>
+              <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-warning/25" /> Uncertain</span>
               {rewritten.size ? <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm border-2 border-success" /> Humanized</span> : null}
             </div>
+            <p className="text-xs text-muted-foreground">Tap any highlighted part to see why it was flagged.</p>
             <div className="max-h-[28rem] overflow-y-auto whitespace-pre-wrap rounded-xl border border-border bg-background/50 p-3 text-sm leading-7">
               {result.spans.map((s, i) => (
                 <span
                   key={i}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setOpenSection(s.section)}
+                  onKeyDown={(e) => { if (e.key === "Enter") setOpenSection(s.section); }}
                   className={cn(
-                    "rounded-sm box-decoration-clone px-0.5",
+                    "cursor-pointer rounded-sm box-decoration-clone px-0.5",
+                    openSection === s.section && "ring-1 ring-foreground/40",
                     rewritten.has(i)
                       ? "bg-success/15 underline decoration-success decoration-2 underline-offset-4"
                       : s.label === "ai"
@@ -186,6 +207,26 @@ function AiCheckerPage() {
                 </span>
               ))}
             </div>
+            {openSection !== null && result.sections[openSection] ? (() => {
+              const sec = result.sections[openSection]!;
+              return (
+                <div className="rounded-xl border border-border p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold">Why this section was flagged</p>
+                    <span className={cn("rounded-md px-2 py-0.5 text-xs font-semibold", LABELS[sec.label].cls)}>
+                      {LABELS[sec.label].text} · {sec.aiPercent}%
+                    </span>
+                  </div>
+                  {sec.reasons.length ? (
+                    <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+                      {sec.reasons.map((r) => <li key={r}>{r}</li>)}
+                    </ul>
+                  ) : (
+                    <p className="mt-2 text-sm text-muted-foreground">No strong signals in this section on their own.</p>
+                  )}
+                </div>
+              );
+            })() : null}
             <div className="flex flex-wrap items-center gap-2">
               {pro ? (
                 <Button onClick={() => void doHumanize()} disabled={humanizing || !aiIdx.length} className="gap-1.5">
@@ -209,22 +250,22 @@ function AiCheckerPage() {
             </div>
             {rewritten.size ? <p className="text-xs text-muted-foreground">Your text box was updated. Press Check text to re-scan it.</p> : null}
           </div>
-          {result.sections.length ? (
-            <MoreOptions label={`Where and why (${result.sections.length})`}>
-              <div className="space-y-2">
-                {result.sections.map((s, i) => (
-                  <div key={i} className="rounded-xl border border-border p-3">
-                    <span className={cn("rounded-md px-2 py-0.5 text-xs font-semibold", LABELS[s.label].cls)}>
-                      {LABELS[s.label].text}
-                    </span>
-                    <p className="mt-2 text-sm italic text-muted-foreground">"{s.excerpt}…"</p>
-                    <p className="mt-1 text-sm">{s.reason}</p>
-                  </div>
-                ))}
-              </div>
-            </MoreOptions>
-          ) : null}
-          <p className="text-xs text-muted-foreground">An estimate only — no AI detector is 100% accurate.</p>
+
+          <MoreOptions label="Why did we flag this?">
+            {result.reasons.length ? (
+              <ul className="list-disc space-y-1 pl-5 text-sm">
+                {result.reasons.map((r) => <li key={r}>{r}</li>)}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">No strong writing-style signals were found across the whole text.</p>
+            )}
+            <p className="mt-2 text-xs text-muted-foreground">
+              Style signals: {result.localPercent}% AI-leaning{result.modelPercent !== null ? ` · AI reader: ${result.modelPercent}%` : ""}
+            </p>
+          </MoreOptions>
+          <p className="text-xs text-muted-foreground">
+            AI detection is an estimate, not proof. It can produce false positives and false negatives and can't show who wrote something. This is not a plagiarism check.
+          </p>
         </section>
       ) : null}
     </div>
