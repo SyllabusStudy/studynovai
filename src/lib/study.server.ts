@@ -1158,8 +1158,8 @@ export async function runSnapTutor(
   supabase: DB,
   userId: string,
   input: {
-    imageDataUrl?: string | null;
-    classId?: string | null;
+    imageDataUrl?: string | null | undefined;
+    classId?: string | null | undefined;
     mode: SnapMode;
     history: { role: "user" | "assistant"; content: string }[];
     message: string;
