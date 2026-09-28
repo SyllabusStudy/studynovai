@@ -869,6 +869,10 @@ export type Database = {
           label: string
           last_seen: string
           notify_enabled: boolean
+          push_auth: string | null
+          push_endpoint: string | null
+          push_p256dh: string | null
+          push_subscribed_at: string | null
           revoked: boolean
           user_id: string
         }
@@ -879,6 +883,10 @@ export type Database = {
           label: string
           last_seen?: string
           notify_enabled?: boolean
+          push_auth?: string | null
+          push_endpoint?: string | null
+          push_p256dh?: string | null
+          push_subscribed_at?: string | null
           revoked?: boolean
           user_id: string
         }
@@ -889,6 +897,10 @@ export type Database = {
           label?: string
           last_seen?: string
           notify_enabled?: boolean
+          push_auth?: string | null
+          push_endpoint?: string | null
+          push_p256dh?: string | null
+          push_subscribed_at?: string | null
           revoked?: boolean
           user_id?: string
         }
