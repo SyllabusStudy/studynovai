@@ -11,6 +11,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { snapTutor } from "@/lib/ai.functions";
+import { AI_KEY_HELP } from "@/lib/ai-key.server";
 type SnapMode = "learn" | "quick" | "tutor" | "practice" | "check" | "method";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -220,6 +221,12 @@ function SnapQuickPage() {
       if (!pending.history.length) void recordStudyActivity("snapquick");
       const result = await run({ data: pending.request });
       if (result.error || !result.reply) {
+        if (result.error === AI_KEY_HELP) {
+          setInput(pending.request.message);
+          setMessages(pending.history);
+          toast.error(result.error);
+          return;
+        }
         setFailed(pending);
         return;
       }
