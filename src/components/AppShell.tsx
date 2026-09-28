@@ -13,6 +13,8 @@ import {
   FileQuestion,
   LayoutDashboard,
   LogOut,
+  Mail,
+
   Menu,
   MessageSquare,
   Moon,
@@ -88,8 +90,12 @@ const GROUPS: { key: string; label: string; collapsible: boolean; items: NavItem
     key: "resources",
     label: "Resources",
     collapsible: false,
-    items: [{ to: "/school", label: "School Links", icon: GraduationCap }],
+    items: [
+      { to: "/email", label: "Email", icon: Mail },
+      { to: "/school", label: "School Links", icon: GraduationCap },
+    ],
   },
+
 ];
 const BOTTOM: NavItem[] = [
   { to: "/feedback", label: "Feedback", icon: MessageSquare },

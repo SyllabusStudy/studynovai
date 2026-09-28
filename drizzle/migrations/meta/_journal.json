@@ -85,6 +85,13 @@
       "when": 1790580924154,
       "tag": "0011_schedule_push_reminders",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790637258388,
+      "tag": "0012_create_app_user_connections",
+      "breakpoints": true
     }
   ]
 }
