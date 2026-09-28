@@ -154,7 +154,7 @@ function SnapQuickPage() {
             </Button>
           </div>
 
-          <MoreOptions summary={classId === "all" ? "All classes" : classes.find((c) => c.id === classId)?.name}>
+          <MoreOptions summary={classId === "all" ? "All classes" : classes.find((c) => c.id === classId)?.class_name}>
             <div className="space-y-2">
               <Select value={classId} onValueChange={setClassId}>
                 <SelectTrigger>
