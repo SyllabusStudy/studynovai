@@ -95,6 +95,8 @@ function ClassDetail() {
         <Button asChild size="sm"><Link to="/flashcards"><Brain className="size-4" /> Generate Flashcards</Link></Button>
         <Button asChild size="sm" variant="outline"><Link to="/quizzes"><FileQuestion className="size-4" /> Create Quiz</Link></Button>
         <Button asChild size="sm" variant="outline"><Link to="/tutor"><Bot className="size-4" /> Explain Material</Link></Button>
+        <Button asChild size="sm" variant="outline"><Link to="/snapquick">🤖 SnapQuick</Link></Button>
+        <Button asChild size="sm" variant="outline"><Link to="/quickvideo">🎥 QuickVideo</Link></Button>
       </div>
 
       <Tabs defaultValue="overview">
