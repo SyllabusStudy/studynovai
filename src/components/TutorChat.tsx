@@ -4,7 +4,6 @@ import { useClassPicker } from "@/lib/active-class";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { Bot, Loader2, SendHorizonal, Sparkles, User } from "lucide-react";
-import { toast } from "sonner";
 import { tutorChat } from "@/lib/ai.functions";
 import { Button } from "@/components/ui/button";
 import { AiRetryNotice } from "@/components/AiRetryNotice";
@@ -78,7 +77,7 @@ export function TutorChat({
 
   async function submit(text: string) {
     const message = text.trim();
-    if (!message || busyRef.current) return;
+    if (!message || busyRef.current || failed) return;
     const request = { message, mode, classId: fixedClassId ?? (classId === "all" ? null : classId), conversationId };
     setInput("");
     setMessages((prev) => [...prev, { role: "user", content: message }]);
@@ -102,7 +101,8 @@ export function TutorChat({
       setMessages((prev) => [...prev, { role: "assistant", content: result.reply }]);
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "The tutor could not answer right now.";
+      const msg = e instanceof Error && e.message && !/fetch|network|failed to|internal server/i.test(e.message)
+        ? e.message : "I’m having trouble connecting right now. Your question is saved — try again in a moment.";
       setFailed({ ...request, reason: msg });
     } finally {
       busyRef.current = false;
@@ -207,7 +207,7 @@ export function TutorChat({
             <Loader2 className="size-4 animate-spin" /> Reading your materials…
           </div>
         ) : null}
-        {failed ? <AiRetryNotice message={failed.reason} onRetry={() => void sendRequest(failed)} /> : null}
+        {failed && !busy ? <AiRetryNotice message={failed.reason} onRetry={() => void sendRequest(failed)} /> : null}
       </div>
 
       <form
@@ -231,7 +231,7 @@ export function TutorChat({
           rows={compact ? 2 : 2}
           className="max-h-32 min-h-[44px] resize-none"
         />
-        <Button type="submit" size="icon" disabled={busy || !input.trim()} aria-label="Send">
+        <Button type="submit" size="icon" disabled={busy || !!failed || !input.trim()} aria-label="Send">
           {busy ? <Loader2 className="size-4 animate-spin" /> : <SendHorizonal className="size-4" />}
         </Button>
       </form>

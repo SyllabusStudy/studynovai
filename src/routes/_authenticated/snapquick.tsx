@@ -184,8 +184,8 @@ function SnapQuickPage() {
 
   async function send(text: string, opts?: { mode?: SnapMode; img?: string | null; fresh?: boolean }) {
     const msgText = text.trim();
-    if (!msgText || busyRef.current) return;
-    const history = opts?.fresh ? [] : failed ? failed.history : messages;
+    if (!msgText || busyRef.current || (failed && !opts?.fresh)) return;
+    const history = opts?.fresh ? [] : messages;
     const idForSave = opts?.fresh ? null : convId;
     if (opts?.fresh) setConvId(null);
     setRevealed(false);
@@ -223,8 +223,12 @@ function SnapQuickPage() {
       }
       const all: Msg[] = [...pending.history, pending.userMsg, { role: "assistant", content: result.reply }];
       setMessages(all);
-      const newId = await saveConversation(all, pending.image, pending.id, pending.request.mode);
-      setConvId(newId);
+      try {
+        const newId = await saveConversation(all, pending.image, pending.id, pending.request.mode);
+        setConvId(newId);
+      } catch {
+        toast.error("The answer is ready, but this conversation could not be saved yet.");
+      }
     } catch (e) {
       setFailed(pending);
     } finally {
@@ -428,7 +432,7 @@ function SnapQuickPage() {
           {started && !busy ? (
             <div className="mt-3 flex flex-wrap gap-1.5">
               {FOLLOW_UPS.map((f) => (
-                <Button key={f.label} size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => void send(f.text, { mode: f.mode })}>
+              <Button key={f.label} size="sm" variant="outline" disabled={!!failed} className="h-8 rounded-full text-xs" onClick={() => void send(f.text, { mode: f.mode })}>
                   {f.label}
                 </Button>
               ))}
@@ -455,7 +459,7 @@ function SnapQuickPage() {
               placeholder={started ? "Ask a follow-up… e.g. why did we divide by 2?" : "Type a problem, e.g. solve 2x² − 7x + 3 = 0"}
               className="max-h-32 min-h-10 resize-none"
             />
-            <Button type="submit" size="icon" disabled={busy || !input.trim()} aria-label="Send">
+            <Button type="submit" size="icon" disabled={busy || !!failed || !input.trim()} aria-label="Send">
               <Send className="size-4" />
             </Button>
           </form>

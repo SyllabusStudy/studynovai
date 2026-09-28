@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { detectProvider, loadUserAiKey } from "./ai-key.server";
+import { loadUserAiKey } from "./ai-key.server";
 import { fetchAiWithRetry } from "./ai-request.server";
 
 /**
@@ -25,8 +25,8 @@ export const generateAiImage = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<{ image: string }> => {
     const stored = await loadUserAiKey(context.supabase, context.userId);
-    // Trust provider-specific key formats over an accidentally selected dropdown value.
-    const cfg = { ...stored, provider: detectProvider(stored.key) ?? stored.provider };
+    // Never redirect a student's key to a different provider based on its prefix.
+    const cfg = stored;
     const { prompt } = data;
     const source = data.imageDataUrl ?? null;
 
