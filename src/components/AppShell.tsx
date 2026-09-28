@@ -320,6 +320,9 @@ function TopBar({ onMenu, onSearch }: { onMenu: () => void; onSearch: () => void
             <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}>
               <Settings className="size-4" /> Settings
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate({ to: "/feedback" })}>
+              <MessageSquare className="size-4" /> Feedback
+            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={async () => {
                 await signOut();
