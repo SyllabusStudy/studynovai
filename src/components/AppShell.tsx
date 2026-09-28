@@ -49,7 +49,7 @@ import { AskAiDock } from "@/components/AskAiDock";
 import { GlobalSearch } from "@/components/GlobalSearch";
 
 
-type NavItem = { to: string; label: string; icon: typeof BookOpen };
+type NavItem = { to: string; label: string; icon: typeof BookOpen; tint?: string };
 const GROUPS: { key: string; label: string; collapsible: boolean; items: NavItem[] }[] = [
   {
     key: "primary",
@@ -68,9 +68,9 @@ const GROUPS: { key: string; label: string; collapsible: boolean; items: NavItem
     label: "Study",
     collapsible: true,
     items: [
-      { to: "/flashcards", label: "Flashcards", icon: Brain },
-      { to: "/quizzes", label: "Quizzes", icon: FileQuestion },
-      { to: "/tutor", label: "AI Tutor", icon: Bot },
+      { tint: "text-feature-flashcards", to: "/flashcards", label: "Flashcards", icon: Brain },
+      { tint: "text-feature-quiz", to: "/quizzes", label: "Quizzes", icon: FileQuestion },
+      { tint: "text-feature-ai", to: "/tutor", label: "AI Tutor", icon: Bot },
     ],
   },
   {
@@ -78,8 +78,8 @@ const GROUPS: { key: string; label: string; collapsible: boolean; items: NavItem
     label: "Tools",
     collapsible: true,
     items: [
-      { to: "/snapquick", label: "SnapQuick", icon: Camera },
-      { to: "/quickvideo", label: "QuickVideo", icon: Video },
+      { tint: "text-feature-ai", to: "/snapquick", label: "SnapQuick", icon: Camera },
+      { tint: "text-feature-video", to: "/quickvideo", label: "QuickVideo", icon: Video },
       { to: "/studio", label: "AI Images", icon: ImageIcon },
       { to: "/ai-checker", label: "AI Checker", icon: ScanSearch },
     ],
@@ -196,7 +196,7 @@ function NavLink({ item, pathname, onNavigate }: { item: NavItem; pathname: stri
             : "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
         )}
       >
-        <item.icon className="size-4.5" />
+        <item.icon className={cn("size-4.5", !active && item.tint)} />
         {item.label}
       </Link>
     </li>
