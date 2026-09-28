@@ -280,7 +280,7 @@ export const humanizeAiText = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { isPro } = await import("./billing.server");
     if (!(await isPro(context.supabase, context.userId))) {
-      return { rewrites: null, error: "Improve Natural Voice is a Pro feature. Upgrade to use it.", needsPro: true };
+      return { rewrites: null, error: "Humanize is a Pro feature. Upgrade to use it.", needsPro: true };
     }
     if (!(await hasUserAiKey(context.supabase, context.userId))) {
       return { rewrites: null, error: AI_KEY_HELP, needsPro: false };
