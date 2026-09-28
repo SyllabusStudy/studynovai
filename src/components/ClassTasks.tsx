@@ -1,20 +1,24 @@
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDate, useAssignments, useEvents, useFlashcards, useQuizzes } from "@/lib/data";
 
-type Kind = "test" | "quiz" | "flashcards" | "practice" | "assignment";
+type Kind = "test" | "quiz" | "flashcards" | "video" | "snap" | "practice" | "assignment";
 const FILTERS: Array<{ id: "all" | Kind; label: string }> = [
   { id: "all", label: "All" },
   { id: "test", label: "Tests" },
   { id: "quiz", label: "Quizzes" },
   { id: "flashcards", label: "Flashcards" },
+  { id: "video", label: "QuickVideos" },
+  { id: "snap", label: "SnapQuick" },
   { id: "practice", label: "Practice" },
   { id: "assignment", label: "Assignments" },
 ];
-const ICON: Record<Kind, string> = { test: "📝", quiz: "❓", flashcards: "🧠", practice: "📚", assignment: "📄" };
-const LABEL: Record<Kind, string> = { test: "Test", quiz: "Quiz", flashcards: "Flashcards", practice: "Practice", assignment: "Assignment" };
+const ICON: Record<Kind, string> = { video: "🎥", snap: "🤖", test: "📝", quiz: "❓", flashcards: "🧠", practice: "📚", assignment: "📄" };
+const LABEL: Record<Kind, string> = { video: "QuickVideo", snap: "SnapQuick", test: "Test", quiz: "Quiz", flashcards: "Flashcards", practice: "Practice", assignment: "Assignment" };
 
 type Task = {
   key: string;
@@ -25,7 +29,7 @@ type Task = {
   created: string;
   sortDate: string;
   action: string;
-  link: { to: string; params?: Record<string, string> };
+  link: { to: string; params?: Record<string, string>; search?: Record<string, string> };
 };
 
 function kindFromText(text: string | null | undefined): Kind | null {
@@ -41,6 +45,26 @@ export function ClassTasks({ userId, classId }: { userId?: string | undefined; c
   const { data: events = [] } = useEvents(userId, classId);
   const { data: cards = [] } = useFlashcards(userId, classId);
   const { data: quizzes = [] } = useQuizzes(userId, classId);
+  const { data: videos = [] } = useQuery({
+    queryKey: ["class-videos", userId, classId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("video_notes").select("id,title,status,created_at").eq("class_id", classId);
+      if (error) throw error;
+      return data;
+    },
+  });
+  const { data: snaps = [] } = useQuery({
+    queryKey: ["class-snaps", userId, classId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("snap_conversations").select("id,title,messages,created_at").eq("class_id", classId);
+      if (error) throw error;
+      return data;
+    },
+  });
   const [filter, setFilter] = useState<"all" | Kind>("all");
 
   const tasks = useMemo<Task[]>(() => {
@@ -119,8 +143,24 @@ export function ClassTasks({ userId, classId }: { userId?: string | undefined; c
         link: { to: "/calendar" },
       });
     }
+    for (const v of videos) {
+      out.push({
+        key: `v-${v.id}`, kind: "video", title: v.title, meta: "Video notes",
+        status: v.status === "ready" ? "Notes ready" : v.status,
+        created: v.created_at, sortDate: v.created_at, action: "Watch",
+        link: { to: "/quickvideo/$noteId", params: { noteId: v.id } },
+      });
+    }
+    for (const c of snaps) {
+      const n = Array.isArray(c.messages) ? c.messages.length : 0;
+      out.push({
+        key: `s-${c.id}`, kind: "snap", title: c.title, meta: "AI explanation",
+        status: `${n} messages`, created: c.created_at, sortDate: c.created_at, action: "Open",
+        link: { to: "/snapquick", search: { open: c.id } },
+      });
+    }
     return out.sort((a, b) => b.sortDate.localeCompare(a.sortDate));
-  }, [quizzes, cards, assignments, events]);
+  }, [quizzes, cards, assignments, events, videos, snaps]);
 
   const shown = filter === "all" ? tasks : tasks.filter((t) => t.kind === filter);
 
@@ -154,7 +194,7 @@ export function ClassTasks({ userId, classId }: { userId?: string | undefined; c
                 <span className="text-xs text-muted-foreground">Made {formatDate(t.created.slice(0, 10))}</span>
                 <Button asChild size="sm" variant="ghost">
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  <Link to={t.link.to as any} params={t.link.params as any}>
+                  <Link to={t.link.to as any} params={t.link.params as any} search={t.link.search as any}>
                     {t.action} <ArrowRight className="size-4" />
                   </Link>
                 </Button>
