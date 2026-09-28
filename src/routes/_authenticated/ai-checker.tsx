@@ -1,10 +1,11 @@
 import { MoreOptions } from "@/components/MoreOptions";
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, ScanSearch } from "lucide-react";
+import { Copy, Crown, Loader2, ScanSearch, Wand2 } from "lucide-react";
 import { toast } from "sonner";
-import { checkAiText } from "@/lib/ai.functions";
+import { checkAiText, humanizeAiText } from "@/lib/ai.functions";
+import { getBilling } from "@/lib/billing.functions";
 import type { AiCheckResult } from "@/lib/study.server";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,54 @@ function AiCheckerPage() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<AiCheckResult | null>(null);
   const run = useServerFn(checkAiText);
+  const humanize = useServerFn(humanizeAiText);
+  const loadBilling = useServerFn(getBilling);
+  const [pro, setPro] = useState<boolean | null>(null);
+  const [humanizing, setHumanizing] = useState(false);
+  const [rewritten, setRewritten] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    loadBilling()
+      .then((b) => setPro(b.plan === "pro"))
+      .catch(() => setPro(false));
+  }, [loadBilling]);
+
+  const aiIdx = result ? result.spans.map((s, i) => (s.label === "ai" && s.text.trim() && !rewritten.has(i) ? i : -1)).filter((i) => i >= 0) : [];
+
+  async function doHumanize() {
+    if (!result || !aiIdx.length || humanizing) return;
+    setHumanizing(true);
+    try {
+      const res = await humanize({
+        data: {
+          sentences: aiIdx.map((i) => ({ index: i, text: result.spans[i].text.slice(0, 2000) })),
+          context: result.spans.map((s) => s.text).join(""),
+        },
+      });
+      if (res.error || !res.rewrites) {
+        toast.error(res.error ?? "Couldn't rewrite that just now.");
+        return;
+      }
+      const map = res.rewrites as Record<string, string>;
+      const done = new Set(rewritten);
+      const spans = result.spans.map((s, i) => {
+        const r = map[String(i)];
+        if (!r) return s;
+        done.add(i);
+        const trail = s.text.match(/\s*$/)?.[0] ?? " ";
+        return { text: r + (trail || " "), label: s.label };
+      });
+      const nextResult = { ...result, spans };
+      setResult(nextResult);
+      setRewritten(done);
+      setText(spans.map((s) => s.text).join(""));
+      toast.success(`Humanized ${Object.keys(map).length} sentence${Object.keys(map).length === 1 ? "" : "s"}.`);
+    } catch {
+      toast.error("I'm having trouble connecting right now. Try again in a moment.");
+    } finally {
+      setHumanizing(false);
+    }
+  }
 
   async function check() {
     if (text.trim().length < 50) {
@@ -44,6 +93,7 @@ function AiCheckerPage() {
     }
     setBusy(true);
     setResult(null);
+    setRewritten(new Set());
     try {
       const res = await run({ data: { text: text.slice(0, 20000) } });
       if (res.error) toast.error(res.error);
@@ -109,6 +159,55 @@ function AiCheckerPage() {
               </p>
               {result.verdict ? <p className="text-sm text-muted-foreground">{result.verdict}</p> : null}
             </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-3 text-xs">
+              <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-destructive/25" /> AI-written</span>
+              <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-primary/20" /> Human-written</span>
+              <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-warning/25" /> Mixed</span>
+              {rewritten.size ? <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm border-2 border-success" /> Humanized</span> : null}
+            </div>
+            <div className="max-h-[28rem] overflow-y-auto whitespace-pre-wrap rounded-xl border border-border bg-background/50 p-3 text-sm leading-7">
+              {result.spans.map((s, i) => (
+                <span
+                  key={i}
+                  className={cn(
+                    "rounded-sm box-decoration-clone px-0.5",
+                    rewritten.has(i)
+                      ? "bg-success/15 underline decoration-success decoration-2 underline-offset-4"
+                      : s.label === "ai"
+                        ? "bg-destructive/20"
+                        : s.label === "mixed"
+                          ? "bg-warning/20"
+                          : "bg-primary/10",
+                  )}
+                >
+                  {s.text}
+                </span>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {pro ? (
+                <Button onClick={() => void doHumanize()} disabled={humanizing || !aiIdx.length} className="gap-1.5">
+                  {humanizing ? <Loader2 className="size-4 animate-spin" /> : <Wand2 className="size-4" />}
+                  {humanizing ? "Humanizing…" : aiIdx.length ? `Humanize AI parts (${aiIdx.length})` : "Nothing AI left to humanize"}
+                </Button>
+              ) : pro === false ? (
+                <Button asChild variant="outline" className="gap-1.5">
+                  <Link to="/upgrade"><Crown className="size-4" /> Humanize — Pro only</Link>
+                </Button>
+              ) : null}
+              {rewritten.size ? (
+                <Button
+                  variant="ghost"
+                  className="gap-1.5"
+                  onClick={() => void navigator.clipboard.writeText(result.spans.map((s) => s.text).join("")).then(() => toast.success("Copied."))}
+                >
+                  <Copy className="size-4" /> Copy text
+                </Button>
+              ) : null}
+            </div>
+            {rewritten.size ? <p className="text-xs text-muted-foreground">Your text box was updated. Press Check text to re-scan it.</p> : null}
           </div>
           {result.sections.length ? (
             <MoreOptions label={`Where and why (${result.sections.length})`}>
