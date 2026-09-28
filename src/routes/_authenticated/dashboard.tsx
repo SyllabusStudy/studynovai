@@ -171,13 +171,13 @@ function Dashboard() {
         </div>
       </div>
 
-      <p className="-mt-6 text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground">
         {streak > 0
           ? `🔥 Keep it going — you've studied ${streak} day${streak === 1 ? "" : "s"} in a row.${streakData?.studiedToday ? "" : " Study something today to keep it."}`
           : "🔥 Study anything today to start your streak."}
       </p>
 
-      <ClassActionBar className="mb-0" />
+      <ClassActionBar className="mb-8" />
 
       <div className="flex flex-wrap gap-2">
         {quick.map((q) => (
