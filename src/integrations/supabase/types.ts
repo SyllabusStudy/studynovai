@@ -359,27 +359,42 @@ export type Database = {
       }
       feedback: {
         Row: {
+          category: string
           created_at: string
           id: string
           message: string
+          page: string | null
+          rating: number | null
           status: string
           topic: string
+          updated_at: string
+          user_email: string | null
           user_id: string
         }
         Insert: {
+          category?: string
           created_at?: string
           id?: string
           message: string
+          page?: string | null
+          rating?: number | null
           status?: string
           topic?: string
+          updated_at?: string
+          user_email?: string | null
           user_id: string
         }
         Update: {
+          category?: string
           created_at?: string
           id?: string
           message?: string
+          page?: string | null
+          rating?: number | null
           status?: string
           topic?: string
+          updated_at?: string
+          user_email?: string | null
           user_id?: string
         }
         Relationships: []
@@ -479,12 +494,14 @@ export type Database = {
           default_reminder_minutes: number
           email: string | null
           graduation_year: string | null
+          help_goals: string[]
           id: string
           last_study_date: string | null
           major: string | null
           name: string | null
           notify_email: boolean
           notify_push: boolean
+          onboarding_done: boolean
           school: string | null
           study_streak: number
           updated_at: string
@@ -495,12 +512,14 @@ export type Database = {
           default_reminder_minutes?: number
           email?: string | null
           graduation_year?: string | null
+          help_goals?: string[]
           id: string
           last_study_date?: string | null
           major?: string | null
           name?: string | null
           notify_email?: boolean
           notify_push?: boolean
+          onboarding_done?: boolean
           school?: string | null
           study_streak?: number
           updated_at?: string
@@ -511,12 +530,14 @@ export type Database = {
           default_reminder_minutes?: number
           email?: string | null
           graduation_year?: string | null
+          help_goals?: string[]
           id?: string
           last_study_date?: string | null
           major?: string | null
           name?: string | null
           notify_email?: boolean
           notify_push?: boolean
+          onboarding_done?: boolean
           school?: string | null
           study_streak?: number
           updated_at?: string

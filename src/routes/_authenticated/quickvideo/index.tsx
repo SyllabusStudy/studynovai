@@ -26,13 +26,13 @@ import { classLabel, formatDate, useClasses, useVideoNotes } from "@/lib/data";
 export const Route = createFileRoute("/_authenticated/quickvideo/")({
   head: () => ({
     meta: [
-      { title: "QuickVideo — AI notes from any video — StudyMate AI" },
+      { title: "QuickVideo — AI notes from any video — StudyNova" },
       {
         name: "description",
         content:
           "Paste a YouTube link or upload a lecture recording and QuickVideo writes your study notes, then answers questions about the video.",
       },
-      { property: "og:title", content: "QuickVideo — StudyMate AI" },
+      { property: "og:title", content: "QuickVideo — StudyNova" },
       {
         property: "og:description",
         content: "Import any video and get instant AI study notes you can ask questions about.",
@@ -114,11 +114,11 @@ function QuickVideoPage() {
     <div>
       <PageHeader
         title="QuickVideo"
-        description="Drop in a YouTube link or a lecture recording. StudyMate watches it, writes your notes, then answers anything you ask about it."
+        description="Drop in a YouTube link or a lecture recording. StudyNova watches it, writes your notes, then answers anything you ask about it."
       />
 
       <Hint id="quickvideo-link" point="down" className="mb-4">
-        Paste a YouTube lecture link here — StudyMate writes the notes, then you can ask it
+        Paste a YouTube lecture link here — StudyNova writes the notes, then you can ask it
         anything about the video.
       </Hint>
 

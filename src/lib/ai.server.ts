@@ -591,7 +591,7 @@ export const PLAIN_STYLE = [
 
 export function tutorSystemPrompt(mode: string, contextText: string): string {
   return [
-    "You are StudyMate AI, a warm, sharp college study tutor for one specific student.",
+    "You are StudyNova, a warm, sharp college study tutor for one specific student.",
     "",
     "GROUNDING RULES (critical):",
     "- The student's own uploaded materials appear below under STUDENT CONTEXT. Always prefer them.",

@@ -57,16 +57,16 @@ function normalizeUrl(raw: string) {
 export const Route = createFileRoute("/_authenticated/school")({
   head: () => ({
     meta: [
-      { title: "School links — StudyMate AI" },
+      { title: "School links — StudyNova" },
       {
         name: "description",
         content:
           "Save your student center, course site, school email and library links so every school page is one click away.",
       },
-      { property: "og:title", content: "School links — StudyMate AI" },
+      { property: "og:title", content: "School links — StudyNova" },
       {
         property: "og:description",
-        content: "Keep your student center and school portals one click away inside StudyMate AI.",
+        content: "Keep your student center and school portals one click away inside StudyNova.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -266,7 +266,7 @@ function SchoolLinksPage() {
               </Button>
               <DeleteButton
                 label={l.label}
-                description="This only removes the shortcut from StudyMate AI."
+                description="This only removes the shortcut from StudyNova."
                 onDelete={() => remove(l.id)}
               />
             </li>

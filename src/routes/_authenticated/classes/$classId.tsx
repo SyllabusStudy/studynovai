@@ -1,5 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { FileText, Loader2 } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Bot, Brain, FileQuestion, FileText, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { ClassDot } from "@/components/ClassBadge";
@@ -21,9 +22,9 @@ import {
 export const Route = createFileRoute("/_authenticated/classes/$classId")({
   head: () => ({
     meta: [
-      { title: "Class workspace — StudyMate AI" },
+      { title: "Class workspace — StudyNova" },
       { name: "description", content: "Course materials, policies, deadlines and AI study tools for this class." },
-      { property: "og:title", content: "Class workspace — StudyMate AI" },
+      { property: "og:title", content: "Class workspace — StudyNova" },
       { property: "og:description", content: "Materials, policies and AI study tools for this class." },
     ],
   }),
@@ -83,18 +84,30 @@ function ClassDetail() {
         description={[klass.course_code, klass.professor, klass.semester].filter(Boolean).join(" · ")}
       />
 
-      <Tabs defaultValue="materials">
+      <div className="mb-6 flex flex-wrap gap-2">
+        <Button asChild size="sm"><Link to="/flashcards"><Brain className="size-4" /> Generate Flashcards</Link></Button>
+        <Button asChild size="sm" variant="outline"><Link to="/quizzes"><FileQuestion className="size-4" /> Create Quiz</Link></Button>
+        <Button asChild size="sm" variant="outline"><Link to="/tutor"><Bot className="size-4" /> Explain Material</Link></Button>
+      </div>
+
+      <Tabs defaultValue="overview">
         <TabsList className="flex-wrap">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="deadlines">Assignments</TabsTrigger>
           <TabsTrigger value="materials">Materials</TabsTrigger>
-          <TabsTrigger value="deadlines">Deadlines</TabsTrigger>
-          <TabsTrigger value="policies">Policies</TabsTrigger>
-          <TabsTrigger value="study">Study</TabsTrigger>
-          <TabsTrigger value="tutor">Tutor</TabsTrigger>
+          <TabsTrigger value="grades">Grades</TabsTrigger>
+          <TabsTrigger value="tutor">AI Tutor</TabsTrigger>
         </TabsList>
 
         <TabsContent value="materials" className="mt-5 space-y-4">
+          <DocumentUploader classId={classId} syllabusOnly title="Upload Syllabus" />
           <DocumentUploader classId={classId} />
           <DocumentList documents={documents} />
+        </TabsContent>
+
+        <TabsContent value="grades" className="mt-5">
+          <p className="text-sm text-muted-foreground">Track scores and your running grade for every class on the Grades page.</p>
+          <Button asChild size="sm" className="mt-3"><Link to="/grades">Open Grades</Link></Button>
         </TabsContent>
 
         <TabsContent value="deadlines" className="mt-5 space-y-6">
@@ -134,12 +147,17 @@ function ClassDetail() {
           </section>
         </TabsContent>
 
-        <TabsContent value="policies" className="mt-5">
+        <TabsContent value="overview" className="mt-5 space-y-4">
+          <div className="grid grid-cols-3 gap-2">
+            <div className="rounded-lg bg-muted/50 px-4 py-3"><p className="text-lg font-bold">{assignments.filter((a) => a.status !== "completed").length}</p><p className="text-xs text-muted-foreground">Open tasks</p></div>
+            <div className="rounded-lg bg-muted/50 px-4 py-3"><p className="text-lg font-bold">{documents.length}</p><p className="text-xs text-muted-foreground">Documents</p></div>
+            <div className="rounded-lg bg-muted/50 px-4 py-3"><p className="text-lg font-bold">{flashcards.length}</p><p className="text-xs text-muted-foreground">Flashcards</p></div>
+          </div>
           {allPolicies.length === 0 ? (
             <EmptyState
               icon={FileText}
               title="No policies extracted yet"
-              description="Upload the syllabus and mark it as a syllabus — StudyMate will pull out the policies."
+              description="Upload the syllabus and mark it as a syllabus — StudyNova will pull out the policies."
             />
           ) : (
             <>
@@ -161,11 +179,6 @@ function ClassDetail() {
         </TabsContent>
 
 
-        <TabsContent value="study" className="mt-5">
-          <p className="text-sm text-muted-foreground">
-            {flashcards.length} flashcards for this class. Generate more from the Flashcards page.
-          </p>
-        </TabsContent>
 
         <TabsContent value="tutor" className="mt-5">
           <TutorChat fixedClassId={classId} compact />

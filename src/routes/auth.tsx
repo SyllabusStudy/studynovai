@@ -17,13 +17,13 @@ export const Route = createFileRoute("/auth")({
   validateSearch: searchSchema,
   head: () => ({
     meta: [
-      { title: "Sign in — StudyMate AI" },
+      { title: "Sign in — StudyNova" },
       {
         name: "description",
-        content: "Log in or create your StudyMate AI account to manage classes, syllabi, flashcards and deadlines.",
+        content: "Log in or create your StudyNova account to manage classes, syllabi, flashcards and deadlines.",
       },
-      { property: "og:title", content: "Sign in — StudyMate AI" },
-      { property: "og:description", content: "Log in or create your StudyMate AI student account." },
+      { property: "og:title", content: "Sign in — StudyNova" },
+      { property: "og:description", content: "Log in or create your StudyNova student account." },
     ],
   }),
   component: AuthPage,
@@ -63,7 +63,7 @@ function AuthPage() {
           const signIn = await supabase.auth.signInWithPassword({ email, password });
           if (signIn.error) throw signIn.error;
         }
-        toast.success("Account created. Welcome to StudyMate AI!");
+        toast.success("Account created. Welcome to StudyNova!");
         if (typeof window !== "undefined" && "gtag_report_conversion" in window) {
           (window as any).gtag_report_conversion();
         }
@@ -101,7 +101,7 @@ function AuthPage() {
           <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <Sparkles className="size-5" />
           </span>
-          <span className="text-sm font-extrabold tracking-tight">StudyMate AI</span>
+          <span className="text-sm font-extrabold tracking-tight">StudyNova</span>
         </Link>
       </header>
 

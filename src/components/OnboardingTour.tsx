@@ -1,101 +1,126 @@
 import { useEffect, useState } from "react";
-import { Link } from "@tanstack/react-router";
-import { BookOpen, Bot, Camera, CheckSquare, Sparkles, Video } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { BookOpen, Check, PartyPopper, Sparkles, Target, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { useProfile } from "@/lib/data";
+import { cn } from "@/lib/utils";
 
-const STEPS = [
-  {
-    icon: Sparkles,
-    title: "Welcome to StudyMate AI",
-    body: "A quick tour so you know where everything lives. It takes about 30 seconds.",
-  },
-  {
-    icon: BookOpen,
-    title: "1. Import your syllabus",
-    body: "Go to My Classes and drop in a syllabus PDF. StudyMate creates the class and fills your exams, homework and grade weights automatically.",
-  },
-  {
-    icon: CheckSquare,
-    title: "2. Attach work to assignments",
-    body: "On any assignment, tap AI help to attach a PDF or screenshot. StudyMate reads it and walks you through the questions right there.",
-  },
-  {
-    icon: Camera,
-    title: "3. Use SnapQuick on your phone",
-    body: "Take a picture of a worksheet or whiteboard and SnapQuick scans it, identifies every problem and explains each answer.",
-  },
-  {
-    icon: Bot,
-    title: "4. Study with your own materials",
-    body: "The AI Tutor, Flashcards and Quizzes all pull from your uploaded documents, so answers match your actual course.",
-  },
-  {
-    icon: Video,
-    title: "5. Turn videos into notes",
-    body: "Paste a YouTube link or upload a lecture recording in QuickVideo. StudyMate writes the notes for you, then answers any question about the video.",
-  },
-] as const;
+const GOALS = ["Staying organized", "Studying", "Understanding homework", "Improving grades", "All of the above"];
 
 export function OnboardingTour() {
   const { user } = useAuth();
+  const { data: profile } = useProfile(user?.id);
+  const qc = useQueryClient();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
-  const storageKey = user ? `studymate-tour-${user.id}` : null;
+  const [goals, setGoals] = useState<string[]>([]);
 
   useEffect(() => {
-    if (!storageKey) return;
-    if (localStorage.getItem(storageKey) === "done") return;
-    setOpen(true);
-  }, [storageKey]);
+    if (profile && profile.onboarding_done === false) setOpen(true);
+  }, [profile]);
 
-  function finish() {
-    if (storageKey) localStorage.setItem(storageKey, "done");
+  async function finish(to?: "/classes" | "/dashboard") {
     setOpen(false);
+    if (user) {
+      await supabase.from("profiles").update({ onboarding_done: true, help_goals: goals }).eq("id", user.id);
+      await qc.invalidateQueries({ queryKey: ["profile"] });
+    }
+    if (to) navigate({ to });
   }
 
-  const current = STEPS[step]!;
+  function toggleGoal(g: string) {
+    if (g === "All of the above") return setGoals((c) => (c.includes(g) ? [] : [...GOALS]));
+    setGoals((c) => (c.includes(g) ? c.filter((x) => x !== g && x !== "All of the above") : [...c, g]));
+  }
+
+  const steps = [
+    {
+      icon: Sparkles,
+      title: "Welcome to StudyNova 👋",
+      body: <p className="text-sm text-muted-foreground">Your semester, made simple. Let's set things up — it takes under a minute.</p>,
+    },
+    {
+      icon: BookOpen,
+      title: "What classes are you taking?",
+      body: (
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">Add each class once. Everything else — assignments, notes, quizzes — organizes around them.</p>
+          <Button variant="outline" onClick={() => finish("/classes")}>Add Classes</Button>
+        </div>
+      ),
+    },
+    {
+      icon: Upload,
+      title: "Upload your syllabi",
+      body: (
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">Drop in a syllabus and StudyNova finds your assignments and exam dates, then puts them on your calendar.</p>
+          <Button variant="outline" onClick={() => finish("/classes")}>Upload Syllabus</Button>
+        </div>
+      ),
+    },
+    {
+      icon: Target,
+      title: "What do you want help with?",
+      body: (
+        <div className="grid gap-2">
+          {GOALS.map((g) => {
+            const on = goals.includes(g);
+            return (
+              <button
+                key={g}
+                type="button"
+                onClick={() => toggleGoal(g)}
+                className={cn(
+                  "flex items-center justify-between rounded-lg border px-4 py-2.5 text-left text-sm font-semibold transition-colors",
+                  on ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-muted",
+                )}
+              >
+                {g}
+                {on ? <Check className="size-4" /> : null}
+              </button>
+            );
+          })}
+        </div>
+      ),
+    },
+    {
+      icon: PartyPopper,
+      title: "You're all set!",
+      body: <p className="text-sm text-muted-foreground">StudyNova built your semester workspace.</p>,
+    },
+  ];
+
+  const current = steps[step]!;
   const Icon = current.icon;
-  const last = step === STEPS.length - 1;
+  const last = step === steps.length - 1;
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(v) => {
-        if (!v) finish();
-      }}
-    >
+    <Dialog open={open} onOpenChange={(v) => { if (!v) void finish(); }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 pr-6 text-left">
+          <DialogTitle className="flex items-center gap-2 pr-6 text-left text-xl">
             <Icon className="size-5 text-primary" />
             {current.title}
           </DialogTitle>
         </DialogHeader>
-        <p className="text-sm text-muted-foreground">{current.body}</p>
-
+        {current.body}
         <div className="mt-2 flex items-center gap-1.5">
-          {STEPS.map((s, i) => (
-            <span
-              key={s.title}
-              className={`h-1.5 flex-1 rounded-full ${i <= step ? "bg-primary" : "bg-border"}`}
-            />
+          {steps.map((_, i) => (
+            <span key={i} className={cn("h-1.5 flex-1 rounded-full", i <= step ? "bg-primary" : "bg-border")} />
           ))}
         </div>
-
         <div className="mt-4 flex items-center justify-between gap-2">
-          <Button variant="ghost" size="sm" onClick={finish}>
-            Skip
-          </Button>
+          {last ? <span /> : <Button variant="ghost" size="sm" onClick={() => finish()}>Skip</Button>}
           {last ? (
-            <Button size="sm" asChild onClick={finish}>
-              <Link to="/classes">Import my syllabus</Link>
-            </Button>
+            <Button onClick={() => finish("/dashboard")}>Go to Dashboard</Button>
           ) : (
-            <Button size="sm" onClick={() => setStep((s) => s + 1)}>
-              Next
-            </Button>
+            <Button onClick={() => setStep((s) => s + 1)}>{step === 0 ? "Let's go" : "Next"}</Button>
           )}
         </div>
       </DialogContent>

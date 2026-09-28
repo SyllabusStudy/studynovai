@@ -11,9 +11,9 @@ import { useFlashcards } from "@/lib/data";
 export const Route = createFileRoute("/_authenticated/flashcards/$deck")({
   head: () => ({
     meta: [
-      { title: "Study a deck — StudyMate AI" },
+      { title: "Study a deck — StudyNova" },
       { name: "description", content: "Flip through one flashcard deck built from your own course material." },
-      { property: "og:title", content: "Study a deck — StudyMate AI" },
+      { property: "og:title", content: "Study a deck — StudyNova" },
       { property: "og:description", content: "Review a single AI-generated flashcard deck." },
     ],
   }),

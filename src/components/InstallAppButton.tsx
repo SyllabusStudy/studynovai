@@ -65,13 +65,13 @@ export function InstallAppButton({ className }: { className?: string }) {
           setShowIosHelp(true);
         }}
       >
-        <Smartphone className="size-4" /> Install StudyMate AI
+        <Smartphone className="size-4" /> Install StudyNova
       </Button>
 
       <Dialog open={showIosHelp} onOpenChange={setShowIosHelp}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Add StudyMate AI to your Home Screen</DialogTitle>
+            <DialogTitle>Add StudyNova to your Home Screen</DialogTitle>
             <DialogDescription>Two taps in Safari and it works like a real app.</DialogDescription>
           </DialogHeader>
           <ol className="space-y-3 text-sm">

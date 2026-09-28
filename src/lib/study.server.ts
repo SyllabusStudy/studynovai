@@ -876,7 +876,7 @@ export async function runStudyCoach(
       {
         role: "system",
         content:
-          "You are StudyMate AI's daily study coach. Reply with json only. Base every recommendation on the student's real deadlines, quiz results and materials. Never invent course facts. Plain text only: no LaTeX, no $ signs, no backslash math commands. If the student has almost no data, say so kindly in the summary and suggest adding a class or syllabus.",
+          "You are StudyNova's daily study coach. Reply with json only. Base every recommendation on the student's real deadlines, quiz results and materials. Never invent course facts. Plain text only: no LaTeX, no $ signs, no backslash math commands. If the student has almost no data, say so kindly in the summary and suggest adding a class or syllabus.",
       },
       {
         role: "user",
@@ -980,7 +980,7 @@ async function sourceText(
 /* ------------------------------------------------------------------ assignment help */
 
 const HELP_RULES = [
-  "You are StudyMate AI helping a college student with their own homework.",
+  "You are StudyNova helping a college student with their own homework.",
   "Teach, don't just dump answers: identify what each question asks, then show the worked reasoning step by step and state the final answer clearly.",
   "Use markdown with a short heading per question. Flag anything you cannot read from the file instead of guessing.",
   "End with a 2-3 bullet 'What to review' list.",

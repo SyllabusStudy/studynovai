@@ -3,15 +3,17 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Camera, Crown, Loader2, Sparkles, Users } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
-import { getAdminStats } from "@/lib/admin.functions";
+import { checkAdmin, getAdminStats } from "@/lib/admin.functions";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AdminFeedback } from "@/components/AdminFeedback";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
     meta: [
-      { title: "Owner dashboard — StudyMate AI" },
-      { name: "description", content: "Sign-ups, Pro upgrades and AI usage across StudyMate AI." },
-      { property: "og:title", content: "Owner dashboard — StudyMate AI" },
+      { title: "Owner dashboard — StudyNova" },
+      { name: "description", content: "Sign-ups, Pro upgrades and AI usage across StudyNova." },
+      { property: "og:title", content: "Owner dashboard — StudyNova" },
       { property: "og:description", content: "Sign-ups, Pro upgrades and AI usage per student." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -23,9 +25,15 @@ export const Route = createFileRoute("/_authenticated/admin")({
 function AdminPage() {
   const { user } = useAuth();
   const load = useServerFn(getAdminStats);
+  const check = useServerFn(checkAdmin);
+  const { data: gate, isLoading: gating } = useQuery({
+    queryKey: ["is-admin", user?.id],
+    enabled: !!user,
+    queryFn: () => check({}),
+  });
   const { data, isLoading, error } = useQuery({
     queryKey: ["admin-stats", user?.id],
-    enabled: !!user,
+    enabled: !!gate?.admin,
     queryFn: () => load({}),
   });
 
@@ -39,8 +47,28 @@ function AdminPage() {
 
   return (
     <div>
-      <PageHeader title="Owner dashboard" description="How StudyMate AI is being used across every account." />
+      <PageHeader title="Admin" description="Feedback and usage across every StudyNova account." />
 
+      {gating ? (
+        <Loader2 className="size-5 animate-spin text-primary" />
+      ) : !gate?.admin ? (
+        <p className="text-sm text-muted-foreground">This page is for the site owner only.</p>
+      ) : (
+      <Tabs defaultValue="feedback">
+        <TabsList className="mb-6 flex-wrap">
+          <TabsTrigger value="feedback">Feedback</TabsTrigger>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
+        </TabsList>
+        <TabsContent value="feedback"><AdminFeedback /></TabsContent>
+        <TabsContent value="analytics">
+          <p className="text-sm text-muted-foreground">Visitor analytics are available in your Lovable project analytics. Usage totals are on the Overview tab.</p>
+        </TabsContent>
+        <TabsContent value="settings">
+          <p className="text-sm text-muted-foreground">Owner emails for new feedback turn on once an email sender domain is set up.</p>
+        </TabsContent>
       {isLoading ? (
         <div className="flex justify-center py-10">
           <Loader2 className="size-5 animate-spin text-primary" />
@@ -51,6 +79,7 @@ function AdminPage() {
         </p>
       ) : (
         <>
+          <TabsContent value="overview">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {cards.map((c) => (
               <div key={c.label} className="surface-card min-w-0 p-4">
@@ -62,9 +91,8 @@ function AdminPage() {
             ))}
           </div>
 
-          <h2 className="mb-3 mt-8 text-sm font-bold uppercase tracking-wide text-muted-foreground">
-            Per student
-          </h2>
+          </TabsContent>
+          <TabsContent value="users">
 
           <div className="space-y-2 lg:hidden">
             {data?.students.map((s) => (
@@ -122,7 +150,10 @@ function AdminPage() {
               </tbody>
             </table>
           </div>
+          </TabsContent>
         </>
+      )}
+      </Tabs>
       )}
     </div>
   );

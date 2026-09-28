@@ -32,9 +32,9 @@ import { classLabel, useAssignments, useClasses, useGradeCategories } from "@/li
 export const Route = createFileRoute("/_authenticated/grades")({
   head: () => ({
     meta: [
-      { title: "Grades — StudyMate AI" },
+      { title: "Grades — StudyNova" },
       { name: "description", content: "Weighted grade categories, your current grade and what you need on the final." },
-      { property: "og:title", content: "Grades — StudyMate AI" },
+      { property: "og:title", content: "Grades — StudyNova" },
       { property: "og:description", content: "Current grade, weights and final-exam projections." },
     ],
   }),

@@ -30,9 +30,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/classes/")({
   head: () => ({
     meta: [
-      { title: "My Classes — StudyMate AI" },
+      { title: "My Classes — StudyNova" },
       { name: "description", content: "Every course you're taking, with materials, policies and deadlines." },
-      { property: "og:title", content: "My Classes — StudyMate AI" },
+      { property: "og:title", content: "My Classes — StudyNova" },
       { property: "og:description", content: "Every course you're taking, with materials and deadlines." },
     ],
   }),
@@ -61,7 +61,7 @@ function ClassesPage() {
       <section className="mb-6">
         <h2 className="mb-2 text-sm font-bold tracking-tight">Import a syllabus PDF</h2>
         <Hint id="classes-syllabus" point="down" className="mb-2">
-          Start here: drop your syllabus PDF in the box below and StudyMate builds the class,
+          Start here: drop your syllabus PDF in the box below and StudyNova builds the class,
           exams, homework and grade weights for you.
         </Hint>
         <DocumentUploader syllabusOnly />
@@ -73,7 +73,7 @@ function ClassesPage() {
         <EmptyState
           icon={BookOpen}
           title="No classes yet"
-          description="Drop a syllabus PDF above and we'll create the class for you, or add one manually."
+          description="Add your first class to start building your semester."
           action={<NewClassDialog />}
         />
       ) : (
@@ -92,10 +92,11 @@ function ClassesPage() {
                 </div>
                 <h2 className="mt-2 text-base font-bold tracking-tight">{c.class_name}</h2>
                 <p className="mt-1 text-sm text-muted-foreground">{c.professor || "No instructor yet"}</p>
-                <p className="mt-4 text-xs text-muted-foreground">
-                  {documents.filter((d) => d.class_id === c.id).length} documents ·{" "}
-                  {assignments.filter((a) => a.class_id === c.id && a.status !== "completed").length} open tasks
-                </p>
+                <div className="mt-4 flex gap-4 text-sm">
+                  <span><strong>{assignments.filter((a) => a.class_id === c.id && a.status !== "completed").length}</strong> <span className="text-muted-foreground">open tasks</span></span>
+                  <span><strong>{documents.filter((d) => d.class_id === c.id).length}</strong> <span className="text-muted-foreground">documents</span></span>
+                </div>
+                <span className="mt-4 inline-flex text-sm font-semibold text-primary">Open Class →</span>
               </Link>
             </div>
           ))}

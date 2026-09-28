@@ -33,6 +33,8 @@ export function DocumentUploader({
   const qc = useQueryClient();
   const runProcess = useServerFn(processDocument);
   const runSyllabus = useServerFn(analyzeSyllabus);
+  const [stage, setStage] = useState<number | null>(null);
+  const STAGES = ["Reading your syllabus...", "Finding assignments...", "Finding exam dates...", "Building your semester..."];
 
 
   async function upload(files: FileList | null) {
@@ -62,9 +64,12 @@ export function DocumentUploader({
 
         await qc.invalidateQueries({ queryKey: ["documents"] });
         try {
+          if (syllabusOnly || isSyllabus) setStage(0);
           const processed = await runProcess({ data: { documentId: row.id } });
           if (syllabusOnly || isSyllabus) {
-            const result = await runSyllabus({ data: { documentId: row.id } });
+            setStage(1);
+            const timer = setInterval(() => setStage((n) => (n === null ? n : Math.min(n + 1, 3))), 5000);
+            const result = await runSyllabus({ data: { documentId: row.id } }).finally(() => clearInterval(timer));
             await qc.invalidateQueries({ queryKey: ["events"] });
             await qc.invalidateQueries({ queryKey: ["assignments"] });
             await qc.invalidateQueries({ queryKey: ["class"] });
@@ -91,6 +96,7 @@ export function DocumentUploader({
       toast.error(e instanceof Error ? e.message : "Upload failed");
     } finally {
       setBusy(false);
+      setStage(null);
       if (inputRef.current) inputRef.current.value = "";
     }
   }
@@ -122,6 +128,11 @@ export function DocumentUploader({
             ? "We read the PDF, create the class, and fill in your exams, homework and grade weights automatically."
             : "PDF, images, slides, docs or notes. We extract the text for your AI tutor.")}
       </p>
+      {stage !== null ? (
+        <p className="mt-3 flex items-center justify-center gap-2 text-sm font-semibold text-primary" aria-live="polite">
+          <Loader2 className="size-4 animate-spin" /> {STAGES[stage]}
+        </p>
+      ) : null}
       <div className="mt-4 flex flex-wrap items-center justify-center gap-4">
         <Button size="sm" disabled={busy} onClick={() => inputRef.current?.click()}>
           {busy ? <Loader2 className="size-4 animate-spin" /> : null}

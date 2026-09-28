@@ -20,14 +20,14 @@ import { useTheme } from "@/lib/theme";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "StudyMate AI – AI Study Assistant for College Students" },
+      { title: "StudyNova – AI Study Assistant for College Students" },
       {
         name: "description",
         content:
           "Upload your syllabus, get an instant semester calendar, AI-generated flashcards and quizzes, and a tutor that answers from your own course materials.",
       },
       { name: "robots", content: "index, follow" },
-      { property: "og:title", content: "StudyMate AI – AI Study Assistant for College Students" },
+      { property: "og:title", content: "StudyNova – AI Study Assistant for College Students" },
       {
         property: "og:description",
         content:
@@ -43,7 +43,7 @@ const FEATURES = [
   {
     icon: FileText,
     title: "Syllabus in, semester out",
-    body: "Upload a syllabus PDF or a photo of one. StudyMate reads the policies, grading breakdown and every date, then builds your calendar.",
+    body: "Upload a syllabus PDF or a photo of one. StudyNova reads the policies, grading breakdown and every date, then builds your calendar.",
   },
   {
     icon: Bot,
@@ -87,7 +87,7 @@ function Landing() {
         <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
           <Sparkles className="size-5" />
         </span>
-        <span className="text-sm font-extrabold tracking-tight">StudyMate AI</span>
+        <span className="text-sm font-extrabold tracking-tight">StudyNova</span>
         <div className="ml-auto flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle dark mode">
             {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
@@ -145,7 +145,7 @@ function Landing() {
           <div>
             <h2 className="text-lg font-bold tracking-tight">Set up your semester in about five minutes</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Add a class, drop in the syllabus, and let StudyMate handle the calendar, flashcards and study plan.
+              Add a class, drop in the syllabus, and let StudyNova handle the calendar, flashcards and study plan.
             </p>
           </div>
           <Button asChild size="lg" className="shrink-0">
@@ -157,7 +157,7 @@ function Landing() {
       </section>
 
       <footer className="border-t border-border py-8 text-center text-xs text-muted-foreground">
-        StudyMate AI — your AI-powered college companion.
+        StudyNova — your AI-powered college companion.
       </footer>
     </div>
   );
