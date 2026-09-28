@@ -20,9 +20,9 @@ export function HelpButton() {
 
   // Hide the Ask AI button while Help is open so they never overlap.
   useEffect(() => {
-    if (open) document.body.dataset.help = "open";
-    else delete document.body.dataset.help;
-    return () => { delete document.body.dataset.help; };
+    if (open) document.body.dataset['help'] = "open";
+    else delete document.body.dataset['help'];
+    return () => { delete document.body.dataset['help']; };
   }, [open]);
 
   function go(focus?: string) {
