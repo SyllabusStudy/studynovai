@@ -9,7 +9,7 @@ function retryDelay(response: Response | null, attempt: number): number | null {
   if (header) {
     const seconds = Number(header);
     const until = Number.isFinite(seconds) ? seconds * 1000 : Date.parse(header) - Date.now();
-    // Respect long provider cooldowns without keeping a single server request open for minutes.
+    // Respect long provider cooldowns without keeping a single request open for minutes.
     if (Number.isFinite(until) && until > MAX_WAIT_MS) return null;
     if (Number.isFinite(until) && until >= 0) return until;
   }
@@ -31,6 +31,14 @@ export async function fetchAiWithRetry(provider: string, url: string, init: Requ
     }
 
     if (response.status !== 429 && response.status < 500) return response;
+
+    // A provider access denial is terminal even if an intermediary mislabels its status.
+    // Never replay it, and preserve the original response for the caller.
+    if (response.status >= 500) {
+      const reason = response.clone();
+      const text = (await reason.text()).slice(0, 1000);
+      if (/provider_not_available|permission_error|access.denied|account (?:disabled|suspended)|model_requires_retention_consent|"stop_reason"\s*:\s*"refusal"/i.test(text)) return response;
+    }
 
     // Only status and attempt are logged: never keys, prompts, attachments or response bodies.
     console.warn("AI request temporarily failed", { provider, attempt, status: response.status });
