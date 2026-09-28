@@ -9,6 +9,7 @@ function retryDelay(response: Response | null, attempt: number): number | null {
   if (header) {
     const seconds = Number(header);
     const until = Number.isFinite(seconds) ? seconds * 1000 : Date.parse(header) - Date.now();
+    // Respect long provider cooldowns without keeping a single server request open for minutes.
     if (Number.isFinite(until) && until > MAX_WAIT_MS) return null;
     if (Number.isFinite(until) && until >= 0) return until;
   }
