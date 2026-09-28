@@ -137,4 +137,45 @@ describe("combined pipeline", () => {
   it("keeps the original text intact across spans", () => {
     for (const s of S) expect(combine(s.text, null).spans.map((x) => x.text).join("")).toBe(s.text);
   });
+
+  it("does not drop strongly AI-styled text to ~20% when the model reader is lenient", () => {
+    for (const s of S.filter((x) => x.kind === "ai" && !x.name.includes("Edited"))) {
+      const r = combine(s.text, { probs: aiProbsFor(s.text, 20, 20), genre: "other" });
+      expect(r.aiPercent, s.name).toBeGreaterThanOrEqual(60);
+      expect(["likely_ai", "possibly_ai"], s.name).toContain(r.verdict);
+    }
+  });
+
+  it("reports strong agreement with more than low confidence", () => {
+    const t = S[0]!.text;
+    const r = combine(t, { probs: aiProbsFor(t, 90, 90), genre: "other" });
+    expect(r.confidence).not.toBe("low");
+    const h = S[3]!.text;
+    const rh = combine(h, { probs: aiProbsFor(h, 10, 10), genre: "casual" });
+    expect(rh.verdict).toBe("likely_human");
+    expect(rh.confidence).not.toBe("low");
+  });
+
+  it("handles long text (all AI essays joined) and still flags it", () => {
+    const t = S.filter((x) => x.kind === "ai").map((x) => x.text).join("\n\n");
+    const r = combine(t, { probs: aiProbsFor(t, 80, 80), genre: "formal" });
+    expect(r.sections.length).toBeGreaterThan(2);
+    expect(r.verdict).toBe("likely_ai");
+  });
+
+  it("does not flag human writing even when the model reader is harsh-ish", () => {
+    for (const s of S.filter((x) => x.kind === "human")) {
+      const r = combine(s.text, { probs: aiProbsFor(s.text, 55, 55), genre: "other" });
+      expect(r.verdict, s.name).not.toBe("likely_ai");
+    }
+  });
+
+  it("says 'Unable to determine' when there is too little text", () => {
+    expect(combine(S.find((x) => x.kind === "short")!.text, null).verdictText).toBe("Unable to determine");
+  });
+
+  it("only lists reasons that were detected", () => {
+    const r = combine(S[3]!.text, { probs: aiProbsFor(S[3]!.text, 10, 10), genre: "casual" });
+    expect(r.reasons.some((x) => /stock phrasing|predictable transitions/i.test(x))).toBe(false);
+  });
 });
