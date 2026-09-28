@@ -1472,7 +1472,7 @@ export async function runAiTextCheck(input: { text: string }): Promise<DetectRes
           {
             role: "system",
             content:
-              'You are a careful AI-writing analyst. For EACH numbered sentence estimate the probability (0-100) that it was produced by an AI model, judging it in the context of its neighbours. Weigh: predictability of wording, generic phrasing, template-like structure, even rhythm, stock transitions, lack of specific personal detail. Do NOT treat formal, academic, technical, or non-native (ESL) English as AI by itself; quotes, citations and list items should be near 50 unless clearly generated. Use the full range; avoid defaulting to 50. Also classify the overall genre. Reply with json only: {"genre":"casual"|"creative"|"academic"|"technical"|"esl"|"formal"|"other","p":{"<number>":0-100,...every number}}.',
+              'You are a careful AI-writing analyst. For EACH numbered sentence estimate the probability (0-100) that it was produced by an AI model, judging it in the context of its neighbours. Weigh: predictability of wording, generic phrasing, template-like structure, even rhythm, stock transitions, lack of specific personal detail. Calibrate honestly: polished, generic essay prose with even rhythm, stock transitions and no concrete detail is typically AI (75-95) — do not under-rate it. Formal, academic, technical or non-native (ESL) English is NOT AI by itself; look for concrete detail, citations, data and idiosyncrasy as human evidence. Quotes and list items should be near 50 unless clearly generated. Use the full range; avoid defaulting to 50. Also classify the overall genre. Reply with json only: {"genre":"casual"|"creative"|"academic"|"technical"|"esl"|"formal"|"other","p":{"<number>":0-100,...every number}}.',
           },
           { role: "user", content: numbered },
         ],
@@ -1506,11 +1506,11 @@ export async function runHumanize(input: { sentences: { index: number; text: str
       {
         role: "system",
         content:
-          'Rewrite each numbered sentence so it sounds naturally written by a student: varied sentence length, plain everyday words, a personal and specific voice, no stock transitions ("Moreover", "Furthermore", "In conclusion", "delve", "crucial", "pivotal", "tapestry"). Keep the SAME meaning, facts and language, and roughly the same length. Do not add new claims. Reply with json only: {"rewrites":{"<number>":"rewritten sentence",...}} covering every number.',
+          'You are a writing editor improving the natural voice of a student\'s text. For each numbered sentence, improve writing quality only where it needs it: remove repetitive or robotic wording and stock transitions ("Moreover", "Furthermore", "In conclusion", "delve", "plays a crucial role"), vary sentence structure and length naturally, and simplify awkward or overly formal phrasing. PRESERVE: the exact meaning, every fact, number, name, quote and citation, important subject terminology, and the student\'s original tone and language. NEVER add grammar mistakes, typos, slang the student did not use, fake personal experiences or new claims. Your goal is better writing, not beating an AI detector. If a sentence is already fine, omit it. Reply with json only: {"rewrites":{"<number>":"improved sentence",...}}.',
       },
       { role: "user", content: `Surrounding text for tone:\n${input.context.slice(0, 3000)}\n\nSentences to rewrite:\n${list}` },
     ],
-    { temperature: 0.7, maxTokens: Math.min(4000, 300 + list.length) },
+    { temperature: 0.4, maxTokens: Math.min(4000, 300 + list.length) },
   );
   const parsed = parseJsonBlock<{ rewrites?: Record<string, string> }>(raw);
   const out: Record<number, string> = {};
@@ -1518,6 +1518,6 @@ export async function runHumanize(input: { sentences: { index: number; text: str
     const r = parsed.rewrites?.[String(s.index)];
     if (typeof r === "string" && r.trim()) out[s.index] = r.trim();
   }
-  if (!Object.keys(out).length) throw new Error("I couldn't rewrite that just now. Please try again.");
+  
   return out;
 }

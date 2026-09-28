@@ -6,7 +6,7 @@
 
 export type Label = "ai" | "human" | "mixed";
 export type Confidence = "low" | "medium" | "high";
-export type Verdict = "likely_ai" | "likely_human" | "mixed" | "insufficient";
+export type Verdict = "likely_ai" | "possibly_ai" | "likely_human" | "mixed" | "insufficient";
 
 export type Signal = {
   id: string;
@@ -205,7 +205,24 @@ export function computeSignals(sentences: string[], paragraphs: string[] = []): 
     label: voice >= 0.35 ? "Personal voice, contractions or casual wording (human-leaning)" : "No personal voice, contractions or informal wording",
   });
 
-  // 9. Paragraph-level consistency
+  // 9. Balanced lists of three ("A, B, and C") — a common generated rhythm
+  const triads = text.match(/\b\w+(?: \w+)?, \w+(?: \w+)?,? and \w+/g)?.length ?? 0;
+  const triadRate = triads / prose.length;
+  sig.push({
+    id: "triads", weight: 1, score: clamp(triadRate / 0.35), direction: "ai", detected: triads >= 2 && triadRate >= 0.2,
+    label: `Frequent balanced lists of three (${triads} "A, B, and C" patterns)`,
+  });
+
+  // 10. Specific detail: numbers, names, concrete nouns (human evidence)
+  const specifics = (text.match(/\b\d+(\.\d+)?\b|\b[A-Z][a-z]+ (?:[A-Z][a-z]+|\(\d{4}\))/g)?.length ?? 0) / prose.length;
+  const specScore = clamp(1 - specifics / 0.6);
+  sig.push({
+    id: "specifics", weight: 1, score: specScore, direction: specScore >= 0.5 ? "ai" : "human",
+    detected: specScore <= 0.2 || (specScore >= 0.95 && prose.length >= 5),
+    label: specScore <= 0.2 ? "Concrete details such as numbers, names or dates (human-leaning)" : "General statements with few concrete details, numbers or names",
+  });
+
+  // 11. Paragraph-level consistency
   const paras = paragraphs.map((p) => wordsOf(p).length).filter((l) => l >= 15);
   if (paras.length >= 3) {
     const pScore = clamp((0.45 - cv(paras)) / 0.3);
@@ -255,7 +272,22 @@ export type ModelJudgement = {
   genre?: string;
 };
 
-const labelFor = (p: number): Label => (p >= 62 ? "ai" : p <= 38 ? "human" : "mixed");
+const labelFor = (p: number): Label => (p >= 60 ? "ai" : p <= 38 ? "human" : "mixed");
+
+/**
+ * Fuse the style score with the model reader. Plain averaging let a lenient
+ * model pull clearly AI-styled text down to ~20%, so when several independent
+ * style signals agree the style evidence sets a floor (and vice versa).
+ */
+export function fuse(local: number, model: number | null, signals: Signal[]) {
+  if (model === null) return local;
+  const aiHits = signals.filter((s) => s.detected && s.direction === "ai").length;
+  const humanHits = signals.filter((s) => s.detected && s.direction === "human").length;
+  let v = model * 0.55 + local * 0.45;
+  if (aiHits >= 3 && local >= 58 && humanHits === 0) v = Math.max(v, local * 0.92, model);
+  if (humanHits >= 2 && local <= 42 && aiHits <= 1) v = Math.min(v, Math.max(local, model * 0.7));
+  return Math.round(clamp(v / 100) * 100);
+}
 
 /** Combine local signals with the model judgement across every section. */
 export function combine(text: string, model: ModelJudgement | null): AiCheckResult {
@@ -272,10 +304,10 @@ export function combine(text: string, model: ModelJudgement | null): AiCheckResu
     const loc = sw >= 60 ? (localScore(sig) ?? docLocal) : docLocal;
     const ps = sents.map((_, k) => model?.probs[r.start + k]).filter((p): p is number => typeof p === "number");
     const mp = ps.length ? Math.round(ps.reduce((a, b) => a + b, 0) / ps.length) : null;
-    const ai = mp === null ? loc : Math.round(mp * 0.6 + loc * 0.4);
+    const ai = fuse(loc, mp, sw >= 60 ? sig : docSignals);
     const reasons = sig.filter((s) => s.detected).sort((a, b) => b.score * b.weight - a.score * a.weight).map((s) => s.label);
-    if (mp !== null && mp >= 62) reasons.push(`The language-model reader rated these sentences ${mp}% likely AI`);
-    if (mp !== null && mp <= 38) reasons.push(`The language-model reader rated these sentences ${mp}% likely AI (human-leaning)`);
+    if (mp !== null && mp >= 60) reasons.push(`Sentence-by-sentence reading found predictable, AI-like wording (${mp}%)`);
+    if (mp !== null && mp <= 38) reasons.push(`Sentence-by-sentence reading found natural, less predictable wording (${mp}% AI-like)`);
     return { index, start: r.start, end: r.end, words: sw, aiPercent: ai, modelPercent: mp, localPercent: loc, label: labelFor(ai), reasons };
   });
 
@@ -293,14 +325,19 @@ export function combine(text: string, model: ModelJudgement | null): AiCheckResu
     if (spread >= 40) reasons.push("Writing style changes noticeably between sections");
   }
 
-  // Confidence: text length, agreement between methods, distance from the middle.
-  let level = totalWords >= 350 ? 2 : totalWords >= 150 ? 1 : 0;
-  if (modelPercent === null || Math.abs(modelPercent - docLocal) > 30) level--;
-  if (ai > 38 && ai < 62) level--;
+  // Confidence = strength + agreement of evidence (separate from the AI %).
+  const docAiHits = docSignals.filter((s) => s.detected && s.direction === "ai").length;
+  const docHumanHits = docSignals.filter((s) => s.detected && s.direction === "human").length;
+  let level = totalWords >= 250 ? 2 : totalWords >= 120 ? 1 : 0;
+  const agree = modelPercent !== null && Math.abs(modelPercent - docLocal) <= 22 && (modelPercent >= 50) === (docLocal >= 50);
+  if (agree || (ai >= 60 && docAiHits >= 4 && docHumanHits === 0) || (ai <= 38 && docHumanHits >= 2 && docAiHits <= 1)) level++;
+  if (modelPercent === null) level--;
+  else if (Math.abs(modelPercent - docLocal) > 35 && !agree) level--;
+  if (ai > 42 && ai < 58) level--;
   const genre = (model?.genre ?? "").toLowerCase();
   const sensitive = ["academic", "technical", "esl", "formal", "legal", "list"].find((g) => genre.includes(g));
   if (sensitive && ai >= 50) {
-    level--;
+    if (!agree) level--;
     cautions.push(
       sensitive === "esl"
         ? "This may be non-native English writing, which detectors often misjudge as AI."
@@ -308,23 +345,26 @@ export function combine(text: string, model: ModelJudgement | null): AiCheckResu
     );
   }
   if (/\n\s*([-*•]|\d+[.)])\s+/.test(`\n${text}`)) cautions.push("Lists and bullet points were left out of the style checks.");
+  level = Math.max(0, Math.min(2, level));
   const confidence: Confidence = level >= 2 ? "high" : level === 1 ? "medium" : "low";
 
+  const secSpread = sections.length >= 2 ? Math.max(...sections.map((s) => s.aiPercent)) - Math.min(...sections.map((s) => s.aiPercent)) : 0;
   let verdict: Verdict;
-  if (totalWords < MIN_WORDS) {
+  if (totalWords < MIN_WORDS || !docSignals.length) {
     verdict = "insufficient";
-    ai = Math.max(20, Math.min(80, ai));
-  } else if (ai >= 62 && confidence !== "low") verdict = "likely_ai";
-  else if (ai <= 38 && confidence !== "low") verdict = "likely_human";
-  else if (ai >= 75) verdict = "likely_ai";
+  } else if (secSpread >= 40 && sections.some((s) => s.label === "ai") && sections.some((s) => s.label === "human")) verdict = "mixed";
+  else if (ai >= 70) verdict = "likely_ai";
+  else if (ai >= 55) verdict = "possibly_ai";
+  else if (ai <= 35 && confidence !== "low") verdict = "likely_human";
   else if (ai <= 25) verdict = "likely_human";
   else verdict = "mixed";
 
   const verdictText = {
     likely_ai: "Likely AI-generated",
+    possibly_ai: "Possibly AI-generated",
     likely_human: "Likely human-written",
     mixed: "Mixed / Uncertain",
-    insufficient: "Insufficient evidence",
+    insufficient: "Unable to determine",
   }[verdict];
 
   const secOf = (i: number) => sections.find((s) => i >= s.start && i <= s.end)?.index ?? 0;
