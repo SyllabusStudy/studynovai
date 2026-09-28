@@ -19,6 +19,7 @@ import { Route as AuthenticatedAiCheckerRouteImport } from './routes/_authentica
 import { Route as AuthenticatedAssignmentsRouteImport } from './routes/_authenticated/assignments'
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated/calendar'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedEmailRouteImport } from './routes/_authenticated/email'
 import { Route as AuthenticatedFeedbackRouteImport } from './routes/_authenticated/feedback'
 import { Route as AuthenticatedGradesRouteImport } from './routes/_authenticated/grades'
 import { Route as AuthenticatedSchoolRouteImport } from './routes/_authenticated/school'
@@ -88,6 +89,11 @@ const AuthenticatedCalendarRoute = AuthenticatedCalendarRouteImport.update({
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedEmailRoute = AuthenticatedEmailRouteImport.update({
+  id: '/email',
+  path: '/email',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedFeedbackRoute = AuthenticatedFeedbackRouteImport.update({
@@ -210,6 +216,7 @@ export interface FileRoutesByFullPath {
   '/assignments': typeof AuthenticatedAssignmentsRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/email': typeof AuthenticatedEmailRoute
   '/feedback': typeof AuthenticatedFeedbackRoute
   '/grades': typeof AuthenticatedGradesRoute
   '/school': typeof AuthenticatedSchoolRoute
@@ -241,6 +248,7 @@ export interface FileRoutesByTo {
   '/assignments': typeof AuthenticatedAssignmentsRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/email': typeof AuthenticatedEmailRoute
   '/feedback': typeof AuthenticatedFeedbackRoute
   '/grades': typeof AuthenticatedGradesRoute
   '/school': typeof AuthenticatedSchoolRoute
@@ -274,6 +282,7 @@ export interface FileRoutesById {
   '/_authenticated/assignments': typeof AuthenticatedAssignmentsRoute
   '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/email': typeof AuthenticatedEmailRoute
   '/_authenticated/feedback': typeof AuthenticatedFeedbackRoute
   '/_authenticated/grades': typeof AuthenticatedGradesRoute
   '/_authenticated/school': typeof AuthenticatedSchoolRoute
@@ -307,6 +316,7 @@ export interface FileRouteTypes {
     | '/assignments'
     | '/calendar'
     | '/dashboard'
+    | '/email'
     | '/feedback'
     | '/grades'
     | '/school'
@@ -338,6 +348,7 @@ export interface FileRouteTypes {
     | '/assignments'
     | '/calendar'
     | '/dashboard'
+    | '/email'
     | '/feedback'
     | '/grades'
     | '/school'
@@ -370,6 +381,7 @@ export interface FileRouteTypes {
     | '/_authenticated/assignments'
     | '/_authenticated/calendar'
     | '/_authenticated/dashboard'
+    | '/_authenticated/email'
     | '/_authenticated/feedback'
     | '/_authenticated/grades'
     | '/_authenticated/school'
@@ -474,6 +486,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/email': {
+      id: '/_authenticated/email'
+      path: '/email'
+      fullPath: '/email'
+      preLoaderRoute: typeof AuthenticatedEmailRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/feedback': {
@@ -625,6 +644,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAssignmentsRoute: typeof AuthenticatedAssignmentsRoute
   AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedEmailRoute: typeof AuthenticatedEmailRoute
   AuthenticatedFeedbackRoute: typeof AuthenticatedFeedbackRoute
   AuthenticatedGradesRoute: typeof AuthenticatedGradesRoute
   AuthenticatedSchoolRoute: typeof AuthenticatedSchoolRoute
@@ -649,6 +669,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAssignmentsRoute: AuthenticatedAssignmentsRoute,
   AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedEmailRoute: AuthenticatedEmailRoute,
   AuthenticatedFeedbackRoute: AuthenticatedFeedbackRoute,
   AuthenticatedGradesRoute: AuthenticatedGradesRoute,
   AuthenticatedSchoolRoute: AuthenticatedSchoolRoute,
