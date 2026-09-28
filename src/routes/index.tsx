@@ -37,7 +37,7 @@ export const Route = createFileRoute("/")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: [{ rel: "canonical", href: "https://studymateaicollege.lovable.app/" }],
+    links: [{ rel: "canonical", href: "https://studynovai.lovable.app/" }],
   }),
   component: Landing,
 });
@@ -157,8 +157,21 @@ function Landing() {
         </div>
       </section>
 
-      <footer className="border-t border-border py-8 text-center text-xs text-muted-foreground">
-        StudyNova — your AI-powered college companion.
+      <footer className="border-t border-border py-8">
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-4 text-center text-xs text-muted-foreground sm:px-6">
+          <p>
+            StudyNova — your AI-powered college companion. Organize classes, syllabi, assignments,
+            deadlines and grades, and study with an AI tutor built on your own course materials.
+          </p>
+          <nav className="flex flex-wrap items-center justify-center gap-4 font-semibold">
+            <Link to="/privacy" className="hover:text-foreground">
+              Privacy Policy
+            </Link>
+            <Link to="/terms" className="hover:text-foreground">
+              Terms of Service
+            </Link>
+          </nav>
+        </div>
       </footer>
     </div>
   );
