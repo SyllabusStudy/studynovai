@@ -24,6 +24,9 @@ export const EVENT_TYPES = [
   "presentation",
   "final",
   "study_session",
+  "class",
+  "work",
+  "personal",
   "other",
 ] as const;
 
@@ -35,6 +38,9 @@ export const EVENT_TYPE_LABELS: Record<string, string> = {
   presentation: "Presentation",
   final: "Final exam",
   study_session: "Study session",
+  class: "Class",
+  work: "Work",
+  personal: "Personal",
   other: "Event",
 };
 
@@ -82,4 +88,13 @@ export const ASSIGNMENT_CATEGORIES = [
   { key: "reading", label: "Reading" },
   { key: "exam_prep", label: "Exam prep" },
   { key: "other", label: "Other" },
+] as const;
+
+export const CALENDAR_FILTERS = [
+  { key: "all", label: "All", types: null },
+  { key: "assignments", label: "Assignments", types: ["assignment", "project", "presentation"] },
+  { key: "exams", label: "Exams", types: ["exam", "quiz", "final"] },
+  { key: "classes", label: "Classes", types: ["class", "study_session"] },
+  { key: "work", label: "Work", types: ["work"] },
+  { key: "personal", label: "Personal", types: ["personal", "other"] },
 ] as const;

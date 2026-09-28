@@ -59,6 +59,8 @@ function CalendarPage() {
   const classById = new Map(classes.map((c) => [c.id, c]));
   const assignmentById = new Map(assignments.map((a) => [a.id, a]));
   const [selected, setSelected] = useState<string | null>(null);
+  const [filter, setFilter] = useState<string>("all");
+  const activeTypes = CALENDAR_FILTERS.find((f) => f.key === filter)?.types as readonly string[] | null | undefined;
   const [cursor, setCursor] = useState(() => {
 
     const d = new Date();
@@ -78,6 +80,7 @@ function CalendarPage() {
 
   const byDate = new Map<string, typeof events>();
   for (const e of events) {
+    if (activeTypes && !activeTypes.includes(e.event_type)) continue;
     const list = byDate.get(e.event_date) ?? [];
     list.push(e);
     byDate.set(e.event_date, list);
@@ -123,6 +126,21 @@ function CalendarPage() {
         >
           <ChevronRight className="size-4" />
         </Button>
+      </div>
+
+      <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label="Filter events">
+        {CALENDAR_FILTERS.map((f) => (
+          <Button
+            key={f.key}
+            size="sm"
+            variant={filter === f.key ? "default" : "outline"}
+            className="rounded-full"
+            aria-pressed={filter === f.key}
+            onClick={() => setFilter(f.key)}
+          >
+            {f.label}
+          </Button>
+        ))}
       </div>
 
       {isLoading ? <Loader2 className="size-5 animate-spin text-primary" /> : null}
