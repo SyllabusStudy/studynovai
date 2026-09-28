@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { AI_KEY_HELP, hasUserAiKey, withUserAiKey } from "./ai-key.server";
+import { AI_CONNECTION_MESSAGE } from "./ai-request.server";
 import {
   runAiTextCheck,
   runAssignmentHelp,
@@ -58,7 +59,7 @@ export const tutorChat = createServerFn({ method: "POST" })
       return {
         conversationId: data.conversationId ?? null,
         reply: null,
-        error: error instanceof Error ? error.message : "The tutor could not answer right now.",
+        error: error instanceof Error ? error.message : AI_CONNECTION_MESSAGE,
       };
     }
   });
@@ -227,7 +228,7 @@ export const snapTutor = createServerFn({ method: "POST" })
       if (!data.history.length) await recordUsage(context.supabase, context.userId, "snap");
       return { reply: result.reply, error: null };
     } catch (e) {
-      return { reply: null, error: e instanceof Error ? e.message : "SnapQuick could not answer right now." };
+      return { reply: null, error: e instanceof Error ? e.message : AI_CONNECTION_MESSAGE };
     }
   });
 
@@ -261,6 +262,6 @@ export const checkAiText = createServerFn({ method: "POST" })
       );
       return { result, error: null };
     } catch (e) {
-      return { result: null, error: e instanceof Error ? e.message : "The checker could not run." };
+      return { result: null, error: e instanceof Error ? e.message : AI_CONNECTION_MESSAGE };
     }
   });

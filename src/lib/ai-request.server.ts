@@ -33,9 +33,15 @@ export async function fetchAiWithRetry(provider: string, url: string, init: Requ
 
     // Only status and attempt are logged: never keys, prompts, attachments or response bodies.
     console.warn("AI request temporarily failed", { provider, attempt, status: response.status });
-    if (attempt === MAX_ATTEMPTS) throw new Error(AI_CONNECTION_MESSAGE);
+    if (attempt === MAX_ATTEMPTS) {
+      await response.body?.cancel();
+      throw new Error(AI_CONNECTION_MESSAGE);
+    }
     const delay = retryDelay(response, attempt);
-    if (delay === null) throw new Error(AI_CONNECTION_MESSAGE);
+    if (delay === null) {
+      await response.body?.cancel();
+      throw new Error(AI_CONNECTION_MESSAGE);
+    }
     await response.body?.cancel();
     await new Promise((resolve) => setTimeout(resolve, delay));
   }
