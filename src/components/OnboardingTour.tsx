@@ -8,18 +8,18 @@ import { useAuth } from "@/lib/auth";
 const STEPS = [
   {
     icon: Sparkles,
-    title: "Welcome to StudyMate AI",
+    title: "Welcome to StudyNova",
     body: "A quick tour so you know where everything lives. It takes about 30 seconds.",
   },
   {
     icon: BookOpen,
     title: "1. Import your syllabus",
-    body: "Go to My Classes and drop in a syllabus PDF. StudyMate creates the class and fills your exams, homework and grade weights automatically.",
+    body: "Go to My Classes and drop in a syllabus PDF. StudyNova creates the class and fills your exams, homework and grade weights automatically.",
   },
   {
     icon: CheckSquare,
     title: "2. Attach work to assignments",
-    body: "On any assignment, tap AI help to attach a PDF or screenshot. StudyMate reads it and walks you through the questions right there.",
+    body: "On any assignment, tap AI help to attach a PDF or screenshot. StudyNova reads it and walks you through the questions right there.",
   },
   {
     icon: Camera,
@@ -34,7 +34,7 @@ const STEPS = [
   {
     icon: Video,
     title: "5. Turn videos into notes",
-    body: "Paste a YouTube link or upload a lecture recording in QuickVideo. StudyMate writes the notes for you, then answers any question about the video.",
+    body: "Paste a YouTube link or upload a lecture recording in QuickVideo. StudyNova writes the notes for you, then answers any question about the video.",
   },
 ] as const;
 

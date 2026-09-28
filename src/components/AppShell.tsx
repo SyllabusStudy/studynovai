@@ -140,7 +140,7 @@ function BrandBlock() {
         <Sparkles className="size-5" />
       </span>
       <span className="leading-tight">
-        <span className="block font-display text-sm font-extrabold">StudyMate AI</span>
+        <span className="block font-display text-sm font-extrabold">StudyNova</span>
         <span className="block text-[10px] font-bold uppercase text-sidebar-foreground/55">Campus edition</span>
       </span>
     </div>

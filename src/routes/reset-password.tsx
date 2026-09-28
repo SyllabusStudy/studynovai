@@ -10,10 +10,10 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
     meta: [
-      { title: "Set a new password — StudyMate AI" },
-      { name: "description", content: "Choose a new password for your StudyMate AI student account." },
-      { property: "og:title", content: "Set a new password — StudyMate AI" },
-      { property: "og:description", content: "Choose a new password for your StudyMate AI account." },
+      { title: "Set a new password — StudyNova" },
+      { name: "description", content: "Choose a new password for your StudyNova student account." },
+      { property: "og:title", content: "Set a new password — StudyNova" },
+      { property: "og:description", content: "Choose a new password for your StudyNova account." },
     ],
   }),
   component: ResetPassword,

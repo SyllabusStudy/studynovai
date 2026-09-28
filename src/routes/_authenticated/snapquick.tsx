@@ -22,13 +22,13 @@ import { useAuth } from "@/lib/auth";
 export const Route = createFileRoute("/_authenticated/snapquick")({
   head: () => ({
     meta: [
-      { title: "SnapQuick — Snap your work, get help — StudyMate AI" },
+      { title: "SnapQuick — Snap your work, get help — StudyNova" },
       {
         name: "description",
         content:
           "Take a photo of your homework and SnapQuick scans it, identifies every question and walks you through the answers.",
       },
-      { property: "og:title", content: "SnapQuick — StudyMate AI" },
+      { property: "og:title", content: "SnapQuick — StudyNova" },
       { property: "og:description", content: "Photograph your work and get instant, step-by-step AI help." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -114,7 +114,7 @@ function SnapQuickPage() {
     <div>
       <PageHeader
         title="SnapQuick"
-        description="Point your camera at any worksheet, problem set or whiteboard — StudyMate reads it and explains every question."
+        description="Point your camera at any worksheet, problem set or whiteboard — StudyNova reads it and explains every question."
       />
 
       <Hint id="snapquick-camera" point="down" className="mb-4">

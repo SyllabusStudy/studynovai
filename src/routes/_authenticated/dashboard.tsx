@@ -33,9 +33,9 @@ type CoachPlan = {
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Dashboard — StudyMate AI" },
+      { title: "Dashboard — StudyNova" },
       { name: "description", content: "Your classes, upcoming deadlines and today's AI study plan." },
-      { property: "og:title", content: "Dashboard — StudyMate AI" },
+      { property: "og:title", content: "Dashboard — StudyNova" },
       { property: "og:description", content: "Upcoming deadlines and today's AI study plan." },
     ],
   }),
@@ -128,7 +128,7 @@ function Dashboard() {
             <EmptyState
               icon={CheckSquare}
               title="Nothing due in the next two weeks"
-              description="Add a class and upload its syllabus — StudyMate will fill in your deadlines for you."
+              description="Add a class and upload its syllabus — StudyNova will fill in your deadlines for you."
               action={
                 <Button asChild size="sm">
                   <Link to="/classes">Go to my classes</Link>

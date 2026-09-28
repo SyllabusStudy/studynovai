@@ -147,7 +147,7 @@ export function VideoWorkspace({
           <PencilLine className="size-4 text-primary" /> Work on your assignment with this video
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Upload your assignment (PDF, Word doc or a photo), edit it here, and let StudyMate answer,
+          Upload your assignment (PDF, Word doc or a photo), edit it here, and let StudyNova answer,
           rewrite or correct it using the video.
         </p>
       </div>

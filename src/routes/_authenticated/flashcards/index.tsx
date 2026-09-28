@@ -27,9 +27,9 @@ import { classLabel, useAssignments, useClasses, useDocuments, useFlashcards } f
 export const Route = createFileRoute("/_authenticated/flashcards/")({
   head: () => ({
     meta: [
-      { title: "Flashcards — StudyMate AI" },
+      { title: "Flashcards — StudyNova" },
       { name: "description", content: "AI-generated flashcard decks from your own chapters, notes and slides." },
-      { property: "og:title", content: "Flashcards — StudyMate AI" },
+      { property: "og:title", content: "Flashcards — StudyNova" },
       { property: "og:description", content: "AI flashcard decks generated from your own course materials." },
     ],
   }),

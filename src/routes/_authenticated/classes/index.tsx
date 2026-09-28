@@ -30,9 +30,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/classes/")({
   head: () => ({
     meta: [
-      { title: "My Classes — StudyMate AI" },
+      { title: "My Classes — StudyNova" },
       { name: "description", content: "Every course you're taking, with materials, policies and deadlines." },
-      { property: "og:title", content: "My Classes — StudyMate AI" },
+      { property: "og:title", content: "My Classes — StudyNova" },
       { property: "og:description", content: "Every course you're taking, with materials and deadlines." },
     ],
   }),
@@ -61,7 +61,7 @@ function ClassesPage() {
       <section className="mb-6">
         <h2 className="mb-2 text-sm font-bold tracking-tight">Import a syllabus PDF</h2>
         <Hint id="classes-syllabus" point="down" className="mb-2">
-          Start here: drop your syllabus PDF in the box below and StudyMate builds the class,
+          Start here: drop your syllabus PDF in the box below and StudyNova builds the class,
           exams, homework and grade weights for you.
         </Hint>
         <DocumentUploader syllabusOnly />

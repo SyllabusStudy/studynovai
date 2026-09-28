@@ -21,9 +21,9 @@ import { useTheme } from "@/lib/theme";
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
     meta: [
-      { title: "Settings — StudyMate AI" },
+      { title: "Settings — StudyNova" },
       { name: "description", content: "Update your student profile, reminder timing and appearance." },
-      { property: "og:title", content: "Settings — StudyMate AI" },
+      { property: "og:title", content: "Settings — StudyNova" },
       { property: "og:description", content: "Profile, reminders and appearance settings." },
     ],
   }),

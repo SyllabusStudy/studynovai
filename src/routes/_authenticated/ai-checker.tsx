@@ -13,9 +13,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/ai-checker")({
   head: () => ({
     meta: [
-      { title: "AI Text Checker — StudyMate AI" },
+      { title: "AI Text Checker — StudyNova" },
       { name: "description", content: "Check how much of a text looks AI-written or human-written, and see where and why." },
-      { property: "og:title", content: "AI Text Checker — StudyMate AI" },
+      { property: "og:title", content: "AI Text Checker — StudyNova" },
       { property: "og:description", content: "Estimate AI vs. human writing with passage-by-passage reasons." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

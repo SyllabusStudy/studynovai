@@ -37,9 +37,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/calendar")({
   head: () => ({
     meta: [
-      { title: "Calendar — StudyMate AI" },
+      { title: "Calendar — StudyNova" },
       { name: "description", content: "Every exam, quiz, project and deadline for your semester in one view." },
-      { property: "og:title", content: "Calendar — StudyMate AI" },
+      { property: "og:title", content: "Calendar — StudyNova" },
       { property: "og:description", content: "Exams, quizzes and deadlines for your whole semester." },
     ],
   }),

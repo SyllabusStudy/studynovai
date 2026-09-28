@@ -15,9 +15,9 @@ import type { QuizRow } from "@/lib/data";
 export const Route = createFileRoute("/_authenticated/quizzes/$quizId")({
   head: () => ({
     meta: [
-      { title: "Take a quiz — StudyMate AI" },
+      { title: "Take a quiz — StudyNova" },
       { name: "description", content: "Answer your AI-generated practice quiz and see explanations for every question." },
-      { property: "og:title", content: "Take a quiz — StudyMate AI" },
+      { property: "og:title", content: "Take a quiz — StudyNova" },
       { property: "og:description", content: "Answer your practice quiz and review the explanations." },
     ],
   }),

@@ -20,7 +20,7 @@ export function AskAiDock() {
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="right" className="flex w-full flex-col gap-0 sm:max-w-md">
           <SheetHeader className="pb-2">
-            <SheetTitle>StudyMate AI tutor</SheetTitle>
+            <SheetTitle>StudyNova tutor</SheetTitle>
           </SheetHeader>
           <div className="flex min-h-0 flex-1 flex-col px-4 pb-4">
             <TutorChat compact />

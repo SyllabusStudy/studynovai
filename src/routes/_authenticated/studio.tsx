@@ -13,13 +13,13 @@ import { generateAiImage } from "@/lib/ai-image.functions";
 export const Route = createFileRoute("/_authenticated/studio")({
   head: () => ({
     meta: [
-      { title: "AI Image Studio — StudyMate AI" },
+      { title: "AI Image Studio — StudyNova" },
       {
         name: "description",
         content:
-          "Generate study diagrams and visuals, or edit a photo of your notes, with StudyMate AI's image studio.",
+          "Generate study diagrams and visuals, or edit a photo of your notes, with StudyNova's image studio.",
       },
-      { property: "og:title", content: "AI Image Studio — StudyMate AI" },
+      { property: "og:title", content: "AI Image Studio — StudyNova" },
       {
         property: "og:description",
         content: "Create study diagrams or edit your own images with AI.",

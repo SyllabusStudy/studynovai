@@ -9,9 +9,9 @@ import { useAuth } from "@/lib/auth";
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
     meta: [
-      { title: "Owner dashboard — StudyMate AI" },
-      { name: "description", content: "Sign-ups, Pro upgrades and AI usage across StudyMate AI." },
-      { property: "og:title", content: "Owner dashboard — StudyMate AI" },
+      { title: "Owner dashboard — StudyNova" },
+      { name: "description", content: "Sign-ups, Pro upgrades and AI usage across StudyNova." },
+      { property: "og:title", content: "Owner dashboard — StudyNova" },
       { property: "og:description", content: "Sign-ups, Pro upgrades and AI usage per student." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -39,7 +39,7 @@ function AdminPage() {
 
   return (
     <div>
-      <PageHeader title="Owner dashboard" description="How StudyMate AI is being used across every account." />
+      <PageHeader title="Owner dashboard" description="How StudyNova is being used across every account." />
 
       {isLoading ? (
         <div className="flex justify-center py-10">

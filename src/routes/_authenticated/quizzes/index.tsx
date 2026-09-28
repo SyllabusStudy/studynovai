@@ -28,9 +28,9 @@ import { classLabel, formatDate, useClasses, useDocuments, useQuizzes } from "@/
 export const Route = createFileRoute("/_authenticated/quizzes/")({
   head: () => ({
     meta: [
-      { title: "Quizzes — StudyMate AI" },
+      { title: "Quizzes — StudyNova" },
       { name: "description", content: "Generate exam-level practice quizzes from your own course materials." },
-      { property: "og:title", content: "Quizzes — StudyMate AI" },
+      { property: "og:title", content: "Quizzes — StudyNova" },
       { property: "og:description", content: "Practice quizzes generated from your own materials." },
     ],
   }),
@@ -100,7 +100,7 @@ function QuizzesPage() {
       <PageHeader title="Quizzes" description="Practice with questions written from your own material." />
 
       <Hint id="quizzes-source" point="down" className="mb-4">
-        Select a class and the exact chapters or notes you want quizzed on — StudyMate writes questions only from your own uploads.
+        Select a class and the exact chapters or notes you want quizzed on — StudyNova writes questions only from your own uploads.
       </Hint>
 
       <div className="surface-card grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4">

@@ -15,12 +15,12 @@ import { useAuth } from "@/lib/auth";
 export const Route = createFileRoute("/_authenticated/quickvideo/$noteId")({
   head: () => ({
     meta: [
-      { title: "Video notes — QuickVideo — StudyMate AI" },
+      { title: "Video notes — QuickVideo — StudyNova" },
       {
         name: "description",
         content: "Read your AI video notes and ask follow-up questions about the video.",
       },
-      { property: "og:title", content: "Video notes — StudyMate AI" },
+      { property: "og:title", content: "Video notes — StudyNova" },
       { property: "og:description", content: "AI notes from your imported video, with follow-up questions." },
     ],
   }),

@@ -96,7 +96,7 @@ export function AssignmentHelp({
             <div className="space-y-1.5">
               <Label>Category (keeps AI work organized)</Label>
               <Hint id="assignment-category" point="down">
-                Pick a category so StudyMate files its saved work under the right kind of task.
+                Pick a category so StudyNova files its saved work under the right kind of task.
               </Hint>
               <Select value={category ?? ""} onValueChange={(v) => void setCategory(v)}>
                 <SelectTrigger>
@@ -116,7 +116,7 @@ export function AssignmentHelp({
               assignmentId={assignmentId}
               classId={classId}
               title="Attach the assignment (PDF or screenshot)"
-              hint="StudyMate reads it, then walks you through the questions — no extra clicks."
+              hint="StudyNova reads it, then walks you through the questions — no extra clicks."
             />
             <Hint id="assignment-open-file" point="down">
               Click a file name below to open it side by side — your PDF or image on the left, the

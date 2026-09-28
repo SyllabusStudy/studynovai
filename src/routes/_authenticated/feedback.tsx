@@ -39,13 +39,13 @@ const schema = z.object({
 export const Route = createFileRoute("/_authenticated/feedback")({
   head: () => ({
     meta: [
-      { title: "Feedback & questions — StudyMate AI" },
+      { title: "Feedback & questions — StudyNova" },
       {
         name: "description",
         content: "Ask questions or send suggestions about syllabus import, your calendar and AI help.",
       },
-      { property: "og:title", content: "Feedback & questions — StudyMate AI" },
-      { property: "og:description", content: "Send questions or ideas to the StudyMate AI team." },
+      { property: "og:title", content: "Feedback & questions — StudyNova" },
+      { property: "og:description", content: "Send questions or ideas to the StudyNova team." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
