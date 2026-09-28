@@ -1,3 +1,4 @@
+import { BrandLogo } from "@/components/BrandLogo";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import {
@@ -84,9 +85,7 @@ function Landing() {
   return (
     <div className="min-h-screen bg-background">
       <header className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:px-6">
-        <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-          <Sparkles className="size-5" />
-        </span>
+        <BrandLogo />
         <span className="text-sm font-extrabold tracking-tight">StudyNova</span>
         <div className="ml-auto flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle dark mode">
