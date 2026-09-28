@@ -182,7 +182,7 @@ function BrandBlock() {
   );
 }
 
-function NavLink({ item, pathname, onNavigate }: { item: NavItem; pathname: string; onNavigate?: () => void }) {
+function NavLink({ item, pathname, onNavigate }: { item: NavItem; pathname: string; onNavigate?: (() => void) | undefined }) {
   const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
   return (
     <li>
