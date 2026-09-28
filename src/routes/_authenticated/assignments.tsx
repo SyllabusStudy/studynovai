@@ -1,6 +1,7 @@
 import { recordStudyActivity } from "@/lib/activity";
 import { createFileRoute } from "@tanstack/react-router";
 import { ClassActionBar } from "@/components/ClassActionBar";
+import { useActiveClass } from "@/lib/active-class";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { CheckSquare, Loader2, Plus } from "lucide-react";
