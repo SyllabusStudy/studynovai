@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { AppShell } from "@/components/AppShell";
 import { OnboardingTour } from "@/components/OnboardingTour";
+import { HelpButton } from "@/components/HelpButton";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
@@ -28,6 +29,7 @@ function AuthenticatedLayout() {
   return (
     <AppShell>
       <OnboardingTour />
+      <HelpButton />
       <Outlet />
     </AppShell>
   );
