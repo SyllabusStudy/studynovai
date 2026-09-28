@@ -109,15 +109,36 @@ export function OnboardingTour() {
     if (!current) {
       setRect(null);
       targetRef.current = null;
+      setMobileHint(null);
       return;
     }
     let scrolled = false;
+    let lastKey = "";
     const tick = () => {
-      setPaused(otherDialogOpen());
-      const el = findTarget(current.selectors);
+      const mobile = window.innerWidth < 1024;
+      const menuOpen = !!document.querySelector('[role="dialog"][data-state="open"] nav');
+      // Mobile: while teaching a menu tap, the open menu is part of the tour — don't step aside.
+      const mobileClick = mobile && current.kind === "click";
+      setPaused(mobileClick && menuOpen ? false : otherDialogOpen());
+      let el = findTarget(current.selectors);
+      let hint: string | null = null;
+      if (!el && mobileClick) {
+        const group = current.goto === "/tutor" || current.goto === "/flashcards" || current.goto === "/quizzes" ? "study" : null;
+        if (menuOpen && group) {
+          el = findTarget([`[role="dialog"] [data-tour-group="${group}"]`]);
+          if (el) hint = "Tap Study to show more options.";
+        }
+        if (!el) {
+          el = findTarget(['[aria-label="Open menu"]']);
+          if (el) hint = "Tap the ☰ menu to open it.";
+        }
+      }
+      setMobileHint(hint);
       targetRef.current = el;
-      if (el && !scrolled) {
+      const k = el ? `${hint}` : "";
+      if (el && (!scrolled || k !== lastKey)) {
         scrolled = true;
+        lastKey = k;
         el.scrollIntoView({ block: "center", behavior: "smooth" });
       }
       setRect((prev) => {
