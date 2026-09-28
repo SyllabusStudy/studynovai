@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Share, Plus, Smartphone } from "lucide-react";
+import { Share, SquarePlus, Check, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -8,85 +8,123 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { isIos, isStandalone } from "@/lib/pwa";
+import { useInstall } from "@/lib/pwa-install";
+import logo from "@/assets/studynova-logo.png.asset.json";
 
-type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
+function IosSteps() {
+  return (
+    <ol className="space-y-3 text-sm">
+      <li className="flex items-center gap-2">
+        <Share className="size-4 text-primary" /> Tap the <strong>Share</strong> button in Safari.
+      </li>
+      <li className="flex items-center gap-2">
+        <SquarePlus className="size-4 text-primary" /> Choose <strong>Add to Home Screen</strong>.
+      </li>
+      <li className="flex items-center gap-2">
+        <Check className="size-4 text-primary" /> Tap <strong>Add</strong>. StudyNova opens like an app.
+      </li>
+    </ol>
+  );
+}
+
+function IosDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Install StudyNova on iPhone</DialogTitle>
+          <DialogDescription>Safari installs it in three taps.</DialogDescription>
+        </DialogHeader>
+        <IosSteps />
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export function InstallAppButton({ className }: { className?: string }) {
-  const [installed, setInstalled] = useState(true);
-  const [promptEvent, setPromptEvent] = useState<InstallEvent | null>(null);
-  const [ios, setIos] = useState(false);
-  const [showIosHelp, setShowIosHelp] = useState(false);
-
-  useEffect(() => {
-    setInstalled(isStandalone());
-    setIos(isIos());
-
-    const onPrompt = (e: Event) => {
-      e.preventDefault();
-      setPromptEvent(e as InstallEvent);
-    };
-    const onInstalled = () => {
-      setInstalled(true);
-      setPromptEvent(null);
-    };
-    const media = window.matchMedia("(display-mode: standalone)");
-    const onModeChange = () => setInstalled(isStandalone());
-
-    window.addEventListener("beforeinstallprompt", onPrompt);
-    window.addEventListener("appinstalled", onInstalled);
-    media.addEventListener("change", onModeChange);
-    return () => {
-      window.removeEventListener("beforeinstallprompt", onPrompt);
-      window.removeEventListener("appinstalled", onInstalled);
-      media.removeEventListener("change", onModeChange);
-    };
-  }, []);
-
-  // Already running as an installed app — nothing to prompt.
-  if (installed) return null;
-  // No native prompt available and not iOS (e.g. desktop Firefox): stay quiet.
-  if (!promptEvent && !ios) return null;
-
+  const { available, canPrompt, install } = useInstall();
+  const [iosOpen, setIosOpen] = useState(false);
+  if (!available) return null;
   return (
     <>
       <Button
         variant="outline"
         size="lg"
         className={className}
-        onClick={async () => {
-          if (promptEvent) {
-            await promptEvent.prompt();
-            const choice = await promptEvent.userChoice.catch(() => null);
-            if (choice?.outcome === "accepted") setInstalled(true);
-            setPromptEvent(null);
-            return;
-          }
-          setShowIosHelp(true);
-        }}
+        onClick={() => (canPrompt ? void install() : setIosOpen(true))}
       >
         <Smartphone className="size-4" /> Install StudyNova
       </Button>
+      <IosDialog open={iosOpen} onOpenChange={setIosOpen} />
+    </>
+  );
+}
 
-      <Dialog open={showIosHelp} onOpenChange={setShowIosHelp}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Add StudyNova to your Home Screen</DialogTitle>
-            <DialogDescription>Two taps in Safari and it works like a real app.</DialogDescription>
+const DISMISS_KEY = "studynova-install-dismissed";
+
+/** One-time install card. "Not now" hides it for 14 days; never shows once installed. */
+export function InstallCard() {
+  const { available, canPrompt, install } = useInstall();
+  const [open, setOpen] = useState(false);
+  const [iosOpen, setIosOpen] = useState(false);
+
+  useEffect(() => {
+    if (!available) return;
+    try {
+      const at = Number(localStorage.getItem(DISMISS_KEY) ?? 0);
+      if (Date.now() - at < 14 * 864e5) return;
+      if (localStorage.getItem("studynova-installed")) return;
+    } catch {
+      return;
+    }
+    const t = setTimeout(() => {
+      // Don't cover the first-run tour.
+      if (document.querySelector("[data-tour-active]")) return;
+      setOpen(true);
+    }, 30000);
+    return () => clearTimeout(t);
+  }, [available]);
+
+  function notNow() {
+    try {
+      localStorage.setItem(DISMISS_KEY, String(Date.now()));
+    } catch {
+      /* ignore */
+    }
+    setOpen(false);
+  }
+
+  if (!available) return null;
+  return (
+    <>
+      <Dialog open={open} onOpenChange={(v) => (v ? setOpen(true) : notNow())}>
+        <DialogContent className="max-w-sm text-center">
+          <img src={logo.url} alt="StudyNova" className="mx-auto size-20 rounded-2xl" />
+          <DialogHeader className="items-center text-center">
+            <DialogTitle className="font-display text-2xl">StudyNova</DialogTitle>
+            <DialogDescription>Your semester, made simple.</DialogDescription>
           </DialogHeader>
-          <ol className="space-y-3 text-sm">
-            <li className="flex items-center gap-2">
-              <Share className="size-4 text-primary" /> Tap the <strong>Share</strong> button in Safari.
-            </li>
-            <li className="flex items-center gap-2">
-              <Plus className="size-4 text-primary" /> Choose <strong>Add to Home Screen</strong>.
-            </li>
-            <li className="flex items-center gap-2">
-              <Smartphone className="size-4 text-primary" /> Tap <strong>Add</strong> — done.
-            </li>
-          </ol>
+          <p className="text-sm">📱 Install StudyNova on your device. It opens from your home screen in its own window.</p>
+          <div className="flex flex-col gap-2 pt-2">
+            <Button
+              size="lg"
+              onClick={async () => {
+                if (canPrompt) {
+                  await install();
+                  setOpen(false);
+                } else {
+                  setOpen(false);
+                  setIosOpen(true);
+                }
+              }}
+            >
+              Install App
+            </Button>
+            <Button variant="ghost" onClick={notNow}>Not now</Button>
+          </div>
         </DialogContent>
       </Dialog>
+      <IosDialog open={iosOpen} onOpenChange={setIosOpen} />
     </>
   );
 }

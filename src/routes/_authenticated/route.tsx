@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth";
 import { AppShell } from "@/components/AppShell";
 import { OnboardingTour } from "@/components/OnboardingTour";
 import { HelpButton } from "@/components/HelpButton";
+import { InstallCard } from "@/components/InstallAppButton";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
@@ -30,6 +31,7 @@ function AuthenticatedLayout() {
     <AppShell>
       <OnboardingTour />
       <HelpButton />
+      <InstallCard />
       <Outlet />
     </AppShell>
   );

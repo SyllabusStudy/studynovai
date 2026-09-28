@@ -157,7 +157,7 @@ function Dashboard() {
           <p className="mt-2 text-muted-foreground">Here's what needs your attention today.</p>
         </div>
         <div className="flex items-center gap-2">
-          <InstallAppButton className="hidden sm:inline-flex" />
+          <InstallAppButton />
           <span
             className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-xs font-semibold"
             title={
