@@ -1316,7 +1316,7 @@ async function runCalcChecks(reply: string): Promise<{ text: string; failures: s
 const SNAP_VERIFY_RULES = `You are an independent checker for a tutoring answer. Do NOT trust the draft. First solve/analyze the student's question yourself from scratch, then compare.
 Check: every calculation and algebra step, signs, equation solutions (substitute back), derivatives/integrals (differentiate results), units, chemical balancing, reaction products and SMILES validity, statistics, code output, historical facts/dates, logical consistency, and that diagrams (mermaid/svg/smiles blocks) are valid and match the content.
 If the draft is fully correct, reply with exactly: VERIFIED
-If anything is wrong or a diagram block is invalid, reply with "CORRECTED" on the first line followed by the COMPLETE corrected answer in exactly the same format, headings and style as the draft (keep all its good parts, fix only what is wrong). If something genuinely cannot be determined (unreadable photo, ambiguous question), the corrected answer must say so plainly instead of guessing. Never mention this checking process. Keep any ```calc block out of your reply.`;
+If anything is wrong or a diagram block is invalid, reply with "CORRECTED" on the first line followed by the COMPLETE corrected answer in exactly the same format, headings and style as the draft (keep all its good parts, fix only what is wrong). If something genuinely cannot be determined (unreadable photo, ambiguous question), the corrected answer must say so plainly instead of guessing. Never mention this checking process. Keep any \`\`\`calc block out of your reply.`;
 
 
 /* ------------------------------------------------------------------ file mark-up */
