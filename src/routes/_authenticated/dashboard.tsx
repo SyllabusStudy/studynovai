@@ -22,10 +22,15 @@ import {
   useProfile,
 } from "@/lib/data";
 import { cn } from "@/lib/utils";
+import { ClassActionBar } from "@/components/ClassActionBar";
+import { useActiveClass } from "@/lib/active-class";
+import { useRecordActivity, useStreak } from "@/lib/activity";
+import { classifyEvent, eventDateTime, useNow } from "@/lib/dates";
+import { useNavigate } from "@tanstack/react-router";
 
 type CoachPlan = {
   summary?: string;
-  tasks?: Array<{ title?: string; detail?: string; minutes?: number; class?: string }>;
+  tasks?: Array<{ time?: string; title?: string; detail?: string; minutes?: number; class?: string; tool?: string }>;
 };
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -50,6 +55,22 @@ function Dashboard() {
   const [plan, setPlan] = useState<CoachPlan | null>(null);
   const [busy, setBusy] = useState(false);
   const coach = useServerFn(studyCoach);
+  const now = useNow();
+  const navigate = useNavigate();
+  const { setActiveClassId } = useActiveClass();
+  const { data: streakData } = useStreak(user?.id);
+  const record = useRecordActivity();
+  const streak = streakData?.streak ?? 0;
+
+  function studyNow(t: NonNullable<CoachPlan["tasks"]>[number]) {
+    const match = classes.find(
+      (c) => c.class_name.toLowerCase() === (t.class ?? "").toLowerCase() || (c.course_code ?? "").toLowerCase() === (t.class ?? "").toLowerCase(),
+    );
+    if (match) void setActiveClassId(match.id);
+    record("study_session");
+    const to = t.tool === "flashcards" ? "/flashcards" : t.tool === "quiz" ? "/quizzes" : "/tutor";
+    void navigate({ to });
+  }
 
   const open = assignments.filter((a) => a.status !== "completed");
   const upcoming = open
@@ -59,11 +80,9 @@ function Dashboard() {
     })
     .slice(0, 6);
   const nextEvents = events
-    .filter((e) => {
-      const d = daysUntil(e.event_date);
-      return d !== null && d >= 0;
-    })
-    .slice(0, 5);
+    .filter((e) => classifyEvent(e.event_date, e.event_time, now) !== "past")
+    .sort((a, b) => eventDateTime(a.event_date, a.event_time).getTime() - eventDateTime(b.event_date, b.event_time).getTime())
+    .slice(0, 6);
 
   const classById = new Map(classes.map((c) => [c.id, c]));
 
@@ -88,10 +107,11 @@ function Dashboard() {
     { icon: Brain, label: "Flashcards", value: flashcards.length },
   ];
 
-  const dueToday = open.filter((a) => daysUntil(a.due_date) !== null && daysUntil(a.due_date)! <= 0);
+  const overdue = open.filter((a) => (daysUntil(a.due_date) ?? 0) < 0);
+  const dueToday = open.filter((a) => daysUntil(a.due_date) === 0);
   const dueTomorrow = open.filter((a) => daysUntil(a.due_date) === 1);
   const upNext = upcoming.filter((a) => (daysUntil(a.due_date) ?? 0) > 1).slice(0, 4);
-  const hour = new Date().getHours();
+  const hour = now.getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   const firstName = profile?.name?.split(" ")[0];
 
@@ -138,11 +158,26 @@ function Dashboard() {
         </div>
         <div className="flex items-center gap-2">
           <InstallAppButton className="hidden sm:inline-flex" />
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-xs font-semibold">
-            <Flame className="size-3.5 text-warning" /> {profile?.study_streak ?? 0} day streak
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-xs font-semibold"
+            title={
+              streak > 0
+                ? `Keep it going — you've studied ${streak} day${streak === 1 ? "" : "s"} in a row.`
+                : "Study anything today to start a streak."
+            }
+          >
+            <Flame className="size-3.5 text-warning" /> {streak} day streak
           </span>
         </div>
       </div>
+
+      <p className="-mt-6 text-sm text-muted-foreground">
+        {streak > 0
+          ? `🔥 Keep it going — you've studied ${streak} day${streak === 1 ? "" : "s"} in a row.${streakData?.studiedToday ? "" : " Study something today to keep it."}`
+          : "🔥 Study anything today to start your streak."}
+      </p>
+
+      <ClassActionBar className="mb-0" />
 
       <div className="flex flex-wrap gap-2">
         {quick.map((q) => (
@@ -175,6 +210,7 @@ function Dashboard() {
             />
           ) : (
             <div className="space-y-6">
+              {overdue.length ? renderList("Overdue", overdue, "") : null}
               {renderList("Due today", dueToday, "Nothing due today.")}
               {renderList("Due tomorrow", dueTomorrow, "Nothing due tomorrow.")}
               {renderList("Up next", upNext, "Nothing else in the next two weeks.")}
@@ -188,7 +224,7 @@ function Dashboard() {
           </h2>
           {plan ? null : (
             <p className="mt-2 text-sm text-muted-foreground">
-              Let AI build a study plan around your upcoming deadlines.
+              I'll check your calendar and deadlines, then plan your day.
             </p>
           )}
           <Button className="mt-4 w-full" onClick={getPlan} disabled={busy}>
@@ -203,17 +239,23 @@ function Dashboard() {
                   {plan.tasks.map((t, i) => (
                     <li key={i} className="rounded-lg bg-muted/60 p-3">
                       <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-semibold">{t.title}</p>
+                        <p className="text-sm font-semibold">
+                          {t.time ? <span className="mr-1.5 text-primary">{t.time} —</span> : null}
+                          {t.title}
+                        </p>
                         {t.minutes ? <span className="shrink-0 text-xs text-muted-foreground">{t.minutes} min</span> : null}
                       </div>
-                      {t.class ? <p className="mt-0.5 text-xs text-muted-foreground">{t.class}</p> : null}
+                      {t.class ? <p className="mt-0.5 text-xs text-muted-foreground">📚 {t.class}</p> : null}
                       {t.detail ? <p className="mt-1.5 text-sm">{t.detail}</p> : null}
+                      <Button size="sm" variant="secondary" className="mt-2 h-8" onClick={() => studyNow(t)}>
+                        Study Now
+                      </Button>
                     </li>
                   ))}
                 </ul>
               ) : null}
               <Button asChild variant="secondary" className="w-full">
-                <Link to="/tutor">Start Study Session</Link>
+                <Link to="/tutor" onClick={() => record("study_session")}>Start Study Session</Link>
               </Button>
             </div>
           ) : null}
@@ -229,7 +271,10 @@ function Dashboard() {
                 <CalendarDays className="size-4 text-primary" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold">{e.title}</p>
-                  <p className="text-xs text-muted-foreground">{relativeDay(e.event_date)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {relativeDay(e.event_date)}
+                    {e.event_time ? ` · ${e.event_time}` : ""}
+                  </p>
                 </div>
               </li>
             ))}
