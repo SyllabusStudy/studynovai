@@ -149,7 +149,7 @@ function Dashboard() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-4" data-tour="dashboard">
         <div>
           <h1 className="text-3xl font-extrabold sm:text-4xl">
             {greeting}{firstName ? `, ${firstName}` : ""} 👋
@@ -181,7 +181,7 @@ function Dashboard() {
 
       <div className="flex flex-wrap gap-2">
         {quick.map((q) => (
-          <Button key={q.label} asChild variant="outline" size="sm" className="rounded-full">
+          <Button key={q.label} asChild variant="outline" size="sm" className="rounded-full" data-tour={`quick-${q.label.toLowerCase().replace(/\s+/g, "-")}`}>
             <Link to={q.to}>
               <q.icon className="size-4" /> {q.label}
             </Link>

@@ -1,28 +1,23 @@
-import { useEffect, useState, type CSSProperties } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useProfile } from "@/lib/data";
+import { TOUR_EVENT, TOUR_STEPS, type TourEventDetail } from "@/lib/tour";
 
-type Step = { to: string; emoji: string; title: string; body: string; cta: string };
+// Steps 0..N-1 are spotlight steps, N is the final "ready" screen.
+const FINAL = TOUR_STEPS.length;
+const PAD = 6;
+const GAP = 14;
 
-const STEPS: Step[] = [
-  { to: "/classes", emoji: "📚", title: "Step 1 — Add your classes", body: "Click My Classes to add your classes and upload your syllabi.", cta: "Got it" },
-  { to: "/calendar", emoji: "📅", title: "Step 2 — Check your calendar", body: "Click Calendar to see every class, deadline and exam in one place.", cta: "Next" },
-  { to: "/assignments", emoji: "✅", title: "Step 3 — Track assignments", body: "Click Assignments to add homework and mark it done when you finish.", cta: "Next" },
-  { to: "/tutor", emoji: "🤖", title: "Step 4 — Study with AI", body: "Click AI Tutor to ask questions about your own class materials.", cta: "Next" },
-];
-// 0 = welcome, 1..4 = steps, 5 = done screen
-const LAST = STEPS.length + 1;
-
-function findTarget(to: string): DOMRect | null {
-  const els = Array.from(document.querySelectorAll<HTMLAnchorElement>(`a[href="${to}"]`));
-  for (const el of els) {
-    const r = el.getBoundingClientRect();
-    if (r.width > 0 && r.height > 0) return r;
+function findTarget(selectors: string[]): HTMLElement | null {
+  for (const sel of selectors) {
+    for (const el of Array.from(document.querySelectorAll<HTMLElement>(sel))) {
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) return el;
+    }
   }
   return null;
 }
@@ -32,128 +27,200 @@ export function OnboardingTour() {
   const { data: profile } = useProfile(user?.id);
   const qc = useQueryClient();
   const navigate = useNavigate();
-  const key = user ? `studynova-onboarding-step-${user.id}` : "";
-  const [open, setOpen] = useState(false);
+  const { pathname } = useLocation();
+  const key = user ? `studynova-tour-step-${user.id}` : "";
+
+  // mode "tour" = full walkthrough, "focus" = single highlight from Help
+  const [mode, setMode] = useState<"off" | "tour" | "focus">("off");
   const [step, setStepState] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
+  const [cardPos, setCardPos] = useState<CSSProperties>({});
+  const cardRef = useRef<HTMLDivElement>(null);
+  const mandatory = profile?.onboarding_done === false;
+
+  // Clean up the retired onboarding key.
+  useEffect(() => {
+    if (user) localStorage.removeItem(`studynova-onboarding-step-${user.id}`);
+  }, [user]);
 
   useEffect(() => {
-    if (profile && profile.onboarding_done === false && key) {
+    if (mandatory && key && mode === "off") {
       const saved = Number(localStorage.getItem(key) || 0);
-      setStepState(Number.isFinite(saved) ? Math.min(Math.max(saved, 0), LAST) : 0);
-      setOpen(true);
+      setStepState(Number.isFinite(saved) ? Math.min(Math.max(saved, 0), FINAL) : 0);
+      setMode("tour");
     }
-  }, [profile, key]);
+  }, [mandatory, key, mode]);
+
+  useEffect(() => {
+    const onStart = (e: Event) => {
+      const { focus } = (e as CustomEvent<TourEventDetail>).detail ?? {};
+      if (focus) {
+        const i = TOUR_STEPS.findIndex((s) => s.id === focus);
+        if (i < 0) return;
+        setStepState(i);
+        setMode("focus");
+      } else {
+        setStepState(0);
+        setMode("tour");
+      }
+    };
+    window.addEventListener(TOUR_EVENT, onStart);
+    return () => window.removeEventListener(TOUR_EVENT, onStart);
+  }, []);
+
+  // Tour lives on the dashboard where the real buttons are.
+  useEffect(() => {
+    if (mode !== "off" && pathname !== "/dashboard") navigate({ to: "/dashboard" });
+  }, [mode, pathname, navigate]);
 
   function setStep(n: number) {
     setStepState(n);
-    if (key) localStorage.setItem(key, String(n));
+    if (key && mode === "tour" && mandatory) localStorage.setItem(key, String(n));
   }
 
-  const current = step >= 1 && step <= STEPS.length ? STEPS[step - 1]! : null;
+  const current = step < FINAL ? TOUR_STEPS[step]! : null;
+
+  const measure = useCallback(() => {
+    if (mode === "off" || !current) return setRect(null);
+    const el = findTarget(current.selectors);
+    setRect(el ? el.getBoundingClientRect() : null);
+  }, [mode, current]);
 
   useEffect(() => {
-    if (!open || !current) return setRect(null);
-    const update = () => setRect(findTarget(current.to));
-    update();
-    window.addEventListener("resize", update);
-    window.addEventListener("scroll", update, true);
-    return () => {
-      window.removeEventListener("resize", update);
-      window.removeEventListener("scroll", update, true);
+    if (mode === "off" || !current) return;
+    let tries = 0;
+    let timer: number;
+    const locate = () => {
+      const el = findTarget(current.selectors);
+      if (el) {
+        el.scrollIntoView({ block: "center", behavior: "smooth" });
+        window.setTimeout(measure, 350);
+        measure();
+      } else if (tries++ < 20) {
+        timer = window.setTimeout(locate, 150);
+      } else setRect(null);
     };
-  }, [open, current]);
+    locate();
+    window.addEventListener("resize", measure);
+    window.addEventListener("scroll", measure, true);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("scroll", measure, true);
+    };
+  }, [mode, current, measure, pathname]);
+
+  // Position the card so it never covers the target or leaves the screen.
+  useLayoutEffect(() => {
+    const card = cardRef.current;
+    if (!card) return;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const cw = card.offsetWidth;
+    const ch = card.offsetHeight;
+    if (!rect) {
+      setCardPos({ left: (vw - cw) / 2, top: Math.max(16, (vh - ch) / 2) });
+      return;
+    }
+    const clampX = (x: number) => Math.min(Math.max(12, x), vw - cw - 12);
+    const clampY = (y: number) => Math.min(Math.max(12, y), vh - ch - 12);
+    if (vh - rect.bottom - PAD >= ch + GAP) {
+      setCardPos({ left: clampX(rect.left + rect.width / 2 - cw / 2), top: rect.bottom + PAD + GAP });
+    } else if (rect.top - PAD >= ch + GAP) {
+      setCardPos({ left: clampX(rect.left + rect.width / 2 - cw / 2), top: rect.top - PAD - GAP - ch });
+    } else if (vw - rect.right - PAD >= cw + GAP) {
+      setCardPos({ left: rect.right + PAD + GAP, top: clampY(rect.top + rect.height / 2 - ch / 2) });
+    } else if (rect.left - PAD >= cw + GAP) {
+      setCardPos({ left: rect.left - PAD - GAP - cw, top: clampY(rect.top + rect.height / 2 - ch / 2) });
+    } else {
+      setCardPos({ left: clampX((vw - cw) / 2), top: vh - ch - 12 });
+    }
+  }, [rect, step, mode]);
 
   async function complete() {
-    if (user) {
+    if (user && mandatory) {
       await supabase.from("profiles").update({ onboarding_done: true }).eq("id", user.id);
-      localStorage.removeItem(key);
       await qc.invalidateQueries({ queryKey: ["profile"] });
     }
-    setOpen(false);
-    navigate({ to: "/dashboard" });
+    if (key) localStorage.removeItem(key);
+    setMode("off");
   }
 
-  if (!open) return null;
+  if (mode === "off") return null;
 
-  // Place card next to the highlighted nav item on wide screens; centered otherwise.
-  const side = rect && rect.right < window.innerWidth / 2;
-  const cardStyle: React.CSSProperties = side
-    ? { position: "fixed", left: rect!.right + 28, top: Math.max(16, Math.min(rect!.top + rect!.height / 2 - 90, window.innerHeight - 260)) }
-    : {};
-
-  const card = (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="onboarding-title"
-      style={cardStyle}
-      className="surface-card relative w-[min(92vw,26rem)] animate-fade-up p-6 shadow-2xl"
-    >
-      {side ? (
-        <ArrowLeft className="absolute -left-9 top-1/2 size-8 -translate-y-1/2 animate-pulse text-primary" />
-      ) : null}
-
-      {step === 0 ? (
-        <>
-          <h2 id="onboarding-title" className="text-2xl font-extrabold tracking-tight">🎓 Welcome to StudyNova 👋</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Let's get your semester set up. We'll walk you through it — it only takes a minute.
-          </p>
-          <Button className="mt-6 w-full gap-2" size="lg" onClick={() => setStep(1)}>
-            Let's Get Started <ArrowRight className="size-4" />
-          </Button>
-        </>
-      ) : current ? (
-        <>
-          <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-            {step} of {STEPS.length}
-          </p>
-          <h2 id="onboarding-title" className="mt-1 text-xl font-extrabold tracking-tight">
-            {current.emoji} {current.title}
-          </h2>
-          {!side ? (
-            <p className="mt-2 text-xs font-semibold text-primary">➡️ Find it in the menu</p>
-          ) : null}
-          <p className="mt-2 text-sm text-muted-foreground">{current.body}</p>
-          <div className="mt-4 flex gap-1.5">
-            {STEPS.map((_, i) => (
-              <span key={i} className={`h-1.5 flex-1 rounded-full ${i < step ? "bg-primary" : "bg-border"}`} />
-            ))}
-          </div>
-          <Button className="mt-5 w-full gap-2" onClick={() => setStep(step + 1)}>
-            {current.cta} <ArrowRight className="size-4" />
-          </Button>
-          <button
-            type="button"
-            onClick={() => setStep(step + 1)}
-            className="mt-3 w-full text-center text-xs font-medium text-muted-foreground underline-offset-4 hover:underline"
-          >
-            Skip this step
-          </button>
-        </>
-      ) : (
-        <>
-          <h2 id="onboarding-title" className="text-2xl font-extrabold tracking-tight">🎉 You're all set!</h2>
-          <p className="mt-2 text-sm text-muted-foreground">StudyNova is ready to help you study smarter. 🎓</p>
-          <Button className="mt-6 w-full gap-2" size="lg" onClick={() => void complete()}>
-            Start Studying <ArrowRight className="size-4" />
-          </Button>
-        </>
-      )}
-    </div>
-  );
+  const overlay = "color-mix(in oklch, var(--background) 65%, transparent)";
+  const total = TOUR_STEPS.length;
 
   return (
-    <div className="fixed inset-0 z-[100]">
-      <div className="absolute inset-0 bg-background/70 backdrop-blur-sm" />
+    <div className="fixed inset-0 z-[100]" aria-live="polite">
+      {/* Blocks clicks on the page while the tour runs */}
+      <div className="absolute inset-0" style={rect ? undefined : { background: overlay }} />
       {rect ? (
         <div
-          className="pointer-events-none fixed rounded-xl ring-4 ring-primary shadow-[0_0_0_9999px_transparent]"
-          style={{ left: rect.left - 4, top: rect.top - 4, width: rect.width + 8, height: rect.height + 8 }}
+          className="pointer-events-none fixed rounded-xl ring-2 ring-primary transition-all duration-300"
+          style={{
+            left: rect.left - PAD,
+            top: rect.top - PAD,
+            width: rect.width + PAD * 2,
+            height: rect.height + PAD * 2,
+            boxShadow: `0 0 0 9999px ${overlay}, 0 0 24px 4px color-mix(in oklch, var(--primary) 45%, transparent)`,
+          }}
         />
       ) : null}
-      {side ? card : <div className="relative flex h-full items-center justify-center p-4">{card}</div>}
+
+      <div
+        ref={cardRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tour-title"
+        style={{ position: "fixed", ...cardPos }}
+        className="surface-card w-[min(92vw,22rem)] p-5 shadow-2xl transition-all duration-300"
+      >
+        {current ? (
+          <>
+            {mode === "tour" ? (
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                Step {step + 1} of {total}
+              </p>
+            ) : null}
+            <h2 id="tour-title" className="mt-1 text-lg font-extrabold tracking-tight">{current.title}</h2>
+            <p className="mt-2 text-sm text-muted-foreground">{current.body}</p>
+            {!rect ? (
+              <p className="mt-2 text-xs font-semibold text-primary">Open the menu to find it.</p>
+            ) : null}
+            {mode === "tour" ? (
+              <div className="mt-4 flex items-center justify-between gap-2">
+                <Button variant="ghost" size="sm" disabled={step === 0} onClick={() => setStep(step - 1)}>
+                  Back
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => setStep(step + 1)}
+                  className="text-xs font-medium text-muted-foreground underline-offset-4 hover:underline"
+                >
+                  Skip this step
+                </button>
+                <Button size="sm" onClick={() => setStep(step + 1)}>Next</Button>
+              </div>
+            ) : (
+              <div className="mt-4 flex justify-end">
+                <Button size="sm" onClick={() => setMode("off")}>Got it</Button>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <h2 id="tour-title" className="text-xl font-extrabold tracking-tight">You're ready to study! 🎉</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              You now know the basics of StudyNova. You can always find help if you get stuck.
+            </p>
+            <div className="mt-5 flex items-center justify-between gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setStep(step - 1)}>Back</Button>
+              <Button onClick={() => void complete()}>Start Studying</Button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
