@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { Bot, Loader2, SendHorizonal, Sparkles, User } from "lucide-react";
 import { tutorChat } from "@/lib/ai.functions";
+import { AI_KEY_HELP } from "@/lib/ai-key.server";
 import { Button } from "@/components/ui/button";
 import { AiRetryNotice } from "@/components/AiRetryNotice";
 import { Textarea } from "@/components/ui/textarea";
@@ -94,6 +95,13 @@ export function TutorChat({
       const result = await send({ data: request });
       if (result.error || !result.reply) {
         const messageText = result.error ?? "The tutor returned an empty response.";
+        if (messageText === AI_KEY_HELP) {
+          setInput(request.message);
+          setMessages((prev) => prev.slice(0, -1));
+          setFailed(null);
+          toast.error(messageText);
+          return;
+        }
         setFailed({ ...request, reason: messageText });
         return;
       }
