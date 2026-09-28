@@ -10,7 +10,7 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <header className="mb-5 pt-1 sm:mb-10 sm:border-b sm:border-border sm:pb-7 sm:pt-2">
+    <header data-tour="page-header" className="mb-5 pt-1 sm:mb-10 sm:border-b sm:border-border sm:pb-7 sm:pt-2">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
         <div className="min-w-0 max-w-3xl">
           <div className="mb-3 hidden items-center gap-2 sm:flex" aria-hidden="true">
