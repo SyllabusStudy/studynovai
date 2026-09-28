@@ -63,7 +63,7 @@ export const TOUR_STEPS: TourStep[] = [
 ];
 
 export const TOUR_EVENT = "studynova:tour";
-export type TourEventDetail = { focus?: string };
+export type TourEventDetail = { focus?: string | undefined };
 
 export function startTour(focus?: string) {
   window.dispatchEvent(new CustomEvent<TourEventDetail>(TOUR_EVENT, { detail: { focus } }));
