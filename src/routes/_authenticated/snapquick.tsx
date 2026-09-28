@@ -4,15 +4,16 @@ import { recordStudyActivity } from "@/lib/activity";
 import { createFileRoute } from "@tanstack/react-router";
 import { ClassActionBar } from "@/components/ClassActionBar";
 import { useClassPicker } from "@/lib/active-class";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Camera, ImageUp, Loader2, RotateCcw, Sparkles } from "lucide-react";
+import { Camera, ImageUp, Loader2, Plus, Send, Sigma } from "lucide-react";
 import { toast } from "sonner";
-import { snapHelp } from "@/lib/ai.functions";
+import { snapTutor } from "@/lib/ai.functions";
+import type { SnapMode } from "@/lib/study.server";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Markdown } from "@/components/Markdown";
+import { Textarea } from "@/components/ui/textarea";
+import { MathAnswer } from "@/components/MathAnswer";
 import {
   Select,
   SelectContent,
@@ -71,17 +72,75 @@ async function toDataUrl(file: File): Promise<string> {
   }
 }
 
+type Msg = { role: "user" | "assistant"; content: string; image?: string | null };
+
+const MODES: { id: SnapMode; label: string; hint: string }[] = [
+  { id: "learn", label: "🧠 Learn", hint: "Full step-by-step lesson" },
+  { id: "quick", label: "⚡ Quick answer", hint: "Key steps only" },
+  { id: "tutor", label: "👩‍🏫 Tutor me", hint: "Hints, no spoilers" },
+  { id: "check", label: "🔍 Check my work", hint: "Find my mistake" },
+];
+
+const FOLLOW_UPS: { label: string; mode: SnapMode; text: string }[] = [
+  { label: "Explain it easier", mode: "learn", text: "Explain it easier, like I'm a beginner." },
+  { label: "Another method", mode: "method", text: "Show me another method for this problem." },
+  { label: "Give me a hint", mode: "tutor", text: "Don't give me the answer yet — give me a hint for the next step." },
+  { label: "Similar problem", mode: "practice", text: "Give me a similar problem to practice." },
+  { label: "Quiz me", mode: "practice", text: "Quiz me on this with one short question." },
+];
+
 function SnapQuickPage() {
   const { user } = useAuth();
   const { data: classes = [] } = useClasses(user?.id);
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
+  const endRef = useRef<HTMLDivElement>(null);
   const [image, setImage] = useState<string | null>(null);
   const [classId, setClassId] = useClassPicker("all");
-  const [question, setQuestion] = useState("");
+  const [mode, setMode] = useState<SnapMode>("learn");
+  const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
-  const [answer, setAnswer] = useState<string | null>(null);
-  const run = useServerFn(snapHelp);
+  const [messages, setMessages] = useState<Msg[]>([]);
+  const run = useServerFn(snapTutor);
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages, busy]);
+
+  async function send(text: string, opts?: { mode?: SnapMode; img?: string | null; fresh?: boolean }) {
+    const msgText = text.trim();
+    if (!msgText || busy) return;
+    const history = opts?.fresh ? [] : messages;
+    const img = opts?.img !== undefined ? opts.img : image;
+    const userMsg: Msg = { role: "user", content: msgText, image: history.length ? null : img };
+    setMessages([...history, userMsg]);
+    setInput("");
+    setBusy(true);
+    try {
+      if (!history.length) void recordStudyActivity("snapquick");
+      const result = await run({
+        data: {
+          imageDataUrl: img,
+          classId: classId === "all" ? null : classId,
+          mode: opts?.mode ?? mode,
+          history: history.map(({ role, content }) => ({ role, content })),
+          message: msgText,
+        },
+      });
+      if (result.error || !result.reply) {
+        toast.error(result.error ?? "SnapQuick could not answer");
+        setMessages(history);
+        setInput(msgText);
+        return;
+      }
+      setMessages((m) => [...m, { role: "assistant", content: result.reply! }]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "SnapQuick could not answer");
+      setMessages(history);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function pick(files: FileList | null) {
     const file = files?.[0];
@@ -89,58 +148,47 @@ function SnapQuickPage() {
     try {
       const url = await toDataUrl(file);
       setImage(url);
-      setAnswer(null);
-      void scan(url);
+      const prompt =
+        mode === "check"
+          ? "Here is my work. Check it and show me where I went wrong."
+          : input.trim() || "Read the problem in this photo and teach me how to solve it.";
+      void send(prompt, { img: url, fresh: true });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not read that photo");
     }
   }
 
-  async function scan(dataUrl: string, followUp?: string) {
-    setBusy(true);
-    try {
-      void recordStudyActivity("snapquick");
-      const result = await run({
-        data: {
-          imageDataUrl: dataUrl,
-          classId: classId === "all" ? null : classId,
-          question:
-            [question, followUp ?? "Format the reply with headings: Detected questions, Step-by-step explanation, Final answer."]
-              .filter(Boolean)
-              .join("\n") || null,
-        },
-      });
-      setAnswer(result.reply);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "SnapQuick could not scan that");
-    } finally {
-      setBusy(false);
-    }
+  function reset() {
+    setMessages([]);
+    setImage(null);
+    setInput("");
   }
+
+  const started = messages.length > 0;
 
   return (
     <div>
-      <PageHeader title="Stuck on a problem?" description="Snap your homework. Get step-by-step help." />
+      <PageHeader title="Stuck on a problem?" description="Snap it or type it. Learn every step." />
       <ClassActionBar />
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,24rem)_1fr]">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,20rem)_1fr]">
         <div className="space-y-3">
           <button
             type="button"
             disabled={busy}
-            onClick={() => (image ? galleryRef.current?.click() : cameraRef.current?.click())}
+            onClick={() => cameraRef.current?.click()}
             className="surface-card block w-full overflow-hidden text-left transition-colors hover:border-primary/60"
-            aria-label={image ? "Choose a different photo" : "Take a picture of your homework"}
+            aria-label={image ? "Snap a new problem" : "Take a picture of your homework"}
           >
             {image ? (
-              <img src={image} alt="Photo of your work being scanned" className="max-h-80 w-full object-contain" />
+              <img src={image} alt="Your problem" className="max-h-64 w-full object-contain" />
             ) : (
               <div className="flex aspect-[4/3] flex-col items-center justify-center gap-3 bg-gradient-to-b from-primary/10 to-transparent p-6 text-center">
-                <span className="flex size-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-card">
-                  <Camera className="size-8" />
+                <span className="flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-card">
+                  <Camera className="size-7" />
                 </span>
                 <p className="font-display text-lg font-bold">Tap to snap your work</p>
-                <p className="text-xs text-muted-foreground">One photo · every question explained</p>
+                <p className="text-xs text-muted-foreground">Or type the problem below</p>
               </div>
             )}
           </button>
@@ -154,76 +202,128 @@ function SnapQuickPage() {
             </Button>
           </div>
 
+          <div className="grid grid-cols-2 gap-2">
+            {MODES.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => setMode(m.id)}
+                className={cn(
+                  "rounded-xl border px-3 py-2 text-left transition-colors",
+                  mode === m.id ? "border-primary bg-primary/12" : "border-border hover:border-primary/50",
+                )}
+              >
+                <span className="block text-sm font-semibold">{m.label}</span>
+                <span className="block text-[11px] text-muted-foreground">{m.hint}</span>
+              </button>
+            ))}
+          </div>
+
           <MoreOptions summary={classId === "all" ? "All classes" : classes.find((c) => c.id === classId)?.class_name}>
-            <div className="space-y-2">
-              <Select value={classId} onValueChange={setClassId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Which class?" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All my classes</SelectItem>
-                  {classes.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {classLabel(c)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Input
-                placeholder="What are you stuck on? (optional)"
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-              />
-              {image ? (
-                <Button variant="secondary" className="w-full gap-1.5" disabled={busy} onClick={() => void scan(image)}>
-                  {busy ? <Loader2 className="size-4 animate-spin" /> : <RotateCcw className="size-4" />}
-                  Scan again
-                </Button>
-              ) : null}
-            </div>
+            <Select value={classId} onValueChange={setClassId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Which class?" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All my classes</SelectItem>
+                {classes.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {classLabel(c)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </MoreOptions>
 
-          <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => void pick(e.target.files)} />
-          <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={(e) => void pick(e.target.files)} />
+          <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { void pick(e.target.files); e.target.value = ""; }} />
+          <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={(e) => { void pick(e.target.files); e.target.value = ""; }} />
         </div>
 
-        <div className={cn("surface-card min-h-48 p-4 sm:p-6", !busy && !answer && "hidden lg:block")}>
-          {busy ? (
-            <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
-              <Loader2 className="size-7 animate-spin text-primary" />
-              <p className="text-sm font-semibold">Reading your photo…</p>
-              <p className="text-xs text-muted-foreground">Finding each question and working it out</p>
+        <div className="surface-card flex min-h-[28rem] flex-col p-3 sm:p-5">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary">
+              <Sigma className="size-4" /> SnapQuick tutor
             </div>
-          ) : answer ? (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary">
-                <Sparkles className="size-4" /> Your walkthrough
+            {started ? (
+              <Button size="sm" variant="ghost" className="gap-1.5" disabled={busy} onClick={reset}>
+                <Plus className="size-4" /> New problem
+              </Button>
+            ) : null}
+          </div>
+
+          <div className="flex-1 space-y-4 overflow-y-auto">
+            {!started && !busy ? (
+              <div className="flex h-full flex-col items-center justify-center gap-3 py-10 text-center">
+                <span className="flex size-12 items-center justify-center rounded-2xl bg-primary/12 text-primary">
+                  <Sigma className="size-6" />
+                </span>
+                <p className="font-display text-base font-bold">Your tutor walks you through it</p>
+                <ol className="space-y-1 text-xs text-muted-foreground">
+                  <li>1. Snap a photo or type a problem</li>
+                  <li>2. Learn the method, every step and why</li>
+                  <li>3. Ask follow-ups — "I don't get step 2"</li>
+                </ol>
               </div>
-              <Markdown content={answer} />
-              {image ? (
-                <div className="grid gap-2 border-t border-border pt-4 sm:flex sm:flex-wrap">
-                  <Button variant="outline" onClick={() => void scan(image, "Explain this differently, using a simpler approach and an everyday analogy.")}>
-                    Explain This Differently
-                  </Button>
-                  <Button variant="outline" onClick={() => void scan(image, "Give me one similar practice problem with different numbers, then its worked solution hidden under a 'Solution' heading.")}>
-                    Give Me a Similar Problem
-                  </Button>
+            ) : null}
+
+            {messages.map((m, i) =>
+              m.role === "user" ? (
+                <div key={i} className="flex justify-end">
+                  <div className="max-w-[85%] space-y-2 rounded-2xl rounded-br-md bg-primary px-3.5 py-2.5 text-sm text-primary-foreground">
+                    {m.image ? <img src={m.image} alt="Problem photo" className="max-h-40 rounded-lg" /> : null}
+                    <p className="whitespace-pre-wrap">{m.content}</p>
+                  </div>
                 </div>
-              ) : null}
+              ) : (
+                <div key={i} className="min-w-0">
+                  <MathAnswer content={m.content} />
+                </div>
+              ),
+            )}
+
+            {busy ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="size-4 animate-spin text-primary" />
+                {messages.length <= 1 ? "Reading the problem and working it out…" : "Thinking…"}
+              </div>
+            ) : null}
+            <div ref={endRef} />
+          </div>
+
+          {started && !busy ? (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {FOLLOW_UPS.map((f) => (
+                <Button key={f.label} size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => void send(f.text, { mode: f.mode })}>
+                  {f.label}
+                </Button>
+              ))}
             </div>
-          ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-3 py-12 text-center">
-              <span className="flex size-12 items-center justify-center rounded-2xl bg-primary/12 text-primary">
-                <Sparkles className="size-6" />
-              </span>
-              <p className="font-display text-base font-bold">Your walkthrough shows up here</p>
-              <ol className="space-y-1 text-xs text-muted-foreground">
-                <li>1. Snap or upload a photo</li>
-                <li>2. We find every question</li>
-                <li>3. You get steps + the answer</li>
-              </ol>
-            </div>
-          )}
+          ) : null}
+
+          <form
+            className="mt-3 flex items-end gap-2 border-t border-border pt-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void send(input);
+            }}
+          >
+            <Textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  void send(input);
+                }
+              }}
+              rows={1}
+              placeholder={started ? "Ask a follow-up… e.g. why did we divide by 2?" : "Type a problem, e.g. solve 2x² − 7x + 3 = 0"}
+              className="max-h-32 min-h-10 resize-none"
+            />
+            <Button type="submit" size="icon" disabled={busy || !input.trim()} aria-label="Send">
+              <Send className="size-4" />
+            </Button>
+          </form>
         </div>
       </div>
     </div>
