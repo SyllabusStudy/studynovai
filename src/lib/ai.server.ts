@@ -105,12 +105,15 @@ async function callGeminiNative(
   if (!res.ok) throw await providerError(res, "Google AI Studio");
 
   const data = (await res.json()) as {
-    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+    candidates?: Array<{ finishReason?: string; content?: { parts?: Array<{ text?: string }> } }>;
   };
-  return (data.candidates?.[0]?.content?.parts ?? [])
+  if (data.candidates?.[0]?.finishReason === "SAFETY") throw new Error("This request could not be completed. Please try a different question.");
+  const answer = (data.candidates?.[0]?.content?.parts ?? [])
     .map((p) => p.text ?? "")
     .join("")
     .trim();
+  if (!answer) throw new Error("The AI returned no answer. Please try again.");
+  return answer;
 }
 
 function hasFilePart(messages: ChatMessage[]): boolean {
@@ -182,7 +185,8 @@ async function callAnthropic(
     }),
   });
   if (!res.ok) throw await providerError(res, "Anthropic");
-  const data = (await res.json()) as { content?: Array<{ type?: string; text?: string }> };
+  const data = (await res.json()) as { stop_reason?: string; content?: Array<{ type?: string; text?: string }> };
+  if (data.stop_reason === "refusal") throw new Error("This request could not be completed. Please try a different question.");
   const text = data.content?.filter((part) => part.type === "text").map((part) => part.text ?? "").join("").trim();
   if (!text) throw new Error("Anthropic returned an empty response. Please try again.");
   return text;
@@ -257,7 +261,7 @@ export async function callAI(
     throw new Error("The AI response was incomplete. Please try again.");
   }
   const content = data.choices?.[0]?.message?.content?.trim() ?? "";
-
+  if (!content) throw new Error("The AI returned no answer. Please try again.");
   return content;
 }
 
