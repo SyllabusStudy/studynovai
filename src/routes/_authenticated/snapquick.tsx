@@ -6,7 +6,9 @@ import { ClassActionBar } from "@/components/ClassActionBar";
 import { useClassPicker } from "@/lib/active-class";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Camera, ImageUp, Loader2, Plus, Send, Sigma } from "lucide-react";
+import { Camera, History, ImageUp, Loader2, Plus, Send, Sigma, Trash2 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { snapTutor } from "@/lib/ai.functions";
 type SnapMode = "learn" | "quick" | "tutor" | "practice" | "check" | "method";
@@ -103,6 +105,62 @@ function SnapQuickPage() {
   const [busy, setBusy] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const run = useServerFn(snapTutor);
+  const qc = useQueryClient();
+  const [convId, setConvId] = useState<string | null>(null);
+  const { data: saved = [] } = useQuery({
+    queryKey: ["snap-conversations", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("snap_conversations")
+        .select("id, title, updated_at")
+        .order("updated_at", { ascending: false })
+        .limit(30);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  async function saveConversation(all: Msg[], img: string | null, id: string | null, usedMode: SnapMode) {
+    if (!user) return id;
+    const first = all.find((m) => m.role === "user")?.content ?? "Untitled problem";
+    const title = first.replace(/\s+/g, " ").slice(0, 80);
+    const row = {
+      user_id: user.id,
+      title,
+      mode: usedMode,
+      class_id: classId === "all" ? null : classId,
+      image_data_url: img,
+      messages: all.map(({ role, content }) => ({ role, content })),
+      updated_at: new Date().toISOString(),
+    };
+    const res = id
+      ? await supabase.from("snap_conversations").update(row).eq("id", id).select("id").single()
+      : await supabase.from("snap_conversations").insert(row).select("id").single();
+    void qc.invalidateQueries({ queryKey: ["snap-conversations", user.id] });
+    return res.data?.id ?? id;
+  }
+
+  async function openConversation(id: string) {
+    if (busy) return;
+    const { data, error } = await supabase.from("snap_conversations").select("*").eq("id", id).single();
+    if (error || !data) return toast.error("Could not open that problem");
+    const msgs = (Array.isArray(data.messages) ? data.messages : []) as Msg[];
+    if (msgs[0] && data.image_data_url) msgs[0] = { ...msgs[0], image: data.image_data_url };
+    setMessages(msgs);
+    setImage(data.image_data_url);
+    setMode((data.mode as SnapMode) ?? "learn");
+    setConvId(data.id);
+    setRevealed(true);
+  }
+
+  async function deleteConversation(id: string) {
+    await supabase.from("snap_conversations").delete().eq("id", id);
+    if (id === convId) reset();
+    void qc.invalidateQueries({ queryKey: ["snap-conversations", user?.id] });
+  }
+
+  const [revealed, setRevealed] = useState(false);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -112,6 +170,9 @@ function SnapQuickPage() {
     const msgText = text.trim();
     if (!msgText || busy) return;
     const history = opts?.fresh ? [] : messages;
+    const idForSave = opts?.fresh ? null : convId;
+    if (opts?.fresh) setConvId(null);
+    setRevealed(false);
     const img = opts?.img !== undefined ? opts.img : image;
     const userMsg: Msg = { role: "user", content: msgText, image: history.length ? null : img };
     setMessages([...history, userMsg]);
@@ -134,7 +195,10 @@ function SnapQuickPage() {
         setInput(msgText);
         return;
       }
-      setMessages((m) => [...m, { role: "assistant", content: result.reply! }]);
+      const all: Msg[] = [...history, userMsg, { role: "assistant", content: result.reply! }];
+      setMessages(all);
+      const newId = await saveConversation(all, img ?? null, idForSave, opts?.mode ?? mode);
+      setConvId(newId);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "SnapQuick could not answer");
       setMessages(history);
@@ -170,6 +234,7 @@ function SnapQuickPage() {
 
   function reset() {
     setMessages([]);
+    setConvId(null);
     setImage(null);
     setInput("");
   }
@@ -245,6 +310,38 @@ function SnapQuickPage() {
             </Select>
           </MoreOptions>
 
+          {saved.length ? (
+            <div className="surface-card p-3">
+              <p className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                <History className="size-3.5" /> Past problems
+              </p>
+              <ul className="max-h-64 space-y-1 overflow-y-auto">
+                {saved.map((c) => (
+                  <li key={c.id} className="group flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => void openConversation(c.id)}
+                      className={cn(
+                        "min-w-0 flex-1 truncate rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted",
+                        c.id === convId && "bg-primary/12 font-semibold",
+                      )}
+                    >
+                      {c.title}
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Delete this problem"
+                      onClick={() => void deleteConversation(c.id)}
+                      className="rounded-md p-1 text-muted-foreground opacity-60 hover:text-destructive group-hover:opacity-100"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
           <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { void pick(e.target.files); e.target.value = ""; }} />
           <input ref={galleryRef} type="file" accept="image/*,application/pdf,.pdf" className="hidden" onChange={(e) => { void pick(e.target.files); e.target.value = ""; }} />
         </div>
@@ -286,7 +383,7 @@ function SnapQuickPage() {
                 </div>
               ) : (
                 <div key={i} className="min-w-0">
-                  <MathAnswer content={m.content} animate={i === messages.length - 1} />
+                  <MathAnswer content={m.content} animate={!revealed && i === messages.length - 1} />
                 </div>
               ),
             )}
