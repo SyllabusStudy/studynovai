@@ -48,7 +48,7 @@ export function ClassTasks({ userId, classId }: { userId?: string | undefined; c
     for (const q of quizzes) {
       const n = Array.isArray(q.questions) ? q.questions.length : 0;
       const done = !!q.completed_at;
-      const score = q.score != null ? Math.round(Number(q.score) * (Number(q.score) <= 1 ? n : n / 100)) : null;
+      const score = q.score != null ? Math.round((Number(q.score) / 100) * n) : null;
       out.push({
         key: `q-${q.id}`,
         kind: kindFromText(q.title) === "test" ? "test" : kindFromText(q.title) === "practice" ? "practice" : "quiz",
