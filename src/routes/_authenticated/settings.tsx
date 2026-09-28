@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
 import { Hint } from "@/components/Hint";
 import { AiKeyCard } from "@/components/AiKeyCard";
+import { DevicesCard } from "@/components/DevicesCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -123,6 +124,8 @@ function SettingsPage() {
 
 
       <AiKeyCard />
+
+      {user ? <DevicesCard userId={user.id} /> : null}
 
       <form onSubmit={save} className="surface-card space-y-4 p-5">
         <div className="space-y-1.5">
