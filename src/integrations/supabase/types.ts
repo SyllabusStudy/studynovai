@@ -287,6 +287,7 @@ export type Database = {
           ai_help: string | null
           annotations: Json | null
           assignment_id: string | null
+          category: string | null
           class_id: string | null
           created_at: string
           extracted_text: string | null
@@ -306,6 +307,7 @@ export type Database = {
           ai_help?: string | null
           annotations?: Json | null
           assignment_id?: string | null
+          category?: string | null
           class_id?: string | null
           created_at?: string
           extracted_text?: string | null
@@ -325,6 +327,7 @@ export type Database = {
           ai_help?: string | null
           annotations?: Json | null
           assignment_id?: string | null
+          category?: string | null
           class_id?: string | null
           created_at?: string
           extracted_text?: string | null

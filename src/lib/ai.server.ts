@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { unzipSync } from "fflate";
 import type { Database } from "@/integrations/supabase/types";
 import {
   authHeaders,
@@ -371,6 +372,75 @@ export function bytesToBase64(bytes: Uint8Array): string {
 
 const TEXTUAL = ["text/plain", "text/markdown", "application/json", "text/csv"];
 
+function decodeXmlEntities(s: string): string {
+  return s
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/&amp;/g, "&");
+}
+
+/** Reads text out of Word, PowerPoint and Excel (Office Open XML) files. */
+function extractOfficeText(fileName: string, bytes: Uint8Array): string {
+  let files: Record<string, Uint8Array>;
+  try {
+    files = unzipSync(bytes);
+  } catch {
+    return "";
+  }
+  const dec = new TextDecoder();
+  const read = (p: string) => (files[p] ? dec.decode(files[p]) : "");
+  const num = (p: string) => Number(p.match(/(\d+)\.xml$/)?.[1] ?? 0);
+  const lower = fileName.toLowerCase();
+
+  if (lower.endsWith(".docx")) {
+    const xml = read("word/document.xml");
+    return xml
+      .split(/<\/w:p>/)
+      .map((p) => decodeXmlEntities([...p.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map((m) => m[1] ?? "").join("")))
+      .filter((l) => l.trim())
+      .join("\n");
+  }
+  if (lower.endsWith(".pptx")) {
+    const slides = Object.keys(files)
+      .filter((k) => /^ppt\/slides\/slide\d+\.xml$/.test(k))
+      .sort((a, b) => num(a) - num(b));
+    return slides
+      .map((s, i) => {
+        const paras = read(s)
+          .split(/<\/a:p>/)
+          .map((p) => decodeXmlEntities([...p.matchAll(/<a:t>([^<]*)<\/a:t>/g)].map((m) => m[1] ?? "").join("")))
+          .filter((l) => l.trim());
+        return `## Slide ${i + 1}\n${paras.join("\n")}`;
+      })
+      .join("\n\n");
+  }
+  // xlsx
+  const shared = [...read("xl/sharedStrings.xml").matchAll(/<si>([\s\S]*?)<\/si>/g)].map((m) =>
+    decodeXmlEntities([...(m[1] ?? "").matchAll(/<t[^>]*>([^<]*)<\/t>/g)].map((t) => t[1]).join("")),
+  );
+  const sheets = Object.keys(files)
+    .filter((k) => /^xl\/worksheets\/sheet\d+\.xml$/.test(k))
+    .sort((a, b) => num(a) - num(b));
+  return sheets
+    .map((s, i) => {
+      const rows = [...read(s).matchAll(/<row[^>]*>([\s\S]*?)<\/row>/g)].map((r) =>
+        [...(r[1] ?? "").matchAll(/<c([^>]*)>([\s\S]*?)<\/c>/g)]
+          .map((c) => {
+            const isShared = /t="s"/.test(c[1] ?? "");
+            const inline = (c[2] ?? "").match(/<t[^>]*>([^<]*)<\/t>/)?.[1];
+            const v = (c[2] ?? "").match(/<v>([^<]*)<\/v>/)?.[1] ?? "";
+            return inline !== undefined ? decodeXmlEntities(inline) : isShared ? (shared[Number(v)] ?? "") : v;
+          })
+          .join(", "),
+      );
+      return `## Sheet ${i + 1}\n${rows.filter((r) => r.replace(/[, ]/g, "")).join("\n")}`;
+    })
+    .join("\n\n");
+}
+
 /** Extract plain text from an uploaded file using the AI gateway (PDF/image) or direct decode. */
 export async function extractTextFromFile(params: {
   fileName: string;
@@ -380,9 +450,15 @@ export async function extractTextFromFile(params: {
   const { fileName, bytes } = params;
   const mime = params.mimeType || "application/octet-stream";
 
-  if (TEXTUAL.some((t) => mime.startsWith(t)) || /\.(txt|md|csv)$/i.test(fileName)) {
+  if (TEXTUAL.some((t) => mime.startsWith(t)) || /\.(txt|md|csv|tsv|rtf)$/i.test(fileName)) {
     return { text: new TextDecoder().decode(bytes) };
   }
+
+  if (/\.(docx|pptx|xlsx)$/i.test(fileName)) {
+    const text = extractOfficeText(fileName, bytes);
+    return text ? { text } : { text: "", note: "This file looks empty or could not be opened." };
+  }
+
 
   const base64 = bytesToBase64(bytes);
   const instruction =

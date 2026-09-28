@@ -16,14 +16,16 @@ export function DocumentUploader({
   classId = null,
   syllabusOnly = false,
   assignmentId = null,
+  category,
   title,
   hint,
 }: {
   classId?: string | null;
   syllabusOnly?: boolean;
   assignmentId?: string | null;
-  title?: string;
-  hint?: string;
+  category?: string | undefined;
+  title?: string | undefined;
+  hint?: string | undefined;
 }) {
   const { user } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -57,6 +59,8 @@ export function DocumentUploader({
             file_type: file.type || null,
             storage_path: path,
             is_syllabus: syllabusOnly || isSyllabus,
+            category:
+              syllabusOnly || isSyllabus ? "syllabus" : (category ?? (assignmentId ? "assignment" : "notes")),
           })
           .select("id")
           .single();
@@ -120,13 +124,13 @@ export function DocumentUploader({
     >
       <FileUp className="mx-auto size-6 text-primary" />
       <p className="mt-3 text-sm font-semibold">
-        {title ?? (syllabusOnly ? "Drop a syllabus PDF here" : "Drop course materials here")}
+        {title ?? (syllabusOnly ? "Upload a syllabus" : "Upload your class materials")}
       </p>
       <p className="mt-1 text-xs text-muted-foreground">
         {hint ??
           (syllabusOnly
-            ? "We read the PDF, create the class, and fill in your exams, homework and grade weights automatically."
-            : "PDF, images, slides, docs or notes. We extract the text for your AI tutor.")}
+            ? "PDF, Word, slides or images. We fill in your exams, homework, dates and grade weights automatically."
+            : "Add syllabi, notes, assignments, study guides, slides, and other files.")}
       </p>
       {stage !== null ? (
         <p className="mt-3 flex items-center justify-center gap-2 text-sm font-semibold text-primary" aria-live="polite">
