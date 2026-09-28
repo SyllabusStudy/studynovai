@@ -1443,94 +1443,59 @@ box is the region on the image, as fractions of the width/height from the top-le
 
 /* ------------------------------------------------------------------ ai text checker */
 
-export type AiCheckResult = {
-  aiPercent: number;
-  humanPercent: number;
-  verdict: string;
-  sections: { excerpt: string; label: "ai" | "human" | "mixed"; reason: string }[];
-  /** The full original text split into sentences, each labelled for highlighting. */
-  spans: { text: string; label: "ai" | "human" | "mixed" }[];
-};
+export type { AiCheckResult } from "./ai-detect";
+import { combine as combineAiEvidence, splitSentences, type AiCheckResult as DetectResult } from "./ai-detect";
+export { splitSentences };
 
-/** Split text into sentence pieces that concatenate back to the exact original. */
-export function splitSentences(text: string): string[] {
-  const parts = text.match(/[^.!?\n]+(?:[.!?]+["')\]]*)?\s*|\n+\s*/g) ?? [text];
-  const out: string[] = [];
-  for (const p of parts) {
-    if (out.length && !p.trim()) out[out.length - 1] += p;
-    else out.push(p);
-  }
-  return out.length ? out : [text];
-}
+const UNABLE = "Unable to analyze this text right now. Please try again in a moment.";
 
-const AI_PHRASES = [
-  "delve", "moreover", "furthermore", "in conclusion", "it is important to note", "additionally",
-  "overall,", "in today's", "plays a crucial role", "a testament to", "tapestry", "navigate the",
-  "landscape of", "foster", "underscore", "pivotal", "multifaceted", "seamless", "leverage",
-  "it's worth noting", "in summary", "ultimately,", "embark", "realm", "vital role", "showcase",
-];
-
-/** Free, local writing-pattern score (0-100, higher = more AI-like). No AI call. */
-function heuristicAiScore(text: string) {
-  const lower = text.toLowerCase();
-  const words = lower.match(/[a-z']+/g) ?? [];
-  if (words.length < 40) return null;
-  const sentences = text.split(/(?<=[.!?])\s+/).filter((x) => x.trim().split(/\s+/).length > 2);
-  const lens = sentences.map((x) => x.split(/\s+/).length);
-  const mean = lens.reduce((a, b) => a + b, 0) / Math.max(1, lens.length);
-  const sd = Math.sqrt(lens.reduce((a, b) => a + (b - mean) ** 2, 0) / Math.max(1, lens.length));
-  const burst = mean ? sd / mean : 0; // humans vary sentence length more
-  const phraseHits = AI_PHRASES.reduce((n, ph) => n + (lower.split(ph).length - 1), 0);
-  const phraseRate = (phraseHits / words.length) * 1000;
-  const personal = (lower.match(/\b(i|me|my|i'm|i've|lol|idk|kinda|gonna)\b/g) ?? []).length / words.length;
-  const informal = (text.match(/\s{2,}|\.\.\.|!!|\?\?| i /g) ?? []).length;
-  let score = 50;
-  score += burst < 0.35 ? 18 : burst < 0.5 ? 6 : -14;
-  score += Math.min(25, phraseRate * 4);
-  score -= Math.min(22, personal * 400);
-  score -= Math.min(10, informal * 3);
-  return Math.max(3, Math.min(97, Math.round(score)));
-}
-
-export async function runAiTextCheck(input: { text: string }): Promise<AiCheckResult> {
-  // One short call on the free model; text is capped to keep usage low.
-  const text = input.text.slice(0, 8000);
+/**
+ * Full-text AI-writing analysis: the model rates EVERY sentence (in batches),
+ * then local style signals and the model judgement are combined per section.
+ * A failed or incomplete model reply throws — it is never reported as "human".
+ */
+export async function runAiTextCheck(input: { text: string }): Promise<DetectResult> {
+  const text = input.text.slice(0, 20000);
   const pieces = splitSentences(text);
-  const numbered = pieces
-    .map((p, i) => (p.trim() ? `[${i}] ${p.trim()}` : ""))
-    .filter(Boolean)
-    .join("\n");
-  const raw = await callAI(
-    [
-      {
-        role: "system",
-        content:
-          'You estimate whether text was written by AI or a human. Look at phrasing patterns: uniform sentence length, generic transitions ("Moreover", "In conclusion", "delve"), hedging, lack of personal detail, list-like structure vs. typos, personal voice, uneven rhythm, specific experiences. The text is given as numbered sentences. Label EVERY sentence number. Also group it into up to 8 passages. Reply with json only: {"aiPercent":number 0-100,"verdict":string (one sentence),"labels":{"0":"ai"|"human"|"mixed",...every sentence number},"sections":[{"excerpt":string (first ~12 words of the passage, copied exactly),"label":"ai"|"human"|"mixed","reason":string (one short sentence)}]}. Judge carefully and consistently: short or casual human writing should score low; polished generic essay text higher. Never guess 50 by default. Be honest that this is an estimate.',
-      },
-      { role: "user", content: numbered },
-    ],
-    { temperature: 0, maxTokens: 900 + Math.min(1600, pieces.length * 12) },
-  );
-  const parsed = parseJsonBlock<Partial<AiCheckResult> & { labels?: Record<string, string> }>(raw);
-  const modelAi = Math.max(0, Math.min(100, Math.round(Number(parsed.aiPercent) || 0)));
-  const local = heuristicAiScore(text);
-  // Blend the AI judgement with the local pattern scan for steadier, repeatable scores.
-  const ai = local === null ? modelAi : Math.round(modelAi * 0.65 + local * 0.35);
-  return {
-    aiPercent: ai,
-    humanPercent: 100 - ai,
-    verdict: parsed.verdict ?? "",
-    sections: (parsed.sections ?? []).slice(0, 8).map((s) => ({
-      excerpt: String(s.excerpt ?? ""),
-      label: s.label === "ai" || s.label === "human" ? s.label : "mixed",
-      reason: String(s.reason ?? ""),
-    })),
-    spans: pieces.map((p, i) => {
-      const l = parsed.labels?.[String(i)];
-      const fallback: "ai" | "human" = ai >= 50 ? "ai" : "human";
-      return { text: p, label: l === "ai" || l === "human" || l === "mixed" ? l : fallback };
-    }),
-  };
+  const idx = pieces.map((p, i) => (p.trim() ? i : -1)).filter((i) => i >= 0);
+  const batches: number[][] = [];
+  for (let i = 0; i < idx.length; i += 60) batches.push(idx.slice(i, i + 60));
+
+  const probs: Record<number, number> = {};
+  let genre = "";
+  for (const batch of batches) {
+    const numbered = batch.map((i) => `[${i}] ${pieces[i]!.trim().slice(0, 600)}`).join("\n");
+    let raw: string;
+    try {
+      raw = await callAI(
+        [
+          {
+            role: "system",
+            content:
+              'You are a careful AI-writing analyst. For EACH numbered sentence estimate the probability (0-100) that it was produced by an AI model, judging it in the context of its neighbours. Weigh: predictability of wording, generic phrasing, template-like structure, even rhythm, stock transitions, lack of specific personal detail. Do NOT treat formal, academic, technical, or non-native (ESL) English as AI by itself; quotes, citations and list items should be near 50 unless clearly generated. Use the full range; avoid defaulting to 50. Also classify the overall genre. Reply with json only: {"genre":"casual"|"creative"|"academic"|"technical"|"esl"|"formal"|"other","p":{"<number>":0-100,...every number}}.',
+          },
+          { role: "user", content: numbered },
+        ],
+        { temperature: 0, maxTokens: 400 + batch.length * 12 },
+      );
+    } catch (e) {
+      throw new Error(e instanceof Error && /key|settings|limit/i.test(e.message) ? e.message : UNABLE);
+    }
+    let parsed: { genre?: string; p?: Record<string, unknown> };
+    try {
+      parsed = parseJsonBlock(raw);
+    } catch {
+      throw new Error(UNABLE);
+    }
+    genre ||= String(parsed.genre ?? "");
+    for (const i of batch) {
+      const v = Number(parsed.p?.[String(i)]);
+      if (Number.isFinite(v)) probs[i] = Math.max(0, Math.min(100, Math.round(v)));
+    }
+  }
+  // Refuse to report a result when the model skipped most sentences.
+  if (idx.length && Object.keys(probs).length < idx.length * 0.6) throw new Error(UNABLE);
+  return combineAiEvidence(text, { probs, genre });
 }
 
 /** Rewrite the AI-sounding sentences in a natural, human voice. Returns index → new text. */
