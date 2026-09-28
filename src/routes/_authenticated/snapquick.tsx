@@ -150,8 +150,9 @@ function SnapQuickPage() {
       if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
         const { renderPdfPages } = await import("@/lib/pdf-render");
         const pages = await renderPdfPages(file, 1);
-        if (!pages.length) throw new Error("That PDF has no readable pages.");
-        url = pages[0].dataUrl;
+        const first = pages[0];
+        if (!first) throw new Error("That PDF has no readable pages.");
+        url = first.dataUrl;
       } else {
         url = await toDataUrl(file);
       }
