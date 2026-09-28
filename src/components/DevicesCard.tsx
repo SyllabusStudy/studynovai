@@ -29,6 +29,33 @@ export function DevicesCard({ userId }: { userId: string }) {
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["devices", userId] });
 
+  const [busy, setBusy] = useState(false);
+  const thisPush = Boolean(devices.find((d) => d.id === thisId)?.push_endpoint);
+
+  async function togglePush() {
+    setBusy(true);
+    try {
+      if (thisPush) {
+        await disableBackgroundPush();
+        toast.success("Background reminders off on this device");
+      } else {
+        const res = await enableBackgroundPush();
+        if (!res.ok) {
+          toast.error(
+            res.reason === "denied"
+              ? "Your browser blocked notifications. Allow them in the site settings and try again."
+              : "Background reminders aren't available in this browser yet.",
+          );
+        } else {
+          toast.success("Background reminders on. You'll get them even when StudyNova is closed.");
+        }
+      }
+      await refresh();
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function toggle(id: string, v: boolean) {
     const { error } = await supabase.from("user_devices").update({ notify_enabled: v }).eq("id", id);
     if (error) return void toast.error(error.message);
