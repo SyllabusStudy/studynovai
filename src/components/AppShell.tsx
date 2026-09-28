@@ -121,7 +121,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="w-72 bg-sidebar p-0">
           <BrandBlock />
-          <NavList pathname={pathname} onNavigate={() => setMobileOpen(false)} />
+          <NavList pathname={pathname} onNavigate={() => setMobileOpen(false)} compact />
           <SidebarFooter />
         </SheetContent>
       </Sheet>
@@ -143,7 +143,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Link
                   to={item.to}
                   className={cn(
-                    "flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold transition-colors",
+                    "flex flex-col items-center gap-0.5 py-2 text-[11px] font-semibold transition-colors",
                     active ? "text-primary" : "text-muted-foreground",
                   )}
                 >
@@ -203,7 +203,7 @@ function NavLink({ item, pathname, onNavigate }: { item: NavItem; pathname: stri
   );
 }
 
-function NavList({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+function NavList({ pathname, onNavigate, compact }: { pathname: string; onNavigate?: () => void; compact?: boolean }) {
   const { user } = useAuth();
   const check = useServerFn(checkAdmin);
   const { data: adminInfo } = useQuery({
@@ -212,7 +212,12 @@ function NavList({ pathname, onNavigate }: { pathname: string; onNavigate?: () =
     staleTime: 5 * 60 * 1000,
     queryFn: () => check({}),
   });
-  const [closed, setClosed] = useState<Record<string, boolean>>({});
+  const inGroup = (key: string) =>
+    GROUPS.find((g) => g.key === key)?.items.some((i) => pathname.startsWith(i.to)) ?? false;
+  const [closed, setClosed] = useState<Record<string, boolean>>(() =>
+    compact ? { study: !inGroup("study"), tools: !inGroup("tools") } : {},
+  );
+  const [moreOpen, setMoreOpen] = useState(false);
   const bottom = adminInfo?.admin
     ? [...BOTTOM, { to: "/admin", label: "Admin", icon: ShieldCheck }]
     : BOTTOM;
@@ -249,11 +254,26 @@ function NavList({ pathname, onNavigate }: { pathname: string; onNavigate?: () =
           );
         })}
       </div>
-      <ul className="mt-5 space-y-0.5 border-t border-sidebar-border pt-4">
-        {bottom.map((item) => (
-          <NavLink key={item.to} item={item} pathname={pathname} onNavigate={onNavigate} />
-        ))}
-      </ul>
+      <div className="mt-5 border-t border-sidebar-border pt-4">
+        {compact ? (
+          <button
+            type="button"
+            onClick={() => setMoreOpen((o) => !o)}
+            aria-expanded={moreOpen}
+            className="mb-1.5 flex w-full items-center justify-between px-3 text-[11px] font-extrabold uppercase tracking-wider text-sidebar-foreground/50 hover:text-sidebar-foreground"
+          >
+            More
+            <ChevronDown className={cn("size-3.5 transition-transform", !moreOpen && "-rotate-90")} />
+          </button>
+        ) : null}
+        {!compact || moreOpen ? (
+          <ul className="space-y-0.5">
+            {bottom.map((item) => (
+              <NavLink key={item.to} item={item} pathname={pathname} onNavigate={onNavigate} />
+            ))}
+          </ul>
+        ) : null}
+      </div>
     </nav>
   );
 }

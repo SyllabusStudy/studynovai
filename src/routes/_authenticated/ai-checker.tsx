@@ -1,3 +1,4 @@
+import { MoreOptions } from "@/components/MoreOptions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -54,62 +55,78 @@ function AiCheckerPage() {
     }
   }
 
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="AI Text Checker"
-        description="Paste your writing. See what sounds AI-written, and why."
-      />
-      <div className="surface-card space-y-3 p-5">
+    <div className="space-y-5">
+      <PageHeader title="AI Text Checker" description="Paste your writing. See what sounds AI-written, and why." />
+      <section className="surface-card space-y-3 p-4 sm:p-6">
         <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          rows={12}
+          rows={10}
+          className="min-h-48 resize-y text-base sm:text-sm"
           placeholder="Paste an essay, paragraph or answer here…"
         />
-        <div className="flex items-center justify-between gap-3">
+        <div className="grid gap-3 sm:flex sm:items-center sm:justify-between">
           <p className="text-xs text-muted-foreground">
-            {text.length.toLocaleString()} characters · first 8,000 are checked in one quick scan
+            {words.toLocaleString()} words{text.length > 8000 ? " · first 8,000 characters are checked" : ""}
           </p>
-          <Button onClick={() => void check()} disabled={busy} className="gap-1.5">
-            {busy ? <Loader2 className="size-4 animate-spin" /> : <ScanSearch className="size-4" />}
-            Check text
-          </Button>
+          <div className="grid grid-cols-[auto_1fr] gap-2 sm:flex">
+            {text ? (
+              <Button variant="ghost" onClick={() => { setText(""); setResult(null); }} disabled={busy}>
+                Clear
+              </Button>
+            ) : <span />}
+            <Button size="lg" onClick={() => void check()} disabled={busy} className="gap-1.5">
+              {busy ? <Loader2 className="size-4 animate-spin" /> : <ScanSearch className="size-4" />}
+              {busy ? "Checking…" : "Check text"}
+            </Button>
+          </div>
         </div>
-      </div>
+      </section>
 
       {result ? (
-        <div className="surface-card space-y-5 p-5">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl bg-destructive/10 p-4">
-              <p className="text-xs font-semibold uppercase text-muted-foreground">AI</p>
-              <p className="font-display text-3xl font-bold text-destructive">{result.aiPercent}%</p>
-            </div>
-            <div className="rounded-xl bg-primary/10 p-4">
-              <p className="text-xs font-semibold uppercase text-muted-foreground">Human</p>
-              <p className="font-display text-3xl font-bold text-primary">{result.humanPercent}%</p>
-            </div>
-          </div>
-          <div className="h-2 overflow-hidden rounded-full bg-primary/30">
-            <div className="h-full bg-destructive" style={{ width: `${result.aiPercent}%` }} />
-          </div>
-          {result.verdict ? <p className="text-sm">{result.verdict}</p> : null}
-          <div className="space-y-2">
-            <p className="text-sm font-semibold">Where and why</p>
-            {result.sections.map((s, i) => (
-              <div key={i} className="rounded-xl border border-border p-3">
-                <span className={cn("rounded-md px-2 py-0.5 text-xs font-semibold", LABELS[s.label].cls)}>
-                  {LABELS[s.label].text}
-                </span>
-                <p className="mt-2 text-sm italic text-muted-foreground">"{s.excerpt}…"</p>
-                <p className="mt-1 text-sm">{s.reason}</p>
+        <section className="surface-card space-y-5 p-4 sm:p-6">
+          <div className="flex items-center gap-5">
+            <div
+              className="relative flex size-24 shrink-0 items-center justify-center rounded-full"
+              style={{ background: `conic-gradient(var(--destructive) ${result.aiPercent * 3.6}deg, color-mix(in oklab, var(--primary) 35%, transparent) 0)` }}
+              aria-hidden="true"
+            >
+              <div className="flex size-18 flex-col items-center justify-center rounded-full bg-card">
+                <span className="font-display text-xl font-bold">{result.aiPercent}%</span>
+                <span className="text-[10px] font-semibold uppercase text-muted-foreground">AI</span>
               </div>
-            ))}
+            </div>
+            <div className="min-w-0 space-y-1">
+              <p className="font-display text-lg font-bold">
+                {result.aiPercent >= 60 ? "Sounds mostly AI" : result.aiPercent >= 35 ? "A bit of both" : "Sounds mostly human"}
+              </p>
+              <p className="text-sm">
+                <span className="font-semibold text-destructive">{result.aiPercent}% AI</span>
+                {" · "}
+                <span className="font-semibold text-primary">{result.humanPercent}% human</span>
+              </p>
+              {result.verdict ? <p className="text-sm text-muted-foreground">{result.verdict}</p> : null}
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground">
-            This is an estimate — no AI detector is 100% accurate. Don't use it as the only proof.
-          </p>
-        </div>
+          {result.sections.length ? (
+            <MoreOptions label={`Where and why (${result.sections.length})`}>
+              <div className="space-y-2">
+                {result.sections.map((s, i) => (
+                  <div key={i} className="rounded-xl border border-border p-3">
+                    <span className={cn("rounded-md px-2 py-0.5 text-xs font-semibold", LABELS[s.label].cls)}>
+                      {LABELS[s.label].text}
+                    </span>
+                    <p className="mt-2 text-sm italic text-muted-foreground">"{s.excerpt}…"</p>
+                    <p className="mt-1 text-sm">{s.reason}</p>
+                  </div>
+                ))}
+              </div>
+            </MoreOptions>
+          ) : null}
+          <p className="text-xs text-muted-foreground">An estimate only — no AI detector is 100% accurate.</p>
+        </section>
       ) : null}
     </div>
   );
