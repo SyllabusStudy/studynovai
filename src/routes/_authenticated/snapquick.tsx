@@ -121,7 +121,7 @@ function SnapQuickPage() {
     <div>
       <PageHeader
         title="Stuck on a problem?"
-        description="Take a photo of your homework and StudyNova will walk you through it step by step."
+        description="Snap your homework. Get step-by-step help."
       />
       <ClassActionBar />
 

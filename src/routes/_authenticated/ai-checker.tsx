@@ -58,7 +58,7 @@ function AiCheckerPage() {
     <div className="space-y-6">
       <PageHeader
         title="AI Text Checker"
-        description="Paste any writing to see how much looks AI-written vs. human, and where and why."
+        description="Paste your writing. See what sounds AI-written, and why."
       />
       <div className="surface-card space-y-3 p-5">
         <Textarea

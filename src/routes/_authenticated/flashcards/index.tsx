@@ -117,7 +117,7 @@ function FlashcardsPage() {
     <div>
       <PageHeader
         title="Flashcards"
-        description="Every generation becomes its own deck, so new cards never mix into an old set."
+        description="Make a deck from your notes, then study it."
       />
       <ClassActionBar hide={["flashcards"]} />
 
