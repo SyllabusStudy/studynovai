@@ -42,32 +42,67 @@ import { daysUntil, formatDate, relativeDay, urgencyDot, useAssignments, useEven
 import { useReminderEngine } from "@/lib/reminders";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { GraduationCap, Image as ImageIcon, ScanSearch, ShieldCheck, Video } from "lucide-react";
+import { ChevronDown, GraduationCap, Image as ImageIcon, ScanSearch, ShieldCheck, Video } from "lucide-react";
 import { checkAdmin } from "@/lib/admin.functions";
 import { AskAiDock } from "@/components/AskAiDock";
 import { GlobalSearch } from "@/components/GlobalSearch";
 
 
-const NAV = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/classes", label: "My Classes", icon: BookOpen },
-  { to: "/calendar", label: "Calendar", icon: CalendarDays },
-  { to: "/assignments", label: "Assignments", icon: CheckSquare },
-  { to: "/flashcards", label: "Flashcards", icon: Brain },
-  { to: "/quizzes", label: "Quizzes", icon: FileQuestion },
-  { to: "/grades", label: "Grades", icon: ChartColumn },
-  { to: "/tutor", label: "AI Tutor", icon: Bot },
-  { to: "/snapquick", label: "SnapQuick", icon: Camera },
-  { to: "/quickvideo", label: "QuickVideo", icon: Video },
-  { to: "/studio", label: "AI Images", icon: ImageIcon },
-  { to: "/ai-checker", label: "AI Checker", icon: ScanSearch },
-  { to: "/school", label: "School links", icon: GraduationCap },
-  { to: "/upgrade", label: "Upgrade", icon: Crown },
+type NavItem = { to: string; label: string; icon: typeof BookOpen };
+const GROUPS: { key: string; label: string; collapsible: boolean; items: NavItem[] }[] = [
+  {
+    key: "primary",
+    label: "Primary",
+    collapsible: false,
+    items: [
+      { to: "/dashboard", label: "Home", icon: LayoutDashboard },
+      { to: "/classes", label: "My Classes", icon: BookOpen },
+      { to: "/calendar", label: "Calendar", icon: CalendarDays },
+      { to: "/assignments", label: "Assignments", icon: CheckSquare },
+      { to: "/grades", label: "Grades", icon: ChartColumn },
+    ],
+  },
+  {
+    key: "study",
+    label: "Study",
+    collapsible: true,
+    items: [
+      { to: "/flashcards", label: "Flashcards", icon: Brain },
+      { to: "/quizzes", label: "Quizzes", icon: FileQuestion },
+      { to: "/tutor", label: "AI Tutor", icon: Bot },
+    ],
+  },
+  {
+    key: "tools",
+    label: "Tools",
+    collapsible: true,
+    items: [
+      { to: "/snapquick", label: "SnapQuick", icon: Camera },
+      { to: "/quickvideo", label: "QuickVideo", icon: Video },
+      { to: "/studio", label: "AI Images", icon: ImageIcon },
+      { to: "/ai-checker", label: "AI Checker", icon: ScanSearch },
+    ],
+  },
+  {
+    key: "resources",
+    label: "Resources",
+    collapsible: false,
+    items: [{ to: "/school", label: "School Links", icon: GraduationCap }],
+  },
+];
+const BOTTOM: NavItem[] = [
   { to: "/feedback", label: "Feedback", icon: MessageSquare },
   { to: "/settings", label: "Settings", icon: Settings },
-] as const;
+  { to: "/upgrade", label: "Upgrade", icon: Crown },
+];
 
-const MOBILE_NAV = [NAV[0], NAV[1], NAV[3], NAV[8], NAV[7]] as const;
+const MOBILE_NAV: NavItem[] = [
+  GROUPS[0]!.items[0]!,
+  GROUPS[0]!.items[1]!,
+  GROUPS[0]!.items[3]!,
+  GROUPS[2]!.items[0]!,
+  GROUPS[1]!.items[2]!,
+];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -140,10 +175,32 @@ function BrandBlock() {
         <Sparkles className="size-5" />
       </span>
       <span className="leading-tight">
-        <span className="block font-display text-sm font-extrabold">StudyNova</span>
-        <span className="block text-[10px] font-bold uppercase text-sidebar-foreground/55">Campus edition</span>
+        <span className="block font-display text-base font-extrabold">StudyNova</span>
+        <span className="block text-[11px] text-sidebar-foreground/60">Your semester, made simple.</span>
       </span>
     </div>
+  );
+}
+
+function NavLink({ item, pathname, onNavigate }: { item: NavItem; pathname: string; onNavigate?: () => void }) {
+  const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
+  return (
+    <li>
+      <Link
+        to={item.to}
+        onClick={onNavigate}
+        aria-current={active ? "page" : undefined}
+        className={cn(
+          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
+          active
+            ? "bg-sidebar-primary/15 text-sidebar-primary"
+            : "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+        )}
+      >
+        <item.icon className="size-4.5" />
+        {item.label}
+      </Link>
+    </li>
   );
 }
 
@@ -156,34 +213,47 @@ function NavList({ pathname, onNavigate }: { pathname: string; onNavigate?: () =
     staleTime: 5 * 60 * 1000,
     queryFn: () => check({}),
   });
-  const items = adminInfo?.admin
-    ? [...NAV, { to: "/admin", label: "Owner stats", icon: ShieldCheck } as const]
-    : NAV;
+  const [closed, setClosed] = useState<Record<string, boolean>>({});
+  const bottom = adminInfo?.admin
+    ? [...BOTTOM, { to: "/admin", label: "Admin", icon: ShieldCheck }]
+    : BOTTOM;
   return (
-    <nav className="flex-1 overflow-y-auto px-3 py-5 scroll-slim">
-      <p className="mb-3 px-3 text-[10px] font-extrabold uppercase text-sidebar-foreground/45">Your desk</p>
-      <ul className="space-y-0.5">
-        {items.map((item) => {
-
-          const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
+    <nav className="flex flex-1 flex-col overflow-y-auto px-3 py-4 scroll-slim">
+      <div className="flex-1 space-y-5">
+        {GROUPS.map((g) => {
+          const isClosed = g.collapsible && closed[g.key];
           return (
-            <li key={item.to}>
-              <Link
-                to={item.to}
-                onClick={onNavigate}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-all",
-                  active
-                    ? "bg-sidebar-primary/15 text-sidebar-primary shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--color-sidebar-primary),transparent_70%)]"
-                    : "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                )}
-              >
-                <item.icon className="size-4.5" />
-                {item.label}
-              </Link>
-            </li>
+            <div key={g.key}>
+              {g.key === "primary" ? null : g.collapsible ? (
+                <button
+                  type="button"
+                  onClick={() => setClosed((c) => ({ ...c, [g.key]: !c[g.key] }))}
+                  aria-expanded={!isClosed}
+                  className="mb-1.5 flex w-full items-center justify-between px-3 text-[11px] font-extrabold uppercase tracking-wider text-sidebar-foreground/50 hover:text-sidebar-foreground"
+                >
+                  {g.label}
+                  <ChevronDown className={cn("size-3.5 transition-transform", isClosed && "-rotate-90")} />
+                </button>
+              ) : (
+                <p className="mb-1.5 px-3 text-[11px] font-extrabold uppercase tracking-wider text-sidebar-foreground/50">
+                  {g.label}
+                </p>
+              )}
+              {isClosed ? null : (
+                <ul className="space-y-0.5">
+                  {g.items.map((item) => (
+                    <NavLink key={item.to} item={item} pathname={pathname} onNavigate={onNavigate} />
+                  ))}
+                </ul>
+              )}
+            </div>
           );
         })}
+      </div>
+      <ul className="mt-5 space-y-0.5 border-t border-sidebar-border pt-4">
+        {bottom.map((item) => (
+          <NavLink key={item.to} item={item} pathname={pathname} onNavigate={onNavigate} />
+        ))}
       </ul>
     </nav>
   );
