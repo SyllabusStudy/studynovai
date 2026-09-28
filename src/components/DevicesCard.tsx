@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { currentDeviceId } from "@/lib/devices";
+import { disableBackgroundPush, enableBackgroundPush, pushSupported } from "@/lib/push";
 
 const ICONS = { phone: Smartphone, tablet: Tablet, laptop: Laptop, desktop: Monitor } as const;
 
