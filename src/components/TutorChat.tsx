@@ -216,6 +216,7 @@ export function TutorChat({
         className="flex items-end gap-2 border-t border-border pt-3"
       >
         <Textarea
+          data-tour="tutor-input"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {

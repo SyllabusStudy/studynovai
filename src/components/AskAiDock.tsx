@@ -11,7 +11,7 @@ export function AskAiDock() {
     <>
       <Button
         onClick={() => setOpen(true)}
-        className="fixed bottom-20 right-4 z-40 h-12 gap-2 rounded-full px-5 shadow-[var(--shadow-float)] lg:bottom-6 lg:right-6"
+        className="fixed bottom-20 right-4 z-40 in-data-[help=open]:hidden h-12 gap-2 rounded-full px-5 shadow-[var(--shadow-float)] lg:bottom-6 lg:right-6"
       >
         <Bot className="size-5" />
         Ask AI

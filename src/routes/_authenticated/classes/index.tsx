@@ -174,7 +174,7 @@ function NewClassDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="gap-1.5">
+        <Button size="sm" className="gap-1.5" data-tour="add-class">
           <Plus className="size-4" /> Add class
         </Button>
       </DialogTrigger>
