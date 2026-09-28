@@ -1,3 +1,4 @@
+import { recordStudyActivity } from "@/lib/activity";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useClassPicker } from "@/lib/active-class";
 import { useServerFn } from "@tanstack/react-start";
@@ -80,6 +81,7 @@ export function TutorChat({
     setBusy(true);
     try {
       const targetClass = fixedClassId ?? (classId === "all" ? null : classId);
+      void recordStudyActivity("tutor");
       const result = await send({
         data: { message, mode, classId: targetClass, conversationId },
       });

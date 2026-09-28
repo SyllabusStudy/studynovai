@@ -1,3 +1,4 @@
+import { recordStudyActivity } from "@/lib/activity";
 import { createFileRoute } from "@tanstack/react-router";
 import { ClassActionBar } from "@/components/ClassActionBar";
 import { useClassPicker } from "@/lib/active-class";
@@ -97,6 +98,7 @@ function SnapQuickPage() {
   async function scan(dataUrl: string, followUp?: string) {
     setBusy(true);
     try {
+      void recordStudyActivity("snapquick");
       const result = await run({
         data: {
           imageDataUrl: dataUrl,

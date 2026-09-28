@@ -1,3 +1,4 @@
+import { recordStudyActivity } from "@/lib/activity";
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";

@@ -1,3 +1,4 @@
+import { recordStudyActivity } from "@/lib/activity";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ClassActionBar } from "@/components/ClassActionBar";
 import { useClassPicker } from "@/lib/active-class";
@@ -72,6 +73,7 @@ function QuickVideoPage() {
   async function submit(payload: { url?: string; dataUrl?: string; fileName?: string }) {
     setBusy(true);
     try {
+      void recordStudyActivity("quickvideo");
       const result = await run({
         data: {
           url: payload.url ?? null,
