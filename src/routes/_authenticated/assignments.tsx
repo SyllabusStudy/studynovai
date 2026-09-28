@@ -1,6 +1,7 @@
 import { recordStudyActivity } from "@/lib/activity";
 import { createFileRoute } from "@tanstack/react-router";
 import { ClassActionBar } from "@/components/ClassActionBar";
+import { useActiveClass } from "@/lib/active-class";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { CheckSquare, Loader2, Plus } from "lucide-react";
@@ -215,6 +216,12 @@ function NewAssignmentDialog() {
   const { data: profile } = useProfile(user?.id);
   const savedDefault = profile?.default_reminder_minutes ?? 1440;
   const [reminder, setReminder] = useState<number | null>(null);
+  const { activeClassId } = useActiveClass();
+  useEffect(() => {
+    if (open && !form.class_id && activeClassId) {
+      setForm((f) => ({ ...f, class_id: activeClassId }));
+    }
+  }, [open, activeClassId]);
   useEffect(() => {
     setReminder((prev) => (prev === null ? savedDefault : prev));
   }, [savedDefault]);
