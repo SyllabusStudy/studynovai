@@ -145,12 +145,14 @@ function SnapQuickPage() {
     const res = id
       ? await supabase.from("snap_conversations").update(row).eq("id", id).select("id").single()
       : await supabase.from("snap_conversations").insert(row).select("id").single();
+    if (res.error) throw new Error(res.error.message);
     void qc.invalidateQueries({ queryKey: ["snap-conversations", user.id] });
     return res.data?.id ?? id;
   }
 
   async function openConversation(id: string) {
     if (busy) return;
+    setFailed(null);
     const { data, error } = await supabase.from("snap_conversations").select("*").eq("id", id).single();
     if (error || !data) {
       toast.error("Could not open that problem");
