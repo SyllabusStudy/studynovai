@@ -489,6 +489,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active_class_id: string | null
           created_at: string
           default_reminder_days: number
           default_reminder_minutes: number
@@ -507,6 +508,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          active_class_id?: string | null
           created_at?: string
           default_reminder_days?: number
           default_reminder_minutes?: number
@@ -525,6 +527,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          active_class_id?: string | null
           created_at?: string
           default_reminder_days?: number
           default_reminder_minutes?: number
@@ -542,7 +545,15 @@ export type Database = {
           study_streak?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_active_class_id_fkey"
+            columns: ["active_class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       quizzes: {
         Row: {
@@ -667,6 +678,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      study_activity: {
+        Row: {
+          activity_type: string
+          created_at: string
+          day: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string
+          day: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string
+          day?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       study_progress: {
         Row: {
@@ -819,6 +854,7 @@ export type Database = {
           source_url: string | null
           status: string
           summary: string | null
+          thumbnail_url: string | null
           title: string
           transcript: string | null
           updated_at: string
@@ -837,6 +873,7 @@ export type Database = {
           source_url?: string | null
           status?: string
           summary?: string | null
+          thumbnail_url?: string | null
           title: string
           transcript?: string | null
           updated_at?: string
@@ -855,6 +892,7 @@ export type Database = {
           source_url?: string | null
           status?: string
           summary?: string | null
+          thumbnail_url?: string | null
           title?: string
           transcript?: string | null
           updated_at?: string

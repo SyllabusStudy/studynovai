@@ -200,7 +200,7 @@ export function relativeDay(date: string | null): string {
   if (d === null) return "No date";
   if (d === 0) return "Today";
   if (d === 1) return "Tomorrow";
-  if (d < 0) return `${Math.abs(d)} day${Math.abs(d) === 1 ? "" : "s"} overdue`;
+  if (d < 0) return `Overdue · ${Math.abs(d)} day${Math.abs(d) === 1 ? "" : "s"} late`;
   return `in ${d} days`;
 }
 

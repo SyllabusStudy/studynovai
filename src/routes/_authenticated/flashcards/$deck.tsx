@@ -1,3 +1,4 @@
+import { recordStudyActivity } from "@/lib/activity";
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -41,6 +42,7 @@ function DeckPage() {
   function review(correct: boolean) {
     if (!current) return;
     setFlipped(false);
+    void recordStudyActivity("flashcards", qc);
     setIndex((i) => (i + 1) % Math.max(deck.length, 1));
     void supabase
       .from("flashcards")

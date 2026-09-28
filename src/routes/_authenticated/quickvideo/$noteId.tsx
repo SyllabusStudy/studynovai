@@ -80,7 +80,7 @@ function VideoNotePage() {
             <ArrowLeft className="size-4" /> All videos
           </Link>
         </Button>
-        <h1 className="mt-2 text-2xl font-bold tracking-tight">{note.title}</h1>
+        <h1 className="mt-2 text-2xl font-bold tracking-tight">{/^video notes$/i.test(note.title) ? "Untitled lecture video" : note.title}</h1>
         <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span>{formatDate(note.created_at)}</span>
           {cls ? <span>· {classLabel(cls)}</span> : null}

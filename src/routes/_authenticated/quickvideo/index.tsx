@@ -1,4 +1,7 @@
+import { recordStudyActivity } from "@/lib/activity";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { ClassActionBar } from "@/components/ClassActionBar";
+import { useClassPicker } from "@/lib/active-class";
 import { useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -63,13 +66,14 @@ function QuickVideoPage() {
   const { data: notes = [], isLoading } = useVideoNotes(user?.id);
   const fileRef = useRef<HTMLInputElement>(null);
   const [url, setUrl] = useState("");
-  const [classId, setClassId] = useState("none");
+  const [classId, setClassId] = useClassPicker("none");
   const [busy, setBusy] = useState(false);
   const run = useServerFn(importVideo);
 
   async function submit(payload: { url?: string; dataUrl?: string; fileName?: string }) {
     setBusy(true);
     try {
+      void recordStudyActivity("quickvideo");
       const result = await run({
         data: {
           url: payload.url ?? null,
@@ -114,8 +118,9 @@ function QuickVideoPage() {
     <div>
       <PageHeader
         title="QuickVideo"
-        description="Drop in a YouTube link or a lecture recording. StudyNova watches it, writes your notes, then answers anything you ask about it."
+        description="Paste a video link and get study notes in seconds."
       />
+      <ClassActionBar />
 
       <Hint id="quickvideo-link" point="down" className="mb-4">
         Paste a YouTube lecture link here — StudyNova writes the notes, then you can ask it
@@ -168,7 +173,7 @@ function QuickVideoPage() {
             onClick={() => void submit({ url: url.trim() })}
           >
             {busy ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-            Take notes
+            Create Study Notes
           </Button>
           <Button
             variant="outline"
@@ -206,14 +211,23 @@ function QuickVideoPage() {
         ) : (
           notes.map((n) => (
             <div key={n.id} className="surface-card flex items-start gap-3 p-4">
-              <FileVideo className="mt-0.5 size-5 shrink-0 text-primary" />
+              {(n as { thumbnail_url?: string | null }).thumbnail_url ? (
+                <img
+                  src={(n as { thumbnail_url?: string | null }).thumbnail_url!}
+                  alt=""
+                  loading="lazy"
+                  className="aspect-video w-28 shrink-0 rounded-lg object-cover"
+                />
+              ) : (
+                <FileVideo className="mt-0.5 size-5 shrink-0 text-primary" />
+              )}
               <div className="min-w-0 flex-1">
                 <Link
                   to="/quickvideo/$noteId"
                   params={{ noteId: n.id }}
                   className="block truncate font-semibold hover:underline"
                 >
-                  {n.title}
+                  {/^video notes$/i.test(n.title) ? "Untitled lecture video" : n.title}
                 </Link>
                 <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{n.summary}</p>
                 <p className="mt-1 text-xs text-muted-foreground">

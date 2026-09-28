@@ -1,3 +1,4 @@
+import { recordStudyActivity } from "@/lib/activity";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -81,6 +82,7 @@ function QuizRunner() {
       return;
     }
     setSubmitted(true);
+    void recordStudyActivity("quiz", qc);
     await qc.invalidateQueries({ queryKey: ["quizzes"] });
     await qc.invalidateQueries({ queryKey: ["quiz", quizId] });
   }

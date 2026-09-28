@@ -43,6 +43,13 @@
       "when": 1790570565577,
       "tag": "0005_feedback_fields_onboarding",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790572124284,
+      "tag": "0006_active_class_study_activity",
+      "breakpoints": true
     }
   ]
 }

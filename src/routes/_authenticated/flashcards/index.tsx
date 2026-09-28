@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { ClassActionBar } from "@/components/ClassActionBar";
+import { useClassPicker } from "@/lib/active-class";
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -42,7 +44,7 @@ function FlashcardsPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data: classes = [] } = useClasses(user?.id);
-  const [classId, setClassId] = useState("");
+  const [classId, setClassId] = useClassPicker("");
   const { data: documents = [] } = useDocuments(user?.id, classId || undefined);
   const { data: cards = [], isLoading } = useFlashcards(user?.id, classId || undefined);
   const { data: assignments = [] } = useAssignments(user?.id, classId || undefined);
@@ -115,8 +117,9 @@ function FlashcardsPage() {
     <div>
       <PageHeader
         title="Flashcards"
-        description="Every generation becomes its own deck, so new cards never mix into an old set."
+        description="Make a deck from your notes, then study it."
       />
+      <ClassActionBar hide={["flashcards"]} />
 
       <Hint id="flashcards-deck" point="down" className="mb-4">
         Pick a class, choose a source or let it use all your materials, then hit generate — each set gets its own deck name so nothing overlaps.

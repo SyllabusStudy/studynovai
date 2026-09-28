@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ClassActionBar } from "@/components/ClassActionBar";
 import { PageHeader } from "@/components/PageHeader";
 import { TutorChat } from "@/components/TutorChat";
 import { Hint } from "@/components/Hint";
@@ -23,8 +24,9 @@ function TutorPage() {
     <div>
       <PageHeader
         title="AI Tutor"
-        description="Answers come from your own uploaded materials, with the source named."
+        description="Ask anything — answers come from your own class materials."
       />
+      <ClassActionBar hide={["tutor"]} />
       <Hint id="tutor-ask" point="down" className="mb-4">
         Ask anything about a class — StudyNova already knows your syllabus, assignments and uploaded notes, so just type like you're texting a friend.
       </Hint>

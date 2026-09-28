@@ -869,31 +869,69 @@ export async function runStudyCoach(
   input: { minutes?: number | null | undefined; question?: string | null | undefined },
 ) {
   const { contextText } = await buildClassContext(supabase, userId, null);
-  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  const in7 = new Date(now.getTime() + 7 * 86400000).toISOString().slice(0, 10);
+  const [{ data: evs }, { data: asg }, { data: cls }] = await Promise.all([
+    supabase
+      .from("calendar_events")
+      .select("title,event_type,event_date,event_time,class_id")
+      .eq("user_id", userId)
+      .gte("event_date", today)
+      .lte("event_date", in7)
+      .order("event_date")
+      .limit(30),
+    supabase
+      .from("assignments")
+      .select("title,due_date,status,priority,class_id")
+      .eq("user_id", userId)
+      .neq("status", "completed")
+      .lte("due_date", in7)
+      .order("due_date")
+      .limit(30),
+    supabase.from("classes").select("id,class_name,course_code").eq("user_id", userId),
+  ]);
+  const cname = (id: string | null) => {
+    const c = (cls ?? []).find((x) => x.id === id);
+    return c ? c.class_name : "General";
+  };
+  const calendar = (evs ?? [])
+    .map((e) => `- ${e.event_date}${e.event_time ? ` ${e.event_time}` : ""} [${e.event_type}] ${e.title} (${cname(e.class_id)})`)
+    .join("\n");
+  const tasksDue = (asg ?? [])
+    .map((a) => `- ${a.due_date}${a.due_date && a.due_date < today ? " OVERDUE" : ""} ${a.title} (${cname(a.class_id)}, ${a.priority})`)
+    .join("\n");
+  const timeNow = now.toISOString().slice(11, 16);
 
   const raw = await callAI(
     [
       {
         role: "system",
         content:
-          "You are StudyNova's daily study coach. Reply with json only. Base every recommendation on the student's real deadlines, quiz results and materials. Never invent course facts. Plain text only: no LaTeX, no $ signs, no backslash math commands. If the student has almost no data, say so kindly in the summary and suggest adding a class or syllabus.",
+          "You are StudyNova, a friendly student assistant planning today's study. Reply with json only. Use the real calendar and deadlines below; overdue and due-soon items come first, and exams/quizzes in the next few days get review time. Talk like a helpful friend: short, warm, specific. Never say 'based on the information provided'. Never invent course facts. Plain text, no LaTeX.",
       },
       {
         role: "user",
-        content: `Today is ${today}. The student has ${input.minutes ?? 60} minutes to study today.${input.question ? ` They also asked: ${input.question}` : ""}
-Return json: {"summary":string,"tasks":[{"title":string,"detail":string,"minutes":number,"class":string}]}
-Keep summary to 1-2 sentences. Give 2-4 tasks whose minutes add up to about the available time.
+        content: `Today is ${today}, current UTC time ${timeNow}. The student has ${input.minutes ?? 60} minutes to study.${input.question ? ` They also asked: ${input.question}` : ""}
+Return json: {"summary":string,"tasks":[{"time":string,"title":string,"detail":string,"minutes":number,"class":string,"tool":"flashcards"|"quiz"|"tutor"}]}
+summary: one friendly sentence like "Here's your plan for today." plus the biggest priority. 2-4 tasks. "time" like "6:30 PM" or "". "class" must be an exact class name from the list or "General". "tool" = best StudyNova tool for that task.
 
-STUDENT CONTEXT:
-${contextText.slice(0, 12000)}`,
+CLASSES: ${(cls ?? []).map((c) => c.class_name).join(", ") || "none"}
+CALENDAR (next 7 days):
+${calendar || "nothing scheduled"}
+OPEN ASSIGNMENTS (due within 7 days or overdue):
+${tasksDue || "none"}
+
+MORE CONTEXT:
+${contextText.slice(0, 6000)}`,
       },
     ],
-    { maxTokens: 1600 },
+    { maxTokens: 1200 },
   );
 
   return parseJsonBlock<{
     summary: string;
-    tasks: Array<{ title: string; detail: string; minutes: number; class: string }>;
+    tasks: Array<{ time?: string; title: string; detail: string; minutes: number; class: string; tool?: string }>;
   }>(raw);
 }
 
