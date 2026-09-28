@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { collectDueReminders } from "@/lib/reminders";
+import { collectDueReminders } from "@/lib/reminder-schedule";
 import { sendPush, type PushDevice } from "@/lib/push.server";
 
 /**
