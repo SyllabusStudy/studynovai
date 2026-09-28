@@ -25,7 +25,8 @@ export const FEEDBACK_STATUSES = [
 ] as const;
 
 export function categoryLabel(v: string) {
-  return FEEDBACK_CATEGORIES.find((c) => c.value === v)?.label ?? v;
+  const legacy: Record<string, string> = { ai_help: "AI Issue", syllabus: "Syllabus import", calendar: "Calendar", general: "Other" };
+  return FEEDBACK_CATEGORIES.find((c) => c.value === v)?.label ?? legacy[v] ?? v;
 }
 
 export function FeedbackForm({ onSent, page }: { onSent?: () => void; page?: string }) {

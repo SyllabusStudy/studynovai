@@ -174,7 +174,7 @@ function BrandBlock() {
       <span className="flex size-9 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shadow-card">
         <Sparkles className="size-5" />
       </span>
-      <span className="leading-tight">
+      <span className="leading-tight text-sidebar-foreground">
         <span className="block font-display text-base font-extrabold">StudyNova</span>
         <span className="block text-[11px] text-sidebar-foreground/60">Your semester, made simple.</span>
       </span>
