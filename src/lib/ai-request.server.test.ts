@@ -18,7 +18,7 @@ describe("AI request retries", () => {
     await vi.runAllTimersAsync();
     expect((await pending).ok).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(fetchMock.mock.calls.map((call: unknown[]) => call[2])).toEqual([undefined, undefined]);
+    expect(fetchMock.mock.calls.every((call: unknown[]) => call.length === 2)).toBe(true);
     expect(fetchMock.mock.calls[0]?.[1]).toBe(init);
     expect(fetchMock.mock.calls[1]?.[1]).toBe(init);
   });
@@ -27,6 +27,20 @@ describe("AI request retries", () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response("denied", { status: 403 }));
     vi.stubGlobal("fetch", fetchMock);
     expect((await fetchAiWithRetry("google", "https://example.test/ai", {})).status).toBe(403);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not replay a provider access denial mislabeled as a server error", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{"error":{"type":"permission_error"}}', { status: 503 }));
+    vi.stubGlobal("fetch", fetchMock);
+    expect((await fetchAiWithRetry("anthropic", "https://example.test/ai", {})).status).toBe(503);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not exceed a long Retry-After cooldown", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("limited", { status: 429, headers: { "retry-after": "120" } }));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(fetchAiWithRetry("google", "https://example.test/ai", {})).rejects.toThrow(AI_CONNECTION_MESSAGE);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
