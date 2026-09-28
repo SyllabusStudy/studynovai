@@ -92,14 +92,17 @@ function SnapQuickPage() {
     }
   }
 
-  async function scan(dataUrl: string) {
+  async function scan(dataUrl: string, followUp?: string) {
     setBusy(true);
     try {
       const result = await run({
         data: {
           imageDataUrl: dataUrl,
           classId: classId === "all" ? null : classId,
-          question: question || null,
+          question:
+            [question, followUp ?? "Format the reply with headings: Detected questions, Step-by-step explanation, Final answer."]
+              .filter(Boolean)
+              .join("\n") || null,
         },
       });
       setAnswer(result.reply);
@@ -113,8 +116,8 @@ function SnapQuickPage() {
   return (
     <div>
       <PageHeader
-        title="SnapQuick"
-        description="Point your camera at any worksheet, problem set or whiteboard — StudyNova reads it and explains every question."
+        title="Stuck on a problem?"
+        description="Take a photo of your homework and StudyNova will walk you through it step by step."
       />
 
       <Hint id="snapquick-camera" point="down" className="mb-4">
@@ -152,6 +155,7 @@ function SnapQuickPage() {
             </Button>
           </div>
 
+          {image ? (
           <div className="space-y-2">
             <Select value={classId} onValueChange={setClassId}>
               <SelectTrigger>
@@ -183,6 +187,7 @@ function SnapQuickPage() {
               </Button>
             ) : null}
           </div>
+          ) : null}
 
           <input
             ref={cameraRef}
@@ -207,7 +212,19 @@ function SnapQuickPage() {
               <Loader2 className="size-4 animate-spin text-primary" /> Reading your photo…
             </p>
           ) : answer ? (
-            <Markdown content={answer} />
+            <div className="space-y-4">
+              <Markdown content={answer} />
+              {image ? (
+                <div className="flex flex-wrap gap-2 border-t border-border pt-4">
+                  <Button size="sm" variant="outline" onClick={() => void scan(image, "Explain this differently, using a simpler approach and an everyday analogy.")}>
+                    Explain This Differently
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => void scan(image, "Give me one similar practice problem with different numbers, then its worked solution hidden under a 'Solution' heading.")}>
+                    Give Me a Similar Problem
+                  </Button>
+                </div>
+              ) : null}
+            </div>
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-2 py-10 text-center">
               <Sparkles className="size-6 text-primary" />
