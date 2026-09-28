@@ -5,6 +5,7 @@ import { AI_KEY_HELP, hasUserAiKey, withUserAiKey } from "./ai-key.server";
 import { AI_CONNECTION_MESSAGE } from "./ai-request.server";
 import {
   runAiTextCheck,
+  runHumanize,
   runAssignmentHelp,
   runDocumentExtraction,
   runDocumentMarkup,
@@ -263,5 +264,31 @@ export const checkAiText = createServerFn({ method: "POST" })
       return { result, error: null };
     } catch (e) {
       return { result: null, error: e instanceof Error ? e.message : AI_CONNECTION_MESSAGE };
+    }
+  });
+
+export const humanizeAiText = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        sentences: z.array(z.object({ index: z.number().int().min(0), text: z.string().min(1).max(2000) })).min(1).max(200),
+        context: z.string().max(20000),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { isPro } = await import("./billing.server");
+    if (!(await isPro(context.supabase, context.userId))) {
+      return { rewrites: null, error: "Humanize is a Pro feature. Upgrade to use it.", needsPro: true };
+    }
+    if (!(await hasUserAiKey(context.supabase, context.userId))) {
+      return { rewrites: null, error: AI_KEY_HELP, needsPro: false };
+    }
+    try {
+      const rewrites = await withUserAiKey(context.supabase, context.userId, () => runHumanize(data));
+      return { rewrites, error: null, needsPro: false };
+    } catch (e) {
+      return { rewrites: null, error: e instanceof Error ? e.message : AI_CONNECTION_MESSAGE, needsPro: false };
     }
   });

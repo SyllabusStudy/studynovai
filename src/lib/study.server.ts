@@ -1448,7 +1448,20 @@ export type AiCheckResult = {
   humanPercent: number;
   verdict: string;
   sections: { excerpt: string; label: "ai" | "human" | "mixed"; reason: string }[];
+  /** The full original text split into sentences, each labelled for highlighting. */
+  spans: { text: string; label: "ai" | "human" | "mixed" }[];
 };
+
+/** Split text into sentence pieces that concatenate back to the exact original. */
+export function splitSentences(text: string): string[] {
+  const parts = text.match(/[^.!?\n]+(?:[.!?]+["')\]]*)?\s*|\n+\s*/g) ?? [text];
+  const out: string[] = [];
+  for (const p of parts) {
+    if (out.length && !p.trim()) out[out.length - 1] += p;
+    else out.push(p);
+  }
+  return out.length ? out : [text];
+}
 
 const AI_PHRASES = [
   "delve", "moreover", "furthermore", "in conclusion", "it is important to note", "additionally",
@@ -1482,18 +1495,23 @@ function heuristicAiScore(text: string) {
 export async function runAiTextCheck(input: { text: string }): Promise<AiCheckResult> {
   // One short call on the free model; text is capped to keep usage low.
   const text = input.text.slice(0, 8000);
+  const pieces = splitSentences(text);
+  const numbered = pieces
+    .map((p, i) => (p.trim() ? `[${i}] ${p.trim()}` : ""))
+    .filter(Boolean)
+    .join("\n");
   const raw = await callAI(
     [
       {
         role: "system",
         content:
-          'You estimate whether text was written by AI or a human. Look at phrasing patterns: uniform sentence length, generic transitions ("Moreover", "In conclusion", "delve"), hedging, lack of personal detail, list-like structure vs. typos, personal voice, uneven rhythm, specific experiences. Split the text into up to 8 passages. Reply with json only: {"aiPercent":number 0-100,"verdict":string (one sentence),"sections":[{"excerpt":string (first ~12 words of the passage, copied exactly),"label":"ai"|"human"|"mixed","reason":string (one short sentence)}]}. Judge carefully and consistently: short or casual human writing should score low; polished generic essay text higher. Never guess 50 by default. Be honest that this is an estimate.',
+          'You estimate whether text was written by AI or a human. Look at phrasing patterns: uniform sentence length, generic transitions ("Moreover", "In conclusion", "delve"), hedging, lack of personal detail, list-like structure vs. typos, personal voice, uneven rhythm, specific experiences. The text is given as numbered sentences. Label EVERY sentence number. Also group it into up to 8 passages. Reply with json only: {"aiPercent":number 0-100,"verdict":string (one sentence),"labels":{"0":"ai"|"human"|"mixed",...every sentence number},"sections":[{"excerpt":string (first ~12 words of the passage, copied exactly),"label":"ai"|"human"|"mixed","reason":string (one short sentence)}]}. Judge carefully and consistently: short or casual human writing should score low; polished generic essay text higher. Never guess 50 by default. Be honest that this is an estimate.',
       },
-      { role: "user", content: text },
+      { role: "user", content: numbered },
     ],
-    { temperature: 0, maxTokens: 900 },
+    { temperature: 0, maxTokens: 900 + Math.min(1600, pieces.length * 12) },
   );
-  const parsed = parseJsonBlock<Partial<AiCheckResult>>(raw);
+  const parsed = parseJsonBlock<Partial<AiCheckResult> & { labels?: Record<string, string> }>(raw);
   const modelAi = Math.max(0, Math.min(100, Math.round(Number(parsed.aiPercent) || 0)));
   const local = heuristicAiScore(text);
   // Blend the AI judgement with the local pattern scan for steadier, repeatable scores.
@@ -1507,5 +1525,34 @@ export async function runAiTextCheck(input: { text: string }): Promise<AiCheckRe
       label: s.label === "ai" || s.label === "human" ? s.label : "mixed",
       reason: String(s.reason ?? ""),
     })),
+    spans: pieces.map((p, i) => {
+      const l = parsed.labels?.[String(i)];
+      const fallback: "ai" | "human" = ai >= 50 ? "ai" : "human";
+      return { text: p, label: l === "ai" || l === "human" || l === "mixed" ? l : fallback };
+    }),
   };
+}
+
+/** Rewrite the AI-sounding sentences in a natural, human voice. Returns index → new text. */
+export async function runHumanize(input: { sentences: { index: number; text: string }[]; context: string }) {
+  const list = input.sentences.map((s) => `[${s.index}] ${s.text.trim()}`).join("\n");
+  const raw = await callAI(
+    [
+      {
+        role: "system",
+        content:
+          'Rewrite each numbered sentence so it sounds naturally written by a student: varied sentence length, plain everyday words, a personal and specific voice, no stock transitions ("Moreover", "Furthermore", "In conclusion", "delve", "crucial", "pivotal", "tapestry"). Keep the SAME meaning, facts and language, and roughly the same length. Do not add new claims. Reply with json only: {"rewrites":{"<number>":"rewritten sentence",...}} covering every number.',
+      },
+      { role: "user", content: `Surrounding text for tone:\n${input.context.slice(0, 3000)}\n\nSentences to rewrite:\n${list}` },
+    ],
+    { temperature: 0.7, maxTokens: Math.min(4000, 300 + list.length) },
+  );
+  const parsed = parseJsonBlock<{ rewrites?: Record<string, string> }>(raw);
+  const out: Record<number, string> = {};
+  for (const s of input.sentences) {
+    const r = parsed.rewrites?.[String(s.index)];
+    if (typeof r === "string" && r.trim()) out[s.index] = r.trim();
+  }
+  if (!Object.keys(out).length) throw new Error("I couldn't rewrite that just now. Please try again.");
+  return out;
 }
