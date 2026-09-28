@@ -173,7 +173,7 @@ function QuickVideoPage() {
             onClick={() => void submit({ url: url.trim() })}
           >
             {busy ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-            Take notes
+            Create Study Notes
           </Button>
           <Button
             variant="outline"
@@ -211,14 +211,23 @@ function QuickVideoPage() {
         ) : (
           notes.map((n) => (
             <div key={n.id} className="surface-card flex items-start gap-3 p-4">
-              <FileVideo className="mt-0.5 size-5 shrink-0 text-primary" />
+              {(n as { thumbnail_url?: string | null }).thumbnail_url ? (
+                <img
+                  src={(n as { thumbnail_url?: string | null }).thumbnail_url!}
+                  alt=""
+                  loading="lazy"
+                  className="aspect-video w-28 shrink-0 rounded-lg object-cover"
+                />
+              ) : (
+                <FileVideo className="mt-0.5 size-5 shrink-0 text-primary" />
+              )}
               <div className="min-w-0 flex-1">
                 <Link
                   to="/quickvideo/$noteId"
                   params={{ noteId: n.id }}
                   className="block truncate font-semibold hover:underline"
                 >
-                  {n.title}
+                  {/^video notes$/i.test(n.title) ? "Untitled lecture video" : n.title}
                 </Link>
                 <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{n.summary}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
