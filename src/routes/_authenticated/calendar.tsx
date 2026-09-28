@@ -33,6 +33,7 @@ import { useAuth } from "@/lib/auth";
 import { AssignmentHelp } from "@/components/AssignmentHelp";
 import { classLabel, formatDate, useAssignments, useClasses, useEvents, useProfile } from "@/lib/data";
 import { cn } from "@/lib/utils";
+import { classifyEvent, eventDateTime, localDateKey, useNow } from "@/lib/dates";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
   head: () => ({
@@ -86,13 +87,35 @@ function CalendarPage() {
     byDate.set(e.event_date, list);
   }
 
-  const todayIso = iso(new Date());
+  const now = useNow();
+  const todayIso = iso(now);
+  const [showPast, setShowPast] = useState(false);
+  const agenda = useMemo(() => {
+    const tmr = new Date(now);
+    tmr.setDate(tmr.getDate() + 1);
+    const tmrKey = localDateKey(tmr);
+    const week = new Date(now);
+    week.setDate(week.getDate() + 7);
+    const weekKey = localDateKey(week);
+    const list = events
+      .filter((e) => !activeTypes || activeTypes.includes(e.event_type))
+      .map((e) => ({ e, status: classifyEvent(e.event_date, e.event_time, now), at: eventDateTime(e.event_date, e.event_time) }))
+      .sort((a, b) => a.at.getTime() - b.at.getTime());
+    const future = list.filter((x) => x.status !== "past");
+    return {
+      today: future.filter((x) => x.e.event_date === todayIso),
+      tomorrow: future.filter((x) => x.e.event_date === tmrKey),
+      week: future.filter((x) => x.e.event_date > tmrKey && x.e.event_date <= weekKey),
+      later: future.filter((x) => x.e.event_date > weekKey).slice(0, 15),
+      past: list.filter((x) => x.status === "past").reverse().slice(0, 30),
+    };
+  }, [events, activeTypes, now, todayIso]);
 
   return (
     <div>
       <PageHeader
         title="Calendar"
-        description="Colour-coded per class, built from your syllabi and anything you add."
+        description="Everything coming up, color-coded by class."
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <SyllabusCsvExport label="Export CSV" />
@@ -182,6 +205,53 @@ function CalendarPage() {
             </button>
           );
         })}
+      </div>
+
+      <section className="mt-8 grid gap-4 md:grid-cols-2" aria-label="Agenda">
+        {(
+          [
+            ["Today", agenda.today],
+            ["Tomorrow", agenda.tomorrow],
+            ["This week", agenda.week],
+            ["Upcoming", agenda.later],
+          ] as const
+        ).map(([label, items]) => (
+          <div key={label} className="surface-card p-4">
+            <h2 className="mb-2 font-display text-base font-bold">{label}</h2>
+            {items.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nothing here.</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {items.map(({ e }) => (
+                  <li key={e.id} className="flex items-center gap-2 text-sm">
+                    <ClassDot color={e.class_id ? classById.get(e.class_id)?.color : null} className="size-2" />
+                    <span className="min-w-0 flex-1 truncate font-medium">{e.title}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      {EVENT_TYPE_LABELS[e.event_type] ?? "Event"} · {label === "Today" || label === "Tomorrow" ? e.event_time || "All day" : formatDate(e.event_date)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ))}
+      </section>
+
+      <div className="mt-4">
+        <Button variant="ghost" size="sm" onClick={() => setShowPast((v) => !v)}>
+          {showPast ? "Hide past events" : `Show past events (${agenda.past.length})`}
+        </Button>
+        {showPast ? (
+          <ul className="mt-2 space-y-1.5 opacity-70">
+            {agenda.past.map(({ e }) => (
+              <li key={e.id} className="flex items-center gap-2 text-sm">
+                <ClassDot color={e.class_id ? classById.get(e.class_id)?.color : null} className="size-2" />
+                <span className="min-w-0 flex-1 truncate line-through decoration-muted-foreground/50">{e.title}</span>
+                <span className="text-xs text-muted-foreground">{formatDate(e.event_date)}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </div>
 
       <Dialog open={selected !== null} onOpenChange={(o) => !o && setSelected(null)}>

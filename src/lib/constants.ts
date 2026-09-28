@@ -92,9 +92,10 @@ export const ASSIGNMENT_CATEGORIES = [
 
 export const CALENDAR_FILTERS = [
   { key: "all", label: "All", types: null },
+  { key: "classes", label: "Classes", types: ["class"] },
   { key: "assignments", label: "Assignments", types: ["assignment", "project", "presentation"] },
   { key: "exams", label: "Exams", types: ["exam", "quiz", "final"] },
-  { key: "classes", label: "Classes", types: ["class", "study_session"] },
+  { key: "study", label: "Study", types: ["study_session"] },
   { key: "work", label: "Work", types: ["work"] },
-  { key: "personal", label: "Personal", types: ["personal", "other"] },
+  { key: "other", label: "Other", types: ["personal", "other"] },
 ] as const;
