@@ -2,7 +2,7 @@ import { MoreOptions } from "@/components/MoreOptions";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Copy, Crown, Loader2, ScanSearch, Wand2 } from "lucide-react";
+import { Copy, Crown, Loader2, ScanSearch, } from "lucide-react";
 import { toast } from "sonner";
 import { checkAiText, humanizeAiText } from "@/lib/ai.functions";
 import { getBilling } from "@/lib/billing.functions";
@@ -55,7 +55,7 @@ function AiCheckerPage() {
   const aiIdx = result ? result.spans.map((s, i) => (s.label === "ai" && s.text.trim() && !rewritten.has(i) ? i : -1)).filter((i) => i >= 0) : [];
 
   async function doHumanize() {
-    if (!result || !aiIdx.length || humanizing || improved) return;
+    if (!result || !aiIdx.length || humanizing) return;
     setHumanizing(true);
     try {
       const res = await humanize({
@@ -71,7 +71,7 @@ function AiCheckerPage() {
       const map = res.rewrites as Record<string, string>;
       setImproved(true);
       if (!Object.keys(map).length) {
-        toast.success("These parts already read naturally — nothing needed changing.");
+        toast.success("These parts already read naturally.");
         return;
       }
       const done = new Set(rewritten);
@@ -86,7 +86,7 @@ function AiCheckerPage() {
       setResult(nextResult);
       setRewritten(done);
       setText(spans.map((s) => s.text).join(""));
-      toast.success("Your writing was revised for a more natural voice while preserving your original meaning.");
+      toast.success("Humanized — your original meaning was kept.");
     } catch {
       toast.error("I'm having trouble connecting right now. Try again in a moment.");
     } finally {
@@ -237,13 +237,14 @@ function AiCheckerPage() {
             })() : null}
             <div className="flex flex-wrap items-center gap-2">
               {pro ? (
-                <Button onClick={() => void doHumanize()} disabled={humanizing || !aiIdx.length || improved} className="gap-1.5">
-                  {humanizing ? <Loader2 className="size-4 animate-spin" /> : <Wand2 className="size-4" />}
-                  {humanizing ? "Improving…" : improved ? "Natural voice improved" : aiIdx.length ? `Improve Natural Voice (${aiIdx.length})` : "Nothing flagged to improve"}
+                <Button onClick={() => void doHumanize()} disabled={humanizing || !aiIdx.length} className="gap-1.5">
+                  {humanizing ? <Loader2 className="size-4 animate-spin" /> : null}
+                  {humanizing ? "Humanizing…" : aiIdx.length ? `✨ Humanize (${aiIdx.length})` : "✨ Humanized"}
+                  <span className="rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px] font-bold uppercase">Pro</span>
                 </Button>
               ) : pro === false ? (
                 <Button asChild variant="outline" className="gap-1.5">
-                  <Link to="/upgrade"><Crown className="size-4" /> Improve Natural Voice — Pro only</Link>
+                  <Link to="/upgrade">✨ Humanize <span aria-hidden="true">🔒</span> <Crown className="size-4" /> Pro</Link>
                 </Button>
               ) : null}
               {rewritten.size ? (
@@ -256,7 +257,7 @@ function AiCheckerPage() {
                 </Button>
               ) : null}
             </div>
-            {rewritten.size ? <p className="text-xs text-muted-foreground">Your writing was revised for a more natural voice while preserving your original meaning. Your text box was updated. This improves writing quality — it doesn't guarantee any detector result.</p> : null}
+            {rewritten.size ? <p className="text-xs text-muted-foreground">Humanized parts are underlined in green and your text box now has the new version. Copy it, or press Humanize again for any parts still flagged. No rewrite can guarantee a detector result.</p> : null}
           </div>
 
           <MoreOptions label="Why did we flag this?">
