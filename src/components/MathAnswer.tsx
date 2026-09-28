@@ -217,8 +217,8 @@ export function MathAnswer({ content, animate = false }: { content: string; anim
               {sec.pieces.map((piece, p) => {
                 if (!visible(s, p)) return null;
                 const m = piece.match(/^###\s*(?:Step\s*\d+\s*[:.\-—]?\s*)?(.*)\n?([\s\S]*)$/i);
-                const title = m ? m[1]!.trim() : "";
-                const body = m ? m[2]!.trim() : piece;
+                const title = m?.[1]?.trim() ?? "";
+                const body = m?.[2]?.trim() ?? piece;
                 return (
                   <section key={p} className="rounded-2xl border border-primary/30 bg-card p-4 shadow-sm animate-fade-in sm:p-5">
                     <div className="mb-2 flex items-center gap-2.5">
@@ -241,11 +241,17 @@ export function MathAnswer({ content, animate = false }: { content: string; anim
             key={s}
             className={cn("rounded-2xl border p-3.5 sm:p-4 animate-fade-in", tone?.className ?? "bg-card border-border")}
           >
-            <h3 className="mb-1.5 flex items-center gap-2 font-display text-sm font-bold">
+            <h3 className={cn("flex items-center gap-2 font-display text-sm font-bold", isFinal ? "mb-4" : "mb-1.5")}>
               <Icon className={cn("size-4 shrink-0", tone?.iconClass ?? "text-primary")} />
               {sec.title}
             </h3>
-            <div className={cn("space-y-3", isFinal && "text-base [&_.katex-display]:text-lg")}>
+            <div
+              className={cn(
+                "min-w-0 space-y-3",
+                isFinal &&
+                  "clear-both overflow-x-auto pt-1 text-base [&_.katex-display]:m-0 [&_.katex-display]:min-w-max [&_.katex-display]:py-2 [&_.katex-display]:text-sm sm:[&_.katex-display]:text-base",
+              )}
+            >
               {sec.pieces.map((piece, p) => (visible(s, p) ? <Piece key={p} text={piece} /> : null))}
             </div>
           </section>
