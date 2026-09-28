@@ -1160,6 +1160,8 @@ STRUCTURE for a full explanation. Use these exact "## " headings, in this order,
 ## Remember — one short sentence: the key idea for next time.
 ## Try this — one similar practice question (no solution).
 
+CALCULATOR CHECKS: whenever the answer involves numbers or algebra, end your reply with a fenced block \`\`\`calc containing 1-8 lines, each "left == right" in math.js syntax, which a calculator will independently evaluate (e.g. "(7+5)/4 == 3", "2*(1/2)^2 - 7*(1/2) + 3 == 0", "sqrt(49-24) == 5", "derivative('cos(2x)', 'x') == '-2 sin(2 x)'" — derivatives/simplify compare symbolically, use only math.js functions). Use it to substitute answers back. The student never sees this block. Omit it for non-numeric subjects.
+
 Complete work, but scannable: short sentences, no walls of text. For several problems on one photo, use "## Problem 1", then its sections, and so on.
 
 CONVERSATION: This is an ongoing conversation about the same question. For follow-ups ("why did we do step 3", "I don't get step 2", "explain easier", "show more steps", "make it simpler", "what did I do wrong") answer that specific request directly using the earlier context, without asking to re-upload. "Show more steps" = redo the solution with finer steps; "make it easier/simpler" = shorter, beginner-friendly version. Use headings only if they help.`;
@@ -1226,10 +1228,14 @@ export async function runSnapTutor(
     messages.push({ role: "user", content: input.message });
   }
 
-  const draft = await callAI(messages, { temperature: 0.2, maxTokens: 6000 });
+  const rawDraft = await callAI(messages, { temperature: 0.2, maxTokens: 6000 });
+  const { text: draft, failures } = await runCalcChecks(rawDraft);
 
   // Independent check: a separate pass re-solves the problem and corrects the draft if needed.
-  if (input.mode === "tutor" || input.mode === "practice") return { reply: draft };
+  if ((input.mode === "tutor" || input.mode === "practice") && !failures.length) return { reply: draft };
+  const calcNote = failures.length
+    ? `\n\nCALCULATOR RESULTS — these checks from the draft FAILED when evaluated by an independent calculator, so the draft very likely contains an error. Re-solve carefully and return CORRECTED:\n${failures.join("\n")}`
+    : "\n\nCALCULATOR RESULTS: all numeric checks passed.";
   try {
     const verdict = await callAI(
       [
@@ -1254,10 +1260,63 @@ export async function runSnapTutor(
   }
 }
 
+/** Evaluate the tutor's hidden ```calc block with math.js and strip it from the reply. */
+async function runCalcChecks(reply: string): Promise<{ text: string; failures: string[] }> {
+  const blocks = [...reply.matchAll(/```calc\s*\n([\s\S]*?)```/g)];
+  const text = reply.replace(/```calc\s*\n[\s\S]*?```/g, "").trim();
+  const lines = blocks.flatMap((b) => (b[1] ?? "").split("\n")).map((l) => l.trim()).filter((l) => l.includes("=="));
+  if (!lines.length) return { text, failures: [] };
+  const math = await import("mathjs");
+  const failures: string[] = [];
+  const toNum = (v: unknown): number | null => {
+    try {
+      const n = math.number(v as never) as unknown;
+      return typeof n === "number" && Number.isFinite(n) ? n : null;
+    } catch {
+      return null;
+    }
+  };
+  for (const line of lines.slice(0, 12)) {
+    const [l, r] = line.split("==").map((x) => x.trim());
+    if (!l || !r) continue;
+    try {
+      const lv = math.evaluate(l);
+      const rv = math.evaluate(r);
+      const ln = toNum(lv);
+      const rn = toNum(rv);
+      let ok: boolean;
+      if (ln !== null && rn !== null) {
+        ok = Math.abs(ln - rn) <= 1e-6 * Math.max(1, Math.abs(ln), Math.abs(rn));
+      } else {
+        // Symbolic: compare simplified difference, then sample numerically.
+        const a = math.simplify(String(lv));
+        const b = math.simplify(String(rv));
+        const diff = math.simplify(`(${a.toString()}) - (${b.toString()})`).toString();
+        ok = diff === "0";
+        if (!ok) {
+          const vars = new Set<string>();
+          math.parse(`(${a}) - (${b})`).traverse((n: any) => {
+            if (n.isSymbolNode && !(n.name in math)) vars.add(n.name);
+          });
+          ok = [0.37, 1.13, 2.71].every((x) => {
+            const scope = Object.fromEntries([...vars].map((k) => [k, x]));
+            const d = toNum(math.evaluate(`(${a}) - (${b})`, scope));
+            return d !== null && Math.abs(d) < 1e-6;
+          });
+        }
+      }
+      if (!ok) failures.push(`${line}   (calculator: left = ${math.format(lv, { precision: 10 })}, right = ${math.format(rv, { precision: 10 })})`);
+    } catch {
+      // Unparseable check — ignore rather than block the answer.
+    }
+  }
+  return { text, failures };
+}
+
 const SNAP_VERIFY_RULES = `You are an independent checker for a tutoring answer. Do NOT trust the draft. First solve/analyze the student's question yourself from scratch, then compare.
 Check: every calculation and algebra step, signs, equation solutions (substitute back), derivatives/integrals (differentiate results), units, chemical balancing, reaction products and SMILES validity, statistics, code output, historical facts/dates, logical consistency, and that diagrams (mermaid/svg/smiles blocks) are valid and match the content.
 If the draft is fully correct, reply with exactly: VERIFIED
-If anything is wrong or a diagram block is invalid, reply with "CORRECTED" on the first line followed by the COMPLETE corrected answer in exactly the same format, headings and style as the draft (keep all its good parts, fix only what is wrong). If something genuinely cannot be determined (unreadable photo, ambiguous question), the corrected answer must say so plainly instead of guessing. Never mention this checking process.`;
+If anything is wrong or a diagram block is invalid, reply with "CORRECTED" on the first line followed by the COMPLETE corrected answer in exactly the same format, headings and style as the draft (keep all its good parts, fix only what is wrong). If something genuinely cannot be determined (unreadable photo, ambiguous question), the corrected answer must say so plainly instead of guessing. Never mention this checking process. Keep any ```calc block out of your reply.`;
 
 
 /* ------------------------------------------------------------------ file mark-up */
