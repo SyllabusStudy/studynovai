@@ -79,7 +79,7 @@ export function InstallCard() {
     }
     const t = setTimeout(() => {
       // Don't cover the first-run tour.
-      if (document.querySelector("[data-tour-active]")) return;
+      if (document.querySelector("[data-tour-card]")) return;
       setOpen(true);
     }, 30000);
     return () => clearTimeout(t);
