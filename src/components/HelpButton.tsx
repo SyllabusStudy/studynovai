@@ -41,7 +41,7 @@ export function HelpButton() {
         <Lightbulb className="size-4" /> Stuck?
       </Button>
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-md">
+        <SheetContent className="w-full overflow-y-auto pt-[max(8rem,calc(env(safe-area-inset-top)+7rem))] sm:max-w-md sm:pt-6" closeClassName="top-[max(5rem,calc(env(safe-area-inset-top)+4rem))] sm:top-4">
           <SheetHeader>
             <SheetTitle>💡 Help</SheetTitle>
           </SheetHeader>
