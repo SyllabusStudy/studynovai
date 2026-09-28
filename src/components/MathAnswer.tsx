@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import remarkGfm from "remark-gfm";
@@ -9,15 +10,21 @@ import {
   CheckCircle2,
   Compass,
   Eye,
+  FastForward,
   FunctionSquare,
+  HelpCircle,
   Lightbulb,
   ListOrdered,
+  Pause,
   PencilLine,
+  Play,
   Target,
   Trophy,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { ChemStructure, MermaidDiagram, SvgDiagram } from "@/components/TutorVisuals";
 
 /** Convert \( \) and \[ \] delimiters to $ forms remark-math understands. */
 function normalizeMath(src: string) {
@@ -67,9 +74,20 @@ function Md({ children }: { children: string }) {
         ),
         th: ({ children }) => <th className="border border-border bg-muted px-2 py-1 font-semibold">{children}</th>,
         td: ({ children }) => <td className="border border-border px-2 py-1">{children}</td>,
-        code: ({ children }) => (
-          <code className="rounded bg-muted px-1 py-0.5 font-mono text-[0.85em]">{children}</code>
-        ),
+        pre: ({ children }) => <>{children}</>,
+        code: ({ className, children }) => {
+          const src = String(children ?? "");
+          if (/language-mermaid/.test(className ?? "")) return <MermaidDiagram code={src} />;
+          if (/language-(smiles|chem)/.test(className ?? "")) return <ChemStructure code={src} />;
+          if (/language-svg/.test(className ?? "")) return <SvgDiagram code={src} />;
+          if (className)
+            return (
+              <pre className="my-2 overflow-x-auto rounded-xl bg-muted p-3 font-mono text-xs">
+                <code>{src}</code>
+              </pre>
+            );
+          return <code className="rounded bg-muted px-1 py-0.5 font-mono text-[0.85em]">{children}</code>;
+        },
       }}
     >
       {children}
@@ -77,37 +95,137 @@ function Md({ children }: { children: string }) {
   );
 }
 
-/** Renders a tutor reply: "## " sections become colour-coded learning cards with KaTeX math. */
-export function MathAnswer({ content }: { content: string }) {
+const WHY_LINE = /^\s*(?:[-*]\s*)?\*\*Why\??\*\*\s*[:\-—]?\s*(.*)$/i;
+
+/** Pulls "**Why?** …" lines out so they sit behind a tap-to-open button. */
+function splitWhy(text: string) {
+  const whys: string[] = [];
+  const body = text
+    .split("\n")
+    .filter((line) => {
+      const m = line.match(WHY_LINE);
+      if (m && m[1]?.trim()) {
+        whys.push(m[1].trim());
+        return false;
+      }
+      return true;
+    })
+    .join("\n");
+  return { body, why: whys.join(" ") };
+}
+
+function WhyButton({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-1">
+      <Button type="button" size="sm" variant="outline" className="h-7 rounded-full px-3 text-xs" onClick={() => setOpen((o) => !o)}>
+        <HelpCircle className="size-3.5" /> {open ? "Hide why" : "Why?"}
+      </Button>
+      {open ? (
+        <div className="mt-1.5 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2 animate-fade-in">
+          <Md>{text}</Md>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function Piece({ text }: { text: string }) {
+  const { body, why } = splitWhy(text);
+  return (
+    <div className="animate-fade-in">
+      <Md>{body}</Md>
+      {why ? <WhyButton text={why} /> : null}
+    </div>
+  );
+}
+
+type Section = { title: string; pieces: string[] };
+
+/** Break a section into the small chunks that get revealed one after another. */
+function toPieces(title: string, body: string): string[] {
+  if (/^(steps|your work)/i.test(title) || /^###\s/m.test(body)) {
+    const steps = body.split(/^(?=###\s)/m).map((s) => s.trim()).filter(Boolean);
+    return steps.length ? steps : [body];
+  }
+  return body ? [body] : [];
+}
+
+const STEP_MS = 1400;
+
+/** Renders a tutor reply: sections become colour-coded cards that build up step by step. */
+export function MathAnswer({ content, animate = false }: { content: string; animate?: boolean }) {
   const text = normalizeMath(content);
   const parts = text.split(/^##\s+/m);
   const intro = parts[0]?.trim();
-  const sections = parts.slice(1).map((chunk) => {
+  const sections: Section[] = parts.slice(1).map((chunk) => {
     const nl = chunk.indexOf("\n");
     const title = (nl === -1 ? chunk : chunk.slice(0, nl)).trim().replace(/[*:]+$/g, "");
     const body = nl === -1 ? "" : chunk.slice(nl + 1).trim();
-    return { title, body };
+    return { title, pieces: toPieces(title, body) };
   });
+
+  // Flatten into a reveal order: intro, then each section heading+first piece, then later pieces.
+  const order: { s: number; p: number }[] = [];
+  if (intro) order.push({ s: -1, p: 0 });
+  sections.forEach((sec, s) => {
+    const n = Math.max(1, sec.pieces.length);
+    for (let p = 0; p < n; p++) order.push({ s, p });
+  });
+  const total = order.length;
+
+  const [shown, setShown] = useState(animate ? 1 : total);
+  const [paused, setPaused] = useState(false);
+  const done = shown >= total;
+
+  useEffect(() => {
+    if (!animate || paused || done) return;
+    const t = setTimeout(() => setShown((n) => n + 1), STEP_MS);
+    return () => clearTimeout(t);
+  }, [animate, paused, done, shown]);
+
+  const visible = (s: number, p: number) => {
+    const idx = order.findIndex((o) => o.s === s && o.p === p);
+    return idx !== -1 && idx < shown;
+  };
 
   return (
     <div className="space-y-2.5 text-sm [&_.katex-display]:my-2 [&_.katex-display]:overflow-x-auto [&_.katex-display]:overflow-y-hidden [&_.katex-display]:py-1">
-      {intro ? <Md>{intro}</Md> : null}
-      {sections.map((s, i) => {
-        const tone = TONES.find((t) => t.match.test(s.title))?.tone;
+      {intro && visible(-1, 0) ? <Piece text={intro} /> : null}
+      {sections.map((sec, s) => {
+        if (!visible(s, 0)) return null;
+        const tone = TONES.find((t) => t.match.test(sec.title))?.tone;
         const Icon = tone?.icon ?? BookOpen;
-        const isFinal = /^final answer/i.test(s.title);
+        const isFinal = /^final answer/i.test(sec.title);
         return (
-          <section key={i} className={cn("rounded-2xl border p-3.5 sm:p-4", tone?.className ?? "bg-card border-border")}>
+          <section
+            key={s}
+            className={cn("rounded-2xl border p-3.5 sm:p-4 animate-fade-in", tone?.className ?? "bg-card border-border")}
+          >
             <h3 className="mb-1.5 flex items-center gap-2 font-display text-sm font-bold">
               <Icon className={cn("size-4 shrink-0", tone?.iconClass ?? "text-primary")} />
-              {s.title}
+              {sec.title}
             </h3>
-            <div className={cn(isFinal && "text-base [&_.katex-display]:text-lg")}>
-              <Md>{s.body}</Md>
+            <div className={cn("space-y-3", isFinal && "text-base [&_.katex-display]:text-lg")}>
+              {sec.pieces.map((piece, p) => (visible(s, p) ? <Piece key={p} text={piece} /> : null))}
             </div>
           </section>
         );
       })}
+
+      {animate && !done ? (
+        <div className="sticky bottom-2 flex items-center justify-center gap-2 pt-1">
+          <span className="text-xs text-muted-foreground">
+            {paused ? "Paused" : "Working it out…"} {shown}/{total}
+          </span>
+          <Button type="button" size="sm" variant="secondary" className="h-7 rounded-full px-3 text-xs" onClick={() => setPaused((v) => !v)}>
+            {paused ? <Play className="size-3.5" /> : <Pause className="size-3.5" />} {paused ? "Continue" : "Pause"}
+          </Button>
+          <Button type="button" size="sm" variant="ghost" className="h-7 rounded-full px-3 text-xs" onClick={() => setShown(total)}>
+            <FastForward className="size-3.5" /> Show all
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }
