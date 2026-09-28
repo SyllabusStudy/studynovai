@@ -20,6 +20,8 @@ export const Route = createFileRoute("/_authenticated/quizzes/$quizId")({
       { name: "description", content: "Answer your AI-generated practice quiz and see explanations for every question." },
       { property: "og:title", content: "Take a quiz — StudyNova" },
       { property: "og:description", content: "Answer your practice quiz and review the explanations." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: QuizRunner,

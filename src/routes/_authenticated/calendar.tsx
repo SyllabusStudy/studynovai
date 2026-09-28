@@ -42,6 +42,8 @@ export const Route = createFileRoute("/_authenticated/calendar")({
       { name: "description", content: "Every exam, quiz, project and deadline for your semester in one view." },
       { property: "og:title", content: "Calendar — StudyNova" },
       { property: "og:description", content: "Exams, quizzes and deadlines for your whole semester." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: CalendarPage,

@@ -1,7 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { detectProvider, loadUserAiKey } from "./ai-key.server";
+import { loadUserAiKey } from "./ai-key.server";
+import { fetchAiWithRetry } from "./ai-request.server";
 
 /**
  * Generates or edits an image with the student's own AI key, so image work
@@ -24,8 +25,8 @@ export const generateAiImage = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<{ image: string }> => {
     const stored = await loadUserAiKey(context.supabase, context.userId);
-    // Trust provider-specific key formats over an accidentally selected dropdown value.
-    const cfg = { ...stored, provider: detectProvider(stored.key) ?? stored.provider };
+    // Never redirect a student's key to a different provider based on its prefix.
+    const cfg = stored;
     const { prompt } = data;
     const source = data.imageDataUrl ?? null;
 
@@ -41,7 +42,8 @@ export const generateAiImage = createServerFn({ method: "POST" })
         });
       }
       // One free-tier image model, one request — no paid fallback chain.
-      const res = await fetch(
+      const res = await fetchAiWithRetry(
+        "google-image",
         "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent",
         {
           method: "POST",
@@ -64,7 +66,7 @@ export const generateAiImage = createServerFn({ method: "POST" })
     if (cfg.provider === "openrouter") {
       const content: Array<Record<string, unknown>> = [{ type: "text", text: prompt }];
       if (source) content.push({ type: "image_url", image_url: { url: source } });
-      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      const res = await fetchAiWithRetry("openrouter-image", "https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${cfg.key}` },
         body: JSON.stringify({
@@ -94,7 +96,7 @@ export const generateAiImage = createServerFn({ method: "POST" })
         "Editing an uploaded image needs a Google AI Studio key. Switch your key in Settings → AI key.",
       );
     }
-    const res = await fetch("https://api.openai.com/v1/images/generations", {
+    const res = await fetchAiWithRetry("openai-image", "https://api.openai.com/v1/images/generations", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${cfg.key}` },
       body: JSON.stringify({ model: "gpt-image-1", prompt, size: "1024x1024" }),
@@ -122,6 +124,5 @@ async function imageError(res: Response): Promise<string> {
   if (res.status === 402 || res.status === 429) {
     return "You've hit your provider's free AI limit for now. Try again later — nothing was charged.";
   }
-  if (res.status >= 500) return "The image service is busy right now. Try again in a moment.";
   return `The image could not be created (${res.status}): ${detail}`;
 }

@@ -1255,7 +1255,9 @@ export async function runSnapTutor(
     const v = verdict.trim();
     if (/^VERIFIED\b/i.test(v) || v.length < 40) return { reply: draft };
     return { reply: v.replace(/^CORRECTED\s*/i, "").trim() };
-  } catch {
+  } catch (error) {
+    // A failed independent check is not a verified answer.
+    if (error instanceof Error && error.message.includes("having trouble connecting")) throw error;
     return { reply: draft };
   }
 }

@@ -11,11 +11,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { snapTutor } from "@/lib/ai.functions";
+import { AI_KEY_HELP } from "@/lib/ai-messages";
 type SnapMode = "learn" | "quick" | "tutor" | "practice" | "check" | "method";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { MathAnswer } from "@/components/MathAnswer";
+import { AiRetryNotice } from "@/components/AiRetryNotice";
 import {
   Select,
   SelectContent,
@@ -105,6 +107,11 @@ function SnapQuickPage() {
   const [mode, setMode] = useState<SnapMode>("learn");
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const [failed, setFailed] = useState<{
+    request: { imageDataUrl: string | null; classId: string | null; mode: SnapMode; history: Array<{ role: "user" | "assistant"; content: string }>; message: string };
+    history: Msg[]; userMsg: Msg; image: string | null; id: string | null;
+  } | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const run = useServerFn(snapTutor);
   const qc = useQueryClient();
@@ -123,7 +130,7 @@ function SnapQuickPage() {
     },
   });
 
-  async function saveConversation(all: Msg[], img: string | null, id: string | null, usedMode: SnapMode) {
+  async function saveConversation(all: Msg[], img: string | null, id: string | null, usedMode: SnapMode, usedClassId: string | null) {
     if (!user) return id;
     const first = all.find((m) => m.role === "user")?.content ?? "Untitled problem";
     const title = first.replace(/\s+/g, " ").slice(0, 80);
@@ -131,7 +138,7 @@ function SnapQuickPage() {
       user_id: user.id,
       title,
       mode: usedMode,
-      class_id: classId === "all" ? null : classId,
+      class_id: usedClassId,
       image_data_url: img,
       messages: all.map(({ role, content }) => ({ role, content })),
       updated_at: new Date().toISOString(),
@@ -139,12 +146,14 @@ function SnapQuickPage() {
     const res = id
       ? await supabase.from("snap_conversations").update(row).eq("id", id).select("id").single()
       : await supabase.from("snap_conversations").insert(row).select("id").single();
+    if (res.error) throw new Error(res.error.message);
     void qc.invalidateQueries({ queryKey: ["snap-conversations", user.id] });
     return res.data?.id ?? id;
   }
 
   async function openConversation(id: string) {
     if (busy) return;
+    setFailed(null);
     const { data, error } = await supabase.from("snap_conversations").select("*").eq("id", id).single();
     if (error || !data) {
       toast.error("Could not open that problem");
@@ -178,7 +187,7 @@ function SnapQuickPage() {
 
   async function send(text: string, opts?: { mode?: SnapMode; img?: string | null; fresh?: boolean }) {
     const msgText = text.trim();
-    if (!msgText || busy) return;
+    if (!msgText || busyRef.current || (failed && !opts?.fresh)) return;
     const history = opts?.fresh ? [] : messages;
     const idForSave = opts?.fresh ? null : convId;
     if (opts?.fresh) setConvId(null);
@@ -187,32 +196,52 @@ function SnapQuickPage() {
     const userMsg: Msg = { role: "user", content: msgText, image: history.length ? null : img };
     setMessages([...history, userMsg]);
     setInput("");
+    const pending = {
+      request: {
+        imageDataUrl: img,
+        classId: classId === "all" ? null : classId,
+        mode: opts?.mode ?? mode,
+        history: history.map(({ role, content }) => ({ role, content })),
+        message: msgText,
+      },
+      history, userMsg, image: img, id: idForSave,
+    };
+    await sendRequest(pending);
+  }
+
+  async function sendRequest(pending: {
+    request: { imageDataUrl: string | null; classId: string | null; mode: SnapMode; history: Array<{ role: "user" | "assistant"; content: string }>; message: string };
+    history: Msg[]; userMsg: Msg; image: string | null; id: string | null;
+  }) {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setFailed(null);
     setBusy(true);
     try {
-      if (!history.length) void recordStudyActivity("snapquick");
-      const result = await run({
-        data: {
-          imageDataUrl: img,
-          classId: classId === "all" ? null : classId,
-          mode: opts?.mode ?? mode,
-          history: history.map(({ role, content }) => ({ role, content })),
-          message: msgText,
-        },
-      });
+      if (!pending.history.length) void recordStudyActivity("snapquick");
+      const result = await run({ data: pending.request });
       if (result.error || !result.reply) {
-        toast.error(result.error ?? "SnapQuick could not answer");
-        setMessages(history);
-        setInput(msgText);
+        if (result.error === AI_KEY_HELP) {
+          setInput(pending.request.message);
+          setMessages(pending.history);
+          toast.error(result.error);
+          return;
+        }
+        setFailed(pending);
         return;
       }
-      const all: Msg[] = [...history, userMsg, { role: "assistant", content: result.reply! }];
+      const all: Msg[] = [...pending.history, pending.userMsg, { role: "assistant", content: result.reply }];
       setMessages(all);
-      const newId = await saveConversation(all, img ?? null, idForSave, opts?.mode ?? mode);
-      setConvId(newId);
+      try {
+        const newId = await saveConversation(all, pending.image, pending.id, pending.request.mode, pending.request.classId);
+        setConvId(newId);
+      } catch {
+        toast.error("The answer is ready, but this conversation could not be saved yet.");
+      }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "SnapQuick could not answer");
-      setMessages(history);
+      setFailed(pending);
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   }
@@ -243,6 +272,7 @@ function SnapQuickPage() {
   }
 
   function reset() {
+    setFailed(null);
     setMessages([]);
     setConvId(null);
     setImage(null);
@@ -404,13 +434,14 @@ function SnapQuickPage() {
                 {messages.length <= 1 ? "Reading the problem and working it out…" : "Thinking…"}
               </div>
             ) : null}
+            {failed && !busy ? <AiRetryNotice message="I’m having trouble connecting right now. Your problem is saved here — try again in a moment." onRetry={() => void sendRequest(failed)} /> : null}
             <div ref={endRef} />
           </div>
 
           {started && !busy ? (
             <div className="mt-3 flex flex-wrap gap-1.5">
               {FOLLOW_UPS.map((f) => (
-                <Button key={f.label} size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={() => void send(f.text, { mode: f.mode })}>
+              <Button key={f.label} size="sm" variant="outline" disabled={!!failed} className="h-8 rounded-full text-xs" onClick={() => void send(f.text, { mode: f.mode })}>
                   {f.label}
                 </Button>
               ))}
@@ -437,7 +468,7 @@ function SnapQuickPage() {
               placeholder={started ? "Ask a follow-up… e.g. why did we divide by 2?" : "Type a problem, e.g. solve 2x² − 7x + 3 = 0"}
               className="max-h-32 min-h-10 resize-none"
             />
-            <Button type="submit" size="icon" disabled={busy || !input.trim()} aria-label="Send">
+            <Button type="submit" size="icon" disabled={busy || !!failed || !input.trim()} aria-label="Send">
               <Send className="size-4" />
             </Button>
           </form>

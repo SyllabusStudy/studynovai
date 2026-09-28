@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Route all student-key AI HTTP requests through `fetchAiWithRetry` in `ai-request.server.ts` so transient failures retry sequentially without switching providers or exposing prompts in logs.

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { unzipSync } from "fflate";
 import type { Database } from "@/integrations/supabase/types";
+import { fetchAiWithRetry } from "./ai-request.server";
 import {
   authHeaders,
   candidateProviders,
@@ -13,9 +14,6 @@ import {
 type DB = SupabaseClient<Database>;
 
 export const CHAT_MODEL = "gemini-flash-lite-latest";
-
-/** Free-tier Gemini models only, cheapest first. Both are free — no paid fallback. */
-const GEMINI_MODELS = ["gemini-flash-lite-latest", "gemini-flash-latest"];
 
 /** Shown when a free tier's quota is used up — nothing is ever charged instead. */
 export const FREE_LIMIT_MESSAGE =
@@ -98,38 +96,24 @@ async function callGeminiNative(
       return Boolean(part.file_data) || part.inline_data?.mime_type?.startsWith("video/");
     }),
   );
-  const models = hasVideo ? ["gemini-flash-latest", "gemini-2.0-flash"] : GEMINI_MODELS;
-
-  let res: Response | null = null;
-  for (const model of models) {
-    res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-      { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body },
-    );
-    if (res.ok) break;
-    // A model that cannot handle this attachment answers 400/404 — try the next one.
-    if (res.status !== 404 && !(hasVideo && res.status === 400)) break;
-  }
-
-
-  if (!res || !res.ok) {
-    const status = res?.status ?? 0;
-    const text = res ? await res.text() : "";
-    if (status === 429) throw new Error(FREE_LIMIT_MESSAGE);
-    if (status >= 500) {
-      throw new Error("The AI service is busy right now. Please try again in a moment.");
-    }
-
-    throw await providerError(new Response(text, { status }), "Google AI Studio");
-  }
+  const model = hasVideo ? "gemini-flash-latest" : CHAT_MODEL;
+  const res = await fetchAiWithRetry(
+    "google",
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+    { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body },
+  );
+  if (!res.ok) throw await providerError(res, "Google AI Studio");
 
   const data = (await res.json()) as {
-    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+    candidates?: Array<{ finishReason?: string; content?: { parts?: Array<{ text?: string }> } }>;
   };
-  return (data.candidates?.[0]?.content?.parts ?? [])
+  if (data.candidates?.[0]?.finishReason === "SAFETY") throw new Error("This request could not be completed. Please try a different question.");
+  const answer = (data.candidates?.[0]?.content?.parts ?? [])
     .map((p) => p.text ?? "")
     .join("")
     .trim();
+  if (!answer) throw new Error("The AI returned no answer. Please try again.");
+  return answer;
 }
 
 function hasFilePart(messages: ChatMessage[]): boolean {
@@ -180,7 +164,7 @@ async function callAnthropic(
       .map((block) => block.type === "text" ? block.text : "")
       .join("\n"))
     .join("\n\n");
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  const res = await fetchAiWithRetry("anthropic", "https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -201,7 +185,8 @@ async function callAnthropic(
     }),
   });
   if (!res.ok) throw await providerError(res, "Anthropic");
-  const data = (await res.json()) as { content?: Array<{ type?: string; text?: string }> };
+  const data = (await res.json()) as { stop_reason?: string; content?: Array<{ type?: string; text?: string }> };
+  if (data.stop_reason === "refusal") throw new Error("This request could not be completed. Please try a different question.");
   const text = data.content?.filter((part) => part.type === "text").map((part) => part.text ?? "").join("").trim();
   if (!text) throw new Error("Anthropic returned an empty response. Please try again.");
   return text;
@@ -220,16 +205,17 @@ async function providerError(res: Response, provider: string): Promise<Error> {
   }
   if (res.status === 401 || res.status === 403) {
     const reason = detail && detail !== "{}" ? ` ${detail}` : "";
-    return new Error(`${provider} rejected this credential.${reason} Check the selected provider and key in Settings → AI key.`);
+    return new Error(`${provider} did not allow this request.${reason} Check the selected provider and key in Settings → AI key.`);
   }
-  if (res.status === 402) return new Error(`${provider}: ${detail || "Billing or credits are required."}`);
-  if (res.status === 429) return new Error(`${provider} is rate-limiting this key. Wait a moment and try again.`);
-  return new Error(`${provider} request failed (${res.status}): ${detail}`);
+  if (res.status === 402) return new Error(FREE_LIMIT_MESSAGE);
+  if (res.status === 429 || res.status >= 500) return new Error("I’m having trouble connecting right now. Your question is saved — try again in a moment.");
+  if (res.status === 404) return new Error("The selected AI model isn't available right now. Check your AI key settings.");
+  return new Error("This question couldn't be processed. Try a shorter question or a smaller file.");
 }
 
 export async function callAI(
   messages: ChatMessage[],
-  opts?: { model?: string; maxTokens?: number; temperature?: number; reasoningEffort?: string; _retry?: boolean },
+  opts?: { model?: string; maxTokens?: number; temperature?: number; reasoningEffort?: string },
 ): Promise<string> {
   // The student's own API key — the app never spends the workspace's AI credits.
   const cfg = requireAiKey();
@@ -253,10 +239,9 @@ export async function callAI(
         : {}),
     });
 
-  // Exactly one request per operation: one provider, one free model, no retries
-  // and no paid fallback, so a study action can never fan out into extra calls.
+  // One selected provider/model per operation; only transient failures retry sequentially.
   const provider = providers[0] ?? cfg.provider;
-  const res = await fetch(chatEndpoint(provider), {
+  const res = await fetchAiWithRetry(provider, chatEndpoint(provider), {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders(provider, cfg.key) },
     body: buildPayload(provider, chatModel(provider)),
@@ -264,13 +249,8 @@ export async function callAI(
 
   if (!res.ok) {
     const status = res.status;
-    const lastBody = await res.text();
-    if (status === 429) throw new Error(FREE_LIMIT_MESSAGE);
-    if (status >= 500) {
-      throw new Error("The AI service is busy right now. Please try again in a moment.");
-    }
     if (status === 402) throw new Error(FREE_LIMIT_MESSAGE);
-    throw await providerError(new Response(lastBody, { status }), provider);
+    throw await providerError(res, provider);
   }
 
   const bodyText = await res.text();
@@ -282,7 +262,7 @@ export async function callAI(
     throw new Error("The AI response was incomplete. Please try again.");
   }
   const content = data.choices?.[0]?.message?.content?.trim() ?? "";
-
+  if (!content) throw new Error("The AI returned no answer. Please try again.");
   return content;
 }
 

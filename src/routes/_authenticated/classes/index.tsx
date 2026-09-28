@@ -34,6 +34,8 @@ export const Route = createFileRoute("/_authenticated/classes/")({
       { name: "description", content: "Every course you're taking, with materials, policies and deadlines." },
       { property: "og:title", content: "My Classes — StudyNova" },
       { property: "og:description", content: "Every course you're taking, with materials and deadlines." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: ClassesPage,

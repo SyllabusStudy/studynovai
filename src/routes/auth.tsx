@@ -25,6 +25,8 @@ export const Route = createFileRoute("/auth")({
       },
       { property: "og:title", content: "Sign in — StudyNova" },
       { property: "og:description", content: "Log in or create your StudyNova student account." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: AuthPage,

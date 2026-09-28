@@ -14,6 +14,8 @@ export const Route = createFileRoute("/_authenticated/tutor")({
       },
       { property: "og:title", content: "AI Tutor — StudyNova" },
       { property: "og:description", content: "Answers grounded in your own course materials." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: TutorPage,
