@@ -861,6 +861,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_devices: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          label: string
+          last_seen: string
+          notify_enabled: boolean
+          revoked: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          kind?: string
+          label: string
+          last_seen?: string
+          notify_enabled?: boolean
+          revoked?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          label?: string
+          last_seen?: string
+          notify_enabled?: boolean
+          revoked?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

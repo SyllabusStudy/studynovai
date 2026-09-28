@@ -64,6 +64,13 @@
       "when": 1790580064111,
       "tag": "0008_documents_category",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790580338661,
+      "tag": "0009_user_devices",
+      "breakpoints": true
     }
   ]
 }
