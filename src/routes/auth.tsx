@@ -227,11 +227,48 @@ function AuthPage() {
               </div>
             ) : null}
 
-            <Button type="submit" className="w-full" disabled={busy}>
+            {mode === "signup" ? (
+              <label className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                <input
+                  type="checkbox"
+                  required
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                  className="mt-0.5 size-4 shrink-0 rounded border-border accent-primary"
+                />
+                <span>
+                  I agree to StudyNova's{" "}
+                  <Link to="/terms" target="_blank" className="font-semibold text-primary">
+                    Terms of Service
+                  </Link>{" "}
+                  and{" "}
+                  <Link to="/privacy" target="_blank" className="font-semibold text-primary">
+                    Privacy Policy
+                  </Link>
+                  .
+                </span>
+              </label>
+            ) : null}
+
+            <Button type="submit" className="w-full" disabled={busy || (mode === "signup" && !agreed)}>
               {busy ? <Loader2 className="size-4 animate-spin" /> : null}
               {mode === "signup" ? "Create account" : mode === "login" ? "Log in" : "Send reset link"}
             </Button>
           </form>
+
+          {mode !== "reset" ? (
+            <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
+              By continuing with Google you also agree to our{" "}
+              <Link to="/terms" className="font-semibold text-primary">
+                Terms
+              </Link>{" "}
+              and{" "}
+              <Link to="/privacy" className="font-semibold text-primary">
+                Privacy Policy
+              </Link>
+              .
+            </p>
+          ) : null}
 
           <div className="mt-6 space-y-2 text-sm">
             {mode === "login" ? (
