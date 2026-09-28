@@ -60,6 +60,28 @@ export function DevicesCard({ userId }: { userId: string }) {
           You stay signed in on every device until you log out. Everything syncs to your account.
         </p>
       </div>
+      <div className="rounded-lg border border-border bg-muted/40 p-3">
+        <p className="text-sm font-semibold">Reminders when StudyNova is closed</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {thisPush
+            ? "This device gets reminders on its lock screen, even when StudyNova is closed."
+            : "Turn this on to get assignment and exam reminders even when StudyNova is closed."}
+        </p>
+        <Button
+          size="sm"
+          className="mt-3"
+          variant={thisPush ? "outline" : "default"}
+          disabled={busy || !pushSupported()}
+          onClick={() => void togglePush()}
+        >
+          {thisPush ? "Turn off on this device" : "Turn on for this device"}
+        </Button>
+        {!pushSupported() ? (
+          <p className="mt-2 text-xs text-muted-foreground">
+            This browser can&apos;t do it. On iPhone, add StudyNova to your home screen first.
+          </p>
+        ) : null}
+      </div>
       <ul className="space-y-2">
         {devices.map((d) => {
           const Icon = ICONS[d.kind as keyof typeof ICONS] ?? Monitor;
