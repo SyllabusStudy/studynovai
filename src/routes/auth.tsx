@@ -45,6 +45,7 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   useEffect(() => {
     if (!loading && user) navigate({ to: "/dashboard" });
