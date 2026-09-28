@@ -73,6 +73,7 @@
   --color-class-emerald: var(--class-emerald);
   --color-class-orange: var(--class-orange);
   --color-class-slate: var(--class-slate);
+  --color-overlay: var(--overlay);
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
   --color-feature-ai: var(--feature-ai);
@@ -139,6 +140,7 @@
   --input: oklch(0.921 0.015 294);
   --ring: oklch(0.569 0.175 283);
 
+  --overlay: oklch(0.2 0.03 285 / 0.45);
   --feature-ai: oklch(0.661 0.147 285);
   --feature-flashcards: oklch(0.641 0.092 191);
   --feature-quiz: oklch(0.569 0.175 283);
@@ -198,6 +200,7 @@
   --input: oklch(0.342 0.034 277);
   --ring: oklch(0.661 0.147 285);
 
+  --overlay: oklch(0.08 0.02 280 / 0.7);
   --feature-ai: oklch(0.735 0.083 214);
   --feature-flashcards: oklch(0.738 0.092 188);
   --feature-quiz: oklch(0.737 0.117 287);
