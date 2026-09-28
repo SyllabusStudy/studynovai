@@ -200,7 +200,7 @@ export function MathAnswer({ content, animate = false }: { content: string; anim
   };
 
   return (
-    <div className="space-y-4 text-sm [&_.katex-display]:my-2 [&_.katex-display]:overflow-x-auto [&_.katex-display]:overflow-y-hidden [&_.katex-display]:py-1">
+    <div className="space-y-4 text-sm [&_.katex-display]:my-2 [&_.katex-display]:overflow-x-auto [&_.katex-display]:py-2">
       {intro && visible(-1, 0) ? <Piece text={intro} /> : null}
       {sections.map((sec, s) => {
         if (!visible(s, 0)) return null;
@@ -249,7 +249,7 @@ export function MathAnswer({ content, animate = false }: { content: string; anim
               className={cn(
                 "min-w-0 space-y-3",
                 isFinal &&
-                  "clear-both overflow-x-auto pt-1 text-base [&_.katex-display]:m-0 [&_.katex-display]:min-w-max [&_.katex-display]:py-2 [&_.katex-display]:text-sm sm:[&_.katex-display]:text-base",
+                  "overflow-x-auto py-3 text-base [&_.katex]:inline-block [&_.katex]:whitespace-nowrap [&_.katex-display]:m-0 [&_.katex-display]:overflow-visible [&_.katex-display]:text-sm sm:[&_.katex-display]:text-base",
               )}
             >
               {sec.pieces.map((piece, p) => (visible(s, p) ? <Piece key={p} text={piece} /> : null))}
