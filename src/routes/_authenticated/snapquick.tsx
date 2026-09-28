@@ -286,7 +286,7 @@ function SnapQuickPage() {
                 </div>
               ) : (
                 <div key={i} className="min-w-0">
-                  <MathAnswer content={m.content} />
+                  <MathAnswer content={m.content} animate={i === messages.length - 1} />
                 </div>
               ),
             )}
