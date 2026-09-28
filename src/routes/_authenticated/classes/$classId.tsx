@@ -9,6 +9,7 @@ import { ClassDot } from "@/components/ClassBadge";
 import { DocumentUploader } from "@/components/DocumentUploader";
 import { DocumentList } from "@/components/DocumentList";
 import { TutorChat } from "@/components/TutorChat";
+import { ClassTasks } from "@/components/ClassTasks";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/lib/auth";
 import {
@@ -99,11 +100,16 @@ function ClassDetail() {
       <Tabs defaultValue="overview">
         <TabsList className="flex-wrap">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="tasks">Tasks</TabsTrigger>
           <TabsTrigger value="deadlines">Assignments</TabsTrigger>
           <TabsTrigger value="materials">Materials</TabsTrigger>
           <TabsTrigger value="grades">Grades</TabsTrigger>
           <TabsTrigger value="tutor">AI Tutor</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="tasks" className="mt-5">
+          <ClassTasks userId={user?.id} classId={classId} />
+        </TabsContent>
 
         <TabsContent value="materials" className="mt-5 space-y-4">
           <DocumentUploader classId={classId} syllabusOnly title="Upload Syllabus" />
