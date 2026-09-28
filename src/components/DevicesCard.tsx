@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Laptop, Monitor, Smartphone, Tablet } from "lucide-react";
@@ -6,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { currentDeviceId } from "@/lib/devices";
+import { disableBackgroundPush, enableBackgroundPush, pushSupported } from "@/lib/push";
 
 const ICONS = { phone: Smartphone, tablet: Tablet, laptop: Laptop, desktop: Monitor } as const;
 
@@ -27,6 +29,33 @@ export function DevicesCard({ userId }: { userId: string }) {
   });
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["devices", userId] });
+
+  const [busy, setBusy] = useState(false);
+  const thisPush = Boolean(devices.find((d) => d.id === thisId)?.push_endpoint);
+
+  async function togglePush() {
+    setBusy(true);
+    try {
+      if (thisPush) {
+        await disableBackgroundPush();
+        toast.success("Background reminders off on this device");
+      } else {
+        const res = await enableBackgroundPush();
+        if (!res.ok) {
+          toast.error(
+            res.reason === "denied"
+              ? "Your browser blocked notifications. Allow them in the site settings and try again."
+              : "Background reminders aren't available in this browser yet.",
+          );
+        } else {
+          toast.success("Background reminders on. You'll get them even when StudyNova is closed.");
+        }
+      }
+      await refresh();
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function toggle(id: string, v: boolean) {
     const { error } = await supabase.from("user_devices").update({ notify_enabled: v }).eq("id", id);
@@ -58,6 +87,28 @@ export function DevicesCard({ userId }: { userId: string }) {
         <p className="text-xs text-muted-foreground">
           You stay signed in on every device until you log out. Everything syncs to your account.
         </p>
+      </div>
+      <div className="rounded-lg border border-border bg-muted/40 p-3">
+        <p className="text-sm font-semibold">Reminders when StudyNova is closed</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {thisPush
+            ? "This device gets reminders on its lock screen, even when StudyNova is closed."
+            : "Turn this on to get assignment and exam reminders even when StudyNova is closed."}
+        </p>
+        <Button
+          size="sm"
+          className="mt-3"
+          variant={thisPush ? "outline" : "default"}
+          disabled={busy || !pushSupported()}
+          onClick={() => void togglePush()}
+        >
+          {thisPush ? "Turn off on this device" : "Turn on for this device"}
+        </Button>
+        {!pushSupported() ? (
+          <p className="mt-2 text-xs text-muted-foreground">
+            This browser can&apos;t do it. On iPhone, add StudyNova to your home screen first.
+          </p>
+        ) : null}
       </div>
       <ul className="space-y-2">
         {devices.map((d) => {

@@ -49,6 +49,8 @@ export default defineConfig({
           ],
         },
         workbox: {
+          // adds the background push + notification click handlers to the generated worker
+          importScripts: ["/push-sw.js"],
           globDirectory: "dist/client",
           globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
           navigateFallback: "/",
