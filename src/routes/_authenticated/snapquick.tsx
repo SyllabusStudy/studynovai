@@ -41,6 +41,8 @@ export const Route = createFileRoute("/_authenticated/snapquick")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  validateSearch: (s: Record<string, unknown>): { open?: string } =>
+    typeof s["open"] === "string" ? { open: s["open"] as string } : {},
   component: SnapQuickPage,
 });
 
@@ -164,6 +166,11 @@ function SnapQuickPage() {
   }
 
   const [revealed, setRevealed] = useState(false);
+  const { open: openId } = Route.useSearch();
+  useEffect(() => {
+    if (openId && user?.id) void openConversation(openId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openId, user?.id]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
