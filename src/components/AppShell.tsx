@@ -13,6 +13,8 @@ import {
   FileQuestion,
   LayoutDashboard,
   LogOut,
+  Mail,
+
   Menu,
   MessageSquare,
   Moon,
