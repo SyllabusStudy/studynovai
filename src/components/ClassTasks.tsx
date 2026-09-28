@@ -36,7 +36,7 @@ function kindFromText(text: string | null | undefined): Kind | null {
   return null;
 }
 
-export function ClassTasks({ userId, classId }: { userId?: string; classId: string }) {
+export function ClassTasks({ userId, classId }: { userId?: string | undefined; classId: string }) {
   const { data: assignments = [] } = useAssignments(userId, classId);
   const { data: events = [] } = useEvents(userId, classId);
   const { data: cards = [] } = useFlashcards(userId, classId);
