@@ -78,7 +78,15 @@ export const REMINDER_OPTIONS = [
 export const DIFFICULTIES = ["easy", "medium", "hard", "exam"] as const;
 
 export const ACCEPTED_UPLOAD_TYPES =
-  ".pdf,.png,.jpg,.jpeg,.webp,.heic,.doc,.docx,.ppt,.pptx,.txt,.md";
+  ".pdf,.png,.jpg,.jpeg,.webp,.gif,.heic,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.md,.csv,.tsv,.rtf,.odt,.odp,.ods";
+
+export const MATERIAL_CATEGORIES = [
+  { key: "syllabus", label: "Syllabi", emoji: "📄" },
+  { key: "notes", label: "Notes & study materials", emoji: "📚" },
+  { key: "assignment", label: "Assignments", emoji: "📝" },
+  { key: "other", label: "Other", emoji: "📎" },
+] as const;
+export type MaterialCategory = (typeof MATERIAL_CATEGORIES)[number]["key"];
 
 export const ASSIGNMENT_CATEGORIES = [
   { key: "homework", label: "Homework" },

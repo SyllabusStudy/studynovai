@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { unzipSync } from "fflate";
 import type { Database } from "@/integrations/supabase/types";
 import {
   authHeaders,
