@@ -36,6 +36,7 @@ import { Route as AuthenticatedQuickvideoIndexRouteImport } from './routes/_auth
 import { Route as AuthenticatedQuickvideoNoteIdRouteImport } from './routes/_authenticated/quickvideo/$noteId'
 import { Route as AuthenticatedQuizzesIndexRouteImport } from './routes/_authenticated/quizzes/index'
 import { Route as AuthenticatedQuizzesQuizIdRouteImport } from './routes/_authenticated/quizzes/$quizId'
+import { Route as OauthGoogleReturnRouteImport } from './routes/oauth/google/return'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicPushRunRouteImport } from './routes/api/public/push/run'
 
@@ -182,6 +183,11 @@ const AuthenticatedQuizzesQuizIdRoute =
     path: '/quizzes/$quizId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const OauthGoogleReturnRoute = OauthGoogleReturnRouteImport.update({
+  id: '/oauth/google/return',
+  path: '/oauth/google/return',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicPaymentsWebhookRoute =
   ApiPublicPaymentsWebhookRouteImport.update({
     id: '/api/public/payments/webhook',
@@ -217,6 +223,7 @@ export interface FileRoutesByFullPath {
   '/flashcards/$deck': typeof AuthenticatedFlashcardsDeckRoute
   '/quickvideo/$noteId': typeof AuthenticatedQuickvideoNoteIdRoute
   '/quizzes/$quizId': typeof AuthenticatedQuizzesQuizIdRoute
+  '/oauth/google/return': typeof OauthGoogleReturnRoute
   '/classes/': typeof AuthenticatedClassesIndexRoute
   '/flashcards/': typeof AuthenticatedFlashcardsIndexRoute
   '/quickvideo/': typeof AuthenticatedQuickvideoIndexRoute
@@ -247,6 +254,7 @@ export interface FileRoutesByTo {
   '/flashcards/$deck': typeof AuthenticatedFlashcardsDeckRoute
   '/quickvideo/$noteId': typeof AuthenticatedQuickvideoNoteIdRoute
   '/quizzes/$quizId': typeof AuthenticatedQuizzesQuizIdRoute
+  '/oauth/google/return': typeof OauthGoogleReturnRoute
   '/classes': typeof AuthenticatedClassesIndexRoute
   '/flashcards': typeof AuthenticatedFlashcardsIndexRoute
   '/quickvideo': typeof AuthenticatedQuickvideoIndexRoute
@@ -279,6 +287,7 @@ export interface FileRoutesById {
   '/_authenticated/flashcards/$deck': typeof AuthenticatedFlashcardsDeckRoute
   '/_authenticated/quickvideo/$noteId': typeof AuthenticatedQuickvideoNoteIdRoute
   '/_authenticated/quizzes/$quizId': typeof AuthenticatedQuizzesQuizIdRoute
+  '/oauth/google/return': typeof OauthGoogleReturnRoute
   '/_authenticated/classes/': typeof AuthenticatedClassesIndexRoute
   '/_authenticated/flashcards/': typeof AuthenticatedFlashcardsIndexRoute
   '/_authenticated/quickvideo/': typeof AuthenticatedQuickvideoIndexRoute
@@ -311,6 +320,7 @@ export interface FileRouteTypes {
     | '/flashcards/$deck'
     | '/quickvideo/$noteId'
     | '/quizzes/$quizId'
+    | '/oauth/google/return'
     | '/classes/'
     | '/flashcards/'
     | '/quickvideo/'
@@ -341,6 +351,7 @@ export interface FileRouteTypes {
     | '/flashcards/$deck'
     | '/quickvideo/$noteId'
     | '/quizzes/$quizId'
+    | '/oauth/google/return'
     | '/classes'
     | '/flashcards'
     | '/quickvideo'
@@ -372,6 +383,7 @@ export interface FileRouteTypes {
     | '/_authenticated/flashcards/$deck'
     | '/_authenticated/quickvideo/$noteId'
     | '/_authenticated/quizzes/$quizId'
+    | '/oauth/google/return'
     | '/_authenticated/classes/'
     | '/_authenticated/flashcards/'
     | '/_authenticated/quickvideo/'
@@ -387,6 +399,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   FeaturesFlashcardsRoute: typeof FeaturesFlashcardsRoute
+  OauthGoogleReturnRoute: typeof OauthGoogleReturnRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
   ApiPublicPushRunRoute: typeof ApiPublicPushRunRoute
 }
@@ -582,6 +595,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedQuizzesQuizIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/oauth/google/return': {
+      id: '/oauth/google/return'
+      path: '/oauth/google/return'
+      fullPath: '/oauth/google/return'
+      preLoaderRoute: typeof OauthGoogleReturnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/payments/webhook': {
       id: '/api/public/payments/webhook'
       path: '/api/public/payments/webhook'
@@ -657,6 +677,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   FeaturesFlashcardsRoute: FeaturesFlashcardsRoute,
+  OauthGoogleReturnRoute: OauthGoogleReturnRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
   ApiPublicPushRunRoute: ApiPublicPushRunRoute,
 }
