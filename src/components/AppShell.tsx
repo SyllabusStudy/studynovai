@@ -1,3 +1,4 @@
+import { BrandLogo } from "@/components/BrandLogo";
 import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
@@ -171,9 +172,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 function BrandBlock() {
   return (
     <div className="flex h-20 items-center gap-3 border-b border-sidebar-border px-4">
-      <span className="flex size-9 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shadow-card">
-        <Sparkles className="size-5" />
-      </span>
+      <BrandLogo className="size-10" />
       <span className="leading-tight text-sidebar-foreground">
         <span className="block font-display text-base font-extrabold">StudyNova</span>
         <span className="block text-[11px] text-sidebar-foreground/60">Your semester, made simple.</span>
