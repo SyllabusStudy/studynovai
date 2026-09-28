@@ -57,7 +57,7 @@ function AiCheckerPage() {
     try {
       const res = await humanize({
         data: {
-          sentences: aiIdx.map((i) => ({ index: i, text: result.spans[i].text.slice(0, 2000) })),
+          sentences: aiIdx.map((i) => ({ index: i, text: (result.spans[i]?.text ?? "").slice(0, 2000) })),
           context: result.spans.map((s) => s.text).join(""),
         },
       });
