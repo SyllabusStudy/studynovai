@@ -163,7 +163,17 @@ export function MathAnswer({ content, animate = false }: { content: string; anim
     const title = (nl === -1 ? chunk : chunk.slice(0, nl)).trim().replace(/[*:]+$/g, "");
     const body = nl === -1 ? "" : chunk.slice(nl + 1).trim();
     return { title, pieces: toPieces(title, body) };
-  });
+  }).reduce<Section[]>((acc, sec) => {
+    // Method + Key formula share one card.
+    const prev = acc[acc.length - 1];
+    if (prev && /^method/i.test(prev.title) && /^(key )?formula/i.test(sec.title)) {
+      prev.title = "Method & Key formula";
+      prev.pieces.push(...sec.pieces);
+      return acc;
+    }
+    acc.push(sec);
+    return acc;
+  }, []);
 
   // Flatten into a reveal order: intro, then each section heading+first piece, then later pieces.
   const order: { s: number; p: number }[] = [];
@@ -190,13 +200,42 @@ export function MathAnswer({ content, animate = false }: { content: string; anim
   };
 
   return (
-    <div className="space-y-2.5 text-sm [&_.katex-display]:my-2 [&_.katex-display]:overflow-x-auto [&_.katex-display]:overflow-y-hidden [&_.katex-display]:py-1">
+    <div className="space-y-4 text-sm [&_.katex-display]:my-2 [&_.katex-display]:overflow-x-auto [&_.katex-display]:overflow-y-hidden [&_.katex-display]:py-1">
       {intro && visible(-1, 0) ? <Piece text={intro} /> : null}
       {sections.map((sec, s) => {
         if (!visible(s, 0)) return null;
         const tone = TONES.find((t) => t.match.test(sec.title))?.tone;
         const Icon = tone?.icon ?? BookOpen;
         const isFinal = /^final answer/i.test(sec.title);
+        if (/^(steps|your work)/i.test(sec.title)) {
+          return (
+            <div key={s} className="space-y-3">
+              <h3 className="flex items-center gap-2 px-1 pt-1 font-display text-sm font-bold animate-fade-in">
+                <Icon className={cn("size-4 shrink-0", tone?.iconClass ?? "text-primary")} />
+                {/^your work/i.test(sec.title) ? sec.title : "Worked steps"}
+              </h3>
+              {sec.pieces.map((piece, p) => {
+                if (!visible(s, p)) return null;
+                const m = piece.match(/^###\s*(?:Step\s*\d+\s*[:.\-—]?\s*)?(.*)\n?([\s\S]*)$/i);
+                const title = m ? m[1]!.trim() : "";
+                const body = m ? m[2]!.trim() : piece;
+                return (
+                  <section key={p} className="rounded-2xl border border-primary/30 bg-card p-4 shadow-sm animate-fade-in sm:p-5">
+                    <div className="mb-2 flex items-center gap-2.5">
+                      <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                        {p + 1}
+                      </span>
+                      <h4 className="font-display text-sm font-bold">{title || `Step ${p + 1}`}</h4>
+                    </div>
+                    <div className="[&_.katex-display]:my-3 [&_.katex-display]:text-[1.1rem]">
+                      <Piece text={body} />
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+          );
+        }
         return (
           <section
             key={s}

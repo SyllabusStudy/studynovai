@@ -679,6 +679,42 @@ export type Database = {
           },
         ]
       }
+      snap_conversations: {
+        Row: {
+          class_id: string | null
+          created_at: string
+          id: string
+          image_data_url: string | null
+          messages: Json
+          mode: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          class_id?: string | null
+          created_at?: string
+          id?: string
+          image_data_url?: string | null
+          messages?: Json
+          mode?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          class_id?: string | null
+          created_at?: string
+          id?: string
+          image_data_url?: string | null
+          messages?: Json
+          mode?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       study_activity: {
         Row: {
           activity_type: string
