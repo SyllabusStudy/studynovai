@@ -399,7 +399,7 @@ function extractOfficeText(fileName: string, bytes: Uint8Array): string {
     const xml = read("word/document.xml");
     return xml
       .split(/<\/w:p>/)
-      .map((p) => decodeXmlEntities([...p.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map((m) => m[1]).join("")))
+      .map((p) => decodeXmlEntities([...p.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map((m) => m[1] ?? "").join("")))
       .filter((l) => l.trim())
       .join("\n");
   }
@@ -411,7 +411,7 @@ function extractOfficeText(fileName: string, bytes: Uint8Array): string {
       .map((s, i) => {
         const paras = read(s)
           .split(/<\/a:p>/)
-          .map((p) => decodeXmlEntities([...p.matchAll(/<a:t>([^<]*)<\/a:t>/g)].map((m) => m[1]).join("")))
+          .map((p) => decodeXmlEntities([...p.matchAll(/<a:t>([^<]*)<\/a:t>/g)].map((m) => m[1] ?? "").join("")))
           .filter((l) => l.trim());
         return `## Slide ${i + 1}\n${paras.join("\n")}`;
       })
@@ -419,7 +419,7 @@ function extractOfficeText(fileName: string, bytes: Uint8Array): string {
   }
   // xlsx
   const shared = [...read("xl/sharedStrings.xml").matchAll(/<si>([\s\S]*?)<\/si>/g)].map((m) =>
-    decodeXmlEntities([...m[1].matchAll(/<t[^>]*>([^<]*)<\/t>/g)].map((t) => t[1]).join("")),
+    decodeXmlEntities([...(m[1] ?? "").matchAll(/<t[^>]*>([^<]*)<\/t>/g)].map((t) => t[1]).join("")),
   );
   const sheets = Object.keys(files)
     .filter((k) => /^xl\/worksheets\/sheet\d+\.xml$/.test(k))
@@ -427,11 +427,11 @@ function extractOfficeText(fileName: string, bytes: Uint8Array): string {
   return sheets
     .map((s, i) => {
       const rows = [...read(s).matchAll(/<row[^>]*>([\s\S]*?)<\/row>/g)].map((r) =>
-        [...r[1].matchAll(/<c([^>]*)>([\s\S]*?)<\/c>/g)]
+        [...(r[1] ?? "").matchAll(/<c([^>]*)>([\s\S]*?)<\/c>/g)]
           .map((c) => {
-            const isShared = /t="s"/.test(c[1]);
-            const inline = c[2].match(/<t[^>]*>([^<]*)<\/t>/)?.[1];
-            const v = c[2].match(/<v>([^<]*)<\/v>/)?.[1] ?? "";
+            const isShared = /t="s"/.test(c[1] ?? "");
+            const inline = (c[2] ?? "").match(/<t[^>]*>([^<]*)<\/t>/)?.[1];
+            const v = (c[2] ?? "").match(/<v>([^<]*)<\/v>/)?.[1] ?? "";
             return inline !== undefined ? decodeXmlEntities(inline) : isShared ? (shared[Number(v)] ?? "") : v;
           })
           .join(", "),

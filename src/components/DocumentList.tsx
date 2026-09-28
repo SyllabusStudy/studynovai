@@ -50,7 +50,10 @@ export function DocumentList({
     const { data, error } = await supabase.storage
       .from("course-materials")
       .createSignedUrl(d.storage_path, 300, download ? { download: d.file_name } : undefined);
-    if (error || !data) return toast.error("Could not open this file");
+    if (error || !data) {
+      toast.error("Could not open this file");
+      return;
+    }
     window.open(data.signedUrl, "_blank", "noopener");
   }
 
@@ -59,7 +62,10 @@ export function DocumentList({
     setRenaming(null);
     if (!next || next === d.file_name) return;
     const { error } = await supabase.from("documents").update({ file_name: next }).eq("id", d.id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     await qc.invalidateQueries({ queryKey: ["documents"] });
   }
 

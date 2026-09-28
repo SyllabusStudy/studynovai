@@ -23,9 +23,9 @@ export function DocumentUploader({
   classId?: string | null;
   syllabusOnly?: boolean;
   assignmentId?: string | null;
-  category?: string;
-  title?: string;
-  hint?: string;
+  category?: string | undefined;
+  title?: string | undefined;
+  hint?: string | undefined;
 }) {
   const { user } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
