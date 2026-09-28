@@ -144,8 +144,11 @@ function SnapQuickPage() {
   async function openConversation(id: string) {
     if (busy) return;
     const { data, error } = await supabase.from("snap_conversations").select("*").eq("id", id).single();
-    if (error || !data) return toast.error("Could not open that problem");
-    const msgs = (Array.isArray(data.messages) ? data.messages : []) as Msg[];
+    if (error || !data) {
+      toast.error("Could not open that problem");
+      return;
+    }
+    const msgs = (Array.isArray(data.messages) ? data.messages : []) as unknown as Msg[];
     if (msgs[0] && data.image_data_url) msgs[0] = { ...msgs[0], image: data.image_data_url };
     setMessages(msgs);
     setImage(data.image_data_url);
