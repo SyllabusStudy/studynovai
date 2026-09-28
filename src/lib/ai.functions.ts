@@ -11,6 +11,7 @@ import {
   runQuizGeneration,
   runShortAnswerGrading,
   runSnapHelp,
+  runSnapTutor,
   runStudyCoach,
   runStudyPlanEvents,
   runSyllabusAnalysis,
@@ -195,6 +196,39 @@ export const snapHelp = createServerFn({ method: "POST" })
     );
     await recordUsage(context.supabase, context.userId, "snap");
     return result;
+  });
+
+export const snapTutor = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        imageDataUrl: z.string().startsWith("data:image/").max(12_000_000).nullable().optional(),
+        classId: z.string().uuid().nullable().optional(),
+        mode: z.enum(["learn", "quick", "tutor", "practice", "check", "method"]).default("learn"),
+        history: z
+          .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(20000) }))
+          .max(40)
+          .default([]),
+        message: z.string().min(1).max(4000),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    if (!(await hasUserAiKey(context.supabase, context.userId))) {
+      return { reply: null, error: AI_KEY_HELP };
+    }
+    try {
+      const { assertQuota, recordUsage } = await import("./billing.server");
+      if (!data.history.length) await assertQuota(context.supabase, context.userId, "snap");
+      const result = await withUserAiKey(context.supabase, context.userId, () =>
+        runSnapTutor(context.supabase, context.userId, data),
+      );
+      if (!data.history.length) await recordUsage(context.supabase, context.userId, "snap");
+      return { reply: result.reply, error: null };
+    } catch (e) {
+      return { reply: null, error: e instanceof Error ? e.message : "SnapQuick could not answer right now." };
+    }
   });
 
 export const markupDocument = createServerFn({ method: "POST" })

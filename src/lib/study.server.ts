@@ -9,6 +9,7 @@ import {
   PLAIN_STYLE,
   tutorSystemPrompt,
 } from "./ai.server";
+import type { ChatMessage } from "./ai.server";
 
 type DB = SupabaseClient<Database>;
 
