@@ -7,6 +7,7 @@ import { Bot, Loader2, SendHorizonal, Sparkles, User } from "lucide-react";
 import { toast } from "sonner";
 import { tutorChat } from "@/lib/ai.functions";
 import { Button } from "@/components/ui/button";
+import { AiRetryNotice } from "@/components/AiRetryNotice";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -54,6 +55,8 @@ export function TutorChat({
   const [mode, setMode] = useState<string>("explain");
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const [failed, setFailed] = useState<{ message: string; mode: string; classId: string | null; conversationId: string | null; reason: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -75,23 +78,24 @@ export function TutorChat({
 
   async function submit(text: string) {
     const message = text.trim();
-    if (!message || busy) return;
+    if (!message || busyRef.current) return;
+    const request = { message, mode, classId: fixedClassId ?? (classId === "all" ? null : classId), conversationId };
     setInput("");
     setMessages((prev) => [...prev, { role: "user", content: message }]);
+    await sendRequest(request);
+  }
+
+  async function sendRequest(request: { message: string; mode: string; classId: string | null; conversationId: string | null }) {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setFailed(null);
     setBusy(true);
     try {
-      const targetClass = fixedClassId ?? (classId === "all" ? null : classId);
       void recordStudyActivity("tutor");
-      const result = await send({
-        data: { message, mode, classId: targetClass, conversationId },
-      });
+      const result = await send({ data: request });
       if (result.error || !result.reply) {
         const messageText = result.error ?? "The tutor returned an empty response.";
-        toast.error(messageText);
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: `I couldn't answer that: ${messageText}` },
-        ]);
+        setFailed({ ...request, reason: messageText });
         return;
       }
       setConversationId(result.conversationId);
@@ -99,12 +103,9 @@ export function TutorChat({
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "The tutor could not answer right now.";
-      toast.error(msg);
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: `I hit an error answering that: ${msg}` },
-      ]);
+      setFailed({ ...request, reason: msg });
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   }
@@ -206,6 +207,7 @@ export function TutorChat({
             <Loader2 className="size-4 animate-spin" /> Reading your materials…
           </div>
         ) : null}
+        {failed ? <AiRetryNotice message={failed.reason} onRetry={() => void sendRequest(failed)} /> : null}
       </div>
 
       <form
