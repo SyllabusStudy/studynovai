@@ -5,10 +5,10 @@ import { currentDeviceId } from "@/lib/devices";
 export const VAPID_PUBLIC_KEY =
   "BPwUHp4HDRMFL6KWYfo10aHkRH-wacf1ZqLUNq5t_ACrxyuitkffw-fiylaXV5hFRqXTNqdKoBQ0sRQyOVAgB4Y";
 
-function urlBase64ToUint8Array(base64: string): Uint8Array {
+function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
   const raw = atob(padded.replace(/-/g, "+").replace(/_/g, "/"));
-  const out = new Uint8Array(raw.length);
+  const out = new Uint8Array(new ArrayBuffer(raw.length));
   for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
   return out;
 }
