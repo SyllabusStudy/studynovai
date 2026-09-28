@@ -1148,8 +1148,12 @@ STRUCTURE for a full explanation. Use these exact "## " headings, in this order,
 ## Understand — what we are given and what we need to find (short bullets), and the subject/concept involved.
 ## Method — the type of problem and the approach, and why that approach fits.
 ## Key formula — the rule, formula, definition or principle used (display math for math). Omit for non-formula subjects if not useful.
-## Steps — "### Step 1: short title", "### Step 2: ..." subheadings. Each step actually PERFORMS the work (calculation, identification, analysis, revision) and ends with a one-line "**Why?**" for any decision a student might question.
-## Visual — only when it truly helps: a markdown table, timeline, comparison table, flow (A → B → C) or concept list. Otherwise omit.
+## Steps — "### Step 1: short title", "### Step 2: ..." subheadings. Each step actually PERFORMS the work (calculation, identification, analysis, revision) and ends with a line starting "**Why?**" explaining any decision a student might question (it is shown behind a tap-to-open button, so keep the step itself clean). Open steps with a short conversational bridge like "Now that we have the inside function, let's differentiate it." and then actually do it.
+## Visual — include whenever a drawing genuinely helps understanding (not decoration). Draw it with ONE of these fenced code blocks (never ASCII art, never made-up Unicode structures):
+  - \`\`\`smiles — a real chemical structure: first line a valid SMILES string, optional second line a short caption. Use one block per molecule (substrate, reagent, intermediate, product). Describe electron-pushing arrows in the text next to them.
+  - \`\`\`mermaid — flowcharts, processes, cycles, mechanisms-as-steps, timelines (use "timeline"), concept maps (use "mindmap"), decision trees, simple charts ("pie" or "xychart-beta"). Keep node labels short and quoted, valid Mermaid syntax only, no styling directives.
+  - \`\`\`svg — a small labeled diagram for physics (free-body diagrams, force vectors, circuits, ray diagrams, motion), biology/anatomy sketches, graphs of functions with axes, Newman projections or orbital diagrams. One <svg> with viewBox (max 400x300), stroke="currentColor"/fill="none" for lines, text with fill="currentColor", font-size 12-14, clear labels, arrowheads via <marker>. No scripts, no external images.
+  Tables are fine for data, but never replace a needed diagram with a table. Visuals may also appear inside a step where they belong.
 ## Common mistake — one mistake students make here and how to avoid it.
 ## Check — the verification you did (substitution, units, reverse operation, evidence check).
 ## Final answer — for math/science the answer in $$\\boxed{...}$$ (in context for word problems); for other subjects a clear concise conclusion.
@@ -1222,9 +1226,38 @@ export async function runSnapTutor(
     messages.push({ role: "user", content: input.message });
   }
 
-  const reply = await callAI(messages, { temperature: 0.2, maxTokens: 6000 });
-  return { reply };
+  const draft = await callAI(messages, { temperature: 0.2, maxTokens: 6000 });
+
+  // Independent check: a separate pass re-solves the problem and corrects the draft if needed.
+  if (input.mode === "tutor" || input.mode === "practice") return { reply: draft };
+  try {
+    const verdict = await callAI(
+      [
+        { role: "system", content: SNAP_VERIFY_RULES },
+        {
+          role: "user",
+          content: input.imageDataUrl && !history.length
+            ? [
+                { type: "text", text: `STUDENT QUESTION:\n${input.message}\n\nTUTOR DRAFT:\n${draft}` },
+                { type: "image_url", image_url: { url: input.imageDataUrl } },
+              ]
+            : `STUDENT QUESTION:\n${input.message}\n\nTUTOR DRAFT:\n${draft}`,
+        },
+      ],
+      { temperature: 0, maxTokens: 6000 },
+    );
+    const v = verdict.trim();
+    if (/^VERIFIED\b/i.test(v) || v.length < 40) return { reply: draft };
+    return { reply: v.replace(/^CORRECTED\s*/i, "").trim() };
+  } catch {
+    return { reply: draft };
+  }
 }
+
+const SNAP_VERIFY_RULES = `You are an independent checker for a tutoring answer. Do NOT trust the draft. First solve/analyze the student's question yourself from scratch, then compare.
+Check: every calculation and algebra step, signs, equation solutions (substitute back), derivatives/integrals (differentiate results), units, chemical balancing, reaction products and SMILES validity, statistics, code output, historical facts/dates, logical consistency, and that diagrams (mermaid/svg/smiles blocks) are valid and match the content.
+If the draft is fully correct, reply with exactly: VERIFIED
+If anything is wrong or a diagram block is invalid, reply with "CORRECTED" on the first line followed by the COMPLETE corrected answer in exactly the same format, headings and style as the draft (keep all its good parts, fix only what is wrong). If something genuinely cannot be determined (unreadable photo, ambiguous question), the corrected answer must say so plainly instead of guessing. Never mention this checking process.`;
 
 
 /* ------------------------------------------------------------------ file mark-up */
