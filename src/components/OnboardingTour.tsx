@@ -41,6 +41,7 @@ export function OnboardingTour() {
   const [focusEnd, setFocusEnd] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [paused, setPaused] = useState(false);
+  const [mobileHint, setMobileHint] = useState<string | null>(null);
   const [cardPos, setCardPos] = useState<CSSProperties>({ left: -9999, top: 0 });
   const cardRef = useRef<HTMLDivElement>(null);
   const targetRef = useRef<HTMLElement | null>(null);
