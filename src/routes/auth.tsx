@@ -99,6 +99,27 @@ function AuthPage() {
     }
   }
 
+  async function onGoogle() {
+    setGoogleBusy(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast.error("We couldn't sign you in with Google. Please try again.");
+        return;
+      }
+      if (result.redirected) return;
+      toast.success("Welcome to StudyNova!");
+      navigate({ to: "/dashboard" });
+    } catch {
+      toast.error("We couldn't sign you in with Google. Please try again.");
+    } finally {
+      setGoogleBusy(false);
+    }
+  }
+
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4 sm:px-6">
