@@ -1,0 +1,2 @@
+ALTER TABLE public.documents ADD COLUMN IF NOT EXISTS category text;
+UPDATE public.documents SET category = CASE WHEN is_syllabus THEN 'syllabus' WHEN assignment_id IS NOT NULL THEN 'assignment' ELSE 'notes' END WHERE category IS NULL;
