@@ -227,8 +227,8 @@ function FlashcardsPage() {
       ) : decks.length === 0 ? (
         <EmptyState
           icon={Brain}
-          title="No decks yet"
-          description="Pick a class and generate your first deck from your uploaded materials."
+          title="No flashcards yet"
+          description="Turn your notes or class materials into flashcards — pick a class above and hit Create Flashcards."
         />
       ) : (
         <ul className="space-y-2">

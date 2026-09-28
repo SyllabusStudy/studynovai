@@ -83,8 +83,8 @@ export function AssignmentHelp({
     <>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <Button variant="secondary" size="sm" className="shrink-0 gap-1.5">
-            <Sparkles className="size-4" /> AI help
+          <Button variant="secondary" size="sm" className="shrink-0 gap-1.5" title="Need help? Ask AI about this assignment" aria-label="Ask AI About This Assignment">
+            <Sparkles className="size-4" /> <span className="hidden sm:inline">Ask AI About This</span><span className="sm:hidden">Ask AI</span>
           </Button>
         </DialogTrigger>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
