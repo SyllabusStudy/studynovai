@@ -129,7 +129,7 @@ function SnapQuickPage() {
     },
   });
 
-  async function saveConversation(all: Msg[], img: string | null, id: string | null, usedMode: SnapMode) {
+  async function saveConversation(all: Msg[], img: string | null, id: string | null, usedMode: SnapMode, usedClassId: string | null) {
     if (!user) return id;
     const first = all.find((m) => m.role === "user")?.content ?? "Untitled problem";
     const title = first.replace(/\s+/g, " ").slice(0, 80);
@@ -137,7 +137,7 @@ function SnapQuickPage() {
       user_id: user.id,
       title,
       mode: usedMode,
-      class_id: classId === "all" ? null : classId,
+      class_id: usedClassId,
       image_data_url: img,
       messages: all.map(({ role, content }) => ({ role, content })),
       updated_at: new Date().toISOString(),
@@ -226,7 +226,7 @@ function SnapQuickPage() {
       const all: Msg[] = [...pending.history, pending.userMsg, { role: "assistant", content: result.reply }];
       setMessages(all);
       try {
-        const newId = await saveConversation(all, pending.image, pending.id, pending.request.mode);
+        const newId = await saveConversation(all, pending.image, pending.id, pending.request.mode, pending.request.classId);
         setConvId(newId);
       } catch {
         toast.error("The answer is ready, but this conversation could not be saved yet.");
