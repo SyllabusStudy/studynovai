@@ -106,6 +106,8 @@ async function show(title: string, body: string) {
   if (typeof window === "undefined" || !("Notification" in window)) return;
   if (Notification.permission !== "granted") return;
   try {
+    const { thisDeviceNotifies } = await import("@/lib/devices");
+    if (!(await thisDeviceNotifies())) return;
     const reg = "serviceWorker" in navigator ? await navigator.serviceWorker.getRegistration() : null;
     if (reg?.showNotification) {
       await reg.showNotification(title, { body, icon: "/icon-192.png", badge: "/icon-192.png" });
