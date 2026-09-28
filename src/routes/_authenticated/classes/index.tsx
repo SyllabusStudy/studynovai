@@ -73,7 +73,7 @@ function ClassesPage() {
         <EmptyState
           icon={BookOpen}
           title="No classes yet"
-          description="Drop a syllabus PDF above and we'll create the class for you, or add one manually."
+          description="Add your first class to start building your semester."
           action={<NewClassDialog />}
         />
       ) : (
@@ -92,10 +92,11 @@ function ClassesPage() {
                 </div>
                 <h2 className="mt-2 text-base font-bold tracking-tight">{c.class_name}</h2>
                 <p className="mt-1 text-sm text-muted-foreground">{c.professor || "No instructor yet"}</p>
-                <p className="mt-4 text-xs text-muted-foreground">
-                  {documents.filter((d) => d.class_id === c.id).length} documents ·{" "}
-                  {assignments.filter((a) => a.class_id === c.id && a.status !== "completed").length} open tasks
-                </p>
+                <div className="mt-4 flex gap-4 text-sm">
+                  <span><strong>{assignments.filter((a) => a.class_id === c.id && a.status !== "completed").length}</strong> <span className="text-muted-foreground">open tasks</span></span>
+                  <span><strong>{documents.filter((d) => d.class_id === c.id).length}</strong> <span className="text-muted-foreground">documents</span></span>
+                </div>
+                <span className="mt-4 inline-flex text-sm font-semibold text-primary">Open Class →</span>
               </Link>
             </div>
           ))}
