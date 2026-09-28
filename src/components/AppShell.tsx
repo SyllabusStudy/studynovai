@@ -231,6 +231,7 @@ function NavList({ pathname, onNavigate, compact }: { pathname: string; onNaviga
               {g.key === "primary" ? null : g.collapsible ? (
                 <button
                   type="button"
+                  data-tour-group={g.key}
                   onClick={() => setClosed((c) => ({ ...c, [g.key]: !c[g.key] }))}
                   aria-expanded={!isClosed}
                   className="mb-1.5 flex w-full items-center justify-between px-3 text-[11px] font-extrabold uppercase tracking-wider text-sidebar-foreground/50 hover:text-sidebar-foreground"
