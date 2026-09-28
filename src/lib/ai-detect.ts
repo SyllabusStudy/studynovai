@@ -235,7 +235,7 @@ export function sectionize(pieces: string[], target = 120) {
   pieces.forEach((p, i) => {
     words += wordsOf(p).length;
     const paraBreak = /\n\s*\n\s*$/.test(p);
-    if (words >= target || (paraBreak && words >= target * 0.6)) {
+    if (words >= target || (paraBreak && words >= target * 0.35)) {
       out.push({ start, end: i });
       start = i + 1;
       words = 0;
