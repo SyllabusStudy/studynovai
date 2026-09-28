@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { EVENT_TYPES, EVENT_TYPE_LABELS } from "@/lib/constants";
+import { CALENDAR_FILTERS, EVENT_TYPES, EVENT_TYPE_LABELS } from "@/lib/constants";
 import { useAuth } from "@/lib/auth";
 import { AssignmentHelp } from "@/components/AssignmentHelp";
 import { classLabel, formatDate, useAssignments, useClasses, useEvents, useProfile } from "@/lib/data";
