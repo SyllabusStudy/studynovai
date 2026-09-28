@@ -1,5 +1,6 @@
 /** One sequential retry sequence for each AI operation. Never retry credentials, policy denials, or malformed requests. */
-export const AI_CONNECTION_MESSAGE = "I’m having trouble connecting right now. Your question is saved — try again in a moment.";
+import { AI_CONNECTION_MESSAGE } from "./ai-messages";
+export { AI_CONNECTION_MESSAGE } from "./ai-messages";
 
 const MAX_ATTEMPTS = 3;
 const MAX_WAIT_MS = 15_000;

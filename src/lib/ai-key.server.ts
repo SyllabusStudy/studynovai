@@ -1,6 +1,8 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { AI_KEY_HELP } from "./ai-messages";
+export { AI_KEY_HELP } from "./ai-messages";
 
 export const AI_PROVIDERS = [
   "google",
@@ -18,9 +20,6 @@ export const AI_PROVIDERS = [
 export type AiProvider = (typeof AI_PROVIDERS)[number];
 
 export type AiKeyConfig = { provider: AiProvider; key: string };
-
-export const AI_KEY_HELP =
-  "Add your own AI API key in Settings → AI key to use the AI features.";
 
 /**
  * Per-request holder for the student's own AI key. Every AI call reads it from

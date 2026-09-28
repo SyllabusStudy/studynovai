@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Bot, Loader2, SendHorizonal, Sparkles, User } from "lucide-react";
 import { toast } from "sonner";
 import { tutorChat } from "@/lib/ai.functions";
-import { AI_KEY_HELP } from "@/lib/ai-key.server";
+import { AI_KEY_HELP } from "@/lib/ai-messages";
 import { Button } from "@/components/ui/button";
 import { AiRetryNotice } from "@/components/AiRetryNotice";
 import { Textarea } from "@/components/ui/textarea";
