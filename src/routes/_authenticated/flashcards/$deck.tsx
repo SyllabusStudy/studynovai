@@ -42,6 +42,7 @@ function DeckPage() {
   function review(correct: boolean) {
     if (!current) return;
     setFlipped(false);
+    void recordStudyActivity("flashcards", qc);
     setIndex((i) => (i + 1) % Math.max(deck.length, 1));
     void supabase
       .from("flashcards")

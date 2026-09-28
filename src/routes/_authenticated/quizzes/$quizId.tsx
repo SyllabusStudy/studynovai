@@ -82,6 +82,7 @@ function QuizRunner() {
       return;
     }
     setSubmitted(true);
+    void recordStudyActivity("quiz", qc);
     await qc.invalidateQueries({ queryKey: ["quizzes"] });
     await qc.invalidateQueries({ queryKey: ["quiz", quizId] });
   }

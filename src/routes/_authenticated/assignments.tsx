@@ -1,3 +1,4 @@
+import { recordStudyActivity } from "@/lib/activity";
 import { createFileRoute } from "@tanstack/react-router";
 import { ClassActionBar } from "@/components/ClassActionBar";
 import { useEffect, useState } from "react";
@@ -67,6 +68,7 @@ function AssignmentsPage() {
       toast.error(error.message);
       return;
     }
+    if (done) void recordStudyActivity("assignment_done", qc);
     await qc.invalidateQueries({ queryKey: ["assignments"] });
   }
 
@@ -74,7 +76,7 @@ function AssignmentsPage() {
     <div>
       <PageHeader
         title="Assignments"
-        description="Everything you owe, sorted by what's due next. Attach a PDF or screenshot and AI helps you solve it."
+        description="What's due, sorted by date. Attach a file for AI help."
         actions={<NewAssignmentDialog />}
       />
       <ClassActionBar />
