@@ -43,6 +43,8 @@ function AiCheckerPage() {
   const [humanizing, setHumanizing] = useState(false);
   const [rewritten, setRewritten] = useState<Set<number>>(new Set());
   const [openSection, setOpenSection] = useState<number | null>(null);
+  // One revision per check — avoids a rewrite → detect → rewrite loop.
+  const [improved, setImproved] = useState(false);
 
   useEffect(() => {
     loadBilling()
@@ -53,7 +55,7 @@ function AiCheckerPage() {
   const aiIdx = result ? result.spans.map((s, i) => (s.label === "ai" && s.text.trim() && !rewritten.has(i) ? i : -1)).filter((i) => i >= 0) : [];
 
   async function doHumanize() {
-    if (!result || !aiIdx.length || humanizing) return;
+    if (!result || !aiIdx.length || humanizing || improved) return;
     setHumanizing(true);
     try {
       const res = await humanize({
@@ -67,6 +69,11 @@ function AiCheckerPage() {
         return;
       }
       const map = res.rewrites as Record<string, string>;
+      setImproved(true);
+      if (!Object.keys(map).length) {
+        toast.success("These parts already read naturally — nothing needed changing.");
+        return;
+      }
       const done = new Set(rewritten);
       const spans = result.spans.map((s, i) => {
         const r = map[String(i)];
@@ -79,7 +86,7 @@ function AiCheckerPage() {
       setResult(nextResult);
       setRewritten(done);
       setText(spans.map((s) => s.text).join(""));
-      toast.success(`Humanized ${Object.keys(map).length} sentence${Object.keys(map).length === 1 ? "" : "s"}.`);
+      toast.success("Your writing was revised for a more natural voice while preserving your original meaning.");
     } catch {
       toast.error("I'm having trouble connecting right now. Try again in a moment.");
     } finally {
@@ -95,6 +102,7 @@ function AiCheckerPage() {
     setBusy(true);
     setResult(null);
     setRewritten(new Set());
+    setImproved(false);
     setOpenSection(null);
     try {
       const res = await run({ data: { text: text.slice(0, 20000) } });
@@ -153,7 +161,7 @@ function AiCheckerPage() {
             <div className="min-w-0 space-y-1">
               <p className="font-display text-lg font-bold">{result.verdictText}</p>
               {result.verdict === "insufficient" ? (
-                <p className="text-sm text-muted-foreground">There isn't enough writing to make a reliable assessment. Add more text (about {80} words or more).</p>
+                <p className="text-sm text-muted-foreground">There isn't enough evidence to make a reliable assessment. Add more text (about 80 words or more).</p>
               ) : (
                 <>
                   <p className="text-sm">AI likelihood: <span className="font-semibold">{result.aiPercent}%</span></p>
@@ -180,7 +188,7 @@ function AiCheckerPage() {
               <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-destructive/25" /> Likely AI</span>
               <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-primary/20" /> Likely human</span>
               <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-warning/25" /> Uncertain</span>
-              {rewritten.size ? <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm border-2 border-success" /> Humanized</span> : null}
+              {rewritten.size ? <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm border-2 border-success" /> Revised</span> : null}
             </div>
             <p className="text-xs text-muted-foreground">Tap any highlighted part to see why it was flagged.</p>
             <div className="max-h-[28rem] overflow-y-auto whitespace-pre-wrap rounded-xl border border-border bg-background/50 p-3 text-sm leading-7">
@@ -229,13 +237,13 @@ function AiCheckerPage() {
             })() : null}
             <div className="flex flex-wrap items-center gap-2">
               {pro ? (
-                <Button onClick={() => void doHumanize()} disabled={humanizing || !aiIdx.length} className="gap-1.5">
+                <Button onClick={() => void doHumanize()} disabled={humanizing || !aiIdx.length || improved} className="gap-1.5">
                   {humanizing ? <Loader2 className="size-4 animate-spin" /> : <Wand2 className="size-4" />}
-                  {humanizing ? "Humanizing…" : aiIdx.length ? `Humanize AI parts (${aiIdx.length})` : "Nothing AI left to humanize"}
+                  {humanizing ? "Improving…" : improved ? "Natural voice improved" : aiIdx.length ? `Improve Natural Voice (${aiIdx.length})` : "Nothing flagged to improve"}
                 </Button>
               ) : pro === false ? (
                 <Button asChild variant="outline" className="gap-1.5">
-                  <Link to="/upgrade"><Crown className="size-4" /> Humanize — Pro only</Link>
+                  <Link to="/upgrade"><Crown className="size-4" /> Improve Natural Voice — Pro only</Link>
                 </Button>
               ) : null}
               {rewritten.size ? (
@@ -248,7 +256,7 @@ function AiCheckerPage() {
                 </Button>
               ) : null}
             </div>
-            {rewritten.size ? <p className="text-xs text-muted-foreground">Your text box was updated. Press Check text to re-scan it.</p> : null}
+            {rewritten.size ? <p className="text-xs text-muted-foreground">Your writing was revised for a more natural voice while preserving your original meaning. Your text box was updated. This improves writing quality — it doesn't guarantee any detector result.</p> : null}
           </div>
 
           <MoreOptions label="Why did we flag this?">
