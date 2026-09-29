@@ -72,23 +72,30 @@ function AiCheckerPage() {
       }
       const map = res.rewrites as Record<string, string>;
       setImproved(true);
-      if (!Object.keys(map).length) {
-        toast.success("These parts already read naturally.");
+      // Only genuinely changed sentences come back — an unchanged one is dropped server-side.
+      const changed = aiIdx.filter((i) => {
+        const r = map[String(i)];
+        return typeof r === "string" && r.trim() && r.trim() !== (result.spans[i]?.text ?? "").trim();
+      });
+      if (!changed.length) {
+        toast.error("Couldn't rewrite that just now. Press Humanize again.");
         return;
       }
       const done = new Set(rewritten);
       const spans = result.spans.map((s, i) => {
         const r = map[String(i)];
-        if (!r) return s;
+        if (!r || !changed.includes(i)) return s;
         done.add(i);
         const trail = s.text.match(/\s*$/)?.[0] ?? " ";
         return { ...s, text: r + (trail || " ") };
       });
       const nextResult = { ...result, spans };
+      const nextText = spans.map((s) => s.text).join("");
       setResult(nextResult);
       setRewritten(done);
-      setText(spans.map((s) => s.text).join(""));
-      toast.success("Humanized — your original meaning was kept.");
+      setText(nextText);
+      setHumanized(nextText);
+      toast.success(`Humanized ${changed.length} sentence${changed.length === 1 ? "" : "s"} — your meaning was kept.`);
     } catch {
       toast.error("I'm having trouble connecting right now. Try again in a moment.");
     } finally {
