@@ -40,6 +40,7 @@ function AiCheckerPage() {
   const run = useServerFn(checkAiText);
   const humanize = useServerFn(humanizeAiText);
   const loadBilling = useServerFn(getBilling);
+  const redirectForKey = useAiKeyRedirect();
   const [pro, setPro] = useState<boolean | null>(null);
   const [humanizing, setHumanizing] = useState(false);
   const [rewritten, setRewritten] = useState<Set<number>>(new Set());
