@@ -129,8 +129,16 @@ function waitForOAuth(popup: Window) {
       reject(new Error("We couldn't finish connecting your email."));
     };
     window.addEventListener("message", onMessage);
+    // The window can read as "closed" for an instant while it moves between
+    // Google and StudyNova, so only give up after it stays closed.
+    let closedTicks = 0;
     poll = window.setInterval(() => {
-      if (!popup.closed) return;
+      if (!popup.closed) {
+        closedTicks = 0;
+        return;
+      }
+      closedTicks += 1;
+      if (closedTicks < 3) return;
       cleanup();
       reject(new Error("The sign-in window closed before finishing."));
     }, 500);
