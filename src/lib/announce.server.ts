@@ -1,5 +1,6 @@
 /** Owner announcement emails: AI drafting plus real sending through Resend. */
 import { fetchAiWithRetry } from "./ai-request.server";
+import type { Draft } from "./announce";
 
 export const FROM_ADDRESS = "StudyNova <news@studynova.link>";
 export const REPLY_TO = "news@studynova.link";
@@ -8,7 +9,7 @@ const RESEND_GATEWAY = "https://connector-gateway.lovable.dev/resend";
 const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const BATCH_SIZE = 100;
 
-export type Draft = { subject: string; preview: string; heading: string; paragraphs: string[]; ctaLabel?: string; ctaUrl?: string };
+export type { Draft };
 
 const TONES: Record<string, string> = {
   exciting: "upbeat and energetic, like great news a friend is sharing",

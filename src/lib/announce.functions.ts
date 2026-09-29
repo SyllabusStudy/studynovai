@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { Draft } from "./announce.server";
+import type { Draft } from "./announce";
 
 async function requireAdmin(supabase: Parameters<typeof import("./admin.server").isAdmin>[0], userId: string) {
   const { isAdmin } = await import("./admin.server");

@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getAnnouncementAudience, sendAnnouncementEmail, writeAnnouncement } from "@/lib/announce.functions";
-import type { Draft } from "@/lib/announce.server";
+import type { Draft } from "@/lib/announce";
 
 const TONES = [
   { value: "exciting", label: "Exciting" },
