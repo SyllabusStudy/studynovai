@@ -182,7 +182,7 @@ export async function listMail(
   const estimate = list.resultSizeEstimate ?? 0;
 
   const ids = (list.messages ?? []).map((m) => m.id);
-  if (ids.length === 0) return { rows: [], nextPageToken: null };
+  if (ids.length === 0) return { rows: [], nextPageToken: list.nextPageToken ?? null, estimate };
 
   const details = await batchGetMetadata(connectionAPIKey, ids);
   const byId = new Map(details.map((m) => [m.id ?? "", m]));
@@ -191,7 +191,7 @@ export async function listMail(
     .filter((m): m is GmailMessage => !!m)
     .map(toRow);
 
-  return { rows, nextPageToken: list.nextPageToken ?? null };
+  return { rows, nextPageToken: list.nextPageToken ?? null, estimate };
 }
 
 /** Gmail multipart batch read: metadata for up to 50 messages per request. */
