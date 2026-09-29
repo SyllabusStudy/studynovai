@@ -114,6 +114,8 @@ function AiCheckerPage() {
     setResult(null);
     setRewritten(new Set());
     setImproved(false);
+    setHumanized(null);
+    setOriginal(text);
     setOpenSection(null);
     try {
       const res = await run({ data: { text: text.slice(0, 20000) } });
