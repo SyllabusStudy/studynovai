@@ -144,15 +144,19 @@ function decodeEntities(value: string) {
     .replace(/&nbsp;/g, " ");
 }
 
-const FOLDER_QUERY: Record<string, { labelIds?: string[]; q?: string }> = {
+// Folders map to Gmail labels/queries over the whole mailbox (not just
+// recent mail). Gmail returns results newest-first across all history;
+// older mail is reached by following nextPageToken.
+const FOLDER_QUERY: Record<string, { labelIds?: string[]; q?: string; spamTrash?: boolean }> = {
   inbox: { labelIds: ["INBOX"] },
-  unread: { labelIds: ["INBOX"], q: "is:unread" },
+  unread: { labelIds: ["UNREAD"] },
   starred: { labelIds: ["STARRED"] },
   important: { labelIds: ["IMPORTANT"] },
   sent: { labelIds: ["SENT"] },
   drafts: { labelIds: ["DRAFT"] },
-  archive: { q: "-in:inbox -in:trash -in:spam -in:drafts" },
-  trash: { labelIds: ["TRASH"] },
+  all: {},
+  archive: { q: "-in:inbox -in:trash -in:spam -in:drafts -in:sent" },
+  trash: { labelIds: ["TRASH"], spamTrash: true },
   attachments: { q: "has:attachment" },
 };
 
@@ -162,21 +166,23 @@ export async function listMail(
   folder: string,
   search: string,
   pageToken?: string,
-): Promise<{ rows: MailHeaderRow[]; nextPageToken: string | null }> {
+): Promise<{ rows: MailHeaderRow[]; nextPageToken: string | null; estimate: number }> {
   const config = FOLDER_QUERY[folder] ?? FOLDER_QUERY['inbox']!;
-  const params = new URLSearchParams({ maxResults: "25" });
+  const params = new URLSearchParams({ maxResults: "50" });
   for (const label of config.labelIds ?? []) params.append("labelIds", label);
   const q = [config.q, search].filter(Boolean).join(" ").trim();
   if (q) params.set("q", q);
+  if (config.spamTrash) params.set("includeSpamTrash", "true");
   if (pageToken) params.set("pageToken", pageToken);
 
   const list = (await gmail(
     connectionAPIKey,
     `/gmail/v1/users/me/messages?${params.toString()}`,
-  )) as { messages?: { id: string }[]; nextPageToken?: string };
+  )) as { messages?: { id: string }[]; nextPageToken?: string; resultSizeEstimate?: number };
+  const estimate = list.resultSizeEstimate ?? 0;
 
   const ids = (list.messages ?? []).map((m) => m.id);
-  if (ids.length === 0) return { rows: [], nextPageToken: null };
+  if (ids.length === 0) return { rows: [], nextPageToken: list.nextPageToken ?? null, estimate };
 
   const details = await batchGetMetadata(connectionAPIKey, ids);
   const byId = new Map(details.map((m) => [m.id ?? "", m]));
@@ -185,7 +191,7 @@ export async function listMail(
     .filter((m): m is GmailMessage => !!m)
     .map(toRow);
 
-  return { rows, nextPageToken: list.nextPageToken ?? null };
+  return { rows, nextPageToken: list.nextPageToken ?? null, estimate };
 }
 
 /** Gmail multipart batch read: metadata for up to 50 messages per request. */
