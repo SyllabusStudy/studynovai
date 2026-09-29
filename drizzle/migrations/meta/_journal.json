@@ -113,6 +113,13 @@
       "when": 1790710841874,
       "tag": "0015_announcement_emails",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1790712719760,
+      "tag": "0016_pricing_settings_and_promo_codes",
+      "breakpoints": true
     }
   ]
 }

@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { AdminFeedback } from "@/components/AdminFeedback";
 import { AdminAnnouncements } from "@/components/AdminAnnouncements";
+import { AdminPricing } from "@/components/AdminPricing";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -70,6 +71,7 @@ function AdminPage() {
         <TabsList className="mb-6 flex-wrap">
           <TabsTrigger value="feedback">Feedback</TabsTrigger>
           <TabsTrigger value="announcements">Announcements</TabsTrigger>
+          <TabsTrigger value="pricing">Pricing &amp; promos</TabsTrigger>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
@@ -77,6 +79,7 @@ function AdminPage() {
         </TabsList>
         <TabsContent value="feedback"><AdminFeedback /></TabsContent>
         <TabsContent value="announcements"><AdminAnnouncements /></TabsContent>
+        <TabsContent value="pricing"><AdminPricing /></TabsContent>
         <TabsContent value="analytics">
           <p className="text-sm text-muted-foreground">Visitor analytics are available in your Lovable project analytics. Usage totals are on the Overview tab.</p>
         </TabsContent>

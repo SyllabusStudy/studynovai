@@ -562,6 +562,39 @@ export type Database = {
           },
         ]
       }
+      pricing_settings: {
+        Row: {
+          compare_price_usd: number | null
+          id: boolean
+          price_usd: number
+          sale_active: boolean
+          sale_label: string
+          sale_note: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          compare_price_usd?: number | null
+          id?: boolean
+          price_usd?: number
+          sale_active?: boolean
+          sale_label?: string
+          sale_note?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          compare_price_usd?: number | null
+          id?: boolean
+          price_usd?: number
+          sale_active?: boolean
+          sale_label?: string
+          sale_note?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           active_class_id: string | null
@@ -629,6 +662,80 @@ export type Database = {
             columns: ["active_class_id"]
             isOneToOne: false
             referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promo_codes: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          kind: string
+          label: string | null
+          max_redemptions: number | null
+          percent_off: number | null
+          redemptions: number
+          stripe_promotion_code_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          kind?: string
+          label?: string | null
+          max_redemptions?: number | null
+          percent_off?: number | null
+          redemptions?: number
+          stripe_promotion_code_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          kind?: string
+          label?: string | null
+          max_redemptions?: number | null
+          percent_off?: number | null
+          redemptions?: number
+          stripe_promotion_code_id?: string | null
+        }
+        Relationships: []
+      }
+      promo_redemptions: {
+        Row: {
+          id: string
+          promo_code_id: string
+          redeemed_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          promo_code_id: string
+          redeemed_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          promo_code_id?: string
+          redeemed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_redemptions_promo_code_id_fkey"
+            columns: ["promo_code_id"]
+            isOneToOne: false
+            referencedRelation: "promo_codes"
             referencedColumns: ["id"]
           },
         ]
