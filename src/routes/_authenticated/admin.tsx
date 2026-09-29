@@ -1,10 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Camera, Crown, Loader2, Sparkles, Users } from "lucide-react";
+import { useState } from "react";
+import { Camera, Crown, KeyRound, Loader2, Sparkles, UserX, Users } from "lucide-react";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
-import { checkAdmin, getAdminStats } from "@/lib/admin.functions";
+import { checkAdmin, getAdminStats, getUserClasses, kickUser, removeUserAiKey } from "@/lib/admin.functions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { AdminFeedback } from "@/components/AdminFeedback";
 import { useAuth } from "@/lib/auth";
 
@@ -26,6 +36,7 @@ function AdminPage() {
   const { user } = useAuth();
   const load = useServerFn(getAdminStats);
   const check = useServerFn(checkAdmin);
+  const [managing, setManaging] = useState<{ id: string; name: string | null; email: string | null } | null>(null);
   const { data: gate, isLoading: gating } = useQuery({
     queryKey: ["is-admin", user?.id],
     enabled: !!user,
@@ -109,6 +120,9 @@ function AdminPage() {
                 <p className="mt-1 text-xs text-muted-foreground">
                   {s.snaps} scans · {s.helps} AI helps · {s.classes} classes
                 </p>
+                <Button variant="outline" size="sm" className="mt-3" onClick={() => setManaging(s)}>
+                  Manage
+                </Button>
               </div>
             ))}
           </div>
@@ -123,6 +137,7 @@ function AdminPage() {
                   <th className="p-3 text-right font-semibold">Scans</th>
                   <th className="p-3 text-right font-semibold">AI helps</th>
                   <th className="p-3 text-right font-semibold">Classes</th>
+                  <th className="p-3 text-right font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -145,6 +160,11 @@ function AdminPage() {
                     <td className="p-3 text-right">{s.snaps}</td>
                     <td className="p-3 text-right">{s.helps}</td>
                     <td className="p-3 text-right">{s.classes}</td>
+                    <td className="p-3 text-right">
+                      <Button variant="outline" size="sm" onClick={() => setManaging(s)}>
+                        Manage
+                      </Button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -155,6 +175,97 @@ function AdminPage() {
       )}
       </Tabs>
       )}
+      <ManageStudentDialog student={managing} onClose={() => setManaging(null)} />
     </div>
+  );
+}
+
+function ManageStudentDialog({
+  student,
+  onClose,
+}: {
+  student: { id: string; name: string | null; email: string | null } | null;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const loadClasses = useServerFn(getUserClasses);
+  const removeKey = useServerFn(removeUserAiKey);
+  const kick = useServerFn(kickUser);
+  const [busy, setBusy] = useState<"key" | "kick" | null>(null);
+
+  const { data: classes, isLoading } = useQuery({
+    queryKey: ["admin-user-classes", student?.id],
+    enabled: !!student,
+    queryFn: () => loadClasses({ data: { userId: student!.id } }),
+  });
+
+  async function handleRemoveKey() {
+    if (!student) return;
+    setBusy("key");
+    try {
+      await removeKey({ data: { userId: student.id } });
+      toast.success("AI key removed — they'll need to add a new one.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not remove the key.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleKick() {
+    if (!student) return;
+    if (!window.confirm(`Permanently delete ${student.email ?? "this student"}'s account and all their data? This can't be undone.`)) return;
+    setBusy("kick");
+    try {
+      await kick({ data: { userId: student.id } });
+      toast.success("Account removed.");
+      await qc.invalidateQueries({ queryKey: ["admin-stats"] });
+      onClose();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not remove the account.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <Dialog open={!!student} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{student?.name ?? "Student"}</DialogTitle>
+          <DialogDescription>{student?.email}</DialogDescription>
+        </DialogHeader>
+
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Their classes</p>
+          {isLoading ? (
+            <Loader2 className="size-4 animate-spin text-primary" />
+          ) : classes && classes.length > 0 ? (
+            <ul className="max-h-48 space-y-1.5 overflow-y-auto">
+              {classes.map((c) => (
+                <li key={c.id} className="rounded-lg border border-border px-3 py-2 text-sm">
+                  <span className="font-medium">{c.class_name}</span>
+                  {c.course_code ? <span className="text-muted-foreground"> · {c.course_code}</span> : null}
+                  {c.semester ? <span className="text-muted-foreground"> · {c.semester}</span> : null}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">No classes yet.</p>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-2 border-t border-border pt-4">
+          <Button variant="outline" size="sm" disabled={busy !== null} onClick={handleRemoveKey}>
+            {busy === "key" ? <Loader2 className="size-4 animate-spin" /> : <KeyRound className="size-4" />}
+            Remove their AI key
+          </Button>
+          <Button variant="destructive" size="sm" disabled={busy !== null} onClick={handleKick}>
+            {busy === "kick" ? <Loader2 className="size-4 animate-spin" /> : <UserX className="size-4" />}
+            Kick out (delete account)
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

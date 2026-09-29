@@ -92,6 +92,13 @@
       "when": 1790637258388,
       "tag": "0012_create_app_user_connections",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1790660785197,
+      "tag": "0013_grant_admin_sawaqeddavid91",
+      "breakpoints": true
     }
   ]
 }
