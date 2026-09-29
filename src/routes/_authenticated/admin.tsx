@@ -137,6 +137,7 @@ function AdminPage() {
                   <th className="p-3 text-right font-semibold">Scans</th>
                   <th className="p-3 text-right font-semibold">AI helps</th>
                   <th className="p-3 text-right font-semibold">Classes</th>
+                  <th className="p-3 text-right font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -159,6 +160,11 @@ function AdminPage() {
                     <td className="p-3 text-right">{s.snaps}</td>
                     <td className="p-3 text-right">{s.helps}</td>
                     <td className="p-3 text-right">{s.classes}</td>
+                    <td className="p-3 text-right">
+                      <Button variant="outline" size="sm" onClick={() => setManaging(s)}>
+                        Manage
+                      </Button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
