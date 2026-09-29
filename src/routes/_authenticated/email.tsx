@@ -185,15 +185,22 @@ function ConnectScreen({
       return;
     }
     try {
-      const { authorizationUrl } = await start({});
+      const { authorizationUrl } = await start({
+        data: { origin: window.location.origin },
+      });
       const completion = waitForOAuth(popup);
       popup.location.href = authorizationUrl;
       const code = await completion;
-      if (code) await complete({ data: { code } });
+      if (!code) throw new Error("We couldn't finish connecting your email. Please try again.");
+      await complete({ data: { code } });
       toast.success(reconnect ? "Your email is reconnected." : "Your email is connected.");
       onConnected();
     } catch (error) {
-      popup.close();
+      try {
+        popup.close();
+      } catch {
+        /* already closed */
+      }
       toast.error(error instanceof Error ? error.message : "We couldn't connect your email.");
     } finally {
       setBusy(false);
