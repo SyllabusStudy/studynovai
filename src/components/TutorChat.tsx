@@ -49,6 +49,7 @@ export function TutorChat({
   const { data: classes = [] } = useClasses(user?.id);
   const queryClient = useQueryClient();
   const send = useServerFn(tutorChat);
+  const redirectForKey = useAiKeyRedirect();
 
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
