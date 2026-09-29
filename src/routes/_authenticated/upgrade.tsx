@@ -134,11 +134,13 @@ function UpgradePage() {
               <p className="mt-1 text-2xl font-bold">$0</p>
             </div>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <Item>Unlimited classes</Item>
-              <Item>{FREE_LIMITS.assignment_help} AI assignment helps every {FREE_WINDOW_HOURS} hours</Item>
-              <Item>{FREE_LIMITS.snap} SnapQuick photo scans every {FREE_WINDOW_HOURS} hours</Item>
-              <Item>{FREE_LIMITS.video} QuickVideo import every {FREE_WINDOW_HOURS} hours</Item>
-              <Item>Syllabus import, calendar, flashcards & quizzes</Item>
+              <Item>♾️ Unlimited classes</Item>
+              <Item>🤖 {FREE_LIMITS.assignment_help} AI Assignment Helps every {FREE_WINDOW_HOURS} hours</Item>
+              <Item>📸 {FREE_LIMITS.snap} SnapQuick photo scans every {FREE_WINDOW_HOURS} hours</Item>
+              <Item>🎥 {FREE_LIMITS.video} QuickVideo imports every {FREE_WINDOW_HOURS} hours</Item>
+              <Item>📄 Syllabus Import</Item>
+              <Item>📅 Calendar</Item>
+              <Item>🃏 Flashcards & Quizzes</Item>
             </ul>
             {billing && !pro ? (
               <div className="rounded-lg border border-border p-3 text-xs text-muted-foreground">
@@ -176,9 +178,12 @@ function UpgradePage() {
               </p>
             </div>
             <ul className="space-y-2 text-sm text-muted-foreground">
+              <Item>Everything in Free, plus:</Item>
               <Item>Unlimited AI assignment help</Item>
               <Item>Unlimited SnapQuick photo scans</Item>
               <Item>Unlimited tutor chats, flashcards & quizzes</Item>
+              <Item>Unlimited QuickVideo imports</Item>
+              <Item>✨ AI Humanize</Item>
             </ul>
             {pro ? (
               <div className="space-y-3">
