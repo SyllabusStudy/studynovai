@@ -269,12 +269,14 @@ function EmailPage() {
   return <Mailbox accountEmail={connection.email} />;
 }
 
-/** Outlook blocks being shown inside other websites, so StudyNova opens the
- *  real Outlook on the web in one dedicated, reusable window and keeps this
- *  page as its locked control panel. No Outlook data passes through StudyNova. */
+/** Outlook can't be shown inside another website (Microsoft blocks it), so the
+ *  page stays a StudyNova panel: it launches Outlook in a small focused window
+ *  and keeps a quick-capture box for turning email text into StudyNova items. */
 function OutlookView({ onUseGoogle }: { onUseGoogle: () => void }) {
   const winRef = useRef<Window | null>(null);
   const [open, setOpen] = useState(false);
+  const [pasted, setPasted] = useState("");
+  const [addOpen, setAddOpen] = useState(false);
 
   useEffect(() => {
     const t = window.setInterval(() => {
@@ -282,6 +284,11 @@ function OutlookView({ onUseGoogle }: { onUseGoogle: () => void }) {
     }, 1000);
     return () => window.clearInterval(t);
   }, []);
+
+  const suggestions = useMemo(
+    () => (pasted.trim() ? extractSuggestions("", pasted) : []),
+    [pasted],
+  );
 
   function openOutlook() {
     const existing = winRef.current;
@@ -311,33 +318,92 @@ function OutlookView({ onUseGoogle }: { onUseGoogle: () => void }) {
 
   return (
     <div>
-      <PageHeader title="Email" description="Use your school Outlook account in its own secure window." />
-      <div className="mx-auto max-w-xl">
-        <div className="surface-card p-6 text-center sm:p-8">
-          <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary/12 text-primary">
-            <Mail className="size-7" />
+      <PageHeader
+        title="Email"
+        description="Use your school Outlook next to your classes, and save what matters into StudyNova."
+      />
+      <div className="mx-auto max-w-xl space-y-4">
+        <div className="surface-card p-5 sm:p-6">
+          <div className="flex items-start gap-3">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/12 text-primary">
+              <Mail className="size-5" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="font-display text-lg font-extrabold">Outlook</h2>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                Microsoft doesn't allow Outlook to be shown inside other sites, so it opens in a
+                small window right on top of StudyNova. Your password and messages stay with
+                Microsoft.
+              </p>
+            </div>
           </div>
-          <h2 className="mt-4 font-display text-xl font-extrabold">Outlook</h2>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Microsoft doesn't allow Outlook to be shown inside other websites, so it opens in its own
-            locked window. Sign in with your school account there and use Outlook normally —
-            StudyNova never sees your password or your messages.
-          </p>
-          <Button className="mt-6 w-full gap-2" onClick={openOutlook}>
+          <Button className="mt-4 w-full gap-2" onClick={openOutlook}>
             <Mail className="size-4" />
             {open ? "Go to Outlook window" : "Open Outlook"}
           </Button>
           {open ? (
-            <p className="mt-3 text-xs text-muted-foreground">Outlook is open in its own window.</p>
+            <p className="mt-2 text-center text-xs text-muted-foreground">
+              Outlook is open in its own small window.
+            </p>
           ) : null}
-          <Button variant="ghost" size="sm" className="mt-4" onClick={onUseGoogle}>
+        </div>
+
+        <div className="surface-card p-5 sm:p-6">
+          <h3 className="font-display text-base font-extrabold">Save something from an email</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Copy a line from Outlook and paste it here. StudyNova pulls out the date and makes an
+            assignment or calendar item.
+          </p>
+          <Textarea
+            className="mt-3 min-h-24"
+            placeholder="Paste from your email, e.g. Exam 2 is on Friday, October 10 in room 214."
+            value={pasted}
+            onChange={(e) => setPasted(e.target.value)}
+          />
+          {suggestions.length ? (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Found {suggestions.length} {suggestions.length === 1 ? "item" : "items"} to add.
+            </p>
+          ) : null}
+          <Button
+            className="mt-3 w-full gap-2"
+            variant="secondary"
+            disabled={!pasted.trim()}
+            onClick={() => setAddOpen(true)}
+          >
+            <Plus className="size-4" />
+            Add to StudyNova
+          </Button>
+        </div>
+
+        <div className="surface-card p-5 text-sm text-muted-foreground sm:p-6">
+          <h3 className="font-display text-base font-extrabold text-foreground">
+            Signing in with a school account
+          </h3>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            <li>Use your full school email address, not a nickname.</li>
+            <li>Your school may send you to its own sign-in page — that's normal.</li>
+            <li>Approve the two-step prompt (like Duo) on your phone if one appears.</li>
+          </ul>
+        </div>
+
+        <div className="text-center">
+          <Button variant="ghost" size="sm" onClick={onUseGoogle}>
             Use Google / Gmail instead
           </Button>
         </div>
       </div>
+
+      <AddToStudyNova
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        suggestions={suggestions}
+        fallbackTitle={pasted.trim().slice(0, 80) || "From email"}
+      />
     </div>
   );
 }
+
 
 function ConnectScreen({
   reconnect,
