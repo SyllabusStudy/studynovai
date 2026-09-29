@@ -25,7 +25,7 @@ import {
 import { importVideo } from "@/lib/video.functions";
 import { useAuth } from "@/lib/auth";
 import { classLabel, formatDate, useClasses, useVideoNotes } from "@/lib/data";
-import { AiKeySetupBanner, useAiKeyRedirect } from "@/lib/ai-key-gate";
+import { AiKeySetupBanner, useAiKeyRedirect, useAiKeyStatus, useSendToAiKeySetup } from "@/lib/ai-key-gate";
 
 export const Route = createFileRoute("/_authenticated/quickvideo/")({
   head: () => ({
@@ -71,8 +71,14 @@ function QuickVideoPage() {
   const [busy, setBusy] = useState(false);
   const run = useServerFn(importVideo);
   const redirectForKey = useAiKeyRedirect();
+  const { data: keyStatus } = useAiKeyStatus();
+  const sendToKeySetup = useSendToAiKeySetup();
 
   async function submit(payload: { url?: string; dataUrl?: string; fileName?: string }) {
+    if (keyStatus?.hasKey === false) {
+      sendToKeySetup();
+      return;
+    }
     setBusy(true);
     try {
       void recordStudyActivity("quickvideo");
