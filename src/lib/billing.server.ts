@@ -44,13 +44,22 @@ function formatWait(ms: number) {
   return `${m}m`;
 }
 
+/** Pro when paid/promo, or during an unexpired 2-day new-account trial. */
+function rowIsPro(row: { plan: string; status: string; current_period_end: string | null } | null) {
+  if (!row || row.plan !== "pro") return false;
+  if (row.status === "trial") {
+    return !!row.current_period_end && new Date(row.current_period_end).getTime() > Date.now();
+  }
+  return PRO_STATUSES.has(row.status);
+}
+
 export async function isPro(supabase: DB, userId: string) {
   const { data } = await supabase
     .from("subscriptions")
-    .select("plan, status")
+    .select("plan, status, current_period_end")
     .eq("user_id", userId)
     .maybeSingle();
-  return data?.plan === "pro" && PRO_STATUSES.has(data.status);
+  return rowIsPro(data);
 }
 
 /** Uses + when the oldest use in the rolling window ages out. */
@@ -96,10 +105,11 @@ export async function loadBilling(supabase: DB, userId: string): Promise<Billing
     supabase.from("classes").select("id", { count: "exact", head: true }).eq("user_id", userId),
   ]);
   const row = sub.data;
-  const pro = row?.plan === "pro" && PRO_STATUSES.has(row.status);
+  const pro = rowIsPro(row ?? null);
+  const trialOver = row?.status === "trial" && !pro;
   return {
     plan: pro ? "pro" : "free",
-    status: row?.status ?? "inactive",
+    status: trialOver ? "trial_ended" : (row?.status ?? "inactive"),
     currentPeriodEnd: row?.current_period_end ?? null,
     usage: {
       assignment_help: help.used,
