@@ -1,10 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Camera, Crown, Loader2, Sparkles, Users } from "lucide-react";
+import { useState } from "react";
+import { Camera, Crown, KeyRound, Loader2, Sparkles, UserX, Users } from "lucide-react";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
-import { checkAdmin, getAdminStats } from "@/lib/admin.functions";
+import { checkAdmin, getAdminStats, getUserClasses, kickUser, removeUserAiKey } from "@/lib/admin.functions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { AdminFeedback } from "@/components/AdminFeedback";
 import { useAuth } from "@/lib/auth";
 
