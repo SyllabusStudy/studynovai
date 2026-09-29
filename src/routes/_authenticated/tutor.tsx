@@ -3,6 +3,7 @@ import { ClassActionBar } from "@/components/ClassActionBar";
 import { PageHeader } from "@/components/PageHeader";
 import { TutorChat } from "@/components/TutorChat";
 import { Hint } from "@/components/Hint";
+import { AiKeySetupBanner } from "@/lib/ai-key-gate";
 
 export const Route = createFileRoute("/_authenticated/tutor")({
   head: () => ({

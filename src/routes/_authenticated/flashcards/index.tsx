@@ -123,6 +123,7 @@ function FlashcardsPage() {
     <div>
       <PageHeader title="Flashcards" description="Make a deck from your notes, then study it." />
       <ClassActionBar hide={["flashcards"]} />
+      <AiKeySetupBanner />
 
       <Hint id="flashcards-deck" point="down" className="mb-4 hidden sm:flex">
         Pick a class and hit Make flashcards. Extra settings are under More options.
