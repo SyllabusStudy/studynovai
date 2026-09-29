@@ -45,6 +45,8 @@ function UpgradePage() {
   const redeem = useServerFn(redeemPromo);
   const [promo, setPromo] = useState("");
   const [redeeming, setRedeeming] = useState(false);
+  const pricing = usePricing();
+  const savings = savingsPercent(pricing);
 
   const { data: billing, isLoading } = useQuery({
     queryKey: ["billing", user?.id],
