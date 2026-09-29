@@ -215,13 +215,38 @@ function waitForOAuth(cancel: AbortSignal) {
   });
 }
 
+const PROVIDER_KEY = "studynova.emailProvider";
+const OUTLOOK_URL = "https://outlook.office.com/mail/";
+
 function EmailPage() {
   const qc = useQueryClient();
   const status = useServerFn(getMailStatus);
+  const [provider, setProvider] = useState<"google" | "outlook" | null>(null);
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(PROVIDER_KEY);
+      if (saved === "outlook") setProvider("outlook");
+    } catch {
+      /* storage unavailable */
+    }
+  }, []);
+  function choose(next: "google" | "outlook") {
+    setProvider(next);
+    try {
+      window.localStorage.setItem(PROVIDER_KEY, next);
+    } catch {
+      /* storage unavailable */
+    }
+  }
   const { data: connection, isLoading } = useQuery({
     queryKey: ["mail-status"],
     queryFn: () => status({}),
+    enabled: provider !== "outlook",
   });
+
+  if (provider === "outlook") {
+    return <OutlookView onUseGoogle={() => choose("google")} />;
+  }
 
   if (isLoading) {
     return (
@@ -236,6 +261,7 @@ function EmailPage() {
       <ConnectScreen
         reconnect={!!connection?.reconnectRequired}
         onConnected={() => qc.invalidateQueries({ queryKey: ["mail-status"] })}
+        onChooseOutlook={() => choose("outlook")}
       />
     );
   }
@@ -243,12 +269,85 @@ function EmailPage() {
   return <Mailbox accountEmail={connection.email} />;
 }
 
+/** Outlook blocks being shown inside other websites, so StudyNova opens the
+ *  real Outlook on the web in one dedicated, reusable window and keeps this
+ *  page as its locked control panel. No Outlook data passes through StudyNova. */
+function OutlookView({ onUseGoogle }: { onUseGoogle: () => void }) {
+  const winRef = useRef<Window | null>(null);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const t = window.setInterval(() => {
+      setOpen(!!winRef.current && !winRef.current.closed);
+    }, 1000);
+    return () => window.clearInterval(t);
+  }, []);
+
+  function openOutlook() {
+    const w = Math.min(1200, window.screen.availWidth - 40);
+    const h = Math.min(900, window.screen.availHeight - 60);
+    const existing = winRef.current;
+    if (existing && !existing.closed) {
+      existing.focus();
+      return;
+    }
+    const win = window.open(
+      OUTLOOK_URL,
+      "studynova-outlook",
+      `width=${w},height=${h},left=20,top=20,menubar=no,toolbar=no,location=yes,status=no`,
+    );
+    if (!win) {
+      toast.error("Allow pop-ups for StudyNova, then try again.");
+      return;
+    }
+    try {
+      win.opener = null;
+    } catch {
+      /* ignore */
+    }
+    winRef.current = win;
+    setOpen(true);
+    win.focus();
+  }
+
+  return (
+    <div>
+      <PageHeader title="Email" description="Use your school Outlook account in its own secure window." />
+      <div className="mx-auto max-w-xl">
+        <div className="surface-card p-6 text-center sm:p-8">
+          <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary/12 text-primary">
+            <Mail className="size-7" />
+          </div>
+          <h2 className="mt-4 font-display text-xl font-extrabold">Outlook</h2>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            Microsoft doesn't allow Outlook to be shown inside other websites, so it opens in its own
+            locked window. Sign in with your school account there and use Outlook normally —
+            StudyNova never sees your password or your messages.
+          </p>
+          <Button className="mt-6 w-full gap-2" onClick={openOutlook}>
+            <Mail className="size-4" />
+            {open ? "Go to Outlook window" : "Open Outlook"}
+          </Button>
+          {open ? (
+            <p className="mt-3 text-xs text-muted-foreground">Outlook is open in its own window.</p>
+          ) : null}
+          <Button variant="ghost" size="sm" className="mt-4" onClick={onUseGoogle}>
+            Use Google / Gmail instead
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ConnectScreen({
   reconnect,
   onConnected,
+  onChooseOutlook,
 }: {
   reconnect: boolean;
   onConnected: () => void;
+  onChooseOutlook: () => void;
 }) {
   const start = useServerFn(startMailConnect);
   const complete = useServerFn(completeMailConnect);
@@ -333,7 +432,15 @@ function ConnectScreen({
           ) : null}
           <div className="mt-6 space-y-2 text-left">
             <p className="text-xs font-bold uppercase text-muted-foreground">Other providers</p>
-            {MAIL_PROVIDERS.filter((p) => !p.available).map((p) => (
+            <button
+              type="button"
+              onClick={onChooseOutlook}
+              className="flex w-full items-center justify-between rounded-xl border border-border px-3 py-2 text-sm transition-colors hover:border-primary/50 hover:bg-primary/5"
+            >
+              <span className="font-semibold">Microsoft / Outlook</span>
+              <span className="text-xs font-semibold text-primary">Use Outlook</span>
+            </button>
+            {MAIL_PROVIDERS.filter((p) => !p.available && p.id !== "microsoft_outlook").map((p) => (
               <div
                 key={p.id}
                 className="flex items-center justify-between rounded-xl border border-border px-3 py-2 text-sm"
