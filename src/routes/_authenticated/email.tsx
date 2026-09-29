@@ -597,7 +597,7 @@ function Mailbox({ accountEmail }: { accountEmail: string | null }) {
     void qc.invalidateQueries({ queryKey: ["mail-status"] });
   }
   const needsReconnect =
-    (listQuery.data && !listQuery.data.ok && listQuery.data.reason === "reconnect") ||
+    (firstPage && !firstPage.ok && firstPage.reason === "reconnect") ||
     (messageQuery.data && !messageQuery.data.ok && messageQuery.data.reason === "reconnect");
 
   useEffect(() => {
@@ -657,7 +657,7 @@ function Mailbox({ accountEmail }: { accountEmail: string | null }) {
         }
         actions={
           <>
-            <Button variant="outline" className="gap-2" onClick={() => listQuery.refetch()}>
+            <Button variant="outline" className="gap-2" onClick={refreshMailbox}>
               <RefreshCw className={cn("size-4", listQuery.isFetching && "animate-spin")} />
               Refresh
             </Button>
@@ -725,6 +725,8 @@ function Mailbox({ accountEmail }: { accountEmail: string | null }) {
             className="mt-4 w-full justify-start text-xs text-muted-foreground"
             onClick={async () => {
               await disconnect({});
+              qc.removeQueries({ queryKey: ["mail-list"] });
+              qc.removeQueries({ queryKey: ["mail-message"] });
               qc.invalidateQueries({ queryKey: ["mail-status"] });
               toast.success("Email disconnected.");
             }}
@@ -786,6 +788,26 @@ function Mailbox({ accountEmail }: { accountEmail: string | null }) {
                   </button>
                 </li>
               ))}
+              <li ref={sentinelRef} className="flex justify-center px-4 py-3">
+                {listQuery.hasNextPage ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={listQuery.isFetchingNextPage}
+                    onClick={() => void listQuery.fetchNextPage()}
+                  >
+                    {listQuery.isFetchingNextPage ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      "Load older messages"
+                    )}
+                  </Button>
+                ) : (
+                  <span className="text-xs text-muted-foreground">
+                    {rows.length} message{rows.length === 1 ? "" : "s"} · end of folder
+                  </span>
+                )}
+              </li>
             </ul>
           )}
         </div>
