@@ -9,15 +9,17 @@ type DB = SupabaseClient<Database>;
 
 const PRO_STATUSES = new Set(["active", "trialing", "promo"]);
 
-/** Free lifetime access codes (owner/creator use). Compared loosely. */
+/** Built-in lifetime access codes (owner/creator use). Compared loosely. */
 const PROMO_CODES = new Set(["davidlovescallie"]);
 
 const normalizeCode = (raw: string) => raw.toLowerCase().replace(/[^a-z0-9]/g, "");
 
-/** Grants unlimited access when the code matches. Validated server-side only. */
+/** Grants unlimited access for a built-in or owner-created code. Server-side only. */
 export async function redeemPromoCode(userId: string, code: string) {
   if (!PROMO_CODES.has(normalizeCode(code))) {
-    throw new Error("That promo code isn't valid.");
+    const { consumeFreeProCode } = await import("./pricing.server");
+    const match = await consumeFreeProCode(userId, code);
+    if (!match) throw new Error("That promo code isn't valid.");
   }
   const { error } = await supabaseAdmin.from("subscriptions").upsert({
     user_id: userId,
@@ -181,6 +183,7 @@ export async function startCheckout(args: {
     const session = await stripe.checkout.sessions.create({
       line_items: [{ price: price.id, quantity: 1 }],
       mode: "subscription",
+      allow_promotion_codes: true,
       ui_mode: "embedded_page",
       return_url: args.returnUrl,
       customer: customerId,
