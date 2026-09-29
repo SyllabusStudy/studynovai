@@ -30,6 +30,7 @@ function TutorPage() {
         description="Ask anything — answers come from your own class materials."
       />
       <ClassActionBar hide={["tutor"]} />
+      <AiKeySetupBanner />
       <Hint id="tutor-ask" point="down" className="mb-4">
         Ask anything about a class — StudyNova already knows your syllabus, assignments and uploaded notes, so just type like you're texting a friend.
       </Hint>
