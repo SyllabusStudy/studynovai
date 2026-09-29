@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { AiKeySetupBanner, useAiKeyRedirect } from "@/lib/ai-key-gate";
 
 export const Route = createFileRoute("/_authenticated/ai-checker")({
   head: () => ({
@@ -119,6 +120,7 @@ function AiCheckerPage() {
   return (
     <div className="space-y-5">
       <PageHeader title="AI Text Checker" description="Paste your writing. See what sounds AI-written, and why." />
+      <AiKeySetupBanner />
       <section className="surface-card space-y-3 p-4 sm:p-6">
         <Textarea
           value={text}

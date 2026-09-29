@@ -286,6 +286,7 @@ function SnapQuickPage() {
   return (
     <div>
       <PageHeader title="Stuck on a problem?" description="Snap it or type it. Learn every step." />
+      <AiKeySetupBanner />
       <ClassActionBar />
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,20rem)_1fr]">
