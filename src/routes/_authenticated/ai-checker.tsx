@@ -273,6 +273,22 @@ function AiCheckerPage() {
                 </Button>
               ) : null}
             </div>
+            {humanized ? (
+              <div className="space-y-3 rounded-xl border border-success/40 bg-success/5 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-semibold">Humanized version</p>
+                  <span className="text-xs text-muted-foreground">
+                    {rewritten.size} sentence{rewritten.size === 1 ? "" : "s"} rewritten
+                  </span>
+                </div>
+                <p className="max-h-60 overflow-y-auto whitespace-pre-wrap rounded-lg border border-border bg-background/60 p-3 text-sm leading-7">
+                  {humanized}
+                </p>
+                <MoreOptions label="Show my original text">
+                  <p className="max-h-60 overflow-y-auto whitespace-pre-wrap text-sm leading-7 text-muted-foreground">{original ?? ""}</p>
+                </MoreOptions>
+              </div>
+            ) : null}
             {rewritten.size ? <p className="text-xs text-muted-foreground">Humanized parts are underlined in green and your text box now has the new version. Copy it, or press Humanize again for any parts still flagged. No rewrite can guarantee a detector result.</p> : null}
           </div>
 
