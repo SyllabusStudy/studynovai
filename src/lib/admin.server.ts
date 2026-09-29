@@ -97,3 +97,30 @@ export async function loadAdminStats(): Promise<AdminStats> {
     students,
   };
 }
+
+/** Classes belonging to one student, for the owner dashboard. */
+export async function loadUserClasses(userId: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin
+    .from("classes")
+    .select("id, class_name, course_code, professor, semester, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  return data ?? [];
+}
+
+/** Removes every saved AI key for a student (they must re-add their own). */
+export async function removeUserAiKeys(userId: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { error } = await supabaseAdmin.from("user_ai_keys").delete().eq("user_id", userId);
+  if (error) throw new Error(error.message);
+  return { ok: true };
+}
+
+/** Permanently deletes a student account and all of their data. */
+export async function deleteUserAccount(userId: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+  if (error) throw new Error(error.message);
+  return { ok: true };
+}
