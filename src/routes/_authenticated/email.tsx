@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Archive,
@@ -90,6 +90,7 @@ const FOLDERS = [
   { id: "sent", label: "Sent", icon: Send },
   { id: "drafts", label: "Drafts", icon: Pencil },
   { id: "archive", label: "Archive", icon: Archive },
+  { id: "all", label: "All Mail", icon: Mail },
   { id: "trash", label: "Trash", icon: Trash2 },
 ] as const;
 
@@ -539,13 +540,19 @@ function Mailbox({ accountEmail }: { accountEmail: string | null }) {
   const send = useServerFn(sendMailMessage);
   const disconnect = useServerFn(disconnectMail);
 
-  const listQuery = useQuery({
-    queryKey: ["mail-list", folder, search],
-    queryFn: () => list({ data: { folder, search } }),
+  // Keyed by the connected account so a different Google account never
+  // sees another account's cached mail.
+  const account = accountEmail ?? "gmail";
+  const listQuery = useInfiniteQuery({
+    queryKey: ["mail-list", account, folder, search],
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) =>
+      list({ data: { folder, search, ...(pageParam ? { pageToken: pageParam } : {}) } }),
+    getNextPageParam: (last) => (last.ok ? (last.data.nextPageToken ?? undefined) : undefined),
   });
 
   const messageQuery = useQuery({
-    queryKey: ["mail-message", openId],
+    queryKey: ["mail-message", account, openId],
     enabled: !!openId,
     queryFn: () => read({ data: { id: openId! } }),
   });
@@ -554,7 +561,41 @@ function Mailbox({ accountEmail }: { accountEmail: string | null }) {
     setOpenId(null);
   }, [folder, search]);
 
-  const rows = listQuery.data?.ok ? listQuery.data.data.rows : [];
+  const pages = listQuery.data?.pages ?? [];
+  const firstPage = pages[0];
+  const rows = useMemo(() => {
+    const seen = new Set<string>();
+    const out: NonNullable<Extract<(typeof pages)[number], { ok: true }>["data"]["rows"]> = [];
+    for (const p of pages) {
+      if (!p.ok) continue;
+      for (const r of p.data.rows) {
+        if (seen.has(r.id)) continue;
+        seen.add(r.id);
+        out.push(r);
+      }
+    }
+    return out;
+  }, [pages]);
+
+  // Keep loading older mail as the student scrolls to the bottom.
+  const sentinelRef = useRef<HTMLLIElement | null>(null);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting && listQuery.hasNextPage && !listQuery.isFetchingNextPage) {
+        void listQuery.fetchNextPage();
+      }
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [listQuery, rows.length]);
+
+  function refreshMailbox() {
+    qc.removeQueries({ queryKey: ["mail-message"] });
+    void qc.resetQueries({ queryKey: ["mail-list"] });
+    void qc.invalidateQueries({ queryKey: ["mail-status"] });
+  }
   const needsReconnect =
     (listQuery.data && !listQuery.data.ok && listQuery.data.reason === "reconnect") ||
     (messageQuery.data && !messageQuery.data.ok && messageQuery.data.reason === "reconnect");
