@@ -134,7 +134,7 @@ function clearRelay() {
  * the direct link between the two windows, so the result also travels through
  * shared browser storage and a same-origin channel.
  */
-function waitForOAuth(popup: Window) {
+function waitForOAuth(cancel: AbortSignal) {
   clearRelay();
   return new Promise<string | null>((resolve, reject) => {
     let poll: number | undefined;
@@ -144,6 +144,7 @@ function waitForOAuth(popup: Window) {
 
     const cleanup = () => {
       window.removeEventListener("message", onMessage);
+      cancel.removeEventListener("abort", onCancel);
       if (poll !== undefined) window.clearInterval(poll);
       if (timeout !== undefined) window.clearTimeout(timeout);
       channel?.close();
@@ -176,6 +177,9 @@ function waitForOAuth(popup: Window) {
     };
     window.addEventListener("message", onMessage);
 
+    const onCancel = () => fail("Connecting your email was cancelled.");
+    cancel.addEventListener("abort", onCancel);
+
     try {
       channel = new BroadcastChannel(RELAY_CHANNEL);
       channel.onmessage = (event) => {
@@ -186,7 +190,8 @@ function waitForOAuth(popup: Window) {
       channel = null;
     }
 
-    // Storage fallback: works even when Google's page severs the window link.
+    // Storage fallback: works even when Google's page severs the window link,
+    // which is what browsers do on the way through Google sign-in.
     poll = window.setInterval(() => {
       let stored: string | null = null;
       try {
@@ -194,23 +199,12 @@ function waitForOAuth(popup: Window) {
       } catch {
         stored = null;
       }
-      if (stored) {
-        try {
-          const data = readRelay(JSON.parse(stored));
-          if (data) {
-            settle(data);
-            return;
-          }
-        } catch {
-          /* ignore malformed value */
-        }
-      }
-      // Only treat the window as abandoned when we can actually read its state;
-      // browsers hide this while it sits on Google's sign-in page.
+      if (!stored) return;
       try {
-        if (popup.closed) fail("The sign-in window closed before finishing.");
+        const data = readRelay(JSON.parse(stored));
+        if (data) settle(data);
       } catch {
-        /* state not readable — keep waiting */
+        /* ignore malformed value */
       }
     }, 600);
 
