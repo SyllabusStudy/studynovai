@@ -48,11 +48,4 @@ export function savingsPercent(pricing: PricingSettings) {
   return Math.round(((comparePriceUsd - priceUsd) / comparePriceUsd) * 100);
 }
 
-/** Live pricing straight from the database so price edits show up immediately. */
-export async function fetchPricing(): Promise<PricingSettings> {
-  const { data } = await supabase
-    .from("pricing_settings")
-    .select("price_usd, compare_price_usd, sale_active, sale_label, sale_note")
-    .maybeSingle();
-  return mapPricing(data as PricingRow | null);
-}
+export const PRICING_COLUMNS = "price_usd, compare_price_usd, sale_active, sale_label, sale_note";
