@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authenticated/upgrade")({
       { title: "Upgrade to Pro — StudyNova" },
       {
         name: "description",
-        content: `Get unlimited AI assignment help and SnapQuick scans for $${PRO_PRICE_USD}/month.`,
+        content: "Get unlimited AI assignment help and SnapQuick scans with StudyNova Pro.",
       },
       { property: "og:title", content: "Upgrade to StudyNova Pro" },
       { property: "og:description", content: "Unlimited AI assignment help and photo scans." },
