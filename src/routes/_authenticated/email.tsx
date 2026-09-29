@@ -253,6 +253,7 @@ function ConnectScreen({
   const start = useServerFn(startMailConnect);
   const complete = useServerFn(completeMailConnect);
   const [busy, setBusy] = useState(false);
+  const cancelRef = useRef<AbortController | null>(null);
 
   async function connect() {
     setBusy(true);
@@ -262,11 +263,13 @@ function ConnectScreen({
       toast.error("Allow pop-ups for StudyNova, then try again.");
       return;
     }
+    const controller = new AbortController();
+    cancelRef.current = controller;
     try {
       const { authorizationUrl } = await start({
         data: { origin: window.location.origin },
       });
-      const completion = waitForOAuth(popup);
+      const completion = waitForOAuth(controller.signal);
       popup.location.href = authorizationUrl;
       const code = await completion;
       if (!code) throw new Error("We couldn't finish connecting your email. Please try again.");
@@ -281,6 +284,7 @@ function ConnectScreen({
       }
       toast.error(error instanceof Error ? error.message : "We couldn't connect your email.");
     } finally {
+      cancelRef.current = null;
       setBusy(false);
     }
   }
@@ -306,8 +310,27 @@ function ConnectScreen({
           </p>
           <Button className="mt-6 w-full gap-2" onClick={connect} disabled={busy}>
             {busy ? <Loader2 className="size-4 animate-spin" /> : <Mail className="size-4" />}
-            {reconnect ? "Reconnect Gmail" : "Connect with Google"}
+            {busy
+              ? "Waiting for Google…"
+              : reconnect
+                ? "Reconnect Gmail"
+                : "Connect with Google"}
           </Button>
+          {busy ? (
+            <>
+              <p className="mt-3 text-xs text-muted-foreground">
+                Finish signing in on the Google window. This page updates on its own.
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mt-1"
+                onClick={() => cancelRef.current?.abort()}
+              >
+                Cancel
+              </Button>
+            </>
+          ) : null}
           <div className="mt-6 space-y-2 text-left">
             <p className="text-xs font-bold uppercase text-muted-foreground">Other providers</p>
             {MAIL_PROVIDERS.filter((p) => !p.available).map((p) => (
