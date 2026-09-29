@@ -32,7 +32,7 @@ export const getAnnouncementAudience = createServerFn({ method: "GET" })
     return { count: recipients.length, history };
   });
 
-const sendInput = (input: { draft: Draft; prompt: string; testTo?: string }) => {
+const sendInput = (input: { draft: Draft; prompt: string; testTo?: string | undefined }) => {
   if (!input.draft?.subject || !input.draft.paragraphs?.length) throw new Error("Write the email first.");
   if (input.testTo && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(input.testTo)) throw new Error("That test email address looks wrong.");
   return input;

@@ -4,6 +4,6 @@ export type Draft = {
   preview: string;
   heading: string;
   paragraphs: string[];
-  ctaLabel?: string;
-  ctaUrl?: string;
+  ctaLabel?: string | undefined;
+  ctaUrl?: string | undefined;
 };
