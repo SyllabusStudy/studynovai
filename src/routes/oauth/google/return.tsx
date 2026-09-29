@@ -18,34 +18,49 @@ export const Route = createFileRoute("/oauth/google/return")({
   component: OAuthReturn,
 });
 
+/** Same-origin hand-back channel. Google's sign-in page can cut the link
+ *  between this window and the StudyNova page that opened it, so the result is
+ *  also left in shared browser storage for that page to pick up. */
+const RELAY_KEY = "studynova.mailOAuthResult";
+const RELAY_CHANNEL = "studynova-mail-oauth";
+
 function OAuthReturn() {
   const [message, setMessage] = useState("Finishing your email connection…");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const opener = window.opener as Window | null;
 
-    const notify = (
+    const handOff = (
       type: "appUserConnectorOAuthComplete" | "appUserConnectorOAuthFailed",
       code?: string,
+      closeAfter = true,
     ) => {
-      if (!opener) {
-        setMessage(
-          type === "appUserConnectorOAuthComplete"
-            ? "You're signed in. You can close this window and return to StudyNova."
-            : "That didn't finish. You can close this window and try again.",
-        );
-        return;
+      const payload = {
+        type,
+        connectorId: "google_mail",
+        code: code ?? null,
+        at: Date.now(),
+      };
+
+      try {
+        window.localStorage.setItem(RELAY_KEY, JSON.stringify(payload));
+      } catch {
+        /* storage unavailable */
       }
-      // The opener page runs on this same origin, so a targeted post is safe
-      // and the opener can verify where it came from.
-      opener.postMessage(
-        { type, connectorId: "google_mail", code: code ?? null },
-        window.location.origin,
-      );
-      // Give the browser a beat to deliver the message before this window goes
-      // away — closing in the same tick can drop it.
-      window.setTimeout(() => window.close(), 400);
+      try {
+        const channel = new BroadcastChannel(RELAY_CHANNEL);
+        channel.postMessage(payload);
+        channel.close();
+      } catch {
+        /* channel unsupported */
+      }
+      try {
+        window.opener?.postMessage(payload, window.location.origin);
+      } catch {
+        /* opener link severed */
+      }
+
+      if (closeAfter) window.setTimeout(() => window.close(), 600);
     };
 
     if (params.get("success") !== "true") {
@@ -55,29 +70,29 @@ function OAuthReturn() {
           ? "Google didn't allow that sign-in. You can close this window and try again."
           : "That didn't finish. You can close this window and try again.",
       );
-      notify("appUserConnectorOAuthFailed");
+      handOff("appUserConnectorOAuthFailed", undefined, false);
       return;
     }
 
     const connector = params.get("connector_id");
     if (connector && connector !== "google_mail") {
       setMessage("That sign-in didn't match your inbox. You can close this window.");
-      notify("appUserConnectorOAuthFailed");
+      handOff("appUserConnectorOAuthFailed", undefined, false);
       return;
     }
 
     const code = params.get("code");
     if (!code) {
       if (params.get("offline_access_allowed") === "false") {
-        notify("appUserConnectorOAuthComplete");
+        handOff("appUserConnectorOAuthComplete");
         return;
       }
       setMessage("That didn't finish. You can close this window and try again.");
-      notify("appUserConnectorOAuthFailed");
+      handOff("appUserConnectorOAuthFailed", undefined, false);
       return;
     }
     setMessage("All set — bringing you back to StudyNova…");
-    notify("appUserConnectorOAuthComplete", code);
+    handOff("appUserConnectorOAuthComplete", code);
   }, []);
 
   return (
