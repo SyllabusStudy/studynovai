@@ -175,6 +175,97 @@ function AdminPage() {
       )}
       </Tabs>
       )}
+      <ManageStudentDialog student={managing} onClose={() => setManaging(null)} />
     </div>
+  );
+}
+
+function ManageStudentDialog({
+  student,
+  onClose,
+}: {
+  student: { id: string; name: string | null; email: string | null } | null;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const loadClasses = useServerFn(getUserClasses);
+  const removeKey = useServerFn(removeUserAiKey);
+  const kick = useServerFn(kickUser);
+  const [busy, setBusy] = useState<"key" | "kick" | null>(null);
+
+  const { data: classes, isLoading } = useQuery({
+    queryKey: ["admin-user-classes", student?.id],
+    enabled: !!student,
+    queryFn: () => loadClasses({ data: { userId: student!.id } }),
+  });
+
+  async function handleRemoveKey() {
+    if (!student) return;
+    setBusy("key");
+    try {
+      await removeKey({ data: { userId: student.id } });
+      toast.success("AI key removed — they'll need to add a new one.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not remove the key.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleKick() {
+    if (!student) return;
+    if (!window.confirm(`Permanently delete ${student.email ?? "this student"}'s account and all their data? This can't be undone.`)) return;
+    setBusy("kick");
+    try {
+      await kick({ data: { userId: student.id } });
+      toast.success("Account removed.");
+      await qc.invalidateQueries({ queryKey: ["admin-stats"] });
+      onClose();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not remove the account.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <Dialog open={!!student} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{student?.name ?? "Student"}</DialogTitle>
+          <DialogDescription>{student?.email}</DialogDescription>
+        </DialogHeader>
+
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Their classes</p>
+          {isLoading ? (
+            <Loader2 className="size-4 animate-spin text-primary" />
+          ) : classes && classes.length > 0 ? (
+            <ul className="max-h-48 space-y-1.5 overflow-y-auto">
+              {classes.map((c) => (
+                <li key={c.id} className="rounded-lg border border-border px-3 py-2 text-sm">
+                  <span className="font-medium">{c.class_name}</span>
+                  {c.course_code ? <span className="text-muted-foreground"> · {c.course_code}</span> : null}
+                  {c.semester ? <span className="text-muted-foreground"> · {c.semester}</span> : null}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">No classes yet.</p>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-2 border-t border-border pt-4">
+          <Button variant="outline" size="sm" disabled={busy !== null} onClick={handleRemoveKey}>
+            {busy === "key" ? <Loader2 className="size-4 animate-spin" /> : <KeyRound className="size-4" />}
+            Remove their AI key
+          </Button>
+          <Button variant="destructive" size="sm" disabled={busy !== null} onClick={handleKick}>
+            {busy === "kick" ? <Loader2 className="size-4 animate-spin" /> : <UserX className="size-4" />}
+            Kick out (delete account)
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
