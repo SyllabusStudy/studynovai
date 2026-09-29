@@ -124,7 +124,7 @@ export async function createPromoCode(
         name: input.label || `${percent}% off StudyNova Pro`,
       });
       const promotion = await stripe.promotionCodes.create({
-        coupon: coupon.id,
+        promotion: { type: "coupon", coupon: coupon.id },
         code,
         ...(input.maxRedemptions ? { max_redemptions: input.maxRedemptions } : {}),
         ...(input.expiresAt ? { expires_at: Math.floor(new Date(input.expiresAt).getTime() / 1000) } : {}),
