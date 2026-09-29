@@ -169,13 +169,27 @@ function UpgradePage() {
 
           <div className="surface-card space-y-4 border-primary/40 p-5 ring-1 ring-primary/20">
             <div>
+              {pricing.saleActive ? (
+                <span className="mb-2 inline-block rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                  {pricing.saleLabel}
+                  {savings ? ` · save ${savings}%` : ""}
+                </span>
+              ) : null}
               <p className="flex items-center gap-2 text-sm font-semibold">
                 <Crown className="size-4 text-primary" /> Pro
               </p>
-              <p className="mt-1 text-2xl font-bold">
-                ${PRO_PRICE_USD}
+              <p className="mt-1 flex flex-wrap items-baseline gap-2">
+                {pricing.saleActive && pricing.comparePriceUsd ? (
+                  <span className="text-base text-muted-foreground line-through">
+                    {money(pricing.comparePriceUsd)}
+                  </span>
+                ) : null}
+                <span className="text-2xl font-bold">{money(pricing.priceUsd)}</span>
                 <span className="text-sm font-normal text-muted-foreground">/month</span>
               </p>
+              {pricing.saleNote ? (
+                <p className="mt-1 text-xs text-muted-foreground">{pricing.saleNote}</p>
+              ) : null}
             </div>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <Item>Everything in Free, plus:</Item>
