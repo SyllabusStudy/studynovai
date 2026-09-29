@@ -79,6 +79,41 @@ async function toDataUrl(file: File): Promise<string> {
   }
 }
 
+/** Stacks all rendered PDF pages into one tall image so the AI reads every page. */
+async function stitchPages(pages: Array<{ dataUrl: string; width: number; height: number }>): Promise<string> {
+  const imgs = await Promise.all(
+    pages.map(
+      (p) =>
+        new Promise<HTMLImageElement>((resolve, reject) => {
+          const el = new Image();
+          el.onload = () => resolve(el);
+          el.onerror = () => reject(new Error("bad page image"));
+          el.src = p.dataUrl;
+        }),
+    ),
+  );
+  const width = Math.min(MAX_EDGE, Math.max(...imgs.map((i) => i.width)));
+  const gap = 8;
+  const heights = imgs.map((i) => Math.round((i.height * width) / i.width));
+  const totalHeight = heights.reduce((a, b) => a + b, 0) + gap * (imgs.length - 1);
+  // Keep the stitched image within a sane size so it stays under the upload limit.
+  const shrink = Math.min(1, 9000 / totalHeight);
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(width * shrink);
+  canvas.height = Math.round(totalHeight * shrink);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return pages[0]!.dataUrl;
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  let y = 0;
+  imgs.forEach((img, idx) => {
+    const h = Math.round(heights[idx]! * shrink);
+    ctx.drawImage(img, 0, y, canvas.width, h);
+    y += h + Math.round(gap * shrink);
+  });
+  return canvas.toDataURL("image/jpeg", 0.82);
+}
+
 type Msg = { role: "user" | "assistant"; content: string; image?: string | null };
 
 const MODES: { id: SnapMode; label: string; hint: string }[] = [
@@ -255,10 +290,9 @@ function SnapQuickPage() {
       let url: string;
       if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
         const { renderPdfPages } = await import("@/lib/pdf-render");
-        const pages = await renderPdfPages(file, 1);
-        const first = pages[0];
-        if (!first) throw new Error("That PDF has no readable pages.");
-        url = first.dataUrl;
+        const pages = await renderPdfPages(file, 12);
+        if (!pages.length) throw new Error("That PDF has no readable pages.");
+        url = pages.length === 1 ? pages[0]!.dataUrl : await stitchPages(pages);
       } else {
         url = await toDataUrl(file);
       }
