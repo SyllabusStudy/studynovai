@@ -21,7 +21,7 @@ import { useTheme } from "@/lib/theme";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   validateSearch: (search: Record<string, unknown>): { setup?: string } =>
-    typeof search.setup === "string" ? { setup: search.setup } : {},
+    typeof search["setup"] === "string" ? { setup: search["setup"] } : {},
   head: () => ({
     meta: [
       { title: "Settings — StudyNova" },
