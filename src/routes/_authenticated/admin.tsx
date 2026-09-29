@@ -36,6 +36,7 @@ function AdminPage() {
   const { user } = useAuth();
   const load = useServerFn(getAdminStats);
   const check = useServerFn(checkAdmin);
+  const [managing, setManaging] = useState<{ id: string; name: string | null; email: string | null } | null>(null);
   const { data: gate, isLoading: gating } = useQuery({
     queryKey: ["is-admin", user?.id],
     enabled: !!user,
