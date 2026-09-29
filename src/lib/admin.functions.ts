@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 
 /** Tells the UI whether to show the owner dashboard link. */
 export const checkAdmin = createServerFn({ method: "GET" })
@@ -19,7 +21,7 @@ export const getAdminStats = createServerFn({ method: "GET" })
     return loadAdminStats();
   });
 
-async function requireAdmin(supabase: never, userId: string) {
+async function requireAdmin(supabase: SupabaseClient<Database>, userId: string) {
   const { isAdmin } = await import("./admin.server");
   if (!(await isAdmin(supabase, userId))) {
     throw new Error("This page is for the site owner only.");
