@@ -47,6 +47,8 @@ function AiCheckerPage() {
   const [openSection, setOpenSection] = useState<number | null>(null);
   // One revision per check — avoids a rewrite → detect → rewrite loop.
   const [improved, setImproved] = useState(false);
+  const [humanized, setHumanized] = useState<string | null>(null);
+  const [original, setOriginal] = useState<string | null>(null);
 
   useEffect(() => {
     loadBilling()
