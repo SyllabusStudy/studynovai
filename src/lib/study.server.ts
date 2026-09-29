@@ -1444,7 +1444,13 @@ box is the region on the image, as fractions of the width/height from the top-le
 /* ------------------------------------------------------------------ ai text checker */
 
 export type { AiCheckResult } from "./ai-detect";
-import { combine as combineAiEvidence, splitSentences, type AiCheckResult as DetectResult } from "./ai-detect";
+import {
+  combine as combineAiEvidence,
+  splitSentences,
+  textSimilarity,
+  REWRITE_SIMILARITY_LIMIT,
+  type AiCheckResult as DetectResult,
+} from "./ai-detect";
 export { splitSentences };
 
 const UNABLE = "Unable to analyze this text right now. Please try again in a moment.";
