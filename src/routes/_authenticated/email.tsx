@@ -284,8 +284,6 @@ function OutlookView({ onUseGoogle }: { onUseGoogle: () => void }) {
   }, []);
 
   function openOutlook() {
-    const w = Math.min(1200, window.screen.availWidth - 40);
-    const h = Math.min(900, window.screen.availHeight - 60);
     const existing = winRef.current;
     if (existing && !existing.closed) {
       existing.focus();
@@ -294,8 +292,9 @@ function OutlookView({ onUseGoogle }: { onUseGoogle: () => void }) {
     const win = window.open(
       OUTLOOK_URL,
       "studynova-outlook",
-      `width=${w},height=${h},left=20,top=20,menubar=no,toolbar=no,location=yes,status=no`,
+      "width=600,height=720,menubar=no,toolbar=no,location=yes,status=no",
     );
+
     if (!win) {
       toast.error("Allow pop-ups for StudyNova, then try again.");
       return;
