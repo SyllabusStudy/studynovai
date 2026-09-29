@@ -1,14 +1,14 @@
 export const PRO_PRICE_USD = 5.99;
 
 /** Free-plan quotas reset on a rolling window instead of a full calendar day. */
-export const FREE_WINDOW_HOURS = 5;
+export const FREE_WINDOW_HOURS = 4;
 
 export const FREE_LIMITS = {
   /** -1 = unlimited: classes are free for everyone. */
   classes: -1,
-  assignment_help: 2,
-  snap: 4,
-  video: 1,
+  assignment_help: 4,
+  snap: 5,
+  video: 2,
 } as const;
 
 export type UsageKind = "assignment_help" | "snap" | "video";
