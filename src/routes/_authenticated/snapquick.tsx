@@ -223,10 +223,10 @@ function SnapQuickPage() {
       if (!pending.history.length) void recordStudyActivity("snapquick");
       const result = await run({ data: pending.request });
       if (result.error || !result.reply) {
-        if (result.error === AI_KEY_HELP) {
+        if (result.error === AI_KEY_HELP || redirectForKey(result.error)) {
           setInput(pending.request.message);
           setMessages(pending.history);
-          toast.error(result.error);
+          if (result.error === AI_KEY_HELP) redirectForKey(result.error);
           return;
         }
         setFailed(pending);
