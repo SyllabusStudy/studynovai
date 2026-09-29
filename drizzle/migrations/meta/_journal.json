@@ -99,6 +99,13 @@
       "when": 1790660785197,
       "tag": "0013_grant_admin_sawaqeddavid91",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1790707488763,
+      "tag": "0014_pro_trial_new_accounts",
+      "breakpoints": true
     }
   ]
 }
