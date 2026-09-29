@@ -120,6 +120,9 @@ function AdminPage() {
                 <p className="mt-1 text-xs text-muted-foreground">
                   {s.snaps} scans · {s.helps} AI helps · {s.classes} classes
                 </p>
+                <Button variant="outline" size="sm" className="mt-3" onClick={() => setManaging(s)}>
+                  Manage
+                </Button>
               </div>
             ))}
           </div>
