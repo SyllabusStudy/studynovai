@@ -179,3 +179,23 @@ describe("combined pipeline", () => {
     expect(r.reasons.some((x) => /stock phrasing|predictable transitions/i.test(x))).toBe(false);
   });
 });
+
+describe("textSimilarity", () => {
+  it("treats identical text as unchanged", () => {
+    const s = "The results plays a crucial role in the outcome.";
+    expect(textSimilarity(s, s)).toBe(1);
+    expect(textSimilarity(s, s) >= REWRITE_SIMILARITY_LIMIT).toBe(true);
+  });
+
+  it("treats a one-word or punctuation tweak as unchanged", () => {
+    const a = "Moreover, technology plays a crucial role in modern education today.";
+    const b = "Moreover technology plays a crucial role in modern education today!";
+    expect(textSimilarity(a, b) >= REWRITE_SIMILARITY_LIMIT).toBe(true);
+  });
+
+  it("accepts a genuinely restructured rewrite", () => {
+    const a = "Moreover, technology plays a crucial role in modern education today.";
+    const b = "Schools lean on tech for almost everything now, and it shows.";
+    expect(textSimilarity(a, b) < REWRITE_SIMILARITY_LIMIT).toBe(true);
+  });
+});
