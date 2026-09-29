@@ -215,9 +215,9 @@ export function AiKeyCard() {
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="ai-key">API key</Label>
+        <Label htmlFor="ai-key-input">API key</Label>
         <Input
-          id="ai-key"
+          id="ai-key-input"
           type="password"
           autoComplete="off"
           value={apiKey}
