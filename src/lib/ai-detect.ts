@@ -306,6 +306,17 @@ export function textSimilarity(a: string, b: string): number {
 /** A rewrite this close to the original is effectively the original text. */
 export const REWRITE_SIMILARITY_LIMIT = 0.82;
 
+/** Reject echoes and light synonym swaps while allowing facts and terminology to remain. */
+export function isMeaningfullyRewritten(original: string, candidate: string): boolean {
+  const before = wordsOf(original);
+  const after = wordsOf(candidate);
+  if (!before.length || !after.length) return false;
+  const lengthRatio = after.length / before.length;
+  if (lengthRatio < 0.62 || lengthRatio > 1.55) return false;
+  const limit = before.length >= 80 ? 0.76 : REWRITE_SIMILARITY_LIMIT;
+  return textSimilarity(original, candidate) < limit;
+}
+
 export type ModelJudgement = {
   /** sentence index → 0-100 AI probability */
   probs: Record<number, number>;
