@@ -32,7 +32,7 @@ export const getUserClasses = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { userId: string }) => input)
   .handler(async ({ data, context }) => {
-    await requireAdmin(context.supabase as never, context.userId);
+    await requireAdmin(context.supabase, context.userId);
     const { loadUserClasses } = await import("./admin.server");
     return loadUserClasses(data.userId);
   });
@@ -41,7 +41,7 @@ export const removeUserAiKey = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { userId: string }) => input)
   .handler(async ({ data, context }) => {
-    await requireAdmin(context.supabase as never, context.userId);
+    await requireAdmin(context.supabase, context.userId);
     if (data.userId === context.userId) throw new Error("You can't remove your own key here.");
     const { removeUserAiKeys } = await import("./admin.server");
     return removeUserAiKeys(data.userId);
@@ -51,7 +51,7 @@ export const kickUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { userId: string }) => input)
   .handler(async ({ data, context }) => {
-    await requireAdmin(context.supabase as never, context.userId);
+    await requireAdmin(context.supabase, context.userId);
     if (data.userId === context.userId) throw new Error("You can't remove your own account.");
     const { deleteUserAccount } = await import("./admin.server");
     return deleteUserAccount(data.userId);
