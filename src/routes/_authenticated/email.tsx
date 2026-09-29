@@ -103,45 +103,121 @@ function shortDate(raw: string) {
     : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+const RELAY_KEY = "studynova.mailOAuthResult";
+const RELAY_CHANNEL = "studynova-mail-oauth";
+
+type RelayPayload = { type?: string; connectorId?: string; code?: unknown; at?: number };
+
+function readRelay(raw: unknown): RelayPayload | null {
+  const data = raw as RelayPayload | null;
+  if (!data || data.connectorId !== "google_mail") return null;
+  if (
+    data.type !== "appUserConnectorOAuthComplete" &&
+    data.type !== "appUserConnectorOAuthFailed"
+  )
+    return null;
+  // Ignore anything left over from an earlier attempt.
+  if (typeof data.at === "number" && Date.now() - data.at > 10 * 60 * 1000) return null;
+  return data;
+}
+
+function clearRelay() {
+  try {
+    window.localStorage.removeItem(RELAY_KEY);
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+/**
+ * Waits for the Google sign-in window to report back. Google's own page can cut
+ * the direct link between the two windows, so the result also travels through
+ * shared browser storage and a same-origin channel.
+ */
 function waitForOAuth(popup: Window) {
+  clearRelay();
   return new Promise<string | null>((resolve, reject) => {
     let poll: number | undefined;
+    let timeout: number | undefined;
+    let channel: BroadcastChannel | null = null;
+    let settled = false;
+
     const cleanup = () => {
       window.removeEventListener("message", onMessage);
       if (poll !== undefined) window.clearInterval(poll);
+      if (timeout !== undefined) window.clearTimeout(timeout);
+      channel?.close();
     };
-    const onMessage = (event: MessageEvent) => {
-      const type = (event.data as { type?: string } | null)?.type;
-      if (
-        event.origin !== window.location.origin ||
-        event.source !== popup ||
-        (event.data as { connectorId?: string } | null)?.connectorId !== "google_mail" ||
-        (type !== "appUserConnectorOAuthComplete" && type !== "appUserConnectorOAuthFailed")
-      )
-        return;
+
+    const settle = (data: RelayPayload) => {
+      if (settled) return;
+      settled = true;
       cleanup();
-      if (type === "appUserConnectorOAuthComplete") {
-        const code = (event.data as { code?: unknown }).code;
-        resolve(typeof code === "string" ? code : null);
+      clearRelay();
+      if (data.type === "appUserConnectorOAuthComplete") {
+        resolve(typeof data.code === "string" ? data.code : null);
         return;
       }
-      popup.close();
       reject(new Error("We couldn't finish connecting your email."));
     };
-    window.addEventListener("message", onMessage);
-    // The window can read as "closed" for an instant while it moves between
-    // Google and StudyNova, so only give up after it stays closed.
-    let closedTicks = 0;
-    poll = window.setInterval(() => {
-      if (!popup.closed) {
-        closedTicks = 0;
-        return;
-      }
-      closedTicks += 1;
-      if (closedTicks < 3) return;
+
+    const fail = (message: string) => {
+      if (settled) return;
+      settled = true;
       cleanup();
-      reject(new Error("The sign-in window closed before finishing."));
-    }, 500);
+      clearRelay();
+      reject(new Error(message));
+    };
+
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      const data = readRelay(event.data);
+      if (data) settle(data);
+    };
+    window.addEventListener("message", onMessage);
+
+    try {
+      channel = new BroadcastChannel(RELAY_CHANNEL);
+      channel.onmessage = (event) => {
+        const data = readRelay(event.data);
+        if (data) settle(data);
+      };
+    } catch {
+      channel = null;
+    }
+
+    // Storage fallback: works even when Google's page severs the window link.
+    poll = window.setInterval(() => {
+      let stored: string | null = null;
+      try {
+        stored = window.localStorage.getItem(RELAY_KEY);
+      } catch {
+        stored = null;
+      }
+      if (stored) {
+        try {
+          const data = readRelay(JSON.parse(stored));
+          if (data) {
+            settle(data);
+            return;
+          }
+        } catch {
+          /* ignore malformed value */
+        }
+      }
+      // Only treat the window as abandoned when we can actually read its state;
+      // browsers hide this while it sits on Google's sign-in page.
+      try {
+        if (popup.closed) fail("The sign-in window closed before finishing.");
+      } catch {
+        /* state not readable — keep waiting */
+      }
+    }, 600);
+
+    timeout = window.setTimeout(
+      () => fail("That took too long. Please try connecting your email again."),
+      5 * 60 * 1000,
+    );
   });
 }
 
