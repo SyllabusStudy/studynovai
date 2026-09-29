@@ -25,6 +25,7 @@ import {
 import { importVideo } from "@/lib/video.functions";
 import { useAuth } from "@/lib/auth";
 import { classLabel, formatDate, useClasses, useVideoNotes } from "@/lib/data";
+import { AiKeySetupBanner, useAiKeyRedirect } from "@/lib/ai-key-gate";
 
 export const Route = createFileRoute("/_authenticated/quickvideo/")({
   head: () => ({
@@ -69,6 +70,7 @@ function QuickVideoPage() {
   const [classId, setClassId] = useClassPicker("none");
   const [busy, setBusy] = useState(false);
   const run = useServerFn(importVideo);
+  const redirectForKey = useAiKeyRedirect();
 
   async function submit(payload: { url?: string; dataUrl?: string; fileName?: string }) {
     setBusy(true);
@@ -87,7 +89,8 @@ function QuickVideoPage() {
       setUrl("");
       void navigate({ to: "/quickvideo/$noteId", params: { noteId: result.id } });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "QuickVideo could not read that video");
+      const msg = e instanceof Error ? e.message : "QuickVideo could not read that video";
+      if (!redirectForKey(msg)) toast.error(msg);
     } finally {
       setBusy(false);
     }
@@ -121,6 +124,7 @@ function QuickVideoPage() {
         description="Paste a video link and get study notes in seconds."
       />
       <ClassActionBar />
+      <AiKeySetupBanner />
 
       <Hint id="quickvideo-link" point="down" className="mb-4">
         Paste a YouTube lecture link here — StudyNova writes the notes, then you can ask it

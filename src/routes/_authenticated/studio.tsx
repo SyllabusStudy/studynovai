@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useServerFn } from "@tanstack/react-start";
 import { generateAiImage } from "@/lib/ai-image.functions";
+import { AiKeySetupBanner, useAiKeyRedirect } from "@/lib/ai-key-gate";
 
 export const Route = createFileRoute("/_authenticated/studio")({
   head: () => ({
@@ -40,6 +41,7 @@ const IDEAS = [
 
 function StudioPage() {
   const makeImage = useServerFn(generateAiImage);
+  const redirectForKey = useAiKeyRedirect();
   const [prompt, setPrompt] = useState("");
   const [source, setSource] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
@@ -91,7 +93,8 @@ function StudioPage() {
       const { image } = await makeImage({ data: { prompt, imageDataUrl: source } });
       setResult(image);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not make that image");
+      const msg = e instanceof Error ? e.message : "Could not make that image";
+      if (!redirectForKey(msg)) toast.error(msg);
     } finally {
       setBusy(false);
     }
@@ -103,6 +106,7 @@ function StudioPage() {
         title="AI Image Studio"
         description="Make a study diagram from a description, or upload an image or PDF page and tell the AI how to change it."
       />
+      <AiKeySetupBanner />
 
       <Hint id="studio-intro" point="down" className="mb-4">
         Describe a diagram to create one from scratch — or upload a photo or PDF first and the AI works

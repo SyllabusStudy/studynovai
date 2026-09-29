@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { snapTutor } from "@/lib/ai.functions";
 import { AI_KEY_HELP } from "@/lib/ai-messages";
+import { AiKeySetupBanner, useAiKeyRedirect } from "@/lib/ai-key-gate";
 type SnapMode = "learn" | "quick" | "tutor" | "practice" | "check" | "method";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -114,6 +115,7 @@ function SnapQuickPage() {
   } | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const run = useServerFn(snapTutor);
+  const redirectForKey = useAiKeyRedirect();
   const qc = useQueryClient();
   const [convId, setConvId] = useState<string | null>(null);
   const { data: saved = [] } = useQuery({
@@ -221,10 +223,10 @@ function SnapQuickPage() {
       if (!pending.history.length) void recordStudyActivity("snapquick");
       const result = await run({ data: pending.request });
       if (result.error || !result.reply) {
-        if (result.error === AI_KEY_HELP) {
+        if (result.error === AI_KEY_HELP || redirectForKey(result.error)) {
           setInput(pending.request.message);
           setMessages(pending.history);
-          toast.error(result.error);
+          if (result.error === AI_KEY_HELP) redirectForKey(result.error);
           return;
         }
         setFailed(pending);
@@ -284,6 +286,7 @@ function SnapQuickPage() {
   return (
     <div>
       <PageHeader title="Stuck on a problem?" description="Snap it or type it. Learn every step." />
+      <AiKeySetupBanner />
       <ClassActionBar />
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,20rem)_1fr]">

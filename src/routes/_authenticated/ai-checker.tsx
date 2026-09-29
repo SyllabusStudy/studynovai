@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { AiKeySetupBanner, useAiKeyRedirect } from "@/lib/ai-key-gate";
 
 export const Route = createFileRoute("/_authenticated/ai-checker")({
   head: () => ({
@@ -39,6 +40,7 @@ function AiCheckerPage() {
   const run = useServerFn(checkAiText);
   const humanize = useServerFn(humanizeAiText);
   const loadBilling = useServerFn(getBilling);
+  const redirectForKey = useAiKeyRedirect();
   const [pro, setPro] = useState<boolean | null>(null);
   const [humanizing, setHumanizing] = useState(false);
   const [rewritten, setRewritten] = useState<Set<number>>(new Set());
@@ -65,7 +67,7 @@ function AiCheckerPage() {
         },
       });
       if (res.error || !res.rewrites) {
-        toast.error(res.error ?? "Couldn't rewrite that just now.");
+        if (!redirectForKey(res.error)) toast.error(res.error ?? "Couldn't rewrite that just now.");
         return;
       }
       const map = res.rewrites as Record<string, string>;
@@ -106,10 +108,12 @@ function AiCheckerPage() {
     setOpenSection(null);
     try {
       const res = await run({ data: { text: text.slice(0, 20000) } });
-      if (res.error) toast.error(res.error);
-      else setResult(res.result);
+      if (res.error) {
+        if (!redirectForKey(res.error)) toast.error(res.error);
+      } else setResult(res.result);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "The checker could not run.");
+      const msg = e instanceof Error ? e.message : "The checker could not run.";
+      if (!redirectForKey(msg)) toast.error(msg);
     } finally {
       setBusy(false);
     }
@@ -119,6 +123,7 @@ function AiCheckerPage() {
   return (
     <div className="space-y-5">
       <PageHeader title="AI Text Checker" description="Paste your writing. See what sounds AI-written, and why." />
+      <AiKeySetupBanner />
       <section className="surface-card space-y-3 p-4 sm:p-6">
         <Textarea
           value={text}

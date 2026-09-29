@@ -28,6 +28,7 @@ import { generateQuiz } from "@/lib/ai.functions";
 import { DIFFICULTIES } from "@/lib/constants";
 import { useAuth } from "@/lib/auth";
 import { classLabel, formatDate, useClasses, useDocuments, useQuizzes } from "@/lib/data";
+import { AiKeySetupBanner, useAiKeyRedirect } from "@/lib/ai-key-gate";
 
 export const Route = createFileRoute("/_authenticated/quizzes/")({
   head: () => ({
@@ -70,6 +71,7 @@ function QuizzesPage() {
   const [types, setTypes] = useState<string[]>(["multiple_choice", "true_false"]);
   const [busy, setBusy] = useState(false);
   const run = useServerFn(generateQuiz);
+  const redirectForKey = useAiKeyRedirect();
 
   async function generate() {
     if (!classId) {
@@ -89,7 +91,8 @@ function QuizzesPage() {
       await qc.invalidateQueries({ queryKey: ["quizzes"] });
       toast.success("Quiz ready");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Generation failed");
+      const msg = e instanceof Error ? e.message : "Generation failed";
+      if (!redirectForKey(msg)) toast.error(msg);
     } finally {
       setBusy(false);
     }
@@ -105,6 +108,7 @@ function QuizzesPage() {
     <div>
       <PageHeader title="Quizzes" description="Test yourself with questions from your own notes." />
       <ClassActionBar hide={["quiz"]} />
+      <AiKeySetupBanner />
 
       <Hint id="quizzes-source" point="down" className="mb-4 hidden sm:flex">
         Pick a class and hit Make quiz. Choose chapters and question types under More options.

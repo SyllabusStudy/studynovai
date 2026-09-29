@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSearch } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { KeyRound, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -123,8 +124,26 @@ export function AiKeyCard() {
 
   const current = PROVIDERS.find((p) => p.value === provider)!;
 
+  // Arriving from an AI page ("set up your key") scrolls here and pulses the card.
+  const search = useSearch({ strict: false }) as { setup?: string };
+  const wanted = search?.setup === "ai-key";
+  const cardRef = useRef<HTMLElement | null>(null);
+  const [flash, setFlash] = useState(false);
+
+  useEffect(() => {
+    if (!wanted) return;
+    cardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setFlash(true);
+    const t = setTimeout(() => setFlash(false), 2600);
+    return () => clearTimeout(t);
+  }, [wanted]);
+
   return (
-    <section className="surface-card mb-4 space-y-4 p-5">
+    <section
+      id="ai-key"
+      ref={cardRef}
+      className={`surface-card mb-4 scroll-mt-24 space-y-4 p-5 transition-shadow ${flash ? "ring-2 ring-primary shadow-[0_0_0_6px_color-mix(in_oklab,var(--primary)_18%,transparent)]" : ""}`}
+    >
       <div className="flex items-start gap-3">
         <span className="rounded-xl bg-primary/12 p-2 text-primary">
           <KeyRound className="size-4" />
@@ -196,9 +215,9 @@ export function AiKeyCard() {
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="ai-key">API key</Label>
+        <Label htmlFor="ai-key-input">API key</Label>
         <Input
-          id="ai-key"
+          id="ai-key-input"
           type="password"
           autoComplete="off"
           value={apiKey}

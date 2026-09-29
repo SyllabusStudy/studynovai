@@ -26,6 +26,7 @@ import { generateFlashcards } from "@/lib/ai.functions";
 import { DIFFICULTIES } from "@/lib/constants";
 import { useAuth } from "@/lib/auth";
 import { classLabel, useAssignments, useClasses, useDocuments, useFlashcards } from "@/lib/data";
+import { AiKeySetupBanner, useAiKeyRedirect } from "@/lib/ai-key-gate";
 
 export const Route = createFileRoute("/_authenticated/flashcards/")({
   head: () => ({
@@ -58,6 +59,7 @@ function FlashcardsPage() {
   const [deckName, setDeckName] = useState("");
   const [busy, setBusy] = useState(false);
   const run = useServerFn(generateFlashcards);
+  const redirectForKey = useAiKeyRedirect();
 
   const openAssignments = useMemo(
     () => assignments.filter((a) => a.status !== "completed"),
@@ -101,7 +103,8 @@ function FlashcardsPage() {
       setDeckName("");
       toast.success(`New deck ready: ${result.deck}`);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Generation failed");
+      const msg = e instanceof Error ? e.message : "Generation failed";
+      if (!redirectForKey(msg)) toast.error(msg);
     } finally {
       setBusy(false);
     }
@@ -120,6 +123,7 @@ function FlashcardsPage() {
     <div>
       <PageHeader title="Flashcards" description="Make a deck from your notes, then study it." />
       <ClassActionBar hide={["flashcards"]} />
+      <AiKeySetupBanner />
 
       <Hint id="flashcards-deck" point="down" className="mb-4 hidden sm:flex">
         Pick a class and hit Make flashcards. Extra settings are under More options.

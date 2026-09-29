@@ -7,6 +7,7 @@ import { Bot, Loader2, SendHorizonal, Sparkles, User } from "lucide-react";
 import { toast } from "sonner";
 import { tutorChat } from "@/lib/ai.functions";
 import { AI_KEY_HELP } from "@/lib/ai-messages";
+import { useAiKeyRedirect } from "@/lib/ai-key-gate";
 import { Button } from "@/components/ui/button";
 import { AiRetryNotice } from "@/components/AiRetryNotice";
 import { Textarea } from "@/components/ui/textarea";
@@ -48,6 +49,7 @@ export function TutorChat({
   const { data: classes = [] } = useClasses(user?.id);
   const queryClient = useQueryClient();
   const send = useServerFn(tutorChat);
+  const redirectForKey = useAiKeyRedirect();
 
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -96,11 +98,11 @@ export function TutorChat({
       const result = await send({ data: request });
       if (result.error || !result.reply) {
         const messageText = result.error ?? "The tutor returned an empty response.";
-        if (messageText === AI_KEY_HELP) {
+        if (messageText === AI_KEY_HELP || redirectForKey(messageText)) {
           setInput(request.message);
           setMessages((prev) => prev.slice(0, -1));
           setFailed(null);
-          toast.error(messageText);
+          if (messageText === AI_KEY_HELP) redirectForKey(messageText);
           return;
         }
         setFailed({ ...request, reason: messageText });
