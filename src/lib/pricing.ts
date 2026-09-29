@@ -1,5 +1,4 @@
-/** Owner-controlled Pro pricing, readable by anyone (browser-safe). */
-import { supabase } from "@/integrations/supabase/client";
+/** Owner-controlled Pro pricing. Pure helpers, safe on both sides. */
 import { PRO_PRICE_USD } from "./plan";
 
 export type PricingSettings = {
