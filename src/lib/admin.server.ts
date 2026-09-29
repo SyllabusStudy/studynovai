@@ -117,6 +117,20 @@ export async function removeUserAiKeys(userId: string) {
   return { ok: true };
 }
 
+/** Removes promo-code Pro from a student (paid Stripe plans are left alone). */
+export async function revokePromoPro(userId: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("subscriptions")
+    .update({ plan: "free", status: "inactive", current_period_end: null })
+    .eq("user_id", userId)
+    .eq("status", "promo")
+    .select("user_id");
+  if (error) throw new Error(error.message);
+  if (!data || data.length === 0) throw new Error("This student doesn't have promo-code Pro.");
+  return { ok: true };
+}
+
 /** Permanently deletes a student account and all of their data. */
 export async function deleteUserAccount(userId: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
