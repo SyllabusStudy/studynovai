@@ -1444,7 +1444,13 @@ box is the region on the image, as fractions of the width/height from the top-le
 /* ------------------------------------------------------------------ ai text checker */
 
 export type { AiCheckResult } from "./ai-detect";
-import { combine as combineAiEvidence, splitSentences, type AiCheckResult as DetectResult } from "./ai-detect";
+import {
+  combine as combineAiEvidence,
+  splitSentences,
+  textSimilarity,
+  REWRITE_SIMILARITY_LIMIT,
+  type AiCheckResult as DetectResult,
+} from "./ai-detect";
 export { splitSentences };
 
 const UNABLE = "Unable to analyze this text right now. Please try again in a moment.";
@@ -1498,26 +1504,64 @@ export async function runAiTextCheck(input: { text: string }): Promise<DetectRes
   return combineAiEvidence(text, { probs, genre });
 }
 
-/** Rewrite the AI-sounding sentences in a natural, human voice. Returns index → new text. */
-export async function runHumanize(input: { sentences: { index: number; text: string }[]; context: string }) {
-  const list = input.sentences.map((s) => `[${s.index}] ${s.text.trim()}`).join("\n");
+const HUMANIZE_RULES =
+  'Rewrite each numbered sentence so it reads like a real person wrote it. You MUST change the wording: restructure the sentence, change where it starts, merge or split clauses, vary its length and rhythm, replace stock transitions ("Moreover", "Furthermore", "Additionally", "In conclusion", "Overall") and stock phrasing ("delve", "plays a crucial role", "it is important to note", "landscape", "multifaceted", "seamless", "foster", "underscore") with plain wording, and simplify anything stiff or overly formal. PRESERVE exactly: the meaning, every fact, number, date, name, quote and citation, important subject terminology, and the student\'s tone and language. NEVER add grammar mistakes, typos, slang the student did not use, fake personal experiences, opinions or new claims. Returning a sentence unchanged, or changed only in punctuation or a single word, is a failure. Reply with json only: {"rewrites":{"<number>":"rewritten sentence",...}}.';
+
+async function humanizePass(
+  sentences: { index: number; text: string }[],
+  context: string,
+  attempt: number,
+): Promise<Record<number, string>> {
+  const list = sentences.map((s) => `[${s.index}] ${s.text.trim()}`).join("\n");
+  const push =
+    attempt === 0
+      ? ""
+      : "\n\nThe previous attempt returned sentences that were too close to the originals. Rewrite them much more boldly this time: start each sentence differently, reorder the ideas inside it, and change the sentence length — while keeping every fact and the same meaning.";
   const raw = await callAI(
     [
-      {
-        role: "system",
-        content:
-          'Humanize a student\'s text. Rewrite each numbered sentence so it sounds natural, conversational and human-written: remove repetitive or robotic wording and stock transitions ("Moreover", "Furthermore", "In conclusion", "delve", "plays a crucial role"), vary sentence structure and length naturally, and simplify awkward or overly formal phrasing. PRESERVE: the exact meaning, every fact, number, name, quote and citation, important subject terminology, and the student\'s original tone and language. NEVER add grammar mistakes, typos, slang the student did not use, fake personal experiences or new claims. Your goal is better writing, not beating an AI detector. Rewrite every numbered sentence. Reply with json only: {"rewrites":{"<number>":"improved sentence",...}}.',
-      },
-      { role: "user", content: `Surrounding text for tone:\n${input.context.slice(0, 3000)}\n\nSentences to rewrite:\n${list}` },
+      { role: "system", content: HUMANIZE_RULES + push },
+      { role: "user", content: `Surrounding text for tone:\n${context.slice(0, 3000)}\n\nSentences to rewrite:\n${list}` },
     ],
-    { temperature: 0.4, maxTokens: Math.min(4000, 300 + list.length) },
+    { temperature: attempt === 0 ? 0.75 : 0.95, maxTokens: Math.min(4000, 300 + list.length * 3) },
   );
   const parsed = parseJsonBlock<{ rewrites?: Record<string, string> }>(raw);
   const out: Record<number, string> = {};
-  for (const s of input.sentences) {
+  for (const s of sentences) {
     const r = parsed.rewrites?.[String(s.index)];
     if (typeof r === "string" && r.trim()) out[s.index] = r.trim();
   }
-  
   return out;
+}
+
+/**
+ * Rewrite the AI-sounding sentences in a natural, human voice. Returns index → new text.
+ * Any sentence that comes back identical or nearly identical is regenerated, and a
+ * rewrite that is still too close to the original is dropped instead of returned.
+ */
+export async function runHumanize(input: { sentences: { index: number; text: string }[]; context: string }) {
+  const original = new Map(input.sentences.map((s) => [s.index, s.text.trim()]));
+  const accepted: Record<number, string> = {};
+  let pending = input.sentences;
+
+  for (let attempt = 0; attempt < 3 && pending.length; attempt++) {
+    const pass = await humanizePass(pending, input.context, attempt);
+    const retry: { index: number; text: string }[] = [];
+    for (const s of pending) {
+      const rewrite = pass[s.index];
+      const before = original.get(s.index) ?? s.text;
+      if (!rewrite) {
+        retry.push(s);
+        continue;
+      }
+      if (textSimilarity(before, rewrite) >= REWRITE_SIMILARITY_LIMIT) {
+        // Too close to the original — try again rather than handing back the input.
+        retry.push(s);
+        continue;
+      }
+      accepted[s.index] = rewrite;
+    }
+    pending = retry;
+  }
+
+  return accepted;
 }

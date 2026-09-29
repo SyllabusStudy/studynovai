@@ -47,6 +47,8 @@ function AiCheckerPage() {
   const [openSection, setOpenSection] = useState<number | null>(null);
   // One revision per check — avoids a rewrite → detect → rewrite loop.
   const [improved, setImproved] = useState(false);
+  const [humanized, setHumanized] = useState<string | null>(null);
+  const [original, setOriginal] = useState<string | null>(null);
 
   useEffect(() => {
     loadBilling()
@@ -72,23 +74,30 @@ function AiCheckerPage() {
       }
       const map = res.rewrites as Record<string, string>;
       setImproved(true);
-      if (!Object.keys(map).length) {
-        toast.success("These parts already read naturally.");
+      // Only genuinely changed sentences come back — an unchanged one is dropped server-side.
+      const changed = aiIdx.filter((i) => {
+        const r = map[String(i)];
+        return typeof r === "string" && r.trim() && r.trim() !== (result.spans[i]?.text ?? "").trim();
+      });
+      if (!changed.length) {
+        toast.error("Couldn't rewrite that just now. Press Humanize again.");
         return;
       }
       const done = new Set(rewritten);
       const spans = result.spans.map((s, i) => {
         const r = map[String(i)];
-        if (!r) return s;
+        if (!r || !changed.includes(i)) return s;
         done.add(i);
         const trail = s.text.match(/\s*$/)?.[0] ?? " ";
         return { ...s, text: r + (trail || " ") };
       });
       const nextResult = { ...result, spans };
+      const nextText = spans.map((s) => s.text).join("");
       setResult(nextResult);
       setRewritten(done);
-      setText(spans.map((s) => s.text).join(""));
-      toast.success("Humanized — your original meaning was kept.");
+      setText(nextText);
+      setHumanized(nextText);
+      toast.success(`Humanized ${changed.length} sentence${changed.length === 1 ? "" : "s"} — your meaning was kept.`);
     } catch {
       toast.error("I'm having trouble connecting right now. Try again in a moment.");
     } finally {
@@ -105,6 +114,8 @@ function AiCheckerPage() {
     setResult(null);
     setRewritten(new Set());
     setImproved(false);
+    setHumanized(null);
+    setOriginal(text);
     setOpenSection(null);
     try {
       const res = await run({ data: { text: text.slice(0, 20000) } });
@@ -262,6 +273,22 @@ function AiCheckerPage() {
                 </Button>
               ) : null}
             </div>
+            {humanized ? (
+              <div className="space-y-3 rounded-xl border border-success/40 bg-success/5 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-semibold">Humanized version</p>
+                  <span className="text-xs text-muted-foreground">
+                    {rewritten.size} sentence{rewritten.size === 1 ? "" : "s"} rewritten
+                  </span>
+                </div>
+                <p className="max-h-60 overflow-y-auto whitespace-pre-wrap rounded-lg border border-border bg-background/60 p-3 text-sm leading-7">
+                  {humanized}
+                </p>
+                <MoreOptions label="Show my original text">
+                  <p className="max-h-60 overflow-y-auto whitespace-pre-wrap text-sm leading-7 text-muted-foreground">{original ?? ""}</p>
+                </MoreOptions>
+              </div>
+            ) : null}
             {rewritten.size ? <p className="text-xs text-muted-foreground">Humanized parts are underlined in green and your text box now has the new version. Copy it, or press Humanize again for any parts still flagged. No rewrite can guarantee a detector result.</p> : null}
           </div>
 

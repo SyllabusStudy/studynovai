@@ -266,6 +266,46 @@ export function sectionize(pieces: string[], target = 120) {
   return out;
 }
 
+/**
+ * How similar two sentences are, 0 = fully different, 1 = the same.
+ * Blends word overlap with word-order agreement so a rewrite that only swaps
+ * punctuation or one word still counts as "unchanged".
+ */
+export function textSimilarity(a: string, b: string): number {
+  const norm = (s: string) => wordsOf(s);
+  const wa = norm(a);
+  const wb = norm(b);
+  if (!wa.length && !wb.length) return 1;
+  if (!wa.length || !wb.length) return 0;
+  if (wa.join(" ") === wb.join(" ")) return 1;
+
+  // Word overlap (bag of words).
+  const counts = new Map<string, number>();
+  for (const w of wa) counts.set(w, (counts.get(w) ?? 0) + 1);
+  let shared = 0;
+  for (const w of wb) {
+    const c = counts.get(w) ?? 0;
+    if (c > 0) {
+      shared++;
+      counts.set(w, c - 1);
+    }
+  }
+  const overlap = (2 * shared) / (wa.length + wb.length);
+
+  // Word-order agreement (bigram overlap) — catches reordered rewrites.
+  const bi = (w: string[]) => new Set(w.slice(1).map((x, i) => `${w[i]} ${x}`));
+  const ba = bi(wa);
+  const bb = bi(wb);
+  let biShared = 0;
+  for (const g of bb) if (ba.has(g)) biShared++;
+  const order = ba.size && bb.size ? (2 * biShared) / (ba.size + bb.size) : overlap;
+
+  return clamp(overlap * 0.45 + order * 0.55);
+}
+
+/** A rewrite this close to the original is effectively the original text. */
+export const REWRITE_SIMILARITY_LIMIT = 0.82;
+
 export type ModelJudgement = {
   /** sentence index → 0-100 AI probability */
   probs: Record<number, number>;
