@@ -69,12 +69,14 @@ function AdminPage() {
       <Tabs defaultValue="feedback">
         <TabsList className="mb-6 flex-wrap">
           <TabsTrigger value="feedback">Feedback</TabsTrigger>
+          <TabsTrigger value="announcements">Announcements</TabsTrigger>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
         <TabsContent value="feedback"><AdminFeedback /></TabsContent>
+        <TabsContent value="announcements"><AdminAnnouncements /></TabsContent>
         <TabsContent value="analytics">
           <p className="text-sm text-muted-foreground">Visitor analytics are available in your Lovable project analytics. Usage totals are on the Overview tab.</p>
         </TabsContent>
