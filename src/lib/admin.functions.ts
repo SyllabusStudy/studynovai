@@ -47,6 +47,15 @@ export const removeUserAiKey = createServerFn({ method: "POST" })
     return removeUserAiKeys(data.userId);
   });
 
+export const removePromoPro = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { userId: string }) => input)
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context.supabase, context.userId);
+    const { revokePromoPro } = await import("./admin.server");
+    return revokePromoPro(data.userId);
+  });
+
 export const kickUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { userId: string }) => input)

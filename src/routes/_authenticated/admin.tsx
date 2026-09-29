@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Camera, Crown, KeyRound, Loader2, Sparkles, UserX, Users } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
-import { checkAdmin, getAdminStats, getUserClasses, kickUser, removeUserAiKey } from "@/lib/admin.functions";
+import { checkAdmin, getAdminStats, getUserClasses, kickUser, removePromoPro, removeUserAiKey } from "@/lib/admin.functions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
@@ -184,20 +184,37 @@ function ManageStudentDialog({
   student,
   onClose,
 }: {
-  student: { id: string; name: string | null; email: string | null } | null;
+  student: { id: string; name: string | null; email: string | null; status?: string } | null;
   onClose: () => void;
 }) {
   const qc = useQueryClient();
   const loadClasses = useServerFn(getUserClasses);
   const removeKey = useServerFn(removeUserAiKey);
   const kick = useServerFn(kickUser);
-  const [busy, setBusy] = useState<"key" | "kick" | null>(null);
+  const removePromo = useServerFn(removePromoPro);
+  const [busy, setBusy] = useState<"key" | "kick" | "promo" | null>(null);
 
   const { data: classes, isLoading } = useQuery({
     queryKey: ["admin-user-classes", student?.id],
     enabled: !!student,
     queryFn: () => loadClasses({ data: { userId: student!.id } }),
   });
+
+  async function handleRemovePromo() {
+    if (!student) return;
+    if (!window.confirm(`Remove promo-code Pro from ${student.email ?? "this student"}?`)) return;
+    setBusy("promo");
+    try {
+      await removePromo({ data: { userId: student.id } });
+      toast.success("Pro removed — they're back on Free.");
+      await qc.invalidateQueries({ queryKey: ["admin-stats"] });
+      onClose();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not remove Pro.");
+    } finally {
+      setBusy(null);
+    }
+  }
 
   async function handleRemoveKey() {
     if (!student) return;
@@ -256,6 +273,12 @@ function ManageStudentDialog({
         </div>
 
         <div className="flex flex-col gap-2 border-t border-border pt-4">
+          {student?.status === "promo" ? (
+            <Button variant="outline" size="sm" disabled={busy !== null} onClick={handleRemovePromo}>
+              {busy === "promo" ? <Loader2 className="size-4 animate-spin" /> : <Crown className="size-4" />}
+              Remove Pro (promo code)
+            </Button>
+          ) : null}
           <Button variant="outline" size="sm" disabled={busy !== null} onClick={handleRemoveKey}>
             {busy === "key" ? <Loader2 className="size-4 animate-spin" /> : <KeyRound className="size-4" />}
             Remove their AI key
