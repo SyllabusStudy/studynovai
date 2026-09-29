@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { combine, computeSignals, localScore, paragraphsOf, splitSentences, textSimilarity, REWRITE_SIMILARITY_LIMIT } from "./ai-detect";
+import { combine, computeSignals, isMeaningfullyRewritten, localScore, paragraphsOf, splitSentences, textSimilarity, REWRITE_SIMILARITY_LIMIT } from "./ai-detect";
 
 type Kind = "ai" | "human" | "mixed" | "short";
 const S: { name: string; kind: Kind; text: string }[] = [
@@ -197,5 +197,17 @@ describe("textSimilarity", () => {
     const a = "Moreover, technology plays a crucial role in modern education today.";
     const b = "Schools lean on tech for almost everything now, and it shows.";
     expect(textSimilarity(a, b) < REWRITE_SIMILARITY_LIMIT).toBe(true);
+  });
+
+  it("rejects a long passage with only superficial edits", () => {
+    const original = S[0]!.text;
+    const edited = original.replace("crucial", "important").replace("Moreover,", "Also,");
+    expect(isMeaningfullyRewritten(original, edited)).toBe(false);
+  });
+
+  it("accepts a substantially reconstructed passage with the same topic", () => {
+    const original = S[2]!.text;
+    const rewrite = `Working from home gives employees flexibility and lets a company hire beyond its local area. It can also cut commuting and office costs. Those advantages come with tradeoffs, though. Without regular face-to-face contact, communication takes more effort, and some workers feel isolated or have trouble separating work from personal time. Companies need practical tools and consistent support if they want the arrangement to work well. Remote work can be useful, but it succeeds only when an organization plans for those challenges.`;
+    expect(isMeaningfullyRewritten(original, rewrite)).toBe(true);
   });
 });

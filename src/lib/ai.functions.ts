@@ -280,15 +280,18 @@ export const humanizeAiText = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { isPro } = await import("./billing.server");
     if (!(await isPro(context.supabase, context.userId))) {
-      return { rewrites: null, error: "Humanize is a Pro feature. Upgrade to use it.", needsPro: true };
+      return { text: null, similarity: null, error: "Humanize is a Pro feature. Upgrade to use it.", needsPro: true };
     }
     if (!(await hasUserAiKey(context.supabase, context.userId))) {
-      return { rewrites: null, error: AI_KEY_HELP, needsPro: false };
+      return { text: null, similarity: null, error: AI_KEY_HELP, needsPro: false };
     }
     try {
-      const rewrites = await withUserAiKey(context.supabase, context.userId, () => runHumanize(data));
-      return { rewrites, error: null, needsPro: false };
+      const rewrite = await withUserAiKey(context.supabase, context.userId, () => runHumanize(data));
+      if (!rewrite.text) {
+        return { text: null, similarity: null, error: "I couldn't produce a meaningful rewrite yet. Please try again.", needsPro: false };
+      }
+      return { ...rewrite, error: null, needsPro: false };
     } catch (e) {
-      return { rewrites: null, error: e instanceof Error ? e.message : AI_CONNECTION_MESSAGE, needsPro: false };
+      return { text: null, similarity: null, error: e instanceof Error ? e.message : AI_CONNECTION_MESSAGE, needsPro: false };
     }
   });

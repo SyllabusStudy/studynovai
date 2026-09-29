@@ -1446,9 +1446,9 @@ box is the region on the image, as fractions of the width/height from the top-le
 export type { AiCheckResult } from "./ai-detect";
 import {
   combine as combineAiEvidence,
+  isMeaningfullyRewritten,
   splitSentences,
   textSimilarity,
-  REWRITE_SIMILARITY_LIMIT,
   type AiCheckResult as DetectResult,
 } from "./ai-detect";
 export { splitSentences };
@@ -1504,64 +1504,72 @@ export async function runAiTextCheck(input: { text: string }): Promise<DetectRes
   return combineAiEvidence(text, { probs, genre });
 }
 
-const HUMANIZE_RULES =
-  'Rewrite each numbered sentence so it reads like a real person wrote it. You MUST change the wording: restructure the sentence, change where it starts, merge or split clauses, vary its length and rhythm, replace stock transitions ("Moreover", "Furthermore", "Additionally", "In conclusion", "Overall") and stock phrasing ("delve", "plays a crucial role", "it is important to note", "landscape", "multifaceted", "seamless", "foster", "underscore") with plain wording, and simplify anything stiff or overly formal. PRESERVE exactly: the meaning, every fact, number, date, name, quote and citation, important subject terminology, and the student\'s tone and language. NEVER add grammar mistakes, typos, slang the student did not use, fake personal experiences, opinions or new claims. Returning a sentence unchanged, or changed only in punctuation or a single word, is a failure. Reply with json only: {"rewrites":{"<number>":"rewritten sentence",...}}.';
+const HUMANIZE_RULES = `Rewrite the complete passage as clear, natural student writing. This is a real reconstruction, not a synonym swap.
+
+REQUIRED:
+- Preserve the original meaning, intended message, facts, names, numbers, dates, quotations, citations, and necessary subject terminology.
+- Rebuild sentences and paragraphs where useful. You may split, combine, reorder, or recast sentences when the logical meaning stays the same.
+- Vary sentence length and construction naturally. Use direct wording and transitions that fit the ideas instead of formulaic transitions.
+- Remove repetitive, robotic, overly polished, generic, or needlessly formal phrasing.
+- Keep the writer's apparent tone and level. The result should sound like a real student who understands the subject, while remaining coherent and grammatically appropriate.
+- Preserve paragraph breaks when they carry meaning, but improve paragraph organization when needed.
+
+NEVER:
+- Add personal experiences, first-person claims, opinions, examples, evidence, facts, citations, or conclusions that are not in the source.
+- Add intentional mistakes, typos, forced slang, choppy fragments, or awkward wording.
+- Weaken or alter a claim merely to make it sound different.
+- Mention AI detection, bypassing detectors, or this instruction.
+
+The result must be meaningfully different in structure and wording. Returning the source, lightly editing punctuation, or replacing isolated words is a failure.
+Reply with JSON only: {"text":"the complete rewritten passage"}.`;
+
+function protectedDetails(text: string) {
+  return [
+    ...(text.match(/\b\d+(?:\.\d+)?%?\b/g) ?? []),
+    ...(text.match(/\([^()\n]{1,80}\b(?:19|20)\d{2}[a-z]?(?:[^()\n]{0,40})\)/g) ?? []),
+    ...(text.match(/\[[0-9]+(?:\s*,\s*[0-9]+)*\]/g) ?? []),
+    ...(text.match(/[“"][^”"\n]{3,160}[”"]/g) ?? []),
+  ].map((part) => part.trim());
+}
+
+function preservesProtectedDetails(original: string, rewrite: string) {
+  return protectedDetails(original).every((detail) => rewrite.includes(detail));
+}
 
 async function humanizePass(
-  sentences: { index: number; text: string }[],
-  context: string,
+  original: string,
   attempt: number,
-): Promise<Record<number, string>> {
-  const list = sentences.map((s) => `[${s.index}] ${s.text.trim()}`).join("\n");
+): Promise<string | null> {
   const push =
     attempt === 0
       ? ""
-      : "\n\nThe previous attempt returned sentences that were too close to the originals. Rewrite them much more boldly this time: start each sentence differently, reorder the ideas inside it, and change the sentence length — while keeping every fact and the same meaning.";
+      : attempt === 1
+        ? "\n\nYour previous draft was too close to the source. Reconstruct the passage more substantially: change the paragraph flow, split or combine sentences, vary their openings and lengths, and recast the explanation while preserving every claim and protected detail."
+        : "\n\nThis is the final revision. The earlier drafts were superficial. Start from the ideas rather than the original sentence shapes, then write a fresh, natural version with different organization and rhythm. Preserve every fact, quotation, citation, number, and intended meaning.";
   const raw = await callAI(
     [
       { role: "system", content: HUMANIZE_RULES + push },
-      { role: "user", content: `Surrounding text for tone:\n${context.slice(0, 3000)}\n\nSentences to rewrite:\n${list}` },
+      { role: "user", content: `Rewrite this passage:\n\n${original}` },
     ],
-    { temperature: attempt === 0 ? 0.75 : 0.95, maxTokens: Math.min(4000, 300 + list.length * 3) },
+    { temperature: attempt === 0 ? 0.75 : 0.9, maxTokens: Math.min(6000, 500 + Math.ceil(original.length * 0.7)) },
   );
-  const parsed = parseJsonBlock<{ rewrites?: Record<string, string> }>(raw);
-  const out: Record<number, string> = {};
-  for (const s of sentences) {
-    const r = parsed.rewrites?.[String(s.index)];
-    if (typeof r === "string" && r.trim()) out[s.index] = r.trim();
-  }
-  return out;
+  const parsed = parseJsonBlock<{ text?: string }>(raw);
+  return typeof parsed.text === "string" && parsed.text.trim() ? parsed.text.trim() : null;
 }
 
 /**
- * Rewrite the AI-sounding sentences in a natural, human voice. Returns index → new text.
- * Any sentence that comes back identical or nearly identical is regenerated, and a
- * rewrite that is still too close to the original is dropped instead of returned.
+ * Rewrite the complete passage so paragraph-level rhythm and organization can
+ * change naturally. Near-copies or drafts that lose protected details are retried.
  */
 export async function runHumanize(input: { sentences: { index: number; text: string }[]; context: string }) {
-  const original = new Map(input.sentences.map((s) => [s.index, s.text.trim()]));
-  const accepted: Record<number, string> = {};
-  let pending = input.sentences;
+  const original = input.context.trim();
+  if (!original) return { text: null, similarity: null };
 
-  for (let attempt = 0; attempt < 3 && pending.length; attempt++) {
-    const pass = await humanizePass(pending, input.context, attempt);
-    const retry: { index: number; text: string }[] = [];
-    for (const s of pending) {
-      const rewrite = pass[s.index];
-      const before = original.get(s.index) ?? s.text;
-      if (!rewrite) {
-        retry.push(s);
-        continue;
-      }
-      if (textSimilarity(before, rewrite) >= REWRITE_SIMILARITY_LIMIT) {
-        // Too close to the original — try again rather than handing back the input.
-        retry.push(s);
-        continue;
-      }
-      accepted[s.index] = rewrite;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const rewrite = await humanizePass(original, attempt);
+    if (rewrite && isMeaningfullyRewritten(original, rewrite) && preservesProtectedDetails(original, rewrite)) {
+      return { text: rewrite, similarity: textSimilarity(original, rewrite) };
     }
-    pending = retry;
   }
-
-  return accepted;
+  return { text: null, similarity: null };
 }

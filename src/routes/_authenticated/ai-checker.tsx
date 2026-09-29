@@ -68,36 +68,21 @@ function AiCheckerPage() {
           context: result.spans.map((s) => s.text).join(""),
         },
       });
-      if (res.error || !res.rewrites) {
+      if (res.error || !res.text) {
         if (!redirectForKey(res.error)) toast.error(res.error ?? "Couldn't rewrite that just now.");
         return;
       }
-      const map = res.rewrites as Record<string, string>;
-      setImproved(true);
-      // Only genuinely changed sentences come back — an unchanged one is dropped server-side.
-      const changed = aiIdx.filter((i) => {
-        const r = map[String(i)];
-        return typeof r === "string" && r.trim() && r.trim() !== (result.spans[i]?.text ?? "").trim();
-      });
-      if (!changed.length) {
-        toast.error("Couldn't rewrite that just now. Press Humanize again.");
+      const nextText = res.text.trim();
+      if (!nextText || nextText === result.spans.map((s) => s.text).join("").trim()) {
+        toast.error("Couldn't produce a meaningful rewrite yet. Please try again.");
         return;
       }
-      const done = new Set(rewritten);
-      const spans = result.spans.map((s, i) => {
-        const r = map[String(i)];
-        if (!r || !changed.includes(i)) return s;
-        done.add(i);
-        const trail = s.text.match(/\s*$/)?.[0] ?? " ";
-        return { ...s, text: r + (trail || " ") };
-      });
-      const nextResult = { ...result, spans };
-      const nextText = spans.map((s) => s.text).join("");
-      setResult(nextResult);
-      setRewritten(done);
+      setImproved(true);
+      setResult({ ...result, spans: [{ text: nextText, label: "human", section: 0 }] });
+      setRewritten(new Set([0]));
       setText(nextText);
       setHumanized(nextText);
-      toast.success(`Humanized ${changed.length} sentence${changed.length === 1 ? "" : "s"} — your meaning was kept.`);
+      toast.success("Your passage was meaningfully rewritten while keeping its message.");
     } catch {
       toast.error("I'm having trouble connecting right now. Try again in a moment.");
     } finally {
@@ -277,9 +262,7 @@ function AiCheckerPage() {
               <div className="space-y-3 rounded-xl border border-success/40 bg-success/5 p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-semibold">Humanized version</p>
-                  <span className="text-xs text-muted-foreground">
-                    {rewritten.size} sentence{rewritten.size === 1 ? "" : "s"} rewritten
-                  </span>
+                  <span className="text-xs text-muted-foreground">Meaningfully rewritten</span>
                 </div>
                 <p className="max-h-60 overflow-y-auto whitespace-pre-wrap rounded-lg border border-border bg-background/60 p-3 text-sm leading-7">
                   {humanized}
@@ -289,7 +272,7 @@ function AiCheckerPage() {
                 </MoreOptions>
               </div>
             ) : null}
-            {rewritten.size ? <p className="text-xs text-muted-foreground">Humanized parts are underlined in green and your text box now has the new version. Copy it, or press Humanize again for any parts still flagged. No rewrite can guarantee a detector result.</p> : null}
+            {rewritten.size ? <p className="text-xs text-muted-foreground">The rewritten version is underlined in green and now appears in your text box. This improves natural writing quality; it does not guarantee any detector result.</p> : null}
           </div>
 
           <MoreOptions label="Why did we flag this?">
