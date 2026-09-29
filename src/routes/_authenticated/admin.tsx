@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { AdminFeedback } from "@/components/AdminFeedback";
+import { AdminAnnouncements } from "@/components/AdminAnnouncements";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_authenticated/admin")({
