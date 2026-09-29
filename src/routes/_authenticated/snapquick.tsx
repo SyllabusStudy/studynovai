@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { snapTutor } from "@/lib/ai.functions";
 import { AI_KEY_HELP } from "@/lib/ai-messages";
+import { AiKeySetupBanner, useAiKeyRedirect } from "@/lib/ai-key-gate";
 type SnapMode = "learn" | "quick" | "tutor" | "practice" | "check" | "method";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -114,6 +115,7 @@ function SnapQuickPage() {
   } | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const run = useServerFn(snapTutor);
+  const redirectForKey = useAiKeyRedirect();
   const qc = useQueryClient();
   const [convId, setConvId] = useState<string | null>(null);
   const { data: saved = [] } = useQuery({
