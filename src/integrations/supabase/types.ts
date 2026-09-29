@@ -93,6 +93,45 @@ export type Database = {
           },
         ]
       }
+      announcements: {
+        Row: {
+          body_html: string
+          body_text: string
+          created_by: string
+          failed: number
+          id: string
+          preview_text: string | null
+          prompt: string | null
+          recipients: number
+          sent_at: string
+          subject: string
+        }
+        Insert: {
+          body_html: string
+          body_text: string
+          created_by: string
+          failed?: number
+          id?: string
+          preview_text?: string | null
+          prompt?: string | null
+          recipients?: number
+          sent_at?: string
+          subject: string
+        }
+        Update: {
+          body_html?: string
+          body_text?: string
+          created_by?: string
+          failed?: number
+          id?: string
+          preview_text?: string | null
+          prompt?: string | null
+          recipients?: number
+          sent_at?: string
+          subject?: string
+        }
+        Relationships: []
+      }
       app_user_connections: {
         Row: {
           account_email: string | null
@@ -537,6 +576,7 @@ export type Database = {
           major: string | null
           name: string | null
           notify_email: boolean
+          notify_news: boolean
           notify_push: boolean
           onboarding_done: boolean
           school: string | null
@@ -556,6 +596,7 @@ export type Database = {
           major?: string | null
           name?: string | null
           notify_email?: boolean
+          notify_news?: boolean
           notify_push?: boolean
           onboarding_done?: boolean
           school?: string | null
@@ -575,6 +616,7 @@ export type Database = {
           major?: string | null
           name?: string | null
           notify_email?: boolean
+          notify_news?: boolean
           notify_push?: boolean
           onboarding_done?: boolean
           school?: string | null
