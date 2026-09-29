@@ -66,7 +66,7 @@ function AiCheckerPage() {
         },
       });
       if (res.error || !res.rewrites) {
-        toast.error(res.error ?? "Couldn't rewrite that just now.");
+        if (!redirectForKey(res.error)) toast.error(res.error ?? "Couldn't rewrite that just now.");
         return;
       }
       const map = res.rewrites as Record<string, string>;
@@ -107,10 +107,12 @@ function AiCheckerPage() {
     setOpenSection(null);
     try {
       const res = await run({ data: { text: text.slice(0, 20000) } });
-      if (res.error) toast.error(res.error);
-      else setResult(res.result);
+      if (res.error) {
+        if (!redirectForKey(res.error)) toast.error(res.error);
+      } else setResult(res.result);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "The checker could not run.");
+      const msg = e instanceof Error ? e.message : "The checker could not run.";
+      if (!redirectForKey(msg)) toast.error(msg);
     } finally {
       setBusy(false);
     }
