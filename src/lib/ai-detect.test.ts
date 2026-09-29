@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { combine, computeSignals, localScore, paragraphsOf, splitSentences } from "./ai-detect";
+import { combine, computeSignals, localScore, paragraphsOf, splitSentences, textSimilarity, REWRITE_SIMILARITY_LIMIT } from "./ai-detect";
 
 type Kind = "ai" | "human" | "mixed" | "short";
 const S: { name: string; kind: Kind; text: string }[] = [
