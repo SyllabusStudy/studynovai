@@ -28,10 +28,38 @@ export const getMailStatus = createServerFn({ method: "GET" })
     };
   });
 
+/** Hosts StudyNova itself is served from. The return page must land on the
+ *  exact origin the student is browsing, or the popup can't hand the result
+ *  back to the page that opened it. */
+function safeReturnOrigin(candidate: string | undefined, fallback: string): string {
+  if (!candidate) return fallback;
+  let url: URL;
+  try {
+    url = new URL(candidate);
+  } catch {
+    return fallback;
+  }
+  if (url.protocol !== "https:" && url.hostname !== "localhost") return fallback;
+  const host = url.hostname;
+  const allowed =
+    host === "localhost" ||
+    host === "studynova.link" ||
+    host.endsWith(".studynova.link") ||
+    host === "lovable.app" ||
+    host.endsWith(".lovable.app") ||
+    host.endsWith(".lovableproject.com");
+  return allowed ? url.origin : fallback;
+}
+
 /** Begin Google consent for this student's own inbox. */
 export const startMailConnect = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((input: unknown) =>
+    z
+      .object({ origin: z.string().max(300).optional() })
+      .parse(input ?? {}),
+  )
+  .handler(async ({ data, context }) => {
     const clientKey = process.env['GOOGLE_MAIL_APP_USER_CONNECTOR_CLIENT_API_KEY'];
     if (!clientKey) throw new Error("Email connecting isn't set up yet. Please try again later.");
 
@@ -42,12 +70,11 @@ export const startMailConnect = createServerFn({ method: "POST" })
     const request = getRequest();
     if (!request) throw new Error("Connecting must start from the app.");
     const url = new URL(request.url);
-    const sandboxHost =
-      url.hostname === "localhost" ? request.headers.get("x-forwarded-host") : null;
-    const returnUrl = new URL(
-      "/oauth/google/return",
-      sandboxHost ? `https://${sandboxHost}` : url.origin,
-    ).toString();
+    const forwardedHost = request.headers.get("x-forwarded-host");
+    const serverOrigin =
+      url.hostname === "localhost" && forwardedHost ? `https://${forwardedHost}` : url.origin;
+    const base = safeReturnOrigin(data.origin, serverOrigin);
+    const returnUrl = new URL("/oauth/google/return", base).toString();
 
     const existing = await getConnectionForUser(context.userId, "google_mail");
 
@@ -60,7 +87,7 @@ export const startMailConnect = createServerFn({ method: "POST" })
       connectionAPIKey: existing?.connectionAPIKey,
       credentialsConfiguration: { scopes: GMAIL_SCOPES },
     });
-    return { authorizationUrl };
+    return { authorizationUrl, returnUrl };
   });
 
 /** Finish consent: store this student's connection securely. */

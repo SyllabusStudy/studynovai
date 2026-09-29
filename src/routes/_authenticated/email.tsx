@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -103,37 +103,115 @@ function shortDate(raw: string) {
     : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-function waitForOAuth(popup: Window) {
+const RELAY_KEY = "studynova.mailOAuthResult";
+const RELAY_CHANNEL = "studynova-mail-oauth";
+
+type RelayPayload = { type?: string; connectorId?: string; code?: unknown; at?: number };
+
+function readRelay(raw: unknown): RelayPayload | null {
+  const data = raw as RelayPayload | null;
+  if (!data || data.connectorId !== "google_mail") return null;
+  if (
+    data.type !== "appUserConnectorOAuthComplete" &&
+    data.type !== "appUserConnectorOAuthFailed"
+  )
+    return null;
+  // Ignore anything left over from an earlier attempt.
+  if (typeof data.at === "number" && Date.now() - data.at > 10 * 60 * 1000) return null;
+  return data;
+}
+
+function clearRelay() {
+  try {
+    window.localStorage.removeItem(RELAY_KEY);
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+/**
+ * Waits for the Google sign-in window to report back. Google's own page can cut
+ * the direct link between the two windows, so the result also travels through
+ * shared browser storage and a same-origin channel.
+ */
+function waitForOAuth(cancel: AbortSignal) {
+  clearRelay();
   return new Promise<string | null>((resolve, reject) => {
     let poll: number | undefined;
+    let timeout: number | undefined;
+    let channel: BroadcastChannel | null = null;
+    let settled = false;
+
     const cleanup = () => {
       window.removeEventListener("message", onMessage);
+      cancel.removeEventListener("abort", onCancel);
       if (poll !== undefined) window.clearInterval(poll);
+      if (timeout !== undefined) window.clearTimeout(timeout);
+      channel?.close();
     };
-    const onMessage = (event: MessageEvent) => {
-      const type = (event.data as { type?: string } | null)?.type;
-      if (
-        event.origin !== window.location.origin ||
-        event.source !== popup ||
-        (event.data as { connectorId?: string } | null)?.connectorId !== "google_mail" ||
-        (type !== "appUserConnectorOAuthComplete" && type !== "appUserConnectorOAuthFailed")
-      )
-        return;
+
+    const settle = (data: RelayPayload) => {
+      if (settled) return;
+      settled = true;
       cleanup();
-      if (type === "appUserConnectorOAuthComplete") {
-        const code = (event.data as { code?: unknown }).code;
-        resolve(typeof code === "string" ? code : null);
+      clearRelay();
+      if (data.type === "appUserConnectorOAuthComplete") {
+        resolve(typeof data.code === "string" ? data.code : null);
         return;
       }
-      popup.close();
       reject(new Error("We couldn't finish connecting your email."));
     };
-    window.addEventListener("message", onMessage);
-    poll = window.setInterval(() => {
-      if (!popup.closed) return;
+
+    const fail = (message: string) => {
+      if (settled) return;
+      settled = true;
       cleanup();
-      reject(new Error("The sign-in window closed before finishing."));
-    }, 500);
+      clearRelay();
+      reject(new Error(message));
+    };
+
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      const data = readRelay(event.data);
+      if (data) settle(data);
+    };
+    window.addEventListener("message", onMessage);
+
+    const onCancel = () => fail("Connecting your email was cancelled.");
+    cancel.addEventListener("abort", onCancel);
+
+    try {
+      channel = new BroadcastChannel(RELAY_CHANNEL);
+      channel.onmessage = (event) => {
+        const data = readRelay(event.data);
+        if (data) settle(data);
+      };
+    } catch {
+      channel = null;
+    }
+
+    // Storage fallback: works even when Google's page severs the window link,
+    // which is what browsers do on the way through Google sign-in.
+    poll = window.setInterval(() => {
+      let stored: string | null = null;
+      try {
+        stored = window.localStorage.getItem(RELAY_KEY);
+      } catch {
+        stored = null;
+      }
+      if (!stored) return;
+      try {
+        const data = readRelay(JSON.parse(stored));
+        if (data) settle(data);
+      } catch {
+        /* ignore malformed value */
+      }
+    }, 600);
+
+    timeout = window.setTimeout(
+      () => fail("That took too long. Please try connecting your email again."),
+      5 * 60 * 1000,
+    );
   });
 }
 
@@ -175,6 +253,7 @@ function ConnectScreen({
   const start = useServerFn(startMailConnect);
   const complete = useServerFn(completeMailConnect);
   const [busy, setBusy] = useState(false);
+  const cancelRef = useRef<AbortController | null>(null);
 
   async function connect() {
     setBusy(true);
@@ -184,18 +263,28 @@ function ConnectScreen({
       toast.error("Allow pop-ups for StudyNova, then try again.");
       return;
     }
+    const controller = new AbortController();
+    cancelRef.current = controller;
     try {
-      const { authorizationUrl } = await start({});
-      const completion = waitForOAuth(popup);
+      const { authorizationUrl } = await start({
+        data: { origin: window.location.origin },
+      });
+      const completion = waitForOAuth(controller.signal);
       popup.location.href = authorizationUrl;
       const code = await completion;
-      if (code) await complete({ data: { code } });
+      if (!code) throw new Error("We couldn't finish connecting your email. Please try again.");
+      await complete({ data: { code } });
       toast.success(reconnect ? "Your email is reconnected." : "Your email is connected.");
       onConnected();
     } catch (error) {
-      popup.close();
+      try {
+        popup.close();
+      } catch {
+        /* already closed */
+      }
       toast.error(error instanceof Error ? error.message : "We couldn't connect your email.");
     } finally {
+      cancelRef.current = null;
       setBusy(false);
     }
   }
@@ -221,8 +310,27 @@ function ConnectScreen({
           </p>
           <Button className="mt-6 w-full gap-2" onClick={connect} disabled={busy}>
             {busy ? <Loader2 className="size-4 animate-spin" /> : <Mail className="size-4" />}
-            {reconnect ? "Reconnect Gmail" : "Connect with Google"}
+            {busy
+              ? "Waiting for Google…"
+              : reconnect
+                ? "Reconnect Gmail"
+                : "Connect with Google"}
           </Button>
+          {busy ? (
+            <>
+              <p className="mt-3 text-xs text-muted-foreground">
+                Finish signing in on the Google window. This page updates on its own.
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mt-1"
+                onClick={() => cancelRef.current?.abort()}
+              >
+                Cancel
+              </Button>
+            </>
+          ) : null}
           <div className="mt-6 space-y-2 text-left">
             <p className="text-xs font-bold uppercase text-muted-foreground">Other providers</p>
             {MAIL_PROVIDERS.filter((p) => !p.available).map((p) => (
