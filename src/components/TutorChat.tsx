@@ -98,11 +98,11 @@ export function TutorChat({
       const result = await send({ data: request });
       if (result.error || !result.reply) {
         const messageText = result.error ?? "The tutor returned an empty response.";
-        if (messageText === AI_KEY_HELP) {
+        if (messageText === AI_KEY_HELP || redirectForKey(messageText)) {
           setInput(request.message);
           setMessages((prev) => prev.slice(0, -1));
           setFailed(null);
-          toast.error(messageText);
+          if (messageText === AI_KEY_HELP) redirectForKey(messageText);
           return;
         }
         setFailed({ ...request, reason: messageText });
