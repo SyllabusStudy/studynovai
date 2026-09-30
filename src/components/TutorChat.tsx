@@ -22,6 +22,7 @@ import { Markdown } from "@/components/Markdown";
 import { STUDY_MODES } from "@/lib/constants";
 import { classLabel, useClasses, type ConversationRow } from "@/lib/data";
 import { useAuth } from "@/lib/auth";
+import { useGuestGate, useRestoredGuestDraft } from "@/lib/guest-gate";
 import { cn } from "@/lib/utils";
 
 export type ChatMsg = { role: "user" | "assistant"; content: string };
