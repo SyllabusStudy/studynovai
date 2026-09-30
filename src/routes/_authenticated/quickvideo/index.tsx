@@ -80,6 +80,20 @@ function QuickVideoPage() {
   const guest = useGuestGate("quickvideo");
   useRestoredGuestDraft("quickvideo", setUrl);
 
+  // Keep the half-typed link while this tab stays open.
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    if (restoredRef.current) return;
+    restoredRef.current = true;
+    const saved = readTabMemory<{ url: string }>(MEMORY_SCOPE);
+    if (saved?.url) setUrl(saved.url);
+  }, []);
+
+  useEffect(() => {
+    if (!restoredRef.current) return;
+    writeTabMemory(MEMORY_SCOPE, { url });
+  }, [url]);
+
   async function submit(payload: { url?: string; dataUrl?: string; fileName?: string }) {
     if (guest.requireAccount({ text: payload.url ?? "" })) return;
     if (keyStatus?.hasKey === false) {
