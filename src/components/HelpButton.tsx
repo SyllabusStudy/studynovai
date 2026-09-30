@@ -7,7 +7,7 @@ import { startTour } from "@/lib/tour";
 
 const TOPICS: { q: string; steps: string[]; focus?: string }[] = [
   { q: "How do I add a class?", focus: "add-class", steps: ["Go to your dashboard.", "Click + Add Class.", "Type the class name and details, then save."] },
-  { q: "How do I upload a syllabus?", focus: "add-class", steps: ["Click Upload Syllabus on the dashboard.", "Open a class and add your syllabus PDF or photo.", "StudyNova finds the dates and puts them on your calendar."] },
+  { q: "How do I upload a syllabus?", focus: "add-class", steps: ["Click Upload Syllabus on the dashboard.", "Open a class and add your syllabus PDF or photo.", "SyllabusNova finds the dates and puts them on your calendar."] },
   { q: "How do I use the calendar?", focus: "nav-calendar", steps: ["Click Calendar in the menu.", "Use the filters to show only exams, assignments and more.", "Click a day to add an event."] },
   { q: "How do I use the AI Tutor?", focus: "nav-tutor", steps: ["Click Ask AI Tutor.", "Pick your class at the top.", "Ask a question — answers use your own class files."] },
   { q: "How do I create/use flashcards?", focus: "nav-flashcards", steps: ["Open Flashcards in the Study menu.", "Pick a class and click Make flashcards.", "Tap a card to flip it and mark if you knew it."] },
@@ -46,7 +46,7 @@ export function HelpButton() {
             <SheetTitle>💡 Help</SheetTitle>
           </SheetHeader>
           <Button className="mt-4 w-full gap-2" onClick={() => go()}>
-            <PlayCircle className="size-4" /> StudyNova 101 — Take the Tour Again
+            <PlayCircle className="size-4" /> SyllabusNova 101 — Take the Tour Again
           </Button>
           <Accordion type="single" collapsible className="mt-4">
             {TOPICS.map((t) => (

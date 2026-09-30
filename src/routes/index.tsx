@@ -21,14 +21,14 @@ import { useTheme } from "@/lib/theme";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "StudyNova – AI Study Assistant for College Students" },
+      { title: "SyllabusNova – AI Study Assistant for College Students" },
       {
         name: "description",
         content:
           "Upload your syllabus, get an instant semester calendar, AI-generated flashcards and quizzes, and a tutor that answers from your own course materials.",
       },
       { name: "robots", content: "index, follow" },
-      { property: "og:title", content: "StudyNova – AI Study Assistant for College Students" },
+      { property: "og:title", content: "SyllabusNova – AI Study Assistant for College Students" },
       {
         property: "og:description",
         content:
@@ -46,7 +46,7 @@ const FEATURES = [
   {
     icon: FileText,
     title: "Syllabus in, semester out",
-    body: "Upload a syllabus PDF or a photo of one. StudyNova reads the policies, grading breakdown and every date, then builds your calendar.",
+    body: "Upload a syllabus PDF or a photo of one. SyllabusNova reads the policies, grading breakdown and every date, then builds your calendar.",
   },
   {
     icon: Bot,
@@ -88,7 +88,7 @@ function Landing() {
     <div className="min-h-screen bg-background">
       <header className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:px-6">
         <BrandLogo />
-        <span className="text-sm font-extrabold tracking-tight">StudyNova</span>
+        <span className="text-sm font-extrabold tracking-tight">SyllabusNova</span>
         <div className="ml-auto flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle dark mode">
             {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
@@ -146,7 +146,7 @@ function Landing() {
           <div>
             <h2 className="text-lg font-bold tracking-tight">Set up your semester in about five minutes</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Add a class, drop in the syllabus, and let StudyNova handle the calendar, flashcards and study plan.
+              Add a class, drop in the syllabus, and let SyllabusNova handle the calendar, flashcards and study plan.
             </p>
           </div>
           <Button asChild size="lg" className="shrink-0">
@@ -160,7 +160,7 @@ function Landing() {
       <footer className="border-t border-border py-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-4 text-center text-xs text-muted-foreground sm:px-6">
           <p>
-            StudyNova — your AI-powered college companion. Organize classes, syllabi, assignments,
+            SyllabusNova — your AI-powered college companion. Organize classes, syllabi, assignments,
             deadlines and grades, and study with an AI tutor built on your own course materials.
           </p>
           <nav className="flex flex-wrap items-center justify-center gap-4 font-semibold">

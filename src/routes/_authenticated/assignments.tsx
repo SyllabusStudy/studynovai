@@ -42,9 +42,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/assignments")({
   head: () => ({
     meta: [
-      { title: "Assignments — StudyNova" },
+      { title: "Assignments — SyllabusNova" },
       { name: "description", content: "Track every assignment, its due date, priority and status." },
-      { property: "og:title", content: "Assignments — StudyNova" },
+      { property: "og:title", content: "Assignments — SyllabusNova" },
       { property: "og:description", content: "Track every assignment, due date and status." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -85,7 +85,7 @@ function AssignmentsPage() {
       <ClassActionBar />
 
       <Hint id="assignments-ai-help" point="down" className="mb-4">
-        Tap <strong>AI help</strong> on any assignment to attach a PDF or screenshot — StudyNova
+        Tap <strong>AI help</strong> on any assignment to attach a PDF or screenshot — SyllabusNova
         reads it and walks you through the questions.
       </Hint>
 
@@ -95,7 +95,7 @@ function AssignmentsPage() {
         <EmptyState
           icon={CheckSquare}
           title="No assignments yet"
-          description="Add one manually, or upload a syllabus and let StudyNova extract them."
+          description="Add one manually, or upload a syllabus and let SyllabusNova extract them."
           action={<NewAssignmentDialog />}
         />
       ) : (

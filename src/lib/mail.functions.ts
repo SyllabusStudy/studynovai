@@ -28,7 +28,7 @@ export const getMailStatus = createServerFn({ method: "GET" })
     };
   });
 
-/** Hosts StudyNova itself is served from. The return page must land on the
+/** Hosts SyllabusNova itself is served from. The return page must land on the
  *  exact origin the student is browsing, or the popup can't hand the result
  *  back to the page that opened it. */
 function safeReturnOrigin(candidate: string | undefined, fallback: string): string {

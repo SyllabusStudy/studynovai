@@ -25,7 +25,7 @@ type ThemeConfig = {
 };
 
 export const SEASONAL_THEMES: ThemeConfig[] = [
-  { id: "default", label: "Default StudyNova", emoji: "🌌", glyphs: [], tint: "transparent" },
+  { id: "default", label: "Default SyllabusNova", emoji: "🌌", glyphs: [], tint: "transparent" },
   {
     id: "halloween",
     label: "Halloween",

@@ -6,6 +6,7 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
@@ -38,7 +39,7 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
   useEffect(() => {
@@ -84,14 +85,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         name: "viewport",
         content: "width=device-width, initial-scale=1, viewport-fit=cover",
       },
-      { title: "StudyNova – AI Study Assistant for College Students" },
+      { title: "SyllabusNova – AI Study Assistant for College Students" },
       {
         name: "description",
         content:
-          "StudyNova keeps your classes, syllabi, notes, flashcards, quizzes and deadlines in one place, with an AI tutor that studies your own course materials.",
+          "SyllabusNova keeps your classes, syllabi, notes, flashcards, quizzes and deadlines in one place, with an AI tutor that studies your own course materials.",
       },
       { name: "robots", content: "index, follow" },
-      { property: "og:title", content: "StudyNova – AI Study Assistant for College Students" },
+      { property: "og:title", content: "SyllabusNova – AI Study Assistant for College Students" },
       {
         property: "og:description",
         content: "Classes, syllabi, flashcards, quizzes and deadlines with an AI tutor that reads your own materials.",
@@ -103,7 +104,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "apple-mobile-web-app-title", content: "StudyNova" },
+      { name: "apple-mobile-web-app-title", content: "SyllabusNova" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },

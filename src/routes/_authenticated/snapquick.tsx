@@ -33,13 +33,13 @@ import { useGuestGate, useRestoredGuestDraft } from "@/lib/guest-gate";
 export const Route = createFileRoute("/_authenticated/snapquick")({
   head: () => ({
     meta: [
-      { title: "SnapQuick — Snap your work, get help — StudyNova" },
+      { title: "SnapQuick — Snap your work, get help — SyllabusNova" },
       {
         name: "description",
         content:
           "Take a photo of your homework and SnapQuick scans it, identifies every question and walks you through the answers.",
       },
-      { property: "og:title", content: "SnapQuick — StudyNova" },
+      { property: "og:title", content: "SnapQuick — SyllabusNova" },
       { property: "og:description", content: "Photograph your work and get instant, step-by-step AI help." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

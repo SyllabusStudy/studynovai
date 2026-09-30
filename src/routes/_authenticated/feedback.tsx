@@ -11,10 +11,10 @@ import { formatDate } from "@/lib/data";
 export const Route = createFileRoute("/_authenticated/feedback")({
   head: () => ({
     meta: [
-      { title: "Feedback — StudyNova" },
-      { name: "description", content: "Report a bug, request a feature or tell us what's confusing in StudyNova." },
-      { property: "og:title", content: "Feedback — StudyNova" },
-      { property: "og:description", content: "Help us improve StudyNova." },
+      { title: "Feedback — SyllabusNova" },
+      { name: "description", content: "Report a bug, request a feature or tell us what's confusing in SyllabusNova." },
+      { property: "og:title", content: "Feedback — SyllabusNova" },
+      { property: "og:description", content: "Help us improve SyllabusNova." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -40,7 +40,7 @@ function FeedbackPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <PageHeader title="Help us improve StudyNova" description="Found a bug, got an idea, or something felt confusing? Tell us." />
+      <PageHeader title="Help us improve SyllabusNova" description="Found a bug, got an idea, or something felt confusing? Tell us." />
       <div className="surface-card p-5 sm:p-6">
         <FeedbackForm page="/feedback" />
       </div>

@@ -33,9 +33,9 @@ import { AiKeySetupBanner, useAiKeyRedirect } from "@/lib/ai-key-gate";
 export const Route = createFileRoute("/_authenticated/quizzes/")({
   head: () => ({
     meta: [
-      { title: "Quizzes — StudyNova" },
+      { title: "Quizzes — SyllabusNova" },
       { name: "description", content: "Generate exam-level practice quizzes from your own course materials." },
-      { property: "og:title", content: "Quizzes — StudyNova" },
+      { property: "og:title", content: "Quizzes — SyllabusNova" },
       { property: "og:description", content: "Practice quizzes generated from your own materials." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

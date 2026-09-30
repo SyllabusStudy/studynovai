@@ -1,21 +1,21 @@
-// Legal documents provided by StudyNova.
-export const PRIVACY_POLICY = `STUDYNOVA PRIVACY POLICY
+// Legal documents provided by SyllabusNova.
+export const PRIVACY_POLICY = `SYLLABUSNOVA PRIVACY POLICY
 
 Last Updated: September 28, 2026
 
-Welcome to StudyNova ("StudyNova," "we," "us," or "our"). StudyNova is a student productivity and academic organization platform that helps users manage classes, assignments, schedules, study materials, email, and other academic information.
+Welcome to SyllabusNova ("SyllabusNova," "we," "us," or "our"). SyllabusNova is a student productivity and academic organization platform that helps users manage classes, assignments, schedules, study materials, email, and other academic information.
 
 This Privacy Policy explains what information we collect, how we use it, how we protect it, and the choices you have regarding your information.
 
-By using StudyNova, you agree to the practices described in this Privacy Policy.
+By using SyllabusNova, you agree to the practices described in this Privacy Policy.
 
 1. INFORMATION WE COLLECT
 
-Depending on how you use StudyNova, we may collect the following information.
+Depending on how you use SyllabusNova, we may collect the following information.
 
 ACCOUNT INFORMATION
 
-When you create a StudyNova account, we may collect:
+When you create a SyllabusNova account, we may collect:
 
 • Name
 • Email address
@@ -28,7 +28,7 @@ If you sign in using Google, Microsoft, Apple, or another supported authenticati
 
 ACADEMIC INFORMATION
 
-StudyNova may allow you to enter or upload information related to your education, including:
+SyllabusNova may allow you to enter or upload information related to your education, including:
 
 • Classes
 • Assignments
@@ -45,7 +45,7 @@ StudyNova may allow you to enter or upload information related to your education
 
 UPLOADED FILES
 
-StudyNova may allow you to upload documents and other files, including:
+SyllabusNova may allow you to upload documents and other files, including:
 
 • PDF files
 • Microsoft Word documents
@@ -59,9 +59,9 @@ We use uploaded files to provide features you request, such as organization, sea
 
 CONNECTED EMAIL ACCOUNTS
 
-StudyNova may allow you to connect supported email accounts, including Gmail, Outlook/Microsoft accounts, and other supported email providers.
+SyllabusNova may allow you to connect supported email accounts, including Gmail, Outlook/Microsoft accounts, and other supported email providers.
 
-If you choose to connect an email account, StudyNova may access information permitted by the authorization you provide.
+If you choose to connect an email account, SyllabusNova may access information permitted by the authorization you provide.
 
 Depending on the provider and permissions you grant, this may include:
 
@@ -74,25 +74,25 @@ Depending on the provider and permissions you grant, this may include:
 • Labels or folders
 • Email metadata
 
-StudyNova only accesses connected email accounts after you authorize the connection.
+SyllabusNova only accesses connected email accounts after you authorize the connection.
 
-You can disconnect a connected email account through the available StudyNova account settings.
+You can disconnect a connected email account through the available SyllabusNova account settings.
 
 GOOGLE USER DATA
 
-If you connect a Google account or Gmail account, StudyNova may receive Google user data necessary to provide the features you authorize.
+If you connect a Google account or Gmail account, SyllabusNova may receive Google user data necessary to provide the features you authorize.
 
-StudyNova's use of information received from Google APIs will comply with the Google API Services User Data Policy, including its Limited Use requirements.
+SyllabusNova's use of information received from Google APIs will comply with the Google API Services User Data Policy, including its Limited Use requirements.
 
-StudyNova does not sell Google user data.
+SyllabusNova does not sell Google user data.
 
-StudyNova does not use Google user data for advertising.
+SyllabusNova does not use Google user data for advertising.
 
-StudyNova does not use Google user data for purposes unrelated to providing the StudyNova functionality that you request.
+SyllabusNova does not use Google user data for purposes unrelated to providing the SyllabusNova functionality that you request.
 
 DEVICE AND USAGE INFORMATION
 
-We may automatically collect limited technical information when you use StudyNova, such as:
+We may automatically collect limited technical information when you use SyllabusNova, such as:
 
 • Device type
 • Browser type
@@ -102,14 +102,14 @@ We may automatically collect limited technical information when you use StudyNov
 • Error and diagnostic information
 • Login and session information
 
-We use this information to operate, secure, troubleshoot, and improve StudyNova.
+We use this information to operate, secure, troubleshoot, and improve SyllabusNova.
 
 2. HOW WE USE INFORMATION
 
 We may use information to:
 
-• Create and maintain your StudyNova account
-• Provide StudyNova's features
+• Create and maintain your SyllabusNova account
+• Provide SyllabusNova's features
 • Organize your classes and assignments
 • Generate calendars and reminders
 • Process uploaded academic materials
@@ -121,12 +121,12 @@ We may use information to:
 • Maintain security
 • Detect and prevent fraud or abuse
 • Troubleshoot technical problems
-• Improve the reliability and functionality of StudyNova
+• Improve the reliability and functionality of SyllabusNova
 • Communicate with you about your account or the Service
 
 3. AI FEATURES
 
-StudyNova may provide AI-powered features, including:
+SyllabusNova may provide AI-powered features, including:
 
 • AI tutoring
 • Summarization
@@ -137,17 +137,17 @@ StudyNova may provide AI-powered features, including:
 • Study recommendations
 • Text rewriting and humanization features
 
-Information you submit to an AI-powered feature may be processed by StudyNova and/or third-party AI service providers that help us provide that feature.
+Information you submit to an AI-powered feature may be processed by SyllabusNova and/or third-party AI service providers that help us provide that feature.
 
 We aim to send only the information necessary to provide the requested feature.
 
-Users should not submit passwords, payment-card numbers, government identification numbers, or other highly sensitive information into AI features unless StudyNova specifically requests and supports that information.
+Users should not submit passwords, payment-card numbers, government identification numbers, or other highly sensitive information into AI features unless SyllabusNova specifically requests and supports that information.
 
 4. EMAIL DATA
 
-If you connect an email account, StudyNova uses the permissions you grant to provide email-related functionality.
+If you connect an email account, SyllabusNova uses the permissions you grant to provide email-related functionality.
 
-Depending on the provider and permissions you authorize, StudyNova may be able to:
+Depending on the provider and permissions you authorize, SyllabusNova may be able to:
 
 • Read emails
 • Compose emails
@@ -157,17 +157,17 @@ Depending on the provider and permissions you authorize, StudyNova may be able t
 • Access email attachments
 • Search email
 
-StudyNova will not sell connected email information.
+SyllabusNova will not sell connected email information.
 
-StudyNova will not use connected email information for advertising.
+SyllabusNova will not use connected email information for advertising.
 
-StudyNova will not use connected email information for unrelated purposes.
+SyllabusNova will not use connected email information for unrelated purposes.
 
-Where technically possible, StudyNova will request only the permissions necessary for the feature being used.
+Where technically possible, SyllabusNova will request only the permissions necessary for the feature being used.
 
 5. GOOGLE LIMITED USE
 
-StudyNova's use and transfer of information received from Google APIs will comply with the Google API Services User Data Policy, including the Limited Use requirements.
+SyllabusNova's use and transfer of information received from Google APIs will comply with the Google API Services User Data Policy, including the Limited Use requirements.
 
 Google user data will only be used to provide or improve the user-facing functionality that you authorize.
 
@@ -179,7 +179,7 @@ Google user data will not be transferred to third parties except as permitted by
 
 6. HOW WE SHARE INFORMATION
 
-We may share information with service providers that help us operate StudyNova, such as providers for:
+We may share information with service providers that help us operate SyllabusNova, such as providers for:
 
 • Cloud hosting
 • Authentication
@@ -197,7 +197,7 @@ We may also disclose information:
 
 • When required by law
 • To respond to valid legal requests
-• To protect StudyNova, our users, or others
+• To protect SyllabusNova, our users, or others
 • To investigate fraud, security issues, or abuse
 • In connection with a merger, acquisition, financing, restructuring, or sale of assets
 
@@ -221,19 +221,19 @@ However, no internet-based service can guarantee absolute security.
 
 8. DATA RETENTION
 
-We retain information for as long as reasonably necessary to provide StudyNova and for legitimate business, legal, security, and operational purposes.
+We retain information for as long as reasonably necessary to provide SyllabusNova and for legitimate business, legal, security, and operational purposes.
 
-You may delete information through available StudyNova features or request deletion of your account and associated information.
+You may delete information through available SyllabusNova features or request deletion of your account and associated information.
 
 Some information may need to be retained for a limited period when required by law, necessary for security, or reasonably necessary to resolve disputes.
 
 9. DISCONNECTING EMAIL ACCOUNTS
 
-You can disconnect a connected email account from StudyNova.
+You can disconnect a connected email account from SyllabusNova.
 
-When you disconnect an account, StudyNova will stop requesting access to that account through the connection.
+When you disconnect an account, SyllabusNova will stop requesting access to that account through the connection.
 
-Disconnecting an account does not necessarily delete information that was previously stored in your StudyNova account. If you want that information deleted, you may need to delete it through StudyNova or request account/data deletion.
+Disconnecting an account does not necessarily delete information that was previously stored in your SyllabusNova account. If you want that information deleted, you may need to delete it through SyllabusNova or request account/data deletion.
 
 10. YOUR PRIVACY CHOICES
 
@@ -243,40 +243,40 @@ Depending on the features available to you, you may be able to:
 • Edit your account information
 • Delete uploaded files
 • Disconnect connected accounts
-• Delete your StudyNova account
+• Delete your SyllabusNova account
 • Control notifications
 • Manage connected services
 • Request deletion of personal information
 
 11. CHILDREN'S PRIVACY
 
-StudyNova is not intended for children under 13.
+SyllabusNova is not intended for children under 13.
 
 We do not knowingly collect personal information from children under 13.
 
-If you believe a child under 13 has provided personal information to StudyNova, please contact us so that we can investigate and take appropriate action.
+If you believe a child under 13 has provided personal information to SyllabusNova, please contact us so that we can investigate and take appropriate action.
 
-Users who are under the age of majority in their jurisdiction should use StudyNova with the involvement and permission of a parent or legal guardian where required by law.
+Users who are under the age of majority in their jurisdiction should use SyllabusNova with the involvement and permission of a parent or legal guardian where required by law.
 
 12. THIRD-PARTY SERVICES
 
-StudyNova may integrate with third-party services, including authentication providers, email providers, cloud services, payment providers, and AI providers.
+SyllabusNova may integrate with third-party services, including authentication providers, email providers, cloud services, payment providers, and AI providers.
 
 Those services may have their own privacy policies and terms.
 
-StudyNova is not responsible for the privacy practices of third-party services that you choose to connect.
+SyllabusNova is not responsible for the privacy practices of third-party services that you choose to connect.
 
 13. INTERNATIONAL USERS
 
-StudyNova may use service providers that process information in countries other than the country where you live.
+SyllabusNova may use service providers that process information in countries other than the country where you live.
 
-By using StudyNova, you understand that your information may be processed in locations where our service providers operate, subject to applicable privacy laws.
+By using SyllabusNova, you understand that your information may be processed in locations where our service providers operate, subject to applicable privacy laws.
 
 14. CHANGES TO THIS PRIVACY POLICY
 
 We may update this Privacy Policy from time to time.
 
-When we make material changes, we may provide notice through StudyNova, by email, or by other reasonable means.
+When we make material changes, we may provide notice through SyllabusNova, by email, or by other reasonable means.
 
 The "Last Updated" date at the top of this Privacy Policy indicates when it was most recently updated.
 
@@ -284,29 +284,29 @@ The "Last Updated" date at the top of this Privacy Policy indicates when it was 
 
 If you have questions about this Privacy Policy or want to make a privacy request, contact us at:
 
-StudyNova
+SyllabusNova
 Email: [YOUR SUPPORT EMAIL]
 Website: [YOUR WEBSITE]`;
 
-export const TERMS_OF_SERVICE = `STUDYNOVA TERMS OF SERVICE
+export const TERMS_OF_SERVICE = `SYLLABUSNOVA TERMS OF SERVICE
 
 Last Updated: September 28, 2026
 
-Welcome to StudyNova.
+Welcome to SyllabusNova.
 
-These Terms of Service ("Terms") govern your access to and use of the StudyNova website, application, software, and related services ("StudyNova," the "Service," "we," "us," or "our").
+These Terms of Service ("Terms") govern your access to and use of the SyllabusNova website, application, software, and related services ("SyllabusNova," the "Service," "we," "us," or "our").
 
-By creating an account or using StudyNova, you agree to these Terms.
+By creating an account or using SyllabusNova, you agree to these Terms.
 
-If you do not agree with these Terms, do not use StudyNova.
+If you do not agree with these Terms, do not use SyllabusNova.
 
 1. ELIGIBILITY
 
-You must be legally permitted to use StudyNova under the laws applicable to you.
+You must be legally permitted to use SyllabusNova under the laws applicable to you.
 
-StudyNova is not intended for children under 13.
+SyllabusNova is not intended for children under 13.
 
-If you are under the age of majority where you live, you may use StudyNova only with the involvement and permission of a parent or legal guardian where required.
+If you are under the age of majority where you live, you may use SyllabusNova only with the involvement and permission of a parent or legal guardian where required.
 
 2. YOUR ACCOUNT
 
@@ -317,11 +317,11 @@ You are responsible for:
 • Keeping your login information confidential
 • All activity that occurs through your account
 
-You should notify StudyNova if you believe your account has been accessed without authorization.
+You should notify SyllabusNova if you believe your account has been accessed without authorization.
 
-3. USING STUDYNOVA
+3. USING SYLLABUSNOVA
 
-StudyNova provides tools designed to help users organize and manage academic information.
+SyllabusNova provides tools designed to help users organize and manage academic information.
 
 Features may include:
 
@@ -339,11 +339,11 @@ Features may include:
 • AI-powered writing and rewriting tools
 • Other educational productivity features
 
-Features may change over time as StudyNova is developed and improved.
+Features may change over time as SyllabusNova is developed and improved.
 
 4. YOUR CONTENT
 
-You retain ownership of content you submit to StudyNova, including:
+You retain ownership of content you submit to SyllabusNova, including:
 
 • Notes
 • Documents
@@ -353,21 +353,21 @@ You retain ownership of content you submit to StudyNova, including:
 • Emails and email information you choose to connect
 • Other content you provide
 
-You grant StudyNova the limited rights necessary to host, process, transmit, display, analyze, and otherwise use your content solely to provide the features and services you request.
+You grant SyllabusNova the limited rights necessary to host, process, transmit, display, analyze, and otherwise use your content solely to provide the features and services you request.
 
-You are responsible for ensuring that you have the right to upload or use content you submit to StudyNova.
+You are responsible for ensuring that you have the right to upload or use content you submit to SyllabusNova.
 
 5. AI FEATURES
 
-StudyNova uses artificial intelligence to provide certain features.
+SyllabusNova uses artificial intelligence to provide certain features.
 
 AI-generated information may contain errors, inaccuracies, omissions, or outdated information.
 
-StudyNova's AI features should be used as educational assistance and should not be treated as a guaranteed source of truth.
+SyllabusNova's AI features should be used as educational assistance and should not be treated as a guaranteed source of truth.
 
 You are responsible for reviewing AI-generated information before relying on it, submitting it, or using it for important decisions.
 
-StudyNova does not guarantee that AI-generated content will be:
+SyllabusNova does not guarantee that AI-generated content will be:
 
 • Accurate
 • Original
@@ -378,7 +378,7 @@ StudyNova does not guarantee that AI-generated content will be:
 
 6. HUMANIZE FEATURE
 
-StudyNova may provide a Humanize feature that rewrites text to make it sound more natural or conversational.
+SyllabusNova may provide a Humanize feature that rewrites text to make it sound more natural or conversational.
 
 The Humanize feature is a writing-assistance tool.
 
@@ -389,23 +389,23 @@ Users are responsible for ensuring that their use of the feature complies with:
 • Applicable laws
 • Applicable institutional rules
 
-StudyNova does not guarantee that humanized text will be classified in any particular way by an AI detector or other third-party system.
+SyllabusNova does not guarantee that humanized text will be classified in any particular way by an AI detector or other third-party system.
 
 7. EMAIL INTEGRATIONS
 
-StudyNova may allow you to connect third-party email accounts.
+SyllabusNova may allow you to connect third-party email accounts.
 
-When you connect an email account, you authorize StudyNova to access the information and perform the actions permitted by the permissions you approve.
+When you connect an email account, you authorize SyllabusNova to access the information and perform the actions permitted by the permissions you approve.
 
 You are responsible for reviewing the permissions requested by each email provider before authorizing access.
 
-You may disconnect supported email accounts through StudyNova's available settings.
+You may disconnect supported email accounts through SyllabusNova's available settings.
 
-StudyNova does not guarantee that every email provider or every email feature will always be supported.
+SyllabusNova does not guarantee that every email provider or every email feature will always be supported.
 
 8. ACCEPTABLE USE
 
-You agree not to use StudyNova to:
+You agree not to use SyllabusNova to:
 
 • Break the law
 • Infringe another person's rights
@@ -419,11 +419,11 @@ You agree not to use StudyNova to:
 • Impersonate another person
 • Attempt to access another user's account or information
 • Circumvent subscription restrictions
-• Reverse engineer or interfere with StudyNova's systems except where permitted by law
+• Reverse engineer or interfere with SyllabusNova's systems except where permitted by law
 
 9. ACADEMIC INTEGRITY
 
-StudyNova provides educational tools and does not require or encourage users to violate academic-integrity policies.
+SyllabusNova provides educational tools and does not require or encourage users to violate academic-integrity policies.
 
 You are responsible for understanding and following the rules of your school, university, instructor, testing center, or other educational institution.
 
@@ -431,7 +431,7 @@ If your institution prohibits the use of AI for a particular assignment, exam, o
 
 10. SUBSCRIPTIONS AND PRO FEATURES
 
-StudyNova may offer free and paid subscription plans.
+SyllabusNova may offer free and paid subscription plans.
 
 Paid plans may provide access to additional features, including Pro features.
 
@@ -443,13 +443,13 @@ Subscription features may change over time.
 
 Payments may be processed by third-party payment providers.
 
-StudyNova may not directly store complete payment-card information.
+SyllabusNova may not directly store complete payment-card information.
 
 You agree to provide accurate billing information when purchasing a subscription.
 
 12. CANCELLATION
 
-You may cancel your subscription according to the cancellation process provided by StudyNova or the applicable payment platform.
+You may cancel your subscription according to the cancellation process provided by SyllabusNova or the applicable payment platform.
 
 Unless otherwise required by law or expressly stated during purchase, cancellation generally prevents future renewals but does not automatically create a refund for a previously completed billing period.
 
@@ -457,17 +457,17 @@ Any refund rights required by applicable law remain unaffected.
 
 13. INTELLECTUAL PROPERTY
 
-StudyNova and its software, branding, logos, design, features, code, and other materials are owned by StudyNova or its licensors and are protected by applicable intellectual-property laws.
+SyllabusNova and its software, branding, logos, design, features, code, and other materials are owned by SyllabusNova or its licensors and are protected by applicable intellectual-property laws.
 
-You may not copy, reproduce, modify, distribute, sell, or commercially exploit StudyNova's proprietary materials without permission.
+You may not copy, reproduce, modify, distribute, sell, or commercially exploit SyllabusNova's proprietary materials without permission.
 
 14. FEEDBACK
 
-If you provide suggestions, ideas, feedback, or recommendations about StudyNova, you grant StudyNova permission to use that feedback to improve the Service without owing you compensation, provided that doing so does not disclose your private personal information contrary to our Privacy Policy.
+If you provide suggestions, ideas, feedback, or recommendations about SyllabusNova, you grant SyllabusNova permission to use that feedback to improve the Service without owing you compensation, provided that doing so does not disclose your private personal information contrary to our Privacy Policy.
 
 15. THIRD-PARTY SERVICES
 
-StudyNova may depend on third-party services for functionality such as:
+SyllabusNova may depend on third-party services for functionality such as:
 
 • Authentication
 • Email
@@ -480,11 +480,11 @@ StudyNova may depend on third-party services for functionality such as:
 
 Third-party services may have separate terms and privacy policies.
 
-StudyNova is not responsible for failures or changes to third-party services outside our reasonable control.
+SyllabusNova is not responsible for failures or changes to third-party services outside our reasonable control.
 
 16. SERVICE AVAILABILITY
 
-We work to keep StudyNova available and reliable, but we do not guarantee that the Service will always be:
+We work to keep SyllabusNova available and reliable, but we do not guarantee that the Service will always be:
 
 • Available
 • Uninterrupted
@@ -503,41 +503,41 @@ We may suspend or terminate an account if we reasonably believe that the user:
 • Created a security risk
 • Engaged in unlawful activity
 • Attempted unauthorized access
-• Used StudyNova in a way that could harm other users or the Service
+• Used SyllabusNova in a way that could harm other users or the Service
 
 Where appropriate, we may provide notice before termination.
 
 18. DISCLAIMER
 
-StudyNova is provided on an "as is" and "as available" basis to the extent permitted by law.
+SyllabusNova is provided on an "as is" and "as available" basis to the extent permitted by law.
 
-StudyNova does not guarantee that the Service or its AI-generated information will always be accurate, complete, reliable, or suitable for a particular purpose.
+SyllabusNova does not guarantee that the Service or its AI-generated information will always be accurate, complete, reliable, or suitable for a particular purpose.
 
-StudyNova is an educational productivity tool and does not replace professional academic, legal, medical, financial, or other professional advice.
+SyllabusNova is an educational productivity tool and does not replace professional academic, legal, medical, financial, or other professional advice.
 
 19. LIMITATION OF LIABILITY
 
-To the maximum extent permitted by applicable law, StudyNova and its owners, employees, contractors, affiliates, and service providers will not be liable for indirect, incidental, special, consequential, or punitive damages arising from your use of or inability to use the Service.
+To the maximum extent permitted by applicable law, SyllabusNova and its owners, employees, contractors, affiliates, and service providers will not be liable for indirect, incidental, special, consequential, or punitive damages arising from your use of or inability to use the Service.
 
 Nothing in these Terms excludes liability that cannot legally be excluded or limited.
 
 20. INDEMNIFICATION
 
-To the extent permitted by law, you agree to defend, indemnify, and hold harmless StudyNova and its owners, employees, contractors, affiliates, and service providers from claims, liabilities, damages, losses, and expenses arising from:
+To the extent permitted by law, you agree to defend, indemnify, and hold harmless SyllabusNova and its owners, employees, contractors, affiliates, and service providers from claims, liabilities, damages, losses, and expenses arising from:
 
 • Your violation of these Terms
-• Your misuse of StudyNova
+• Your misuse of SyllabusNova
 • Your violation of another person's rights
-• Content you submit to StudyNova
+• Content you submit to SyllabusNova
 • Your violation of applicable laws or institutional policies
 
 21. CHANGES TO THESE TERMS
 
-We may update these Terms as StudyNova develops.
+We may update these Terms as SyllabusNova develops.
 
 If we make material changes, we may provide notice through the Service, by email, or through another reasonable method.
 
-Your continued use of StudyNova after the updated Terms become effective means you accept the updated Terms.
+Your continued use of SyllabusNova after the updated Terms become effective means you accept the updated Terms.
 
 22. GOVERNING LAW
 
@@ -549,6 +549,6 @@ Any dispute will be handled in the jurisdiction required or permitted by applica
 
 Questions about these Terms can be sent to:
 
-StudyNova
+SyllabusNova
 Email: [YOUR SUPPORT EMAIL]
 Website: [YOUR WEBSITE]`;
