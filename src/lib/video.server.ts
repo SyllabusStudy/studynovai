@@ -206,7 +206,7 @@ async function youtubeTranscript(
 
 
 const NOTE_RULES = [
-  "You are SyllableStudy turning a video into college study notes for one student.",
+  "You are SyllabusStudy turning a video into college study notes for one student.",
   "Write notes the student can revise from without rewatching: organized markdown with '## ' sections that follow the video's order.",
   "Every section: 3-6 tight bullets of the actual content (definitions, steps, formulas, examples, numbers, names). Include the [m:ss] timestamp next to a bullet when the transcript shows one.",
   "Then add '## Key terms' (term — plain definition), '## Formulas or steps' (skip if none), and '## Likely test questions' (4-6 questions).",
@@ -450,7 +450,7 @@ export async function runVideoChat(
     {
       role: "system",
       content: [
-        "You are SyllableStudy answering questions about one specific video the student imported.",
+        "You are SyllabusStudy answering questions about one specific video the student imported.",
         "Answer from the video's transcript and notes below. If the video does not cover it, say so plainly, then answer from general subject knowledge and label that clearly.",
         "Cite the [m:ss] timestamp when the transcript shows where something was said.",
         "",
@@ -563,7 +563,7 @@ export async function runVideoWork(
     {
       role: "system",
       content: [
-        "You are SyllableStudy helping a college student with their own assignment, using a video they imported.",
+        "You are SyllabusStudy helping a college student with their own assignment, using a video they imported.",
         WORK_MODES[input.mode],
         editing
           ? "Return ONLY the finished document text — no preamble, no commentary, no code fences. Keep it in the same format the student used."

@@ -17,10 +17,10 @@ export const Route = createFileRoute("/share/$token")({
         ? `${item.count} Flashcard${item.count === 1 ? "" : "s"}`
         : `${item.count} Question${item.count === 1 ? "" : "s"}`
       : null;
-    const title = item ? `${item.title} — ${label} | SyllableStudy` : "Shared study set — SyllableStudy";
+    const title = item ? `${item.title} — ${label} | SyllabusStudy` : "Shared study set — SyllabusStudy";
     const description = item
-      ? `Interactive study set on SyllableStudy • Free to practice — no account needed.`
-      : "A classmate shared flashcards or a quiz made with SyllableStudy.";
+      ? `Interactive study set on SyllabusStudy • Free to practice — no account needed.`
+      : "A classmate shared flashcards or a quiz made with SyllabusStudy.";
     const url = `${SITE}/share/${params.token}`;
     return {
       meta: [
@@ -79,7 +79,7 @@ function SharePage() {
             <div className="surface-card space-y-3 p-5 text-center">
               <p className="font-display text-lg font-bold">Want to make your own from your lecture notes?</p>
               <p className="text-sm text-muted-foreground">
-                SyllableStudy turns your class notes and recordings into flashcards and quizzes in seconds.
+                SyllabusStudy turns your class notes and recordings into flashcards and quizzes in seconds.
               </p>
               <Button asChild><Link to="/auth">Try free</Link></Button>
             </div>

@@ -11,10 +11,10 @@ import { formatDate } from "@/lib/data";
 export const Route = createFileRoute("/_authenticated/feedback")({
   head: () => ({
     meta: [
-      { title: "Feedback — SyllableStudy" },
-      { name: "description", content: "Report a bug, request a feature or tell us what's confusing in SyllableStudy." },
-      { property: "og:title", content: "Feedback — SyllableStudy" },
-      { property: "og:description", content: "Help us improve SyllableStudy." },
+      { title: "Feedback — SyllabusStudy" },
+      { name: "description", content: "Report a bug, request a feature or tell us what's confusing in SyllabusStudy." },
+      { property: "og:title", content: "Feedback — SyllabusStudy" },
+      { property: "og:description", content: "Help us improve SyllabusStudy." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -40,7 +40,7 @@ function FeedbackPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <PageHeader title="Help us improve SyllableStudy" description="Found a bug, got an idea, or something felt confusing? Tell us." />
+      <PageHeader title="Help us improve SyllabusStudy" description="Found a bug, got an idea, or something felt confusing? Tell us." />
       <div className="surface-card p-5 sm:p-6">
         <FeedbackForm page="/feedback" />
       </div>

@@ -48,7 +48,7 @@ export function DevicesCard({ userId }: { userId: string }) {
               : "Background reminders aren't available in this browser yet.",
           );
         } else {
-          toast.success("Background reminders on. You'll get them even when SyllableStudy is closed.");
+          toast.success("Background reminders on. You'll get them even when SyllabusStudy is closed.");
         }
       }
       await refresh();
@@ -76,7 +76,7 @@ export function DevicesCard({ userId }: { userId: string }) {
     if (id === thisId) return signOutEverywhere(true);
     const { error } = await supabase.from("user_devices").update({ revoked: true }).eq("id", id);
     if (error) return void toast.error(error.message);
-    toast.success("That device will be logged out next time it opens SyllableStudy");
+    toast.success("That device will be logged out next time it opens SyllabusStudy");
     await refresh();
   }
 
@@ -89,11 +89,11 @@ export function DevicesCard({ userId }: { userId: string }) {
         </p>
       </div>
       <div className="rounded-lg border border-border bg-muted/40 p-3">
-        <p className="text-sm font-semibold">Reminders when SyllableStudy is closed</p>
+        <p className="text-sm font-semibold">Reminders when SyllabusStudy is closed</p>
         <p className="mt-1 text-xs text-muted-foreground">
           {thisPush
-            ? "This device gets reminders on its lock screen, even when SyllableStudy is closed."
-            : "Turn this on to get assignment and exam reminders even when SyllableStudy is closed."}
+            ? "This device gets reminders on its lock screen, even when SyllabusStudy is closed."
+            : "Turn this on to get assignment and exam reminders even when SyllabusStudy is closed."}
         </p>
         <Button
           size="sm"
@@ -106,7 +106,7 @@ export function DevicesCard({ userId }: { userId: string }) {
         </Button>
         {!pushSupported() ? (
           <p className="mt-2 text-xs text-muted-foreground">
-            This browser can&apos;t do it. On iPhone, add SyllableStudy to your home screen first.
+            This browser can&apos;t do it. On iPhone, add SyllabusStudy to your home screen first.
           </p>
         ) : null}
       </div>

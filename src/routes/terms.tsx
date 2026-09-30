@@ -6,13 +6,13 @@ import { LegalDocument } from "@/components/LegalDocument";
 export const Route = createFileRoute("/terms")({
   head: () => ({
     meta: [
-      { title: "Terms of Service — SyllableStudy" },
+      { title: "Terms of Service — SyllabusStudy" },
       {
         name: "description",
-        content: "The rules for using SyllableStudy: accounts, your content, AI features, email integrations and subscriptions.",
+        content: "The rules for using SyllabusStudy: accounts, your content, AI features, email integrations and subscriptions.",
       },
-      { property: "og:title", content: "Terms of Service — SyllableStudy" },
-      { property: "og:description", content: "The rules for using SyllableStudy's study, AI and email features." },
+      { property: "og:title", content: "Terms of Service — SyllabusStudy" },
+      { property: "og:description", content: "The rules for using SyllabusStudy's study, AI and email features." },
       { property: "og:type", content: "article" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -26,7 +26,7 @@ function TermsPage() {
       <header className="mx-auto flex h-16 w-full max-w-3xl items-center gap-3 px-4 sm:px-6">
         <Link to="/" className="flex items-center gap-2.5">
           <BrandLogo />
-          <span className="text-sm font-extrabold tracking-tight">SyllableStudy</span>
+          <span className="text-sm font-extrabold tracking-tight">SyllabusStudy</span>
         </Link>
       </header>
       <main className="mx-auto w-full max-w-3xl px-4 pb-16 sm:px-6">

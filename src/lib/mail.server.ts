@@ -1,5 +1,5 @@
 /**
- * Server-only Gmail helpers for the SyllableStudy Email page.
+ * Server-only Gmail helpers for the SyllabusStudy Email page.
  * All provider calls run through the connector gateway on behalf of the
  * signed-in student, using their own encrypted connection key.
  */

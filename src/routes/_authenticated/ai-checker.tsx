@@ -16,9 +16,9 @@ import { AiKeySetupBanner, useAiKeyRedirect } from "@/lib/ai-key-gate";
 export const Route = createFileRoute("/_authenticated/ai-checker")({
   head: () => ({
     meta: [
-      { title: "AI Text Checker — SyllableStudy" },
+      { title: "AI Text Checker — SyllabusStudy" },
       { name: "description", content: "Check how much of a text looks AI-written or human-written, and see where and why." },
-      { property: "og:title", content: "AI Text Checker — SyllableStudy" },
+      { property: "og:title", content: "AI Text Checker — SyllabusStudy" },
       { property: "og:description", content: "Estimate AI vs. human writing with passage-by-passage reasons." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
