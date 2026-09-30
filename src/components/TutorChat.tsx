@@ -48,11 +48,14 @@ export function TutorChat({
   conversation,
   compact = false,
   className,
+  memoryScope,
 }: {
   fixedClassId?: string | undefined;
   conversation?: ConversationRow | undefined;
   compact?: boolean;
   className?: string;
+  /** When set, unfinished work is kept for this tab until the tab is closed. */
+  memoryScope?: string | undefined;
 }) {
   const { user } = useAuth();
   const { data: classes = [] } = useClasses(user?.id);
