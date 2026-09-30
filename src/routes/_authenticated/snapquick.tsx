@@ -30,6 +30,7 @@ import { classLabel, useClasses } from "@/lib/data";
 import { useAuth } from "@/lib/auth";
 import { useGuestGate, useRestoredGuestDraft } from "@/lib/guest-gate";
 import { readTabMemory, writeTabMemory } from "@/lib/tab-memory";
+import { ClearAllButton } from "@/components/ClearAllButton";
 
 const MEMORY_SCOPE = "/snapquick";
 type SnapMemory = { messages: Msg[]; input: string; mode: SnapMode; convId: string | null };
