@@ -144,6 +144,13 @@ function QuickVideoPage() {
     await qc.invalidateQueries({ queryKey: ["video_notes"] });
   }
 
+  async function deleteAllNotes() {
+    if (!user?.id) return;
+    const { error } = await supabase.from("video_notes").delete().eq("user_id", user.id);
+    if (error) throw new Error(error.message);
+    await qc.invalidateQueries({ queryKey: ["video_notes"] });
+  }
+
   return (
     <div>
       {guest.dialog}
