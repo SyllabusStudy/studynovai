@@ -230,6 +230,34 @@ function SnapQuickPage() {
 
   useRestoredGuestDraft("snapquick", setInput);
 
+  // Keep this tab's unfinished work while the student hops to another tool and back.
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    if (restoredRef.current || openId) return;
+    restoredRef.current = true;
+    const saved = readTabMemory<SnapMemory>(MEMORY_SCOPE);
+    if (!saved) return;
+    if (Array.isArray(saved.messages) && saved.messages.length) {
+      setMessages(saved.messages);
+      setRevealed(true);
+    }
+    if (saved.convId) setConvId(saved.convId);
+    if (saved.mode) setMode(saved.mode);
+    if (saved.input) setInput(saved.input);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openId]);
+
+  useEffect(() => {
+    if (!restoredRef.current) return;
+    // Photos stay out of tab memory — they are far too large to store.
+    writeTabMemory(MEMORY_SCOPE, {
+      messages: messages.map((m) => ({ role: m.role, content: m.content })),
+      input,
+      mode,
+      convId,
+    } satisfies SnapMemory);
+  }, [messages, input, mode, convId]);
+
   async function send(text: string, opts?: { mode?: SnapMode; img?: string | null; fresh?: boolean }) {
     const msgText = text.trim();
     if (!msgText || busyRef.current || (failed && !opts?.fresh)) return;
