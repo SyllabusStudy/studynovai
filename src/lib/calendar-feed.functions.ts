@@ -21,11 +21,11 @@ function unescape(v: string) {
 function toLocal(value: string, params: string, tz: string): { date: string; time: string | null } | null {
   const m = value.match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})?(Z)?)?$/);
   if (!m) return null;
-  const [, y, mo, d, h, mi, , z] = m;
+  const [, y = "", mo = "", d = "", h, mi = "00", , z] = m;
   if (!h || /VALUE=DATE(?!-)/i.test(params)) return { date: `${y}-${mo}-${d}`, time: null };
   if (!z) return { date: `${y}-${mo}-${d}`, time: `${h}:${mi}` };
   const at = new Date(Date.UTC(+y, +mo - 1, +d, +h, +mi));
-  const parts = Object.fromEntries(
+  const parts: { year?: string; month?: string; day?: string; hour?: string; minute?: string } = Object.fromEntries(
     new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
       .formatToParts(at)
       .map((p) => [p.type, p.value]),
@@ -36,7 +36,8 @@ function toLocal(value: string, params: string, tz: string): { date: string; tim
 function parseIcs(text: string, tz: string): IcsEvent[] {
   const lines = text.replace(/\r\n[ \t]/g, "").replace(/\n[ \t]/g, "").split(/\r?\n/);
   const out: IcsEvent[] = [];
-  let cur: Record<string, { params: string; value: string }> | null = null;
+  type Prop = { params: string; value: string };
+  let cur: { DTSTART?: Prop; SUMMARY?: Prop; UID?: Prop; DESCRIPTION?: Prop; [k: string]: Prop | undefined } | null = null;
   for (const line of lines) {
     if (line === "BEGIN:VEVENT") cur = {};
     else if (line === "END:VEVENT" && cur) {
@@ -55,7 +56,7 @@ function parseIcs(text: string, tz: string): IcsEvent[] {
       const idx = line.indexOf(":");
       if (idx < 0) continue;
       const [name, ...params] = line.slice(0, idx).split(";");
-      cur[name.toUpperCase()] = { params: params.join(";"), value: line.slice(idx + 1) };
+      cur[(name ?? "").toUpperCase()] = { params: params.join(";"), value: line.slice(idx + 1) };
     }
   }
   return out;
