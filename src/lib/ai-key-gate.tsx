@@ -25,7 +25,7 @@ export function useAiKeyStatus() {
     queryFn: async () => {
       // Guests (signed out) have no key and no session — skip the server call.
       const { data } = await supabase.auth.getSession();
-      if (!data.session) return { hasKey: true, guest: true } as Awaited<ReturnType<typeof status>>;
+      if (!data.session) return null;
       return status({ data: undefined });
     },
     staleTime: 60_000,
