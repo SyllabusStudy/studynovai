@@ -152,6 +152,8 @@ export function StudyTabs() {
 
   const close = useCallback(
     (path: string) => {
+      // Closing a tab forgets that tool's unfinished work.
+      clearTabMemory(path);
       setTabs((current) => {
         const index = current.findIndex((t) => t.path === path);
         if (index < 0) return current;
