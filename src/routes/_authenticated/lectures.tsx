@@ -1,8 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileAudio, Loader2, Mic, Square, Trash2 } from "lucide-react";
+import { Download, FileAudio, FolderPlus, Loader2, Mic, Square, Trash2 } from "lucide-react";
+import { useActiveClass } from "@/lib/active-class";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { createLectureNotes } from "@/lib/lecture.functions";
