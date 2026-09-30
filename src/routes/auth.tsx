@@ -214,7 +214,7 @@ function AuthPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@university.edu"
+                placeholder="you@example.com"
                 autoComplete="email"
               />
             </div>
