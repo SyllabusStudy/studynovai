@@ -15,6 +15,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "@/lib/auth";
 import { ThemeProvider } from "@/lib/theme";
 import { Toaster } from "@/components/ui/sonner";
+import { LimitDialog } from "@/components/LimitDialog";
 import { registerServiceWorker } from "@/lib/pwa";
 
 function NotFoundComponent() {
@@ -186,6 +187,7 @@ function RootComponent() {
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <Outlet />
           <Toaster />
+          <LimitDialog />
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

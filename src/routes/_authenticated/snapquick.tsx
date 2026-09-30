@@ -310,6 +310,11 @@ function SnapQuickPage() {
           if (result.error === AI_KEY_HELP) redirectForKey(result.error);
           return;
         }
+        if (showLimitIfQuota(result.error)) {
+          setInput(pending.request.message);
+          setMessages(pending.history);
+          return;
+        }
         setFailed(pending);
         return;
       }

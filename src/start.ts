@@ -18,6 +18,16 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
   }
 });
 
+const limitPopupMiddleware = createMiddleware({ type: "function" }).client(async ({ next }) => {
+  try {
+    return await next();
+  } catch (error) {
+    const { showLimitIfQuota } = await import("@/components/LimitDialog");
+    showLimitIfQuota(error instanceof Error ? error.message : null);
+    throw error;
+  }
+});
+
 // Start installs this automatically when src/start.ts is absent; defining the
 // file opts out, so re-add it explicitly to keep server functions protected
 // from cross-site requests.
@@ -27,5 +37,5 @@ const csrfMiddleware = createCsrfMiddleware({
 
 export const startInstance = createStart(() => ({
   requestMiddleware: [errorMiddleware, csrfMiddleware],
-  functionMiddleware: [attachSupabaseAuth],
+  functionMiddleware: [attachSupabaseAuth, limitPopupMiddleware],
 }));

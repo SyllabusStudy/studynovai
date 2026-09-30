@@ -37,6 +37,8 @@ export const createLectureNotes = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { withUserAiKey } = await import("./ai-key.server");
     const { callAI, parseJsonBlock } = await import("./ai.server");
+    const { assertQuota, recordUsage } = await import("./billing.server");
+    await assertQuota(context.supabase, context.userId, "lecture");
     const mime = data.mimeType.split(";")[0] ?? "audio/webm";
     const raw = await withUserAiKey(context.supabase, context.userId, () =>
       callAI([
@@ -75,5 +77,6 @@ export const createLectureNotes = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
+    await recordUsage(context.supabase, context.userId, "lecture");
     return { id: row.id, cards: cards.length };
   });
