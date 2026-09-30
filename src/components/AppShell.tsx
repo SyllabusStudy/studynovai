@@ -23,8 +23,7 @@ import {
   Sparkles,
   Sun,
   Bell,
-  X,
-} from "lucide-react";
+  X, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
