@@ -128,6 +128,7 @@ export function TutorChat({
 
   return (
     <div className={cn("flex min-h-0 flex-1 flex-col", className)}>
+      {guest.dialog}
       <div className="flex flex-wrap items-center gap-2 border-b border-border pb-3">
         <Select value={mode} onValueChange={setMode}>
           <SelectTrigger className="h-9 w-[170px] text-xs">
