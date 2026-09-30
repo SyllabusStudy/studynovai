@@ -289,10 +289,37 @@ ${keys.length ? `<h2>Key exam concepts</h2><ul>${keys.map((k) => `<li>${escapeHt
                 ) : null}
                 <div><p className="text-sm font-semibold">Study notes</p><Markdown content={n.summary} /></div>
                 <details><summary className="cursor-pointer text-sm font-semibold">Full transcript</summary><p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{n.transcript}</p></details>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Save these notes to a class</Label>
+                  <Select
+                    value={n.class_id ?? "none"}
+                    onValueChange={(v) => void saveToClass(n as Note, v === "none" ? null : v)}
+                  >
+                    <SelectTrigger className="max-w-xs"><SelectValue placeholder="Pick a class" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No class</SelectItem>
+                      {classes.map((c) => <SelectItem key={c.id} value={c.id}>{classLabel(c)}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {n.document_id
+                      ? "Saved in this class's materials — you can build quizzes and flashcards from it."
+                      : "Saving keeps a copy in the class so you can make quizzes and flashcards later."}
+                  </p>
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {n.deck ? (
                     <Button asChild size="sm"><Link to="/flashcards/$deck" params={{ deck: encodeURIComponent(n.deck) }}>Study flashcards</Link></Button>
                   ) : null}
+                  <Button size="sm" variant="outline" className="gap-1.5" disabled={saving === n.id} onClick={() => void useFor(n as Note, "/quizzes")}>
+                    {saving === n.id ? <Loader2 className="size-4 animate-spin" /> : <FolderPlus className="size-4" />} Make a quiz
+                  </Button>
+                  <Button size="sm" variant="outline" className="gap-1.5" disabled={saving === n.id} onClick={() => void useFor(n as Note, "/flashcards")}>
+                    <FolderPlus className="size-4" /> Make flashcards
+                  </Button>
+                  <Button size="sm" variant="outline" className="gap-1.5" onClick={() => downloadPdf(n as Note)}>
+                    <Download className="size-4" /> Save as PDF
+                  </Button>
                   <Button size="sm" variant="ghost" className="gap-1.5" onClick={() => void remove(n.id)}><Trash2 className="size-4" /> Delete</Button>
                 </div>
               </div>
