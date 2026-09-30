@@ -1,5 +1,13 @@
 import { recordStudyActivity } from "@/lib/activity";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import helpImage from "@/assets/how-to-copy-youtube-link.png.asset.json";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ClassActionBar } from "@/components/ClassActionBar";
 import { useClassPicker } from "@/lib/active-class";
 import { useEffect, useRef, useState } from "react";
@@ -80,6 +88,7 @@ function QuickVideoPage() {
   const sendToKeySetup = useSendToAiKeySetup();
   const guest = useGuestGate("quickvideo");
   useRestoredGuestDraft("quickvideo", setUrl);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   // Keep the half-typed link while this tab stays open.
   const restoredRef = useRef(false);
@@ -187,6 +196,13 @@ function QuickVideoPage() {
           <p className="text-xs text-muted-foreground">
             YouTube, Vimeo or any direct video link. Or upload a recording under {MAX_UPLOAD_MB}MB.
           </p>
+          <button
+            type="button"
+            className="w-fit text-xs font-medium text-primary underline-offset-2 hover:underline"
+            onClick={() => setHelpOpen(true)}
+          >
+            How do I copy a YouTube link?
+          </button>
         </div>
 
         <div className="space-y-1.5">
