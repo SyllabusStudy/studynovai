@@ -9,11 +9,17 @@ import {
   CheckSquare,
   BookOpen,
   FileQuestion,
+  GraduationCap,
   Image as ImageIcon,
   LayoutDashboard,
   Mail,
+  MessageSquare,
+  Mic,
   Plus,
   ScanSearch,
+  Settings,
+  Shield,
+  Sparkles,
   Video,
   X,
 } from "lucide-react";
@@ -43,6 +49,12 @@ const ICONS = {
   images: ImageIcon,
   checker: ScanSearch,
   mail: Mail,
+  lectures: Mic,
+  school: GraduationCap,
+  settings: Settings,
+  feedback: MessageSquare,
+  upgrade: Sparkles,
+  admin: Shield,
 } as const;
 
 type IconKey = keyof typeof ICONS;
@@ -58,23 +70,37 @@ const KNOWN: { prefix: string; label: string; icon: IconKey; tint?: string }[] =
   { prefix: "/tutor", label: "AI Tutor", icon: "tutor", tint: "text-feature-ai" },
   { prefix: "/snapquick", label: "SnapQuick", icon: "snap", tint: "text-feature-ai" },
   { prefix: "/quickvideo", label: "QuickVideo", icon: "video", tint: "text-feature-video" },
+  { prefix: "/lectures", label: "Lecture Notes", icon: "lectures", tint: "text-feature-ai" },
   { prefix: "/studio", label: "AI Images", icon: "images" },
   { prefix: "/ai-checker", label: "AI Checker", icon: "checker" },
   { prefix: "/email", label: "Email", icon: "mail" },
+  { prefix: "/school", label: "School", icon: "school" },
+  { prefix: "/settings", label: "Settings", icon: "settings" },
+  { prefix: "/feedback", label: "Feedback", icon: "feedback" },
+  { prefix: "/upgrade", label: "Upgrade", icon: "upgrade" },
+  { prefix: "/admin", label: "Admin", icon: "admin" },
 ];
 
 const LAUNCH: { to: string; label: string; icon: IconKey }[] = [
   { to: "/snapquick", label: "SnapQuick", icon: "snap" },
   { to: "/quickvideo", label: "QuickVideo", icon: "video" },
+  { to: "/lectures", label: "Lecture Notes", icon: "lectures" },
   { to: "/tutor", label: "AI Tutor", icon: "tutor" },
   { to: "/flashcards", label: "Flashcards", icon: "flashcards" },
   { to: "/quizzes", label: "Quizzes", icon: "quizzes" },
+  { to: "/ai-checker", label: "AI Checker", icon: "checker" },
+  { to: "/studio", label: "AI Images", icon: "images" },
+  { to: "/email", label: "Email", icon: "mail" },
   { to: "/calendar", label: "Calendar", icon: "calendar" },
+  { to: "/assignments", label: "Assignments", icon: "assignments" },
+  { to: "/grades", label: "Grades", icon: "grades" },
+  { to: "/classes", label: "My Classes", icon: "classes" },
+  { to: "/school", label: "School", icon: "school" },
 ];
 
 const HOME = "/dashboard";
 const STORE = "studynova.tabs.v1";
-const MAX_TABS = 8;
+const MAX_TABS = 12;
 
 function describe(path: string): Tab | null {
   const match = KNOWN.find((k) => path === k.prefix || path.startsWith(`${k.prefix}/`));
