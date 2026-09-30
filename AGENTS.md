@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Route all student-key AI HTTP requests through `fetchAiWithRetry` in `ai-request.server.ts` so transient failures retry sequentially without switching providers or exposing prompts in logs.
+- School calendar sync (Canvas/Blackboard .ics) stores links in `calendar_feeds` and dedupes events via `calendar_events.source_document = ics:<feedId>:<uid>` — avoids a new column and keeps re-syncs idempotent.
