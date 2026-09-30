@@ -50,7 +50,7 @@ function AuthPage() {
 
   useEffect(() => {
     if (creating) return;
-    if (!loading && user) navigate({ to: "/dashboard" });
+    if (!loading && user) navigate({ to: (guestReturnPath() ?? "/dashboard") as "/dashboard" });
   }, [loading, user, navigate, creating]);
 
 
