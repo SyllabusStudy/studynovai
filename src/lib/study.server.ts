@@ -48,15 +48,23 @@ export async function runDocumentExtraction(supabase: DB, userId: string, docume
       })
       .eq("id", doc.id);
 
+    // Generic export names ("Untitled document.pdf", "Scan_01.pdf", "IMG_4821.pdf")
+    // get replaced with the actual topic of the file so materials lists stay readable.
+    let renamedTo: string | null = null;
+    if (text && isGenericFileName(doc.file_name) && !doc.is_syllabus) {
+      renamedTo = await autoNameDocument(supabase, doc.id, doc.file_name, text);
+    }
+
     // Class memory: a follow-up upload (chapter 4 study guide, notes, homework)
     // gets attached to the class it clearly belongs to, so the student never has
     // to re-explain which course they mean.
     let linkedClass: { id: string; class_name: string } | null = null;
     if (text && !doc.class_id && !doc.is_syllabus) {
-      linkedClass = await inferDocumentClass(supabase, userId, doc.id, doc.file_name, text);
+      linkedClass = await inferDocumentClass(supabase, userId, doc.id, renamedTo ?? doc.file_name, text);
     }
 
-    return { characters: text.length, note: note ?? null, linkedClass };
+    return { characters: text.length, note: note ?? null, linkedClass, renamedTo };
+
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
     await supabase
@@ -66,6 +74,73 @@ export async function runDocumentExtraction(supabase: DB, userId: string, docume
     throw new Error(message);
   }
 }
+
+const GENERIC_NAME_PATTERNS = [
+  /^untitled/i,
+  /^document\b/i,
+  /^doc\d*$/i,
+  /^new document/i,
+  /^copy of /i,
+  /^download(\s*\(\d+\))?$/i,
+  /^scan[\s._-]*\d*$/i,
+  /^scanned[\s._-]/i,
+  /^img[\s._-]*\d+$/i,
+  /^image[\s._-]*\d*$/i,
+  /^photo[\s._-]*\d*$/i,
+  /^pxl[\s._-]*\d+/i,
+  /^screenshot/i,
+  /^file[\s._-]*\d*$/i,
+  /^\d[\d\s._-]*$/,
+];
+
+/** True when a file name carries no topic (a phone scan, a Google Docs export, etc.). */
+export function isGenericFileName(fileName: string): boolean {
+  const base = fileName.replace(/\.[a-z0-9]{1,6}$/i, "").trim();
+  if (!base) return true;
+  const cleaned = base.replace(/\s*\(\d+\)$/, "").trim();
+  return GENERIC_NAME_PATTERNS.some((re) => re.test(cleaned));
+}
+
+function sanitizeTitle(title: string): string {
+  return title
+    .replace(/[\\/:*?"<>|]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 90);
+}
+
+/** Renames a generically named document after the topic of its content. */
+async function autoNameDocument(
+  supabase: DB,
+  documentId: string,
+  fileName: string,
+  text: string,
+): Promise<string | null> {
+  const ext = fileName.match(/\.[a-z0-9]{1,6}$/i)?.[0] ?? "";
+  try {
+    const raw = await callAI(
+      [
+        {
+          role: "system",
+          content:
+            'You name a student\'s course file after its actual topic and reply with json only: {"title":string}. Keep it 3-8 words, title case, no file extension, no quotes. Use the course code or chapter when the document states it. Never invent a topic — if the text has no clear topic, reply {"title":null}.',
+        },
+        { role: "user", content: `FILE CONTENT (start):\n${text.slice(0, 3000)}` },
+      ],
+      { maxTokens: 60, temperature: 0 },
+    );
+    const parsed = parseJsonBlock<{ title: string | null }>(raw);
+    const title = sanitizeTitle(String(parsed.title ?? ""));
+    if (!title || title.length < 3) return null;
+    const next = `${title}${ext}`;
+    const { error } = await supabase.from("documents").update({ file_name: next }).eq("id", documentId);
+    if (error) return null;
+    return next;
+  } catch {
+    return null;
+  }
+}
+
 
 /** Picks the student's existing class that a new document belongs to and links it. */
 async function inferDocumentClass(
@@ -395,6 +470,19 @@ ${syllabusText}`,
     }
     await supabase.from("documents").update({ class_id: doc.class_id }).eq("id", doc.id);
   }
+
+  // A syllabus exported as "Untitled document.pdf" gets named after its course.
+  if (isGenericFileName(doc.file_name)) {
+    const label = sanitizeTitle(
+      `${parsed.course_code ? parsed.course_code + " " : ""}${parsed.course_name ?? ""} Syllabus`,
+    );
+    if (label.length > 10) {
+      const ext = doc.file_name.match(/\.[a-z0-9]{1,6}$/i)?.[0] ?? "";
+      await supabase.from("documents").update({ file_name: `${label}${ext}` }).eq("id", doc.id);
+    }
+  }
+
+
 
   let eventsCreated = 0;
   if (doc.class_id) {
