@@ -107,39 +107,64 @@ function Landing() {
         </div>
       </header>
 
-      <section className="mx-auto max-w-6xl px-4 pb-16 pt-10 sm:px-6 sm:pt-20">
+      <section className="mx-auto max-w-6xl px-4 pb-10 pt-8 sm:px-6 sm:pt-14">
         <div className="max-w-3xl animate-fade-up">
           <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-muted-foreground">
             <Sparkles className="size-3.5 text-primary" /> Built for real coursework
           </span>
-          <h1 className="mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl">
+          <h1 className="mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl">
             Your <span className="text-gradient-brand">AI-powered</span> college companion.
           </h1>
-          <p className="mt-5 max-w-2xl text-base text-muted-foreground sm:text-lg">
-            Keep every class, syllabus, PDF, deadline and grade in one calm workspace — and study with an AI
-            tutor that actually knows your course materials.
+          <p className="mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg">
+            Turn your coursework into notes, quizzes, flashcards, study guides, and more — all in one
+            place.
           </p>
-          <div className="mt-8 flex flex-wrap items-center gap-3">
+          <div className="mt-7 flex flex-wrap items-center gap-3">
             <Button asChild size="lg" className="gap-2">
               <Link to="/auth" search={{ mode: "signup" }}>
                 Create your free account <ArrowRight className="size-4" />
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link to="/features/flashcards">See AI flashcards</Link>
+              <a href="#try-it">Try SyllabusStudy</a>
             </Button>
             <InstallAppButton className="gap-2" />
           </div>
+        </div>
+      </section>
 
+      <TryItTools />
+
+      <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
+        <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
+          One place for everything
+        </h2>
+        <p className="mt-2 text-sm text-muted-foreground sm:text-base">
+          Your whole semester, already connected — no spreadsheets, no scattered apps.
+        </p>
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {HUB.map((h) => (
+            <Link
+              key={h.label}
+              to={h.to}
+              className="surface-card group flex items-center gap-3 p-4 transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[var(--shadow-pop)]"
+            >
+              <span className="flex size-9 items-center justify-center rounded-xl bg-secondary text-primary">
+                <h.icon className="size-4" />
+              </span>
+              <span className="text-sm font-semibold tracking-tight">{h.label}</span>
+              <ArrowRight className="ml-auto size-3.5 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          ))}
         </div>
 
-        <div className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f) => (
             <article key={f.title} className="surface-card animate-fade-up p-5">
               <span className="flex size-10 items-center justify-center rounded-xl bg-secondary text-primary">
                 <f.icon className="size-5" />
               </span>
-              <h2 className="mt-4 text-base font-bold tracking-tight">{f.title}</h2>
+              <h3 className="mt-4 text-base font-bold tracking-tight">{f.title}</h3>
               <p className="mt-1.5 text-sm text-muted-foreground">{f.body}</p>
             </article>
           ))}
@@ -147,14 +172,14 @@ function Landing() {
 
         <div className="surface-card mt-14 flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-bold tracking-tight">Set up your semester in about five minutes</h2>
+            <h2 className="text-lg font-bold tracking-tight">Your entire semester, in one place.</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Add a class, drop in the syllabus, and let SyllabusStudy handle the calendar, flashcards and study plan.
+              Organize your classes. Study with AI. Stay ahead.
             </p>
           </div>
-          <Button asChild size="lg" className="shrink-0">
+          <Button asChild size="lg" className="shrink-0 gap-2">
             <Link to="/auth" search={{ mode: "signup" }}>
-              Start free
+              Get started for free <ArrowRight className="size-4" />
             </Link>
           </Button>
         </div>
