@@ -61,6 +61,7 @@ function LecturesPage() {
   });
 
   async function process(blob: Blob, name: string) {
+    if (guest.requireAccount()) return;
     if (blob.size > MAX_BYTES) {
       toast.error("That recording is too long. Keep it under about 40 minutes (19 MB), or split it.");
       return;
