@@ -94,6 +94,7 @@ function AuthPage() {
         setMode("login");
       }
     } catch (err) {
+      setCreating(false);
       const message = err instanceof Error ? err.message : "Something went wrong.";
       toast.error(
         message.includes("Invalid login credentials")
@@ -104,6 +105,7 @@ function AuthPage() {
       setBusy(false);
     }
   }
+
 
   async function onGoogle() {
     setGoogleBusy(true);
