@@ -178,7 +178,7 @@ function SetupAiPage() {
             <button
               type="button"
               className="w-full text-sm font-semibold text-muted-foreground underline"
-              onClick={() => navigate({ to: "/dashboard" })}
+              onClick={() => navigate({ to: nextPath() })}
             >
               I'll set this up later
             </button>
