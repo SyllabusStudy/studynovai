@@ -75,6 +75,73 @@ export async function runDocumentExtraction(supabase: DB, userId: string, docume
   }
 }
 
+const GENERIC_NAME_PATTERNS = [
+  /^untitled/i,
+  /^document\b/i,
+  /^doc\d*$/i,
+  /^new document/i,
+  /^copy of /i,
+  /^download(\s*\(\d+\))?$/i,
+  /^scan[\s._-]*\d*$/i,
+  /^scanned[\s._-]/i,
+  /^img[\s._-]*\d+$/i,
+  /^image[\s._-]*\d*$/i,
+  /^photo[\s._-]*\d*$/i,
+  /^pxl[\s._-]*\d+/i,
+  /^screenshot/i,
+  /^file[\s._-]*\d*$/i,
+  /^\d[\d\s._-]*$/,
+];
+
+/** True when a file name carries no topic (a phone scan, a Google Docs export, etc.). */
+export function isGenericFileName(fileName: string): boolean {
+  const base = fileName.replace(/\.[a-z0-9]{1,6}$/i, "").trim();
+  if (!base) return true;
+  const cleaned = base.replace(/\s*\(\d+\)$/, "").trim();
+  return GENERIC_NAME_PATTERNS.some((re) => re.test(cleaned));
+}
+
+function sanitizeTitle(title: string): string {
+  return title
+    .replace(/[\\/:*?"<>|]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 90);
+}
+
+/** Renames a generically named document after the topic of its content. */
+async function autoNameDocument(
+  supabase: DB,
+  documentId: string,
+  fileName: string,
+  text: string,
+): Promise<string | null> {
+  const ext = fileName.match(/\.[a-z0-9]{1,6}$/i)?.[0] ?? "";
+  try {
+    const raw = await callAI(
+      [
+        {
+          role: "system",
+          content:
+            'You name a student\'s course file after its actual topic and reply with json only: {"title":string}. Keep it 3-8 words, title case, no file extension, no quotes. Use the course code or chapter when the document states it. Never invent a topic — if the text has no clear topic, reply {"title":null}.',
+        },
+        { role: "user", content: `FILE CONTENT (start):\n${text.slice(0, 3000)}` },
+      ],
+      { maxTokens: 60, temperature: 0 },
+    );
+    const parsed = parseJsonBlock<{ title: string | null }>(raw);
+    const title = sanitizeTitle(String(parsed.title ?? ""));
+    if (!title || title.length < 3) return null;
+    const next = `${title}${ext}`;
+    const { error } = await supabase.from("documents").update({ file_name: next }).eq("id", documentId);
+    if (error) return null;
+    return next;
+  } catch {
+    return null;
+  }
+}
+
+
 /** Picks the student's existing class that a new document belongs to and links it. */
 async function inferDocumentClass(
   supabase: DB,
