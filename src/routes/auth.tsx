@@ -46,10 +46,13 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
+    if (creating) return;
     if (!loading && user) navigate({ to: "/dashboard" });
-  }, [loading, user, navigate]);
+  }, [loading, user, navigate, creating]);
+
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
