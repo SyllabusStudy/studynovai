@@ -45,6 +45,10 @@ function safeReturnOrigin(candidate: string | undefined, fallback: string): stri
     host === "localhost" ||
     host === "studynova.link" ||
     host.endsWith(".studynova.link") ||
+    host === "syllabusstudy.com" ||
+    host.endsWith(".syllabusstudy.com") ||
+    host === "syllablestudy.com" ||
+    host.endsWith(".syllablestudy.com") ||
     host === "lovable.app" ||
     host.endsWith(".lovable.app") ||
     host.endsWith(".lovableproject.com");
