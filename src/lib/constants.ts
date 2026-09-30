@@ -1,4 +1,19 @@
+/** The public address every shared/copied link should use, whatever domain the
+ *  student happens to be browsing on. Older domains stay connected and keep
+ *  working, they just aren't what we hand out. */
+export const PUBLIC_SITE_URL = "https://syllabusstudy.com";
+
+/** Origin to build shareable links from. Local development keeps its own origin
+ *  so links stay clickable while testing. */
+export function shareOrigin(): string {
+  if (typeof window === "undefined") return PUBLIC_SITE_URL;
+  const host = window.location.hostname;
+  if (host === "localhost" || host === "127.0.0.1") return window.location.origin;
+  return PUBLIC_SITE_URL;
+}
+
 export const CLASS_COLORS = [
+
   { key: "teal", label: "Teal", token: "var(--class-teal)" },
   { key: "blue", label: "Blue", token: "var(--class-blue)" },
   { key: "indigo", label: "Indigo", token: "var(--class-indigo)" },
