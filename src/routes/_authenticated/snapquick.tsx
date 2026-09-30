@@ -29,6 +29,10 @@ import {
 import { classLabel, useClasses } from "@/lib/data";
 import { useAuth } from "@/lib/auth";
 import { useGuestGate, useRestoredGuestDraft } from "@/lib/guest-gate";
+import { readTabMemory, writeTabMemory } from "@/lib/tab-memory";
+
+const MEMORY_SCOPE = "/snapquick";
+type SnapMemory = { messages: Msg[]; input: string; mode: SnapMode; convId: string | null };
 
 export const Route = createFileRoute("/_authenticated/snapquick")({
   head: () => ({
