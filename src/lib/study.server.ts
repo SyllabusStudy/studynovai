@@ -48,15 +48,23 @@ export async function runDocumentExtraction(supabase: DB, userId: string, docume
       })
       .eq("id", doc.id);
 
+    // Generic export names ("Untitled document.pdf", "Scan_01.pdf", "IMG_4821.pdf")
+    // get replaced with the actual topic of the file so materials lists stay readable.
+    let renamedTo: string | null = null;
+    if (text && isGenericFileName(doc.file_name) && !doc.is_syllabus) {
+      renamedTo = await autoNameDocument(supabase, doc.id, doc.file_name, text);
+    }
+
     // Class memory: a follow-up upload (chapter 4 study guide, notes, homework)
     // gets attached to the class it clearly belongs to, so the student never has
     // to re-explain which course they mean.
     let linkedClass: { id: string; class_name: string } | null = null;
     if (text && !doc.class_id && !doc.is_syllabus) {
-      linkedClass = await inferDocumentClass(supabase, userId, doc.id, doc.file_name, text);
+      linkedClass = await inferDocumentClass(supabase, userId, doc.id, renamedTo ?? doc.file_name, text);
     }
 
-    return { characters: text.length, note: note ?? null, linkedClass };
+    return { characters: text.length, note: note ?? null, linkedClass, renamedTo };
+
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
     await supabase
