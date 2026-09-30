@@ -436,9 +436,17 @@ function SnapQuickPage() {
 
           {saved.length ? (
             <div className="surface-card p-3">
-              <p className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                <History className="size-3.5" /> Past problems
-              </p>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  <History className="size-3.5" /> Past problems
+                </p>
+                <ClearAllButton
+                  label="saved problems"
+                  count={saved.length}
+                  description="Every problem you've solved with SnapQuick will be removed from your account. This can't be undone."
+                  onClear={deleteAllConversations}
+                />
+              </div>
               <ul className="max-h-64 space-y-1 overflow-y-auto">
                 {saved.map((c) => (
                   <li key={c.id} className="group flex items-center gap-1">
