@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth";
 import { lovable } from "@/integrations/lovable/index";
+import { guestReturnPath } from "@/lib/guest-gate";
 
 const searchSchema = z.object({
   mode: z.enum(["login", "signup", "reset"]).optional(),
