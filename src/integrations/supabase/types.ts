@@ -608,6 +608,7 @@ export type Database = {
           class_id: string | null
           created_at: string
           deck: string | null
+          document_id: string | null
           id: string
           key_concepts: Json
           summary: string
@@ -619,6 +620,7 @@ export type Database = {
           class_id?: string | null
           created_at?: string
           deck?: string | null
+          document_id?: string | null
           id?: string
           key_concepts?: Json
           summary?: string
@@ -630,6 +632,7 @@ export type Database = {
           class_id?: string | null
           created_at?: string
           deck?: string | null
+          document_id?: string | null
           id?: string
           key_concepts?: Json
           summary?: string
@@ -643,6 +646,13 @@ export type Database = {
             columns: ["class_id"]
             isOneToOne: false
             referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lecture_notes_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
             referencedColumns: ["id"]
           },
         ]
