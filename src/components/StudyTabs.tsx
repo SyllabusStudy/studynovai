@@ -88,6 +88,7 @@ export function StudyTabs() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const [tabs, setTabs] = useState<Tab[]>([]);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     try {
@@ -99,9 +100,11 @@ export function StudyTabs() {
     } catch {
       /* ignore */
     }
+    setReady(true);
   }, []);
 
   useEffect(() => {
+    if (!ready) return;
     const next = describe(pathname);
     if (!next) return;
     setTabs((current) => {
@@ -109,15 +112,16 @@ export function StudyTabs() {
       const merged = [...current, next];
       return merged.length > MAX_TABS ? merged.slice(merged.length - MAX_TABS) : merged;
     });
-  }, [pathname]);
+  }, [pathname, ready]);
 
   useEffect(() => {
+    if (!ready) return;
     try {
       sessionStorage.setItem(STORE, JSON.stringify(tabs));
     } catch {
       /* ignore */
     }
-  }, [tabs]);
+  }, [tabs, ready]);
 
   const close = useCallback(
     (path: string) => {
