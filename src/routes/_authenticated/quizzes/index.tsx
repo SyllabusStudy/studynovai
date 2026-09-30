@@ -104,6 +104,13 @@ function QuizzesPage() {
     await qc.invalidateQueries({ queryKey: ["quizzes"] });
   }
 
+  async function deleteAllQuizzes() {
+    if (!user?.id) return;
+    const { error } = await supabase.from("quizzes").delete().eq("user_id", user.id);
+    if (error) throw new Error(error.message);
+    await qc.invalidateQueries({ queryKey: ["quizzes"] });
+  }
+
   return (
     <div>
       <PageHeader title="Quizzes" description="Test yourself with questions from your own notes." />

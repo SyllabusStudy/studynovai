@@ -122,6 +122,15 @@ function FlashcardsPage() {
     await qc.invalidateQueries({ queryKey: ["flashcards"] });
   }
 
+  async function deleteAllDecks() {
+    if (!user?.id) return;
+    let q = supabase.from("flashcards").delete().eq("user_id", user.id);
+    if (classId) q = q.eq("class_id", classId);
+    const { error } = await q;
+    if (error) throw new Error(error.message);
+    await qc.invalidateQueries({ queryKey: ["flashcards"] });
+  }
+
   return (
     <div>
       <PageHeader title="Flashcards" description="Make a deck from your notes, then study it." />
