@@ -49,6 +49,7 @@ import { checkAdmin } from "@/lib/admin.functions";
 import { AskAiDock } from "@/components/AskAiDock";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { StudyTabs } from "@/components/StudyTabs";
+import { SeasonalDecorations } from "@/components/SeasonalDecorations";
 
 
 type NavItem = { to: string; label: string; icon: typeof BookOpen; tint?: string };
@@ -119,6 +120,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background">
+      <SeasonalDecorations />
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
         <BrandBlock />
         <NavList pathname={pathname} />
