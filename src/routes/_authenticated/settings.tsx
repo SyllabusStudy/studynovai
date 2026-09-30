@@ -41,6 +41,7 @@ function SettingsPage() {
   const qc = useQueryClient();
   const { data: profile } = useProfile(user?.id);
   const { theme, toggle } = useTheme();
+  const { theme: seasonal, setTheme: setSeasonal } = useSeasonalTheme();
   const [busy, setBusy] = useState(false);
   const [perm, setPerm] = useState<NotificationPermission | "unsupported">("default");
   const [form, setForm] = useState({
