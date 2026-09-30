@@ -7,7 +7,7 @@ import {
   FileQuestion,
   Layers,
   Mic,
-  NotebookPen,
+  ScanSearch,
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -373,7 +373,7 @@ export function TryItTools() {
         <QuizCard gate={gate} />
         <LectureCard gate={gate} />
         <FlashcardCard gate={gate} />
-        <SummarizeCard gate={gate} />
+        <AiCheckerCard gate={gate} />
         <AskMaterialsCard gate={gate} />
         <GradeCard />
       </div>
