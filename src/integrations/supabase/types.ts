@@ -522,6 +522,7 @@ export type Database = {
           created_at: string
           deck: string | null
           difficulty: string
+          flagged: boolean
           front: string
           id: string
           next_review: string | null
@@ -536,6 +537,7 @@ export type Database = {
           created_at?: string
           deck?: string | null
           difficulty?: string
+          flagged?: boolean
           front: string
           id?: string
           next_review?: string | null
@@ -550,6 +552,7 @@ export type Database = {
           created_at?: string
           deck?: string | null
           difficulty?: string
+          flagged?: boolean
           front?: string
           id?: string
           next_review?: string | null
