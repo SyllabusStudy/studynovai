@@ -27,6 +27,7 @@ import { Route as AuthenticatedFeedbackRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedGradesRouteImport } from './routes/_authenticated/grades'
 import { Route as AuthenticatedSchoolRouteImport } from './routes/_authenticated/school'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedSetupAiRouteImport } from './routes/_authenticated/setup-ai'
 import { Route as AuthenticatedSnapquickRouteImport } from './routes/_authenticated/snapquick'
 import { Route as AuthenticatedStudioRouteImport } from './routes/_authenticated/studio'
 import { Route as AuthenticatedTutorRouteImport } from './routes/_authenticated/tutor'
@@ -132,6 +133,11 @@ const AuthenticatedSchoolRoute = AuthenticatedSchoolRouteImport.update({
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSetupAiRoute = AuthenticatedSetupAiRouteImport.update({
+  id: '/setup-ai',
+  path: '/setup-ai',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedSnapquickRoute = AuthenticatedSnapquickRouteImport.update({
@@ -242,6 +248,7 @@ export interface FileRoutesByFullPath {
   '/grades': typeof AuthenticatedGradesRoute
   '/school': typeof AuthenticatedSchoolRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/setup-ai': typeof AuthenticatedSetupAiRoute
   '/snapquick': typeof AuthenticatedSnapquickRoute
   '/studio': typeof AuthenticatedStudioRoute
   '/tutor': typeof AuthenticatedTutorRoute
@@ -277,6 +284,7 @@ export interface FileRoutesByTo {
   '/grades': typeof AuthenticatedGradesRoute
   '/school': typeof AuthenticatedSchoolRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/setup-ai': typeof AuthenticatedSetupAiRoute
   '/snapquick': typeof AuthenticatedSnapquickRoute
   '/studio': typeof AuthenticatedStudioRoute
   '/tutor': typeof AuthenticatedTutorRoute
@@ -314,6 +322,7 @@ export interface FileRoutesById {
   '/_authenticated/grades': typeof AuthenticatedGradesRoute
   '/_authenticated/school': typeof AuthenticatedSchoolRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/setup-ai': typeof AuthenticatedSetupAiRoute
   '/_authenticated/snapquick': typeof AuthenticatedSnapquickRoute
   '/_authenticated/studio': typeof AuthenticatedStudioRoute
   '/_authenticated/tutor': typeof AuthenticatedTutorRoute
@@ -351,6 +360,7 @@ export interface FileRouteTypes {
     | '/grades'
     | '/school'
     | '/settings'
+    | '/setup-ai'
     | '/snapquick'
     | '/studio'
     | '/tutor'
@@ -386,6 +396,7 @@ export interface FileRouteTypes {
     | '/grades'
     | '/school'
     | '/settings'
+    | '/setup-ai'
     | '/snapquick'
     | '/studio'
     | '/tutor'
@@ -422,6 +433,7 @@ export interface FileRouteTypes {
     | '/_authenticated/grades'
     | '/_authenticated/school'
     | '/_authenticated/settings'
+    | '/_authenticated/setup-ai'
     | '/_authenticated/snapquick'
     | '/_authenticated/studio'
     | '/_authenticated/tutor'
@@ -583,6 +595,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/setup-ai': {
+      id: '/_authenticated/setup-ai'
+      path: '/setup-ai'
+      fullPath: '/setup-ai'
+      preLoaderRoute: typeof AuthenticatedSetupAiRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/snapquick': {
       id: '/_authenticated/snapquick'
       path: '/snapquick'
@@ -709,6 +728,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedGradesRoute: typeof AuthenticatedGradesRoute
   AuthenticatedSchoolRoute: typeof AuthenticatedSchoolRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedSetupAiRoute: typeof AuthenticatedSetupAiRoute
   AuthenticatedSnapquickRoute: typeof AuthenticatedSnapquickRoute
   AuthenticatedStudioRoute: typeof AuthenticatedStudioRoute
   AuthenticatedTutorRoute: typeof AuthenticatedTutorRoute
@@ -734,6 +754,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedGradesRoute: AuthenticatedGradesRoute,
   AuthenticatedSchoolRoute: AuthenticatedSchoolRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedSetupAiRoute: AuthenticatedSetupAiRoute,
   AuthenticatedSnapquickRoute: AuthenticatedSnapquickRoute,
   AuthenticatedStudioRoute: AuthenticatedStudioRoute,
   AuthenticatedTutorRoute: AuthenticatedTutorRoute,
