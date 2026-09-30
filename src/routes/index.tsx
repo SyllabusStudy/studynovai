@@ -36,8 +36,11 @@ export const Route = createFileRoute("/")({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:image", content: "https://syllabusstudy.com/share-card.jpg" },
+      { name: "twitter:image", content: "https://syllabusstudy.com/share-card.jpg" },
+      { property: "og:url", content: "https://syllabusstudy.com/" },
     ],
-    links: [{ rel: "canonical", href: "https://studynovai.lovable.app/" }],
+    links: [{ rel: "canonical", href: "https://syllabusstudy.com/" }],
   }),
   component: Landing,
 });
