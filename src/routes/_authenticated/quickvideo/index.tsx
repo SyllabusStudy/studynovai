@@ -75,6 +75,7 @@ function QuickVideoPage() {
   const sendToKeySetup = useSendToAiKeySetup();
 
   async function submit(payload: { url?: string; dataUrl?: string; fileName?: string }) {
+    if (guest.requireAccount({ text: payload.url ?? "" })) return;
     if (keyStatus?.hasKey === false) {
       sendToKeySetup();
       return;
