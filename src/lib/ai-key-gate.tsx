@@ -6,6 +6,7 @@ import { KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { getAiKeyStatus } from "@/lib/ai-keys.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 /** Deep link that scrolls to and highlights the AI key card in Settings. */
 export const AI_KEY_SETTINGS_LINK = "/settings?setup=ai-key#ai-key";
@@ -21,7 +22,12 @@ export function useAiKeyStatus() {
   const status = useServerFn(getAiKeyStatus);
   return useQuery({
     queryKey: ["ai-key"],
-    queryFn: () => status({ data: undefined }),
+    queryFn: async () => {
+      // Guests (signed out) have no key and no session — skip the server call.
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) return { hasKey: true, guest: true } as Awaited<ReturnType<typeof status>>;
+      return status({ data: undefined });
+    },
     staleTime: 60_000,
   });
 }
