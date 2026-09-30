@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
 import { SyllabusCsvExport } from "@/components/SyllabusCsvExport";
+import { CalendarSync } from "@/components/CalendarSync";
 import { ClassDot } from "@/components/ClassBadge";
 import { DeleteButton } from "@/components/DeleteButton";
 import { Hint } from "@/components/Hint";
@@ -120,6 +121,7 @@ function CalendarPage() {
         description="Everything coming up, color-coded by class."
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <CalendarSync />
             <SyllabusCsvExport label="Export CSV" />
             <NewEventDialog />
           </div>
