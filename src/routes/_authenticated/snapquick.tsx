@@ -324,6 +324,7 @@ function SnapQuickPage() {
 
   return (
     <div>
+      {guest.dialog}
       <PageHeader title="Stuck on a problem?" description="Snap it or type it. Learn every step." />
       <AiKeySetupBanner />
       <ClassActionBar />
