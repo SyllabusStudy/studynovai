@@ -71,10 +71,11 @@ function SharePage() {
               <p className="text-sm text-muted-foreground">Start studying right away — no account needed.</p>
             </div>
             {data.kind === "deck" ? (
-              <Cards cards={((data.payload as { cards?: Card[] }).cards ?? [])} />
+              <Cards cards={(data.payload.cards ?? []) as Card[]} />
             ) : (
-              <Quiz questions={((data.payload as { questions?: Q[] }).questions ?? [])} />
+              <Quiz questions={(data.payload.questions ?? []) as Q[]} />
             )}
+
             <div className="surface-card space-y-3 p-5 text-center">
               <p className="font-display text-lg font-bold">Want to make your own from your lecture notes?</p>
               <p className="text-sm text-muted-foreground">
