@@ -1,23 +1,46 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { BrandLogo } from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { getSharedItem } from "@/lib/share.functions";
+
+const SITE = "https://studynova.link";
+const SHARE_IMAGE = `${SITE}/share-card.jpg`;
 
 export const Route = createFileRoute("/share/$token")({
-  head: () => ({
-    meta: [
-      { title: "Shared study set — StudyNova" },
-      { name: "description", content: "A classmate shared flashcards or a quiz made with StudyNova." },
-      { property: "og:title", content: "Shared study set — StudyNova" },
-      { property: "og:description", content: "Study these flashcards or take this quiz, made with StudyNova." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-    ],
-  }),
+  loader: ({ params }) => getSharedItem({ data: { token: params.token } }),
+  head: ({ params, loaderData }) => {
+    const item = loaderData ?? null;
+    const label = item
+      ? item.kind === "deck"
+        ? `${item.count} Flashcard${item.count === 1 ? "" : "s"}`
+        : `${item.count} Question${item.count === 1 ? "" : "s"}`
+      : null;
+    const title = item ? `${item.title} — ${label} | StudyNova` : "Shared study set — StudyNova";
+    const description = item
+      ? `Interactive study set on StudyNova • Free to practice — no account needed.`
+      : "A classmate shared flashcards or a quiz made with StudyNova.";
+    const url = `${SITE}/share/${params.token}`;
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:url", content: url },
+        { property: "og:type", content: "article" },
+        { property: "og:image", content: SHARE_IMAGE },
+        { property: "og:image:width", content: "1200" },
+        { property: "og:image:height", content: "630" },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: description },
+        { name: "twitter:image", content: SHARE_IMAGE },
+      ],
+      links: [{ rel: "canonical", href: url }],
+    };
+  },
   component: SharePage,
 });
 
@@ -25,15 +48,8 @@ type Card = { front: string; back: string };
 type Q = { id?: string; prompt: string; options?: string[]; answer: string; explanation?: string };
 
 function SharePage() {
-  const { token } = Route.useParams();
-  const { data, isLoading } = useQuery({
-    queryKey: ["shared", token],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_shared_item", { _token: token });
-      if (error) throw error;
-      return data?.[0] ?? null;
-    },
-  });
+  const data = Route.useLoaderData();
+  const count = data?.count ?? 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -42,29 +58,30 @@ function SharePage() {
         <Button asChild size="sm"><Link to="/auth">Sign up free</Link></Button>
       </header>
       <main className="mx-auto max-w-3xl space-y-5 px-4 pb-16">
-        {isLoading ? (
-          <Loader2 className="mx-auto size-6 animate-spin text-primary" />
-        ) : !data ? (
+        {!data ? (
           <p className="surface-card p-6 text-center">This link doesn't exist anymore.</p>
         ) : (
           <>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Shared {data.kind === "deck" ? "flashcards" : "quiz"}
-              </p>
+            <div className="space-y-2">
+              <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                {data.kind === "deck" ? "Flashcard deck" : "Practice quiz"} · {count}{" "}
+                {data.kind === "deck" ? (count === 1 ? "card" : "cards") : count === 1 ? "question" : "questions"}
+              </span>
               <h1 className="font-display text-2xl font-bold">{data.title}</h1>
+              <p className="text-sm text-muted-foreground">Start studying right away — no account needed.</p>
             </div>
             {data.kind === "deck" ? (
-              <Cards cards={((data.payload as { cards?: Card[] }).cards ?? [])} />
+              <Cards cards={(data.payload.cards ?? []) as Card[]} />
             ) : (
-              <Quiz questions={((data.payload as { questions?: Q[] }).questions ?? [])} />
+              <Quiz questions={(data.payload.questions ?? []) as Q[]} />
             )}
+
             <div className="surface-card space-y-3 p-5 text-center">
-              <p className="font-display text-lg font-bold">Made with StudyNova</p>
+              <p className="font-display text-lg font-bold">Want to make your own from your lecture notes?</p>
               <p className="text-sm text-muted-foreground">
-                Create a free account to test yourself, track what you've mastered and make your own sets from your class notes.
+                StudyNova turns your class notes and recordings into flashcards and quizzes in seconds.
               </p>
-              <Button asChild><Link to="/auth">Create my free account</Link></Button>
+              <Button asChild><Link to="/auth">Try free</Link></Button>
             </div>
           </>
         )}
@@ -72,6 +89,7 @@ function SharePage() {
     </div>
   );
 }
+
 
 function Cards({ cards }: { cards: Card[] }) {
   const [i, setI] = useState(0);
