@@ -49,6 +49,7 @@ import { ChevronDown, GraduationCap, Image as ImageIcon, ScanSearch, ShieldCheck
 import { checkAdmin } from "@/lib/admin.functions";
 import { AskAiDock } from "@/components/AskAiDock";
 import { GlobalSearch } from "@/components/GlobalSearch";
+import { StudyTabs } from "@/components/StudyTabs";
 
 
 type NavItem = { to: string; label: string; icon: typeof BookOpen; tint?: string };
@@ -134,6 +135,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <div className="lg:pl-56">
         <TopBar onMenu={() => setMobileOpen(true)} onSearch={() => setSearchOpen(true)} />
+        <StudyTabs />
         <main className="magazine-canvas mx-auto w-full max-w-[90rem] px-4 pb-28 pt-7 sm:px-8 lg:pb-16 lg:pt-10 xl:px-12">{children}</main>
       </div>
 
