@@ -9,14 +9,16 @@ export const FREE_LIMITS = {
   assignment_help: 4,
   snap: 5,
   video: 2,
+  lecture: 3,
 } as const;
 
-export type UsageKind = "assignment_help" | "snap" | "video";
+export type UsageKind = "assignment_help" | "snap" | "video" | "lecture";
 
 export const USAGE_LABELS: Record<UsageKind, string> = {
   assignment_help: "AI assignment help",
   snap: "SnapQuick photo scans",
   video: "QuickVideo imports",
+  lecture: "Lecture Notes",
 };
 
 export type BillingState = {

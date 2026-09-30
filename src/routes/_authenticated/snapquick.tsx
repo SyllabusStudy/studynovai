@@ -1,3 +1,4 @@
+import { showLimitIfQuota } from "@/components/LimitDialog";
 import { MoreOptions } from "@/components/MoreOptions";
 import { cn } from "@/lib/utils";
 import { recordStudyActivity } from "@/lib/activity";
@@ -308,6 +309,11 @@ function SnapQuickPage() {
           setInput(pending.request.message);
           setMessages(pending.history);
           if (result.error === AI_KEY_HELP) redirectForKey(result.error);
+          return;
+        }
+        if (showLimitIfQuota(result.error)) {
+          setInput(pending.request.message);
+          setMessages(pending.history);
           return;
         }
         setFailed(pending);

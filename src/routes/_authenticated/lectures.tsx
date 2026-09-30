@@ -1,3 +1,4 @@
+import { showLimitIfQuota } from "@/components/LimitDialog";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -78,7 +79,7 @@ function LecturesPage() {
       setOpen(r.id);
       await qc.invalidateQueries();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't make notes from that recording");
+      if (!showLimitIfQuota(e instanceof Error ? e.message : null)) toast.error(e instanceof Error ? e.message : "Couldn't make notes from that recording");
     } finally {
       setBusy(false);
     }
