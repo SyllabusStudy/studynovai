@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { classLabel, useClasses } from "@/lib/data";
 import { useAuth } from "@/lib/auth";
+import { useGuestGate, useRestoredGuestDraft } from "@/lib/guest-gate";
 
 export const Route = createFileRoute("/_authenticated/snapquick")({
   head: () => ({
