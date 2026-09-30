@@ -471,6 +471,19 @@ ${syllabusText}`,
     await supabase.from("documents").update({ class_id: doc.class_id }).eq("id", doc.id);
   }
 
+  // A syllabus exported as "Untitled document.pdf" gets named after its course.
+  if (isGenericFileName(doc.file_name)) {
+    const label = sanitizeTitle(
+      `${parsed.course_code ? parsed.course_code + " " : ""}${parsed.course_name ?? ""} Syllabus`,
+    );
+    if (label.length > 10) {
+      const ext = doc.file_name.match(/\.[a-z0-9]{1,6}$/i)?.[0] ?? "";
+      await supabase.from("documents").update({ file_name: `${label}${ext}` }).eq("id", doc.id);
+    }
+  }
+
+
+
   let eventsCreated = 0;
   if (doc.class_id) {
     const patch: Record<string, string | null> = {};
