@@ -79,7 +79,7 @@ export function AdminAnnouncements() {
           {audience?.count ?? 0} students will get this
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
-          Sent from news@studynova.link. Anyone who unsubscribes is skipped automatically.
+          Sent from news@syllabusstudy.com. Anyone who unsubscribes is skipped automatically.
         </p>
       </div>
 

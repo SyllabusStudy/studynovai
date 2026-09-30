@@ -2,8 +2,8 @@
 import { fetchAiWithRetry } from "./ai-request.server";
 import type { Draft } from "./announce";
 
-export const FROM_ADDRESS = "SyllabusStudy <news@studynova.link>";
-export const REPLY_TO = "news@studynova.link";
+export const FROM_ADDRESS = "SyllabusStudy <news@syllabusstudy.com>";
+export const REPLY_TO = "news@syllabusstudy.com";
 const SITE_URL = "https://syllabusstudy.com";
 const RESEND_GATEWAY = "https://connector-gateway.lovable.dev/resend";
 const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
