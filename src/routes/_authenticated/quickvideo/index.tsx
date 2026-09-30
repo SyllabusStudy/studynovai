@@ -239,6 +239,18 @@ function QuickVideoPage() {
         </p>
       ) : null}
 
+      {notes.length ? (
+        <div className="mt-6 mb-2 flex items-baseline justify-between gap-2">
+          <h2 className="font-display text-lg font-bold">Your videos</h2>
+          <ClearAllButton
+            label="saved video notes"
+            count={notes.length}
+            description="Every set of video notes and its chat will be removed from your account. This can't be undone."
+            onClear={deleteAllNotes}
+          />
+        </div>
+      ) : null}
+
       <div className="mt-6 space-y-3">
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading your videos…</p>
