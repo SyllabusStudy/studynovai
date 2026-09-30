@@ -83,6 +83,25 @@ export function TutorChat({
     if (conversation.class_id) setClassId(conversation.class_id);
   }, [conversation]);
 
+  // Bring back whatever this tab was in the middle of, unless a different saved chat was opened.
+  const restored = useRef(false);
+  useEffect(() => {
+    if (!memoryScope || restored.current) return;
+    restored.current = true;
+    const saved = readTabMemory<TutorMemory>(memoryScope);
+    if (!saved) return;
+    if (conversation && saved.conversationId !== conversation.id) return;
+    if (Array.isArray(saved.messages) && saved.messages.length) setMessages(saved.messages);
+    if (saved.conversationId) setConversationId(saved.conversationId);
+    if (saved.mode) setMode(saved.mode);
+    if (saved.input) setInput(saved.input);
+  }, [memoryScope, conversation]);
+
+  useEffect(() => {
+    if (!memoryScope || !restored.current) return;
+    writeTabMemory(memoryScope, { messages, conversationId, mode, input } satisfies TutorMemory);
+  }, [memoryScope, messages, conversationId, mode, input]);
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, busy]);
