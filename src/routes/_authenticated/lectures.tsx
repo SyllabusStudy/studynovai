@@ -48,6 +48,7 @@ function LecturesPage() {
   const navigate = useNavigate();
   const { setActiveClassId } = useActiveClass();
   const [saving, setSaving] = useState<string | null>(null);
+  const guest = useGuestGate("lectures");
 
 
   const notes = useQuery({
