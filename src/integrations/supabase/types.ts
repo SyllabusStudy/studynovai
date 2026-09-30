@@ -708,6 +708,7 @@ export type Database = {
           notify_push: boolean
           onboarding_done: boolean
           school: string | null
+          seasonal_theme: string
           study_streak: number
           updated_at: string
         }
@@ -728,6 +729,7 @@ export type Database = {
           notify_push?: boolean
           onboarding_done?: boolean
           school?: string | null
+          seasonal_theme?: string
           study_streak?: number
           updated_at?: string
         }
@@ -748,6 +750,7 @@ export type Database = {
           notify_push?: boolean
           onboarding_done?: boolean
           school?: string | null
+          seasonal_theme?: string
           study_streak?: number
           updated_at?: string
         }
