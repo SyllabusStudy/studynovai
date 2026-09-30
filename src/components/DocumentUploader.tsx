@@ -84,12 +84,18 @@ export function DocumentUploader({
             } else {
               toast.success(`${file.name}: added ${result?.eventsCreated ?? 0} dates to your calendar`);
             }
+          } else if (processed?.renamedTo && processed?.linkedClass) {
+            await qc.invalidateQueries({ queryKey: ["classes"] });
+            toast.success(`Named "${processed.renamedTo}" and filed under ${processed.linkedClass.class_name}`);
+          } else if (processed?.renamedTo) {
+            toast.success(`Named "${processed.renamedTo}" from what's inside`);
           } else if (processed?.linkedClass) {
             await qc.invalidateQueries({ queryKey: ["classes"] });
             toast.success(`${file.name} filed under ${processed.linkedClass.class_name}`);
           } else {
             toast.success(`${file.name} processed`);
           }
+
 
         } catch (e) {
           toast.error(e instanceof Error ? e.message : "AI processing failed");
