@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth";
+import { useGuestGate } from "@/lib/guest-gate";
 import { classLabel, formatDate, useClasses } from "@/lib/data";
 
 export const Route = createFileRoute("/_authenticated/lectures")({
