@@ -5,7 +5,8 @@ import { useClassPicker } from "@/lib/active-class";
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Brain, Loader2, Sparkles } from "lucide-react";
+import { Brain, Flag, Loader2, Sparkles } from "lucide-react";
+import { FLAGGED_DECK } from "@/routes/_authenticated/flashcards/$deck";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
@@ -80,6 +81,8 @@ function FlashcardsPage() {
       .map(([name, v]) => ({ name, ...v }))
       .sort((a, b) => b.created.localeCompare(a.created));
   }, [cards]);
+
+  const flaggedTotal = useMemo(() => cards.filter((c) => c.flagged).length, [cards]);
 
   async function generate() {
     if (!classId) {
@@ -229,6 +232,25 @@ function FlashcardsPage() {
           </div>
         </MoreOptions>
       </section>
+
+      {flaggedTotal > 0 ? (
+        <div className="surface-card mt-8 flex flex-wrap items-center justify-between gap-3 border-amber-500/40 p-4">
+          <div className="flex items-center gap-3">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400">
+              <Flag className="size-4" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold">Flagged for review</p>
+              <p className="text-xs text-muted-foreground">{flaggedTotal} cards you marked as tricky</p>
+            </div>
+          </div>
+          <Button asChild size="sm">
+            <Link to="/flashcards/$deck" params={{ deck: encodeURIComponent(FLAGGED_DECK) }}>
+              Review these
+            </Link>
+          </Button>
+        </div>
+      ) : null}
 
       <div className="mt-8 mb-3 flex items-baseline justify-between">
         <h2 className="font-display text-lg font-bold">Your decks</h2>
