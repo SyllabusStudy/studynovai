@@ -48,10 +48,9 @@ function SetupAiPage() {
   const { data } = useQuery({ queryKey: ["ai-key"], queryFn: () => status({ data: undefined }) });
 
   useEffect(() => {
-    if (data?.hasKey) {
-      const t = setTimeout(() => navigate({ to: "/dashboard" }), 1200);
-      return () => clearTimeout(t);
-    }
+    if (!data?.hasKey) return;
+    const t = setTimeout(() => navigate({ to: "/dashboard" }), 1200);
+    return () => clearTimeout(t);
   }, [data?.hasKey, navigate]);
 
   const saving = useMutation({
