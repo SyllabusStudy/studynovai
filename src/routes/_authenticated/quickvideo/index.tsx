@@ -129,6 +129,7 @@ function QuickVideoPage() {
 
   return (
     <div>
+      {guest.dialog}
       <PageHeader
         title="QuickVideo"
         description="Paste a video link and get study notes in seconds."
