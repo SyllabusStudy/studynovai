@@ -206,40 +206,56 @@ function FlashcardCard({ gate }: { gate: () => void }) {
   );
 }
 
-const DEMO_SUMMARY = [
-  "Membrane = phospholipid bilayer, acts as the gatekeeper.",
-  "Osmosis = water moves toward more solute, no energy needed.",
-  "Active transport = ATP required, moves against the gradient.",
-];
+const SAMPLE_ESSAY =
+  "In today's rapidly evolving world, it is important to note that technology plays a crucial role " +
+  "in shaping society. Furthermore, it can be argued that these developments have fundamentally " +
+  "transformed the way in which individuals communicate with one another.";
 
-function SummarizeCard({ gate }: { gate: () => void }) {
+function AiCheckerCard({ gate }: { gate: () => void }) {
   const [text, setText] = useState("");
-  const [done, setDone] = useState(false);
+  const [checked, setChecked] = useState(false);
+
   return (
     <ToolCard
-      icon={NotebookPen}
-      title="Summarize my notes"
-      description="Turn long notes into a simple study guide."
+      icon={ScanSearch}
+      title="AI checker & humanizer"
+      description="See how AI-written your draft looks, then make it sound like you."
     >
-      {!done ? (
+      {!checked ? (
         <>
           <Textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Paste a paragraph from your notes…"
+            placeholder="Paste a paragraph from your draft…"
             rows={3}
             className="resize-none text-sm"
           />
-          <CardAction label="Summarize" onClick={() => setDone(true)} />
+          <button
+            type="button"
+            className="self-start text-xs font-semibold text-primary hover:underline"
+            onClick={() => setText(SAMPLE_ESSAY)}
+          >
+            Use sample text
+          </button>
+          <CardAction label="Check" onClick={() => setChecked(true)} />
         </>
       ) : (
         <>
-          <ul className="space-y-1.5 rounded-xl border border-border bg-secondary/50 p-3 text-sm text-muted-foreground">
-            {DEMO_SUMMARY.map((s) => (
-              <li key={s}>• {s}</li>
-            ))}
-          </ul>
-          <CardAction label="Get my full study guide" onClick={gate} />
+          <div className="rounded-xl border border-border bg-secondary/50 p-3 text-sm">
+            <p className="font-bold text-destructive">82% likely AI-written</p>
+            <p className="mt-1.5 text-muted-foreground">
+              Flagged: <span className="text-foreground">“it is important to note that”</span>,{" "}
+              <span className="text-foreground">“the way in which”</span> — common AI filler phrasing.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button size="sm" variant="outline" className="flex-1" onClick={() => setChecked(false)}>
+              Check again
+            </Button>
+            <Button size="sm" className="flex-1 gap-1.5" onClick={gate}>
+              <Sparkles className="size-3.5" /> Humanize
+            </Button>
+          </div>
         </>
       )}
     </ToolCard>
