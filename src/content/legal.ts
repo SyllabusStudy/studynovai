@@ -1,5 +1,5 @@
 // Legal documents provided by SyllabusNova.
-export const PRIVACY_POLICY = `STUDYNOVA PRIVACY POLICY
+export const PRIVACY_POLICY = `SYLLABUSNOVA PRIVACY POLICY
 
 Last Updated: September 28, 2026
 
@@ -288,7 +288,7 @@ SyllabusNova
 Email: [YOUR SUPPORT EMAIL]
 Website: [YOUR WEBSITE]`;
 
-export const TERMS_OF_SERVICE = `STUDYNOVA TERMS OF SERVICE
+export const TERMS_OF_SERVICE = `SYLLABUSNOVA TERMS OF SERVICE
 
 Last Updated: September 28, 2026
 
@@ -319,7 +319,7 @@ You are responsible for:
 
 You should notify SyllabusNova if you believe your account has been accessed without authorization.
 
-3. USING STUDYNOVA
+3. USING SYLLABUSNOVA
 
 SyllabusNova provides tools designed to help users organize and manage academic information.
 
