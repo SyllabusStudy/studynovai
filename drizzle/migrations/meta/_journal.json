@@ -120,6 +120,13 @@
       "when": 1790712719760,
       "tag": "0016_pricing_settings_and_promo_codes",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1790731614985,
+      "tag": "0017_calendar_feeds",
+      "breakpoints": true
     }
   ]
 }

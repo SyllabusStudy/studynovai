@@ -297,6 +297,47 @@ export type Database = {
           },
         ]
       }
+      calendar_feeds: {
+        Row: {
+          class_id: string | null
+          created_at: string
+          id: string
+          label: string
+          last_count: number | null
+          last_synced_at: string | null
+          url: string
+          user_id: string
+        }
+        Insert: {
+          class_id?: string | null
+          created_at?: string
+          id?: string
+          label?: string
+          last_count?: number | null
+          last_synced_at?: string | null
+          url: string
+          user_id: string
+        }
+        Update: {
+          class_id?: string | null
+          created_at?: string
+          id?: string
+          label?: string
+          last_count?: number | null
+          last_synced_at?: string | null
+          url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_feeds_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       classes: {
         Row: {
           attendance_policy: string | null
