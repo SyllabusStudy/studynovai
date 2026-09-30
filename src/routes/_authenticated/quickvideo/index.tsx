@@ -27,6 +27,9 @@ import { useAuth } from "@/lib/auth";
 import { classLabel, formatDate, useClasses, useVideoNotes } from "@/lib/data";
 import { AiKeySetupBanner, useAiKeyRedirect, useAiKeyStatus, useSendToAiKeySetup } from "@/lib/ai-key-gate";
 import { useGuestGate, useRestoredGuestDraft } from "@/lib/guest-gate";
+import { readTabMemory, writeTabMemory } from "@/lib/tab-memory";
+
+const MEMORY_SCOPE = "/quickvideo";
 
 export const Route = createFileRoute("/_authenticated/quickvideo/")({
   head: () => ({
