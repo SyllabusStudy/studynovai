@@ -284,7 +284,7 @@ export function OnboardingTour() {
           </>
         ) : (
           <>
-            <h2 id="tour-title" className="text-xl font-extrabold tracking-tight">You're ready to use SyllabusNova! 🎉</h2>
+            <h2 id="tour-title" className="text-xl font-extrabold tracking-tight">You're ready to use SyllableStudy! 🎉</h2>
             <p className="mt-2 text-sm text-muted-foreground">
               If you ever get stuck, click the 💡 Stuck? button in the corner for help or to take this tour again.
             </p>

@@ -33,9 +33,9 @@ import { classLabel, useAssignments, useClasses, useGradeCategories } from "@/li
 export const Route = createFileRoute("/_authenticated/grades")({
   head: () => ({
     meta: [
-      { title: "Grades — SyllabusNova" },
+      { title: "Grades — SyllableStudy" },
       { name: "description", content: "Weighted grade categories, your current grade and what you need on the final." },
-      { property: "og:title", content: "Grades — SyllabusNova" },
+      { property: "og:title", content: "Grades — SyllableStudy" },
       { property: "og:description", content: "Current grade, weights and final-exam projections." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

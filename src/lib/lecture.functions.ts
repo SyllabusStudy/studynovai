@@ -10,7 +10,7 @@ type LectureAi = {
   flashcards?: Array<{ front: string; back: string }>;
 };
 
-const PROMPT = `You are SyllabusNova. Listen to this class lecture recording and return ONLY JSON:
+const PROMPT = `You are SyllableStudy. Listen to this class lecture recording and return ONLY JSON:
 {"title": "short lecture title",
  "transcript": "clean full transcript of what the professor said (remove filler words, keep all content)",
  "summary": "study notes in Markdown: headings, bullet points, definitions, formulas in $...$",

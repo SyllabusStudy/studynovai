@@ -184,7 +184,7 @@ function BrandBlock() {
     <div className="flex h-20 items-center gap-3 border-b border-sidebar-border px-4">
       <BrandLogo className="size-10" />
       <span className="leading-tight text-sidebar-foreground">
-        <span className="block font-display text-base font-extrabold">SyllabusNova</span>
+        <span className="block font-display text-base font-extrabold">SyllableStudy</span>
         <span className="block text-[11px] text-sidebar-foreground/60">Your semester, made simple.</span>
       </span>
     </div>

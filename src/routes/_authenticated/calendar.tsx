@@ -39,9 +39,9 @@ import { classifyEvent, eventDateTime, localDateKey, useNow } from "@/lib/dates"
 export const Route = createFileRoute("/_authenticated/calendar")({
   head: () => ({
     meta: [
-      { title: "Calendar — SyllabusNova" },
+      { title: "Calendar — SyllableStudy" },
       { name: "description", content: "Every exam, quiz, project and deadline for your semester in one view." },
-      { property: "og:title", content: "Calendar — SyllabusNova" },
+      { property: "og:title", content: "Calendar — SyllableStudy" },
       { property: "og:description", content: "Exams, quizzes and deadlines for your whole semester." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

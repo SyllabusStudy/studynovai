@@ -89,7 +89,7 @@ export function FeedbackForm({ onSent, page }: { onSent?: () => void; page?: str
           maxLength={2000}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder="What happened, or what would make SyllabusNova better?"
+          placeholder="What happened, or what would make SyllableStudy better?"
         />
       </div>
       <div className="space-y-2">

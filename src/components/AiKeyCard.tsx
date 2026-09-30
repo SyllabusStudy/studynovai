@@ -151,7 +151,7 @@ export function AiKeyCard() {
         <div>
           <p className="text-sm font-semibold">AI key</p>
           <p className="text-xs text-muted-foreground">
-            SyllabusNova runs the AI on your own key, so every tutor answer, flashcard set, scan and
+            SyllableStudy runs the AI on your own key, so every tutor answer, flashcard set, scan and
             video note is billed to your provider account — not to anyone else.
           </p>
         </div>
@@ -169,7 +169,7 @@ export function AiKeyCard() {
             playsInline
             preload="metadata"
             src={apiKeyTutorial.url}
-            aria-label="Tutorial showing how to get a Gemini API key for SyllabusNova"
+            aria-label="Tutorial showing how to get a Gemini API key for SyllableStudy"
           >
             Your browser does not support video playback.
           </video>

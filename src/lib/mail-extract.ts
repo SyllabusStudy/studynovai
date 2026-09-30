@@ -1,6 +1,6 @@
 /**
  * Finds dates and school tasks inside an email so the student can add them
- * to SyllabusNova with one tap. Pure functions — safe in the browser.
+ * to SyllableStudy with one tap. Pure functions — safe in the browser.
  */
 
 export interface MailSuggestion {

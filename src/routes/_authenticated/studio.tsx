@@ -14,13 +14,13 @@ import { AiKeySetupBanner, useAiKeyRedirect } from "@/lib/ai-key-gate";
 export const Route = createFileRoute("/_authenticated/studio")({
   head: () => ({
     meta: [
-      { title: "AI Image Studio — SyllabusNova" },
+      { title: "AI Image Studio — SyllableStudy" },
       {
         name: "description",
         content:
-          "Generate study diagrams and visuals, or edit a photo of your notes, with SyllabusNova's image studio.",
+          "Generate study diagrams and visuals, or edit a photo of your notes, with SyllableStudy's image studio.",
       },
-      { property: "og:title", content: "AI Image Studio — SyllabusNova" },
+      { property: "og:title", content: "AI Image Studio — SyllableStudy" },
       {
         property: "og:description",
         content: "Create study diagrams or edit your own images with AI.",

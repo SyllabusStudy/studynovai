@@ -17,9 +17,9 @@ import type { QuizRow } from "@/lib/data";
 export const Route = createFileRoute("/_authenticated/quizzes/$quizId")({
   head: () => ({
     meta: [
-      { title: "Take a quiz — SyllabusNova" },
+      { title: "Take a quiz — SyllableStudy" },
       { name: "description", content: "Answer your AI-generated practice quiz and see explanations for every question." },
-      { property: "og:title", content: "Take a quiz — SyllabusNova" },
+      { property: "og:title", content: "Take a quiz — SyllableStudy" },
       { property: "og:description", content: "Answer your practice quiz and review the explanations." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
