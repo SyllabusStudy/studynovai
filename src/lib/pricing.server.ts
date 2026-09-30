@@ -96,7 +96,7 @@ export async function listPromoCodes(): Promise<PromoCodeRow[]> {
   return (data ?? []) as PromoCodeRow[];
 }
 
-/** Creates a SyllabusNova code. Percent-off codes also become real checkout discounts. */
+/** Creates a SyllableStudy code. Percent-off codes also become real checkout discounts. */
 export async function createPromoCode(
   adminId: string,
   environment: StripeEnv,
@@ -121,7 +121,7 @@ export async function createPromoCode(
       const coupon = await stripe.coupons.create({
         percent_off: percent,
         duration: "forever",
-        name: input.label || `${percent}% off SyllabusNova Pro`,
+        name: input.label || `${percent}% off SyllableStudy Pro`,
       });
       const promotion = await stripe.promotionCodes.create({
         promotion: { type: "coupon", coupon: coupon.id },

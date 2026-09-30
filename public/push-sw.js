@@ -1,4 +1,4 @@
-/* SyllabusNova background push notifications.
+/* SyllableStudy background push notifications.
    Imported into the generated service worker so notifications arrive
    even when the app is closed. */
 self.addEventListener("push", (event) => {
@@ -6,9 +6,9 @@ self.addEventListener("push", (event) => {
   try {
     payload = event.data ? event.data.json() : {};
   } catch {
-    payload = { title: "SyllabusNova", body: event.data ? event.data.text() : "" };
+    payload = { title: "SyllableStudy", body: event.data ? event.data.text() : "" };
   }
-  const title = payload.title || "SyllabusNova";
+  const title = payload.title || "SyllableStudy";
   const options = {
     body: payload.body || "",
     icon: "/icon-192.png",

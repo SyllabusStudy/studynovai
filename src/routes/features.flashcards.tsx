@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 
 const TITLE = "Make College a Little Easier — AI Flashcards from Your Own Notes";
 const DESCRIPTION =
-  "Turn your syllabus, lecture PDFs and homework into flashcards in seconds. SyllabusNova builds titled decks from your own course materials, then quizzes you on the cards you keep missing.";
+  "Turn your syllabus, lecture PDFs and homework into flashcards in seconds. SyllableStudy builds titled decks from your own course materials, then quizzes you on the cards you keep missing.";
 const URL = "https://studymateaicollege.lovable.app/features/flashcards";
 
 export const Route = createFileRoute("/features/flashcards")({
@@ -25,7 +25,7 @@ export const Route = createFileRoute("/features/flashcards")({
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "SoftwareApplication",
-          name: "SyllabusNova",
+          name: "SyllableStudy",
           applicationCategory: "EducationalApplication",
           operatingSystem: "Web",
           description: DESCRIPTION,
@@ -45,7 +45,7 @@ const STEPS = [
   {
     icon: FileText,
     title: "Drop in what you already have",
-    body: "Upload a syllabus, a lecture PDF or a chapter scan. SyllabusNova reads it and pulls out the terms, definitions and dates that actually matter.",
+    body: "Upload a syllabus, a lecture PDF or a chapter scan. SyllableStudy reads it and pulls out the terms, definitions and dates that actually matter.",
   },
   {
     icon: Brain,
@@ -70,7 +70,7 @@ const STEPS = [
   {
     icon: Sparkles,
     title: "It remembers you",
-    body: "SyllabusNova keeps track of your classes, weak topics and past questions, so each deck and quiz gets a little more useful than the last.",
+    body: "SyllableStudy keeps track of your classes, weak topics and past questions, so each deck and quiz gets a little more useful than the last.",
   },
 ];
 
@@ -82,7 +82,7 @@ function FlashcardsFeature() {
           <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <Sparkles className="size-5" />
           </span>
-          <span className="text-sm font-extrabold tracking-tight">SyllabusNova</span>
+          <span className="text-sm font-extrabold tracking-tight">SyllableStudy</span>
         </Link>
         <div className="ml-auto flex items-center gap-2">
           <Button asChild variant="ghost" size="sm">
@@ -105,7 +105,7 @@ function FlashcardsFeature() {
             Make college a <span className="text-gradient-brand">little easier</span>.
           </h1>
           <p className="mt-5 max-w-2xl text-base text-muted-foreground sm:text-lg">
-            SyllabusNova turns your syllabus, lecture PDFs and homework into flashcard decks you can actually
+            SyllableStudy turns your syllabus, lecture PDFs and homework into flashcard decks you can actually
             study from — grounded in your real class material instead of a stranger's deck.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -115,7 +115,7 @@ function FlashcardsFeature() {
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link to="/">See everything SyllabusNova does</Link>
+              <Link to="/">See everything SyllableStudy does</Link>
             </Button>
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
@@ -140,7 +140,7 @@ function FlashcardsFeature() {
           <h2 className="text-2xl font-extrabold tracking-tight">How flashcard generation works</h2>
           <ol className="mt-4 space-y-3 text-sm text-muted-foreground">
             <li>
-              <strong className="text-foreground">1. Add a class.</strong> Upload the syllabus and SyllabusNova
+              <strong className="text-foreground">1. Add a class.</strong> Upload the syllabus and SyllableStudy
               fills in the course code, meeting times, exams and deadlines for you.
             </li>
             <li>
@@ -153,7 +153,7 @@ function FlashcardsFeature() {
             </li>
             <li>
               <strong className="text-foreground">4. Review.</strong> Flip through the deck, mark what you knew,
-              and SyllabusNova keeps surfacing the cards you keep missing.
+              and SyllableStudy keeps surfacing the cards you keep missing.
             </li>
           </ol>
         </div>
@@ -174,7 +174,7 @@ function FlashcardsFeature() {
       </section>
 
       <footer className="border-t border-border py-8 text-center text-xs text-muted-foreground">
-        SyllabusNova — your AI-powered college companion.
+        SyllableStudy — your AI-powered college companion.
       </footer>
     </div>
   );

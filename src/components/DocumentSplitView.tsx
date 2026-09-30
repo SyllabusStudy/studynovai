@@ -248,7 +248,7 @@ export function DocumentSplitView({
             ) : (
               <p className="text-sm text-muted-foreground">
                 {doc?.assignment_id
-                  ? "No saved AI work for this file yet. Ask a question and SyllabusNova saves the answer here."
+                  ? "No saved AI work for this file yet. Ask a question and SyllableStudy saves the answer here."
                   : "Attach this file to an assignment to get AI help on it."}
               </p>
             )}

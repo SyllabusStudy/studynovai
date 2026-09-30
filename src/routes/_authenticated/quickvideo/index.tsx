@@ -31,13 +31,13 @@ import { useGuestGate, useRestoredGuestDraft } from "@/lib/guest-gate";
 export const Route = createFileRoute("/_authenticated/quickvideo/")({
   head: () => ({
     meta: [
-      { title: "QuickVideo — AI notes from any video — SyllabusNova" },
+      { title: "QuickVideo — AI notes from any video — SyllableStudy" },
       {
         name: "description",
         content:
           "Paste a YouTube link or upload a lecture recording and QuickVideo writes your study notes, then answers questions about the video.",
       },
-      { property: "og:title", content: "QuickVideo — SyllabusNova" },
+      { property: "og:title", content: "QuickVideo — SyllableStudy" },
       {
         property: "og:description",
         content: "Import any video and get instant AI study notes you can ask questions about.",
@@ -138,7 +138,7 @@ function QuickVideoPage() {
       <AiKeySetupBanner />
 
       <Hint id="quickvideo-link" point="down" className="mb-4">
-        Paste a YouTube lecture link here — SyllabusNova writes the notes, then you can ask it
+        Paste a YouTube lecture link here — SyllableStudy writes the notes, then you can ask it
         anything about the video.
       </Hint>
 

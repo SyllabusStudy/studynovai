@@ -8,12 +8,12 @@ import { AiKeySetupBanner } from "@/lib/ai-key-gate";
 export const Route = createFileRoute("/_authenticated/tutor")({
   head: () => ({
     meta: [
-      { title: "AI Tutor — SyllabusNova" },
+      { title: "AI Tutor — SyllableStudy" },
       {
         name: "description",
         content: "Ask questions and get answers grounded in your own syllabi, notes and slides.",
       },
-      { property: "og:title", content: "AI Tutor — SyllabusNova" },
+      { property: "og:title", content: "AI Tutor — SyllableStudy" },
       { property: "og:description", content: "Answers grounded in your own course materials." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -32,7 +32,7 @@ function TutorPage() {
       <ClassActionBar hide={["tutor"]} />
       <AiKeySetupBanner />
       <Hint id="tutor-ask" point="down" className="mb-4">
-        Ask anything about a class — SyllabusNova already knows your syllabus, assignments and uploaded notes, so just type like you're texting a friend.
+        Ask anything about a class — SyllableStudy already knows your syllabus, assignments and uploaded notes, so just type like you're texting a friend.
       </Hint>
       <TutorChat />
     </div>

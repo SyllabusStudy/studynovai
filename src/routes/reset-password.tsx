@@ -10,10 +10,10 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
     meta: [
-      { title: "Set a new password — SyllabusNova" },
-      { name: "description", content: "Choose a new password for your SyllabusNova student account." },
-      { property: "og:title", content: "Set a new password — SyllabusNova" },
-      { property: "og:description", content: "Choose a new password for your SyllabusNova account." },
+      { title: "Set a new password — SyllableStudy" },
+      { name: "description", content: "Choose a new password for your SyllableStudy student account." },
+      { property: "og:title", content: "Set a new password — SyllableStudy" },
+      { property: "og:description", content: "Choose a new password for your SyllableStudy account." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

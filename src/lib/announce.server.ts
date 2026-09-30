@@ -2,7 +2,7 @@
 import { fetchAiWithRetry } from "./ai-request.server";
 import type { Draft } from "./announce";
 
-export const FROM_ADDRESS = "SyllabusNova <news@studynova.link>";
+export const FROM_ADDRESS = "SyllableStudy <news@studynova.link>";
 export const REPLY_TO = "news@studynova.link";
 const SITE_URL = "https://studynovai.lovable.app";
 const RESEND_GATEWAY = "https://connector-gateway.lovable.dev/resend";
@@ -36,12 +36,12 @@ export async function draftAnnouncement(prompt: string, tone: string): Promise<D
         {
           role: "system",
           content: [
-            "You write announcement emails for SyllabusNova, a college study app. Tagline: Your semester, made simple.",
+            "You write announcement emails for SyllableStudy, a college study app. Tagline: Your semester, made simple.",
             `Tone: ${TONES[tone] ?? TONES["helpful"]}.`,
             "Write to college students. No emoji spam, no fake urgency, no invented prices, dates or features.",
             "Only use facts given in the request. Never promise anything not stated.",
             'Reply with JSON only: {"subject":"","preview":"","heading":"","paragraphs":["",""],"ctaLabel":"","ctaUrl":""}',
-            "subject under 60 characters. preview under 90 characters. 2-4 short paragraphs. ctaUrl must be a SyllabusNova page such as",
+            "subject under 60 characters. preview under 90 characters. 2-4 short paragraphs. ctaUrl must be a SyllableStudy page such as",
             `${SITE_URL}/upgrade or ${SITE_URL}/dashboard, or leave ctaLabel and ctaUrl empty.`,
           ].join(" "),
         },
@@ -82,7 +82,7 @@ function escape(value: string) {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-/** SyllabusNova-branded email markup, with the unsubscribe footer every send needs. */
+/** SyllableStudy-branded email markup, with the unsubscribe footer every send needs. */
 export function renderAnnouncement(draft: Draft, unsubscribeUrl: string) {
   const body = draft.paragraphs
     .map((p) => `<p style="margin:0 0 16px;font-size:16px;line-height:1.65;color:#3f4657">${escape(p)}</p>`)
@@ -97,11 +97,11 @@ export function renderAnnouncement(draft: Draft, unsubscribeUrl: string) {
 <div style="display:none;max-height:0;overflow:hidden">${escape(draft.preview)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#ffffff"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;padding:28px 24px 8px">
-<tr><td style="padding-bottom:22px;font-size:18px;font-weight:700;color:#4f46c5;letter-spacing:-0.2px">SyllabusNova</td></tr>
+<tr><td style="padding-bottom:22px;font-size:18px;font-weight:700;color:#4f46c5;letter-spacing:-0.2px">SyllableStudy</td></tr>
 <tr><td><h1 style="margin:0 0 18px;font-size:24px;line-height:1.3;color:#161a24">${escape(draft.heading)}</h1>${body}${cta}</td></tr>
 <tr><td style="padding:28px 0 32px;border-top:1px solid #e6e8ef">
-<p style="margin:18px 0 6px;font-size:12px;line-height:1.6;color:#8a91a3">SyllabusNova — Your semester, made simple.</p>
-<p style="margin:0;font-size:12px;line-height:1.6;color:#8a91a3">You get this because you have a SyllabusNova account. <a href="${escape(unsubscribeUrl)}" style="color:#8a91a3">Unsubscribe from announcements</a>.</p>
+<p style="margin:18px 0 6px;font-size:12px;line-height:1.6;color:#8a91a3">SyllableStudy — Your semester, made simple.</p>
+<p style="margin:0;font-size:12px;line-height:1.6;color:#8a91a3">You get this because you have a SyllableStudy account. <a href="${escape(unsubscribeUrl)}" style="color:#8a91a3">Unsubscribe from announcements</a>.</p>
 </td></tr></table></td></tr></table></body></html>`;
 
   const text = [
@@ -110,7 +110,7 @@ export function renderAnnouncement(draft: Draft, unsubscribeUrl: string) {
     ...draft.paragraphs,
     draft.ctaUrl ? `\n${draft.ctaLabel}: ${draft.ctaUrl}` : "",
     "",
-    "SyllabusNova — Your semester, made simple.",
+    "SyllableStudy — Your semester, made simple.",
     `Unsubscribe from announcements: ${unsubscribeUrl}`,
   ]
     .filter((line) => line !== undefined)

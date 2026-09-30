@@ -6,13 +6,13 @@ import { LegalDocument } from "@/components/LegalDocument";
 export const Route = createFileRoute("/privacy")({
   head: () => ({
     meta: [
-      { title: "Privacy Policy — SyllabusNova" },
+      { title: "Privacy Policy — SyllableStudy" },
       {
         name: "description",
-        content: "How SyllabusNova collects, uses and protects student information, uploaded files and connected email accounts.",
+        content: "How SyllableStudy collects, uses and protects student information, uploaded files and connected email accounts.",
       },
-      { property: "og:title", content: "Privacy Policy — SyllabusNova" },
-      { property: "og:description", content: "How SyllabusNova handles your academic information and connected accounts." },
+      { property: "og:title", content: "Privacy Policy — SyllableStudy" },
+      { property: "og:description", content: "How SyllableStudy handles your academic information and connected accounts." },
       { property: "og:type", content: "article" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -26,7 +26,7 @@ function PrivacyPage() {
       <header className="mx-auto flex h-16 w-full max-w-3xl items-center gap-3 px-4 sm:px-6">
         <Link to="/" className="flex items-center gap-2.5">
           <BrandLogo />
-          <span className="text-sm font-extrabold tracking-tight">SyllabusNova</span>
+          <span className="text-sm font-extrabold tracking-tight">SyllableStudy</span>
         </Link>
       </header>
       <main className="mx-auto w-full max-w-3xl px-4 pb-16 sm:px-6">

@@ -25,9 +25,9 @@ export const Route = createFileRoute("/_authenticated/settings")({
     typeof search["setup"] === "string" ? { setup: search["setup"] } : {},
   head: () => ({
     meta: [
-      { title: "Settings — SyllabusNova" },
+      { title: "Settings — SyllableStudy" },
       { name: "description", content: "Update your student profile, reminder timing and appearance." },
-      { property: "og:title", content: "Settings — SyllabusNova" },
+      { property: "og:title", content: "Settings — SyllableStudy" },
       { property: "og:description", content: "Profile, reminders and appearance settings." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

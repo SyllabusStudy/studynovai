@@ -997,13 +997,13 @@ export async function runStudyCoach(
       {
         role: "system",
         content:
-          "You are SyllabusNova, a friendly student assistant planning today's study. Reply with json only. Use the real calendar and deadlines below; overdue and due-soon items come first, and exams/quizzes in the next few days get review time. Talk like a helpful friend: short, warm, specific. Never say 'based on the information provided'. Never invent course facts. Plain text, no LaTeX.",
+          "You are SyllableStudy, a friendly student assistant planning today's study. Reply with json only. Use the real calendar and deadlines below; overdue and due-soon items come first, and exams/quizzes in the next few days get review time. Talk like a helpful friend: short, warm, specific. Never say 'based on the information provided'. Never invent course facts. Plain text, no LaTeX.",
       },
       {
         role: "user",
         content: `Today is ${today}, current UTC time ${timeNow}. The student has ${input.minutes ?? 60} minutes to study.${input.question ? ` They also asked: ${input.question}` : ""}
 Return json: {"summary":string,"tasks":[{"time":string,"title":string,"detail":string,"minutes":number,"class":string,"tool":"flashcards"|"quiz"|"tutor"}]}
-summary: one friendly sentence like "Here's your plan for today." plus the biggest priority. 2-4 tasks. "time" like "6:30 PM" or "". "class" must be an exact class name from the list or "General". "tool" = best SyllabusNova tool for that task.
+summary: one friendly sentence like "Here's your plan for today." plus the biggest priority. 2-4 tasks. "time" like "6:30 PM" or "". "class" must be an exact class name from the list or "General". "tool" = best SyllableStudy tool for that task.
 
 CLASSES: ${(cls ?? []).map((c) => c.class_name).join(", ") || "none"}
 CALENDAR (next 7 days):
@@ -1107,7 +1107,7 @@ async function sourceText(
 /* ------------------------------------------------------------------ assignment help */
 
 const HELP_RULES = [
-  "You are SyllabusNova helping a college student with their own homework.",
+  "You are SyllableStudy helping a college student with their own homework.",
   "Teach, don't just dump answers: identify what each question asks, then show the worked reasoning step by step and state the final answer clearly.",
   "Use markdown with a short heading per question. Flag anything you cannot read from the file instead of guessing.",
   "End with a 2-3 bullet 'What to review' list.",
@@ -1200,7 +1200,7 @@ export async function runSnapHelp(
 
 export type SnapMode = "learn" | "quick" | "tutor" | "practice" | "check" | "method";
 
-const SNAP_TUTOR_RULES = `You are the SyllabusNova SnapQuick tutor, a universal tutor for college students in ALL subjects (math, chemistry, organic chemistry, biology, anatomy & physiology, physics, statistics, psychology, sociology, history, English/writing, economics, computer science, languages, nursing, business, and more). It should feel like sitting with a tutor who is working the problem out WITH the student.
+const SNAP_TUTOR_RULES = `You are the SyllableStudy SnapQuick tutor, a universal tutor for college students in ALL subjects (math, chemistry, organic chemistry, biology, anatomy & physiology, physics, statistics, psychology, sociology, history, English/writing, economics, computer science, languages, nursing, business, and more). It should feel like sitting with a tutor who is working the problem out WITH the student.
 
 CORE RULE — DO THE WORK, DON'T JUST DESCRIBE IT:
 - Never write "apply the chain rule", "use the quadratic formula", "substitute the values", "factor it", "identify the nucleophile", "analyze the source" or "improve your thesis" without actually doing it right there.

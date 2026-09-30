@@ -20,9 +20,9 @@ import { classLabel, formatDate, useClasses } from "@/lib/data";
 export const Route = createFileRoute("/_authenticated/lectures")({
   head: () => ({
     meta: [
-      { title: "Lecture Notes — SyllabusNova" },
+      { title: "Lecture Notes — SyllableStudy" },
       { name: "description", content: "Record or upload a lecture and get a transcript, study notes, flashcards and key exam concepts." },
-      { property: "og:title", content: "Lecture Notes — SyllabusNova" },
+      { property: "og:title", content: "Lecture Notes — SyllableStudy" },
       { property: "og:description", content: "Turn a lecture recording into a study guide and flashcards." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -154,7 +154,7 @@ function LecturesPage() {
   @media print{body{margin:24px}}
 </style></head><body>
 <h1>${escapeHtml(n.title)}</h1>
-<div class="meta">SyllabusNova lecture notes · ${escapeHtml(formatDate(n.created_at.slice(0, 10)))}${
+<div class="meta">SyllableStudy lecture notes · ${escapeHtml(formatDate(n.created_at.slice(0, 10)))}${
       n.class_id ? ` · ${escapeHtml(classLabel(classes.find((c) => c.id === n.class_id)))}` : ""
     }</div>
 ${keys.length ? `<h2>Key exam concepts</h2><ul>${keys.map((k) => `<li>${escapeHtml(k)}</li>`).join("")}</ul>` : ""}
@@ -229,7 +229,7 @@ ${keys.length ? `<h2>Key exam concepts</h2><ul>${keys.map((k) => `<li>${escapeHt
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       {guest.dialog}
-      <PageHeader title="Lecture Notes" description="Record class or upload a voice memo. SyllabusNova writes the transcript, notes, flashcards and key exam concepts." />
+      <PageHeader title="Lecture Notes" description="Record class or upload a voice memo. SyllableStudy writes the transcript, notes, flashcards and key exam concepts." />
 
       <div className="surface-card space-y-4 p-5">
         <div className="space-y-1.5">
