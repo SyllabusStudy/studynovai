@@ -63,7 +63,8 @@ function LecturesPage() {
     setBusy(true);
     try {
       const audio = bytesToB64(new Uint8Array(await blob.arrayBuffer()));
-      const r = await make({ data: { audio, mimeType: blob.type || "audio/mpeg", fileName: name, classId: classId === "none" ? null : classId } });
+      const mimeType = (blob.type || "audio/mpeg").split(";")[0]!.trim().toLowerCase();
+      const r = await make({ data: { audio, mimeType, fileName: name, classId: classId === "none" ? null : classId } });
       toast.success(`Study guide ready${r.cards ? ` with ${r.cards} flashcards` : ""}`);
       setOpen(r.id);
       await qc.invalidateQueries();

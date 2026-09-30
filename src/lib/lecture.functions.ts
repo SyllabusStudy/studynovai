@@ -24,7 +24,11 @@ export const createLectureNotes = createServerFn({ method: "POST" })
     z
       .object({
         audio: z.string().min(100).max(28_000_000),
-        mimeType: z.string().regex(/^(audio|video)\/[\w.+-]+$/).max(60),
+        mimeType: z
+          .string()
+          .max(120)
+          .transform((v) => (v || "").split(";")[0]!.trim().toLowerCase())
+          .transform((v) => (/^(audio|video)\/[\w.+-]+$/.test(v) ? v : "audio/webm")),
         fileName: z.string().max(200),
         classId: z.string().uuid().nullable(),
       })
