@@ -26,9 +26,9 @@ import {
 export const Route = createFileRoute("/_authenticated/classes/$classId")({
   head: () => ({
     meta: [
-      { title: "Class workspace — SyllableStudy" },
+      { title: "Class workspace — SyllabusStudy" },
       { name: "description", content: "Course materials, policies, deadlines and AI study tools for this class." },
-      { property: "og:title", content: "Class workspace — SyllableStudy" },
+      { property: "og:title", content: "Class workspace — SyllabusStudy" },
       { property: "og:description", content: "Materials, policies and AI study tools for this class." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -208,7 +208,7 @@ function ClassDetail() {
             <EmptyState
               icon={FileText}
               title="No policies extracted yet"
-              description="Upload the syllabus and mark it as a syllabus — SyllableStudy will pull out the policies."
+              description="Upload the syllabus and mark it as a syllabus — SyllabusStudy will pull out the policies."
             />
           ) : (
             <>

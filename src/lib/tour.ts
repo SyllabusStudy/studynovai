@@ -16,7 +16,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     id: "dashboard", kind: "next", route: "/dashboard",
     selectors: ['[data-tour="dashboard"]'],
-    title: "Welcome to SyllableStudy 👋",
+    title: "Welcome to SyllabusStudy 👋",
     body: "This is your main dashboard. From here you can access all of your classes, assignments, calendar, grades, and study tools.",
   },
   {
@@ -30,7 +30,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: "add-class", kind: "next", route: "/classes",
     selectors: ['[data-tour="add-class"]', '[data-tour="page-header"]'],
     title: "Add a class ➕",
-    body: "This is where you add a class to SyllableStudy. Adding your classes lets SyllableStudy organize your semester around your actual courses. Open a class later to upload its syllabus.",
+    body: "This is where you add a class to SyllabusStudy. Adding your classes lets SyllabusStudy organize your semester around your actual courses. Open a class later to upload its syllabus.",
     action: "Try clicking + Add class, or press Next.",
   },
   {

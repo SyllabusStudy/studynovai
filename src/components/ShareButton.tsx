@@ -32,7 +32,7 @@ export function ShareButton({
       if (error) throw error;
       const url = `${window.location.origin}/share/${data.token}`;
       if (navigator.share) {
-        await navigator.share({ title: `${title} — SyllableStudy`, url }).catch(() => undefined);
+        await navigator.share({ title: `${title} — SyllabusStudy`, url }).catch(() => undefined);
       } else {
         await navigator.clipboard.writeText(url);
         toast.success("Link copied — send it to your classmates");

@@ -20,13 +20,13 @@ export const Route = createFileRoute("/auth")({
   validateSearch: searchSchema,
   head: () => ({
     meta: [
-      { title: "Sign in — SyllableStudy" },
+      { title: "Sign in — SyllabusStudy" },
       {
         name: "description",
-        content: "Log in or create your SyllableStudy account to manage classes, syllabi, flashcards and deadlines.",
+        content: "Log in or create your SyllabusStudy account to manage classes, syllabi, flashcards and deadlines.",
       },
-      { property: "og:title", content: "Sign in — SyllableStudy" },
-      { property: "og:description", content: "Log in or create your SyllableStudy student account." },
+      { property: "og:title", content: "Sign in — SyllabusStudy" },
+      { property: "og:description", content: "Log in or create your SyllabusStudy student account." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -75,7 +75,7 @@ function AuthPage() {
           const signIn = await supabase.auth.signInWithPassword({ email, password });
           if (signIn.error) throw signIn.error;
         }
-        toast.success("Account created. Welcome to SyllableStudy!");
+        toast.success("Account created. Welcome to SyllabusStudy!");
         if (typeof window !== "undefined" && "gtag_report_conversion" in window) {
           (window as any).gtag_report_conversion();
         }
@@ -119,7 +119,7 @@ function AuthPage() {
         return;
       }
       if (result.redirected) return;
-      toast.success("Welcome to SyllableStudy!");
+      toast.success("Welcome to SyllabusStudy!");
       navigate({ to: "/dashboard" });
     } catch {
       toast.error("We couldn't sign you in with Google. Please try again.");
@@ -134,7 +134,7 @@ function AuthPage() {
       <header className="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4 sm:px-6">
         <Link to="/" className="flex items-center gap-2.5">
           <BrandLogo />
-          <span className="text-sm font-extrabold tracking-tight">SyllableStudy</span>
+          <span className="text-sm font-extrabold tracking-tight">SyllabusStudy</span>
         </Link>
       </header>
 
@@ -246,7 +246,7 @@ function AuthPage() {
                   className="mt-0.5 size-4 shrink-0 rounded border-border accent-primary"
                 />
                 <span>
-                  I agree to SyllableStudy's{" "}
+                  I agree to SyllabusStudy's{" "}
                   <Link to="/terms" target="_blank" className="font-semibold text-primary">
                     Terms of Service
                   </Link>{" "}

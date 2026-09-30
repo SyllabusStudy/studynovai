@@ -19,12 +19,12 @@ import { getStripeEnvironment, PRO_PRICE_ID } from "@/lib/stripe";
 export const Route = createFileRoute("/_authenticated/upgrade")({
   head: () => ({
     meta: [
-      { title: "Upgrade to Pro — SyllableStudy" },
+      { title: "Upgrade to Pro — SyllabusStudy" },
       {
         name: "description",
-        content: "Get unlimited AI assignment help and SnapQuick scans with SyllableStudy Pro.",
+        content: "Get unlimited AI assignment help and SnapQuick scans with SyllabusStudy Pro.",
       },
-      { property: "og:title", content: "Upgrade to SyllableStudy Pro" },
+      { property: "og:title", content: "Upgrade to SyllabusStudy Pro" },
       { property: "og:description", content: "Unlimited AI assignment help and photo scans." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
