@@ -23,9 +23,17 @@ import { STUDY_MODES } from "@/lib/constants";
 import { classLabel, useClasses, type ConversationRow } from "@/lib/data";
 import { useAuth } from "@/lib/auth";
 import { useGuestGate, useRestoredGuestDraft } from "@/lib/guest-gate";
+import { readTabMemory, writeTabMemory } from "@/lib/tab-memory";
 import { cn } from "@/lib/utils";
 
 export type ChatMsg = { role: "user" | "assistant"; content: string };
+
+type TutorMemory = {
+  messages: ChatMsg[];
+  conversationId: string | null;
+  mode: string;
+  input: string;
+};
 
 const STARTERS = [
   "What should I study today?",
