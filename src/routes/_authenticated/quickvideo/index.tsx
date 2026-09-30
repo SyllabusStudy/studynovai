@@ -73,6 +73,8 @@ function QuickVideoPage() {
   const redirectForKey = useAiKeyRedirect();
   const { data: keyStatus } = useAiKeyStatus();
   const sendToKeySetup = useSendToAiKeySetup();
+  const guest = useGuestGate("quickvideo");
+  useRestoredGuestDraft("quickvideo", setUrl);
 
   async function submit(payload: { url?: string; dataUrl?: string; fileName?: string }) {
     if (guest.requireAccount({ text: payload.url ?? "" })) return;
