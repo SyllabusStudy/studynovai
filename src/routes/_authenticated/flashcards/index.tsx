@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { DeleteButton } from "@/components/DeleteButton";
+import { ClearAllButton } from "@/components/ClearAllButton";
 import { Hint } from "@/components/Hint";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -116,6 +117,15 @@ function FlashcardsPage() {
   async function deleteDeck(name: string) {
     let q = supabase.from("flashcards").delete();
     q = name === UNGROUPED ? q.is("deck", null) : q.eq("deck", name);
+    if (classId) q = q.eq("class_id", classId);
+    const { error } = await q;
+    if (error) throw new Error(error.message);
+    await qc.invalidateQueries({ queryKey: ["flashcards"] });
+  }
+
+  async function deleteAllDecks() {
+    if (!user?.id) return;
+    let q = supabase.from("flashcards").delete().eq("user_id", user.id);
     if (classId) q = q.eq("class_id", classId);
     const { error } = await q;
     if (error) throw new Error(error.message);
@@ -254,7 +264,22 @@ function FlashcardsPage() {
 
       <div className="mt-8 mb-3 flex items-baseline justify-between">
         <h2 className="font-display text-lg font-bold">Your decks</h2>
-        {decks.length ? <span className="text-xs text-muted-foreground">{decks.length} total</span> : null}
+        {decks.length ? (
+          <span className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">{decks.length} total</span>
+            <ClearAllButton
+              label={classId ? "decks in this class" : "your decks"}
+              count={decks.length}
+              buttonLabel="Clear all decks"
+              description={
+                classId
+                  ? "Every flashcard in this class will be removed from your account. This can't be undone."
+                  : "Every flashcard deck you've made will be removed from your account. This can't be undone."
+              }
+              onClear={deleteAllDecks}
+            />
+          </span>
+        ) : null}
       </div>
       {isLoading ? (
         <Loader2 className="size-5 animate-spin text-primary" />

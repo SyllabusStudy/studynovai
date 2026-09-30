@@ -30,6 +30,7 @@ import { classLabel, useClasses } from "@/lib/data";
 import { useAuth } from "@/lib/auth";
 import { useGuestGate, useRestoredGuestDraft } from "@/lib/guest-gate";
 import { readTabMemory, writeTabMemory } from "@/lib/tab-memory";
+import { ClearAllButton } from "@/components/ClearAllButton";
 
 const MEMORY_SCOPE = "/snapquick";
 type SnapMemory = { messages: Msg[]; input: string; mode: SnapMode; convId: string | null };
@@ -215,6 +216,14 @@ function SnapQuickPage() {
     await supabase.from("snap_conversations").delete().eq("id", id);
     if (id === convId) reset();
     void qc.invalidateQueries({ queryKey: ["snap-conversations", user?.id] });
+  }
+
+  async function deleteAllConversations() {
+    if (!user?.id) return;
+    const { error } = await supabase.from("snap_conversations").delete().eq("user_id", user.id);
+    if (error) throw new Error(error.message);
+    reset();
+    await qc.invalidateQueries({ queryKey: ["snap-conversations", user.id] });
   }
 
   const [revealed, setRevealed] = useState(false);
@@ -427,9 +436,17 @@ function SnapQuickPage() {
 
           {saved.length ? (
             <div className="surface-card p-3">
-              <p className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                <History className="size-3.5" /> Past problems
-              </p>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  <History className="size-3.5" /> Past problems
+                </p>
+                <ClearAllButton
+                  label="saved problems"
+                  count={saved.length}
+                  description="Every problem you've solved with SnapQuick will be removed from your account. This can't be undone."
+                  onClear={deleteAllConversations}
+                />
+              </div>
               <ul className="max-h-64 space-y-1 overflow-y-auto">
                 {saved.map((c) => (
                   <li key={c.id} className="group flex items-center gap-1">

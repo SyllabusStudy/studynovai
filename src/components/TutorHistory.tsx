@@ -3,6 +3,7 @@ import { MessageSquare, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { DeleteButton } from "@/components/DeleteButton";
+import { ClearAllButton } from "@/components/ClearAllButton";
 import { useAuth } from "@/lib/auth";
 import { formatDate, useConversations, type ConversationRow } from "@/lib/data";
 import { cn } from "@/lib/utils";
@@ -27,15 +28,33 @@ export function TutorHistory({
     if (id === activeId) onNew();
   }
 
+  async function removeAll() {
+    if (!user?.id) return;
+    const { error } = await supabase.from("ai_conversations").delete().eq("user_id", user.id);
+    if (error) throw new Error(error.message);
+    await qc.invalidateQueries({ queryKey: ["conversations", user.id] });
+    onNew();
+  }
+
   return (
     <div className="rounded-xl border border-border bg-card/60 p-3">
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Saved chats
         </p>
-        <Button size="sm" variant="outline" className="h-8 text-xs" onClick={onNew}>
-          <Plus className="size-3.5" /> New chat
-        </Button>
+        <div className="flex items-center gap-1">
+          {conversations.length ? (
+            <ClearAllButton
+              label="saved chats"
+              count={conversations.length}
+              description="Every saved chat and its messages will be removed from your account. This can't be undone."
+              onClear={removeAll}
+            />
+          ) : null}
+          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={onNew}>
+            <Plus className="size-3.5" /> New chat
+          </Button>
+        </div>
       </div>
 
       {conversations.length === 0 ? (

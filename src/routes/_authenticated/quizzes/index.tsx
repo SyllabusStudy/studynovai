@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { DeleteButton } from "@/components/DeleteButton";
+import { ClearAllButton } from "@/components/ClearAllButton";
 import { Hint } from "@/components/Hint";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -100,6 +101,13 @@ function QuizzesPage() {
 
   async function deleteQuiz(id: string) {
     const { error } = await supabase.from("quizzes").delete().eq("id", id);
+    if (error) throw new Error(error.message);
+    await qc.invalidateQueries({ queryKey: ["quizzes"] });
+  }
+
+  async function deleteAllQuizzes() {
+    if (!user?.id) return;
+    const { error } = await supabase.from("quizzes").delete().eq("user_id", user.id);
     if (error) throw new Error(error.message);
     await qc.invalidateQueries({ queryKey: ["quizzes"] });
   }
@@ -243,7 +251,18 @@ function QuizzesPage() {
 
       <div className="mt-8 mb-3 flex items-baseline justify-between">
         <h2 className="font-display text-lg font-bold">Your quizzes</h2>
-        {quizzes.length ? <span className="text-xs text-muted-foreground">{quizzes.length} total</span> : null}
+        {quizzes.length ? (
+          <span className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">{quizzes.length} total</span>
+            <ClearAllButton
+              label="your quizzes"
+              count={quizzes.length}
+              buttonLabel="Clear all quizzes"
+              description="Every quiz you've made, plus its answers and scores, will be removed from your account. This can't be undone."
+              onClear={deleteAllQuizzes}
+            />
+          </span>
+        ) : null}
       </div>
       {isLoading ? (
         <Loader2 className="size-5 animate-spin text-primary" />

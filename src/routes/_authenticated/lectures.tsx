@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth";
 import { useGuestGate } from "@/lib/guest-gate";
+import { ClearAllButton } from "@/components/ClearAllButton";
 import { classLabel, formatDate, useClasses } from "@/lib/data";
 
 export const Route = createFileRoute("/_authenticated/lectures")({
@@ -112,6 +113,14 @@ function LecturesPage() {
   async function remove(id: string) {
     await supabase.from("lecture_notes").delete().eq("id", id);
     void notes.refetch();
+  }
+
+  async function removeAll() {
+    if (!user?.id) return;
+    const { error } = await supabase.from("lecture_notes").delete().eq("user_id", user.id);
+    if (error) throw new Error(error.message);
+    setOpen(null);
+    await notes.refetch();
   }
 
   type Note = {
@@ -269,6 +278,18 @@ ${keys.length ? `<h2>Key exam concepts</h2><ul>${keys.map((k) => `<li>${escapeHt
           <p className="text-xs text-muted-foreground">Keep the phone near the professor. Recordings up to about 40 minutes work best. Ask your professor before recording.</p>
         )}
       </div>
+
+      {(notes.data ?? []).length ? (
+        <div className="mb-2 flex items-baseline justify-between gap-2">
+          <h2 className="font-display text-lg font-bold">Your lecture notes</h2>
+          <ClearAllButton
+            label="saved lecture notes"
+            count={(notes.data ?? []).length}
+            description="Every lecture recording's notes and transcript will be removed from your account. This can't be undone."
+            onClear={removeAll}
+          />
+        </div>
+      ) : null}
 
       <div className="space-y-3">
         {(notes.data ?? []).map((n) => (

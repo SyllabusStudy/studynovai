@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Hint } from "@/components/Hint";
 import { EmptyState } from "@/components/EmptyState";
 import { DeleteButton } from "@/components/DeleteButton";
+import { ClearAllButton } from "@/components/ClearAllButton";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -144,6 +145,13 @@ function QuickVideoPage() {
     await qc.invalidateQueries({ queryKey: ["video_notes"] });
   }
 
+  async function deleteAllNotes() {
+    if (!user?.id) return;
+    const { error } = await supabase.from("video_notes").delete().eq("user_id", user.id);
+    if (error) throw new Error(error.message);
+    await qc.invalidateQueries({ queryKey: ["video_notes"] });
+  }
+
   return (
     <div>
       {guest.dialog}
@@ -229,6 +237,18 @@ function QuickVideoPage() {
         <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" /> Watching the video and writing your notes…
         </p>
+      ) : null}
+
+      {notes.length ? (
+        <div className="mt-6 mb-2 flex items-baseline justify-between gap-2">
+          <h2 className="font-display text-lg font-bold">Your videos</h2>
+          <ClearAllButton
+            label="saved video notes"
+            count={notes.length}
+            description="Every set of video notes and its chat will be removed from your account. This can't be undone."
+            onClear={deleteAllNotes}
+          />
+        </div>
       ) : null}
 
       <div className="mt-6 space-y-3">
