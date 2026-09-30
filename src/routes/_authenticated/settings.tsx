@@ -17,6 +17,7 @@ import { notificationPermission, requestNotificationPermission } from "@/lib/rem
 import { useAuth } from "@/lib/auth";
 import { useProfile } from "@/lib/data";
 import { useTheme } from "@/lib/theme";
+import { SEASONAL_THEMES, useSeasonalTheme } from "@/lib/seasonal-theme";
 
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -40,6 +41,7 @@ function SettingsPage() {
   const qc = useQueryClient();
   const { data: profile } = useProfile(user?.id);
   const { theme, toggle } = useTheme();
+  const { theme: seasonal, setTheme: setSeasonal } = useSeasonalTheme();
   const [busy, setBusy] = useState(false);
   const [perm, setPerm] = useState<NotificationPermission | "unsupported">("default");
   const [form, setForm] = useState({
@@ -215,6 +217,34 @@ function SettingsPage() {
           Save settings
         </Button>
       </form>
+
+      <div className="surface-card mt-4 p-5">
+        <p className="text-sm font-semibold">Seasonal themes</p>
+        <p className="text-xs text-muted-foreground">
+          Pick any theme, any time of year. It saves to your account and follows you on every device.
+        </p>
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {SEASONAL_THEMES.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => {
+                setSeasonal(t.id);
+                toast.success(t.id === "default" ? "Decorations turned off" : `${t.label} theme on`);
+              }}
+              className={
+                "flex items-center gap-2 rounded-xl border p-3 text-left text-sm font-semibold transition-colors " +
+                (seasonal === t.id
+                  ? "border-primary bg-primary/10 text-foreground"
+                  : "border-border hover:bg-muted/60")
+              }
+            >
+              <span className="text-lg leading-none">{t.emoji}</span>
+              <span className="leading-tight">{t.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS seasonal_theme TEXT NOT NULL DEFAULT 'default';
