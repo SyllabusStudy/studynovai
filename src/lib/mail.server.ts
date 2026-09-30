@@ -194,74 +194,95 @@ export async function listMail(
   return { rows, nextPageToken: list.nextPageToken ?? null, estimate };
 }
 
-/** Gmail multipart batch read: metadata for up to 50 messages per request. */
+/** Gmail multipart batch read: metadata for up to 25 messages per request. */
 async function batchGetMetadata(
   connectionAPIKey: string,
   ids: string[],
 ): Promise<GmailMessage[]> {
-  const out: GmailMessage[] = [];
-  for (let i = 0; i < ids.length; i += 50) {
-    const chunk = ids.slice(i, i + 50);
-    const boundary = `studynova_${Math.random().toString(36).slice(2)}`;
-    const body =
-      chunk
-        .map(
-          (id) =>
-            `--${boundary}\r\nContent-Type: application/http\r\n\r\nGET /gmail/v1/users/me/messages/${id}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date\r\n\r\n`,
-        )
-        .join("") + `--${boundary}--\r\n`;
+  const out = new Map<string, GmailMessage>();
+  // Smaller chunks stay under Gmail's per-user concurrency limits.
+  for (let i = 0; i < ids.length; i += 25) {
+    const chunk = ids.slice(i, i + 25);
+    let pending = chunk;
+    // Retry rate-limited parts with backoff so messages are never silently dropped.
+    for (let attempt = 1; attempt <= 3 && pending.length > 0; attempt++) {
+      if (attempt > 1) {
+        await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** (attempt - 1)));
+      }
+      const boundary = `studynova_${Math.random().toString(36).slice(2)}`;
+      const body =
+        pending
+          .map(
+            (id) =>
+              `--${boundary}\r\nContent-Type: application/http\r\n\r\nGET /gmail/v1/users/me/messages/${id}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date\r\n\r\n`,
+          )
+          .join("") + `--${boundary}--\r\n`;
 
-    const res = await callAsAppUser({
-      gatewayBaseUrl: GATEWAY_BASE_URL,
-      connectionAPIKey,
-      connectorId: GMAIL_CONNECTOR,
-      path: "/batch/gmail/v1",
-      requiredScopes: GMAIL_SCOPES,
-      init: {
-        method: "POST",
-        headers: { "Content-Type": `multipart/mixed; boundary=${boundary}` },
-        body,
-      },
-    });
-    if (await appUserReconnectRequired(res)) throw new ReconnectNeeded();
-    const text = await res.text();
-    if (!res.ok) {
-      console.error(`Gmail batch failed [${res.status}]: ${text.slice(0, 500)}`);
-      throw new Error("We couldn't load your messages just now. Please try again.");
-    }
-    const contentType = res.headers.get("content-type") ?? "";
-    const boundaryMatch = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/);
-    const responseBoundary = (boundaryMatch?.[1] ?? boundaryMatch?.[2] ?? "").trim();
-    if (!responseBoundary) {
-      // Some gateways answer a single JSON payload instead of MIME.
-      try {
-        const parsed = JSON.parse(text) as GmailMessage;
-        if (parsed?.id) out.push(parsed);
-      } catch {
-        console.error("Gmail batch response was not multipart or JSON.");
+      const res = await callAsAppUser({
+        gatewayBaseUrl: GATEWAY_BASE_URL,
+        connectionAPIKey,
+        connectorId: GMAIL_CONNECTOR,
+        path: "/batch/gmail/v1",
+        requiredScopes: GMAIL_SCOPES,
+        init: {
+          method: "POST",
+          headers: { "Content-Type": `multipart/mixed; boundary=${boundary}` },
+          body,
+        },
+      });
+      if (await appUserReconnectRequired(res)) throw new ReconnectNeeded();
+      const text = await res.text();
+      if (!res.ok) {
+        // Whole-batch 429: wait and retry the same chunk.
+        if (res.status === 429) continue;
+        console.error(`Gmail batch failed [${res.status}]: ${text.slice(0, 500)}`);
+        throw new Error("We couldn't load your messages just now. Please try again.");
       }
-      continue;
-    }
-    for (const rawPart of text.split(`--${responseBoundary}`)) {
-      const part = rawPart.trim();
-      if (!part || part === "--") continue;
-      const statusLine = part.match(/HTTP\/\d\.\d\s+(\d{3})/);
-      const status = statusLine ? Number(statusLine[1]) : 0;
-      const jsonStart = part.indexOf("{");
-      if (jsonStart < 0) continue;
-      const jsonText = part.slice(jsonStart, part.lastIndexOf("}") + 1);
-      if (status >= 200 && status < 300) {
+      const contentType = res.headers.get("content-type") ?? "";
+      const boundaryMatch = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/);
+      const responseBoundary = (boundaryMatch?.[1] ?? boundaryMatch?.[2] ?? "").trim();
+      if (!responseBoundary) {
+        // Some gateways answer a single JSON payload instead of MIME.
         try {
-          out.push(JSON.parse(jsonText) as GmailMessage);
+          const parsed = JSON.parse(text) as GmailMessage;
+          if (parsed?.id) out.set(parsed.id, parsed);
         } catch {
-          console.error("Gmail batch part had invalid JSON.");
+          console.error("Gmail batch response was not multipart or JSON.");
         }
-      } else {
-        console.error(`Gmail batch part failed [${status}]: ${jsonText.slice(0, 200)}`);
+        break;
       }
+      const failed: string[] = [];
+      let partIndex = -1;
+      for (const rawPart of text.split(`--${responseBoundary}`)) {
+        const part = rawPart.trim();
+        if (!part || part === "--") continue;
+        partIndex++;
+        const statusLine = part.match(/HTTP\/\d\.\d\s+(\d{3})/);
+        const status = statusLine ? Number(statusLine[1]) : 0;
+        const jsonStart = part.indexOf("{");
+        if (jsonStart < 0) continue;
+        const jsonText = part.slice(jsonStart, part.lastIndexOf("}") + 1);
+        if (status >= 200 && status < 300) {
+          try {
+            const parsed = JSON.parse(jsonText) as GmailMessage;
+            if (parsed?.id) out.set(parsed.id, parsed);
+          } catch {
+            console.error("Gmail batch part had invalid JSON.");
+          }
+        } else if (status === 429) {
+          const failedId = pending[partIndex];
+          if (failedId) failed.push(failedId);
+        } else {
+          console.error(`Gmail batch part failed [${status}]: ${jsonText.slice(0, 200)}`);
+        }
+      }
+      pending = failed;
+    }
+    if (pending.length > 0) {
+      console.error(`Gmail batch: ${pending.length} message(s) still rate-limited after retries.`);
     }
   }
-  return out;
+  return [...out.values()];
 }
 
 /** Full message including body text for the reading pane. */
