@@ -42,9 +42,19 @@ export function TutorHistory({
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Saved chats
         </p>
-        <Button size="sm" variant="outline" className="h-8 text-xs" onClick={onNew}>
-          <Plus className="size-3.5" /> New chat
-        </Button>
+        <div className="flex items-center gap-1">
+          {conversations.length ? (
+            <ClearAllButton
+              label="saved chats"
+              count={conversations.length}
+              description="Every saved chat and its messages will be removed from your account. This can't be undone."
+              onClear={removeAll}
+            />
+          ) : null}
+          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={onNew}>
+            <Plus className="size-3.5" /> New chat
+          </Button>
+        </div>
       </div>
 
       {conversations.length === 0 ? (
