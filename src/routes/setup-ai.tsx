@@ -57,9 +57,11 @@ function SetupAiPage() {
     enabled: !!user,
   });
 
+  const nextPath = () => (guestReturnPath() ?? "/dashboard") as "/dashboard";
+
   useEffect(() => {
     if (!data?.hasKey) return;
-    const t = setTimeout(() => navigate({ to: "/dashboard" }), 1200);
+    const t = setTimeout(() => navigate({ to: nextPath() }), 1200);
     return () => clearTimeout(t);
   }, [data?.hasKey, navigate]);
 
@@ -67,7 +69,7 @@ function SetupAiPage() {
     mutationFn: () => save({ data: { provider: "google", apiKey } }),
     onSuccess: () => {
       toast.success("AI is on — everything is ready to use.");
-      navigate({ to: "/dashboard" });
+      navigate({ to: nextPath() });
     },
     onError: (e: Error) => toast.error(e.message),
   });
