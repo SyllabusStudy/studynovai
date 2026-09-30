@@ -33,6 +33,7 @@ import { Route as AuthenticatedStudioRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedTutorRouteImport } from './routes/_authenticated/tutor'
 import { Route as AuthenticatedUpgradeRouteImport } from './routes/_authenticated/upgrade'
 import { Route as FeaturesFlashcardsRouteImport } from './routes/features.flashcards'
+import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as AuthenticatedClassesIndexRouteImport } from './routes/_authenticated/classes/index'
 import { Route as AuthenticatedClassesClassIdRouteImport } from './routes/_authenticated/classes/$classId'
 import { Route as AuthenticatedFlashcardsIndexRouteImport } from './routes/_authenticated/flashcards/index'
@@ -165,6 +166,11 @@ const FeaturesFlashcardsRoute = FeaturesFlashcardsRouteImport.update({
   path: '/features/flashcards',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShareTokenRoute = ShareTokenRouteImport.update({
+  id: '/share/$token',
+  path: '/share/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedClassesIndexRoute =
   AuthenticatedClassesIndexRouteImport.update({
     id: '/classes/',
@@ -254,6 +260,7 @@ export interface FileRoutesByFullPath {
   '/tutor': typeof AuthenticatedTutorRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
   '/features/flashcards': typeof FeaturesFlashcardsRoute
+  '/share/$token': typeof ShareTokenRoute
   '/classes/$classId': typeof AuthenticatedClassesClassIdRoute
   '/flashcards/$deck': typeof AuthenticatedFlashcardsDeckRoute
   '/quickvideo/$noteId': typeof AuthenticatedQuickvideoNoteIdRoute
@@ -290,6 +297,7 @@ export interface FileRoutesByTo {
   '/tutor': typeof AuthenticatedTutorRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
   '/features/flashcards': typeof FeaturesFlashcardsRoute
+  '/share/$token': typeof ShareTokenRoute
   '/classes/$classId': typeof AuthenticatedClassesClassIdRoute
   '/flashcards/$deck': typeof AuthenticatedFlashcardsDeckRoute
   '/quickvideo/$noteId': typeof AuthenticatedQuickvideoNoteIdRoute
@@ -328,6 +336,7 @@ export interface FileRoutesById {
   '/_authenticated/tutor': typeof AuthenticatedTutorRoute
   '/_authenticated/upgrade': typeof AuthenticatedUpgradeRoute
   '/features/flashcards': typeof FeaturesFlashcardsRoute
+  '/share/$token': typeof ShareTokenRoute
   '/_authenticated/classes/$classId': typeof AuthenticatedClassesClassIdRoute
   '/_authenticated/flashcards/$deck': typeof AuthenticatedFlashcardsDeckRoute
   '/_authenticated/quickvideo/$noteId': typeof AuthenticatedQuickvideoNoteIdRoute
@@ -366,6 +375,7 @@ export interface FileRouteTypes {
     | '/tutor'
     | '/upgrade'
     | '/features/flashcards'
+    | '/share/$token'
     | '/classes/$classId'
     | '/flashcards/$deck'
     | '/quickvideo/$noteId'
@@ -402,6 +412,7 @@ export interface FileRouteTypes {
     | '/tutor'
     | '/upgrade'
     | '/features/flashcards'
+    | '/share/$token'
     | '/classes/$classId'
     | '/flashcards/$deck'
     | '/quickvideo/$noteId'
@@ -439,6 +450,7 @@ export interface FileRouteTypes {
     | '/_authenticated/tutor'
     | '/_authenticated/upgrade'
     | '/features/flashcards'
+    | '/share/$token'
     | '/_authenticated/classes/$classId'
     | '/_authenticated/flashcards/$deck'
     | '/_authenticated/quickvideo/$noteId'
@@ -463,6 +475,7 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
   FeaturesFlashcardsRoute: typeof FeaturesFlashcardsRoute
+  ShareTokenRoute: typeof ShareTokenRoute
   OauthGoogleReturnRoute: typeof OauthGoogleReturnRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
   ApiPublicPushRunRoute: typeof ApiPublicPushRunRoute
@@ -638,6 +651,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FeaturesFlashcardsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/share/$token': {
+      id: '/share/$token'
+      path: '/share/$token'
+      fullPath: '/share/$token'
+      preLoaderRoute: typeof ShareTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/classes/': {
       id: '/_authenticated/classes/'
       path: '/classes'
@@ -782,6 +802,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   UnsubscribeRoute: UnsubscribeRoute,
   FeaturesFlashcardsRoute: FeaturesFlashcardsRoute,
+  ShareTokenRoute: ShareTokenRoute,
   OauthGoogleReturnRoute: OauthGoogleReturnRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
   ApiPublicPushRunRoute: ApiPublicPushRunRoute,
