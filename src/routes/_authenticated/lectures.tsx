@@ -111,6 +111,116 @@ function LecturesPage() {
     void notes.refetch();
   }
 
+  type Note = {
+    id: string;
+    title: string;
+    class_id: string | null;
+    document_id: string | null;
+    summary: string;
+    transcript: string;
+    key_concepts: unknown;
+    created_at: string;
+    deck: string | null;
+  };
+
+  function noteText(n: Note) {
+    const keys = Array.isArray(n.key_concepts) ? (n.key_concepts as string[]) : [];
+    return [
+      `# ${n.title}`,
+      keys.length ? `## Key exam concepts\n${keys.map((k) => `- ${k}`).join("\n")}` : "",
+      `## Study notes\n${n.summary}`,
+      `## Full transcript\n${n.transcript}`,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+  }
+
+  function escapeHtml(s: string) {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  /** Opens a clean printable page — the student picks "Save as PDF". */
+  function downloadPdf(n: Note) {
+    const keys = Array.isArray(n.key_concepts) ? (n.key_concepts as string[]) : [];
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(n.title)}</title>
+<style>
+  body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#18181b;margin:40px;line-height:1.5}
+  h1{font-size:22px;margin:0 0 4px}h2{font-size:15px;margin:24px 0 6px;color:#4338ca}
+  .meta{color:#71717a;font-size:12px;margin-bottom:20px}
+  li{margin:3px 0}pre{white-space:pre-wrap;font-family:inherit;font-size:13px;color:#3f3f46}
+  @media print{body{margin:24px}}
+</style></head><body>
+<h1>${escapeHtml(n.title)}</h1>
+<div class="meta">StudyNova lecture notes · ${escapeHtml(formatDate(n.created_at.slice(0, 10)))}${
+      n.class_id ? ` · ${escapeHtml(classLabel(classes.find((c) => c.id === n.class_id)))}` : ""
+    }</div>
+${keys.length ? `<h2>Key exam concepts</h2><ul>${keys.map((k) => `<li>${escapeHtml(k)}</li>`).join("")}</ul>` : ""}
+<h2>Study notes</h2><pre>${escapeHtml(n.summary)}</pre>
+<h2>Full transcript</h2><pre>${escapeHtml(n.transcript)}</pre>
+</body></html>`;
+    const w = window.open("", "_blank");
+    if (!w) {
+      toast.error("Allow pop-ups so the printable notes can open.");
+      return;
+    }
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 400);
+  }
+
+  /** Saves the notes into the class's materials so quizzes and flashcards can use them. */
+  async function saveToClass(n: Note, targetClassId: string | null): Promise<string | null> {
+    if (!user) return null;
+    const cls = targetClassId ?? n.class_id;
+    if (!cls) {
+      toast.error("Pick a class for these notes first.");
+      return null;
+    }
+    if (n.document_id && cls === n.class_id) return n.document_id;
+    setSaving(n.id);
+    try {
+      const text = noteText(n);
+      const fileName = `${n.title.replace(/[^\w .-]/g, "").slice(0, 80) || "Lecture"} (lecture notes).md`;
+      const path = `${user.id}/${crypto.randomUUID()}-lecture-notes.md`;
+      const blob = new Blob([text], { type: "text/markdown" });
+      const up = await supabase.storage.from("course-materials").upload(path, blob);
+      if (up.error) throw new Error(up.error.message);
+      const { data: doc, error } = await supabase
+        .from("documents")
+        .insert({
+          user_id: user.id,
+          class_id: cls,
+          file_name: fileName,
+          file_type: "text/markdown",
+          file_size: blob.size,
+          storage_path: path,
+          extracted_text: text,
+          processing_status: "ready",
+          is_syllabus: false,
+        })
+        .select("id")
+        .single();
+      if (error) throw new Error(error.message);
+      await supabase.from("lecture_notes").update({ class_id: cls, document_id: doc.id }).eq("id", n.id);
+      await qc.invalidateQueries();
+      toast.success("Saved to that class's materials");
+      return doc.id;
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't save these notes to the class");
+      return null;
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  async function useFor(n: Note, where: "/quizzes" | "/flashcards") {
+    const id = await saveToClass(n, null);
+    if (!id) return;
+    if (n.class_id) await setActiveClassId(n.class_id);
+    void navigate({ to: where });
+  }
+
   const mmss = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 
   return (
