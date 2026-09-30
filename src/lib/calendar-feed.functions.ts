@@ -81,7 +81,7 @@ export const listCalendarFeeds = createServerFn({ method: "POST" })
       .select("id,label,url,class_id,last_synced_at,last_count")
       .order("created_at");
     if (error) throw new Error(error.message);
-    return data.map((f) => ({ ...f, url: f.url.replace(/(\?|token=|\/feeds\/[^/]+\/)[^/]*$/i, "$1…") }));
+    return data.map((f) => ({ ...f, url: new URL(f.url).hostname }));
   });
 
 export const removeCalendarFeed = createServerFn({ method: "POST" })
