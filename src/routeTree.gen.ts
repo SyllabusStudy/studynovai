@@ -26,6 +26,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedEmailRouteImport } from './routes/_authenticated/email'
 import { Route as AuthenticatedFeedbackRouteImport } from './routes/_authenticated/feedback'
 import { Route as AuthenticatedGradesRouteImport } from './routes/_authenticated/grades'
+import { Route as AuthenticatedLecturesRouteImport } from './routes/_authenticated/lectures'
 import { Route as AuthenticatedSchoolRouteImport } from './routes/_authenticated/school'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedSnapquickRouteImport } from './routes/_authenticated/snapquick'
@@ -33,6 +34,7 @@ import { Route as AuthenticatedStudioRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedTutorRouteImport } from './routes/_authenticated/tutor'
 import { Route as AuthenticatedUpgradeRouteImport } from './routes/_authenticated/upgrade'
 import { Route as FeaturesFlashcardsRouteImport } from './routes/features.flashcards'
+import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as AuthenticatedClassesIndexRouteImport } from './routes/_authenticated/classes/index'
 import { Route as AuthenticatedClassesClassIdRouteImport } from './routes/_authenticated/classes/$classId'
 import { Route as AuthenticatedFlashcardsIndexRouteImport } from './routes/_authenticated/flashcards/index'
@@ -130,6 +132,11 @@ const AuthenticatedGradesRoute = AuthenticatedGradesRouteImport.update({
   path: '/grades',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedLecturesRoute = AuthenticatedLecturesRouteImport.update({
+  id: '/lectures',
+  path: '/lectures',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedSchoolRoute = AuthenticatedSchoolRouteImport.update({
   id: '/school',
   path: '/school',
@@ -163,6 +170,11 @@ const AuthenticatedUpgradeRoute = AuthenticatedUpgradeRouteImport.update({
 const FeaturesFlashcardsRoute = FeaturesFlashcardsRouteImport.update({
   id: '/features/flashcards',
   path: '/features/flashcards',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShareTokenRoute = ShareTokenRouteImport.update({
+  id: '/share/$token',
+  path: '/share/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedClassesIndexRoute =
@@ -247,6 +259,7 @@ export interface FileRoutesByFullPath {
   '/email': typeof AuthenticatedEmailRoute
   '/feedback': typeof AuthenticatedFeedbackRoute
   '/grades': typeof AuthenticatedGradesRoute
+  '/lectures': typeof AuthenticatedLecturesRoute
   '/school': typeof AuthenticatedSchoolRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/snapquick': typeof AuthenticatedSnapquickRoute
@@ -254,6 +267,7 @@ export interface FileRoutesByFullPath {
   '/tutor': typeof AuthenticatedTutorRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
   '/features/flashcards': typeof FeaturesFlashcardsRoute
+  '/share/$token': typeof ShareTokenRoute
   '/classes/$classId': typeof AuthenticatedClassesClassIdRoute
   '/flashcards/$deck': typeof AuthenticatedFlashcardsDeckRoute
   '/quickvideo/$noteId': typeof AuthenticatedQuickvideoNoteIdRoute
@@ -283,6 +297,7 @@ export interface FileRoutesByTo {
   '/email': typeof AuthenticatedEmailRoute
   '/feedback': typeof AuthenticatedFeedbackRoute
   '/grades': typeof AuthenticatedGradesRoute
+  '/lectures': typeof AuthenticatedLecturesRoute
   '/school': typeof AuthenticatedSchoolRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/snapquick': typeof AuthenticatedSnapquickRoute
@@ -290,6 +305,7 @@ export interface FileRoutesByTo {
   '/tutor': typeof AuthenticatedTutorRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
   '/features/flashcards': typeof FeaturesFlashcardsRoute
+  '/share/$token': typeof ShareTokenRoute
   '/classes/$classId': typeof AuthenticatedClassesClassIdRoute
   '/flashcards/$deck': typeof AuthenticatedFlashcardsDeckRoute
   '/quickvideo/$noteId': typeof AuthenticatedQuickvideoNoteIdRoute
@@ -321,6 +337,7 @@ export interface FileRoutesById {
   '/_authenticated/email': typeof AuthenticatedEmailRoute
   '/_authenticated/feedback': typeof AuthenticatedFeedbackRoute
   '/_authenticated/grades': typeof AuthenticatedGradesRoute
+  '/_authenticated/lectures': typeof AuthenticatedLecturesRoute
   '/_authenticated/school': typeof AuthenticatedSchoolRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/snapquick': typeof AuthenticatedSnapquickRoute
@@ -328,6 +345,7 @@ export interface FileRoutesById {
   '/_authenticated/tutor': typeof AuthenticatedTutorRoute
   '/_authenticated/upgrade': typeof AuthenticatedUpgradeRoute
   '/features/flashcards': typeof FeaturesFlashcardsRoute
+  '/share/$token': typeof ShareTokenRoute
   '/_authenticated/classes/$classId': typeof AuthenticatedClassesClassIdRoute
   '/_authenticated/flashcards/$deck': typeof AuthenticatedFlashcardsDeckRoute
   '/_authenticated/quickvideo/$noteId': typeof AuthenticatedQuickvideoNoteIdRoute
@@ -359,6 +377,7 @@ export interface FileRouteTypes {
     | '/email'
     | '/feedback'
     | '/grades'
+    | '/lectures'
     | '/school'
     | '/settings'
     | '/snapquick'
@@ -366,6 +385,7 @@ export interface FileRouteTypes {
     | '/tutor'
     | '/upgrade'
     | '/features/flashcards'
+    | '/share/$token'
     | '/classes/$classId'
     | '/flashcards/$deck'
     | '/quickvideo/$noteId'
@@ -395,6 +415,7 @@ export interface FileRouteTypes {
     | '/email'
     | '/feedback'
     | '/grades'
+    | '/lectures'
     | '/school'
     | '/settings'
     | '/snapquick'
@@ -402,6 +423,7 @@ export interface FileRouteTypes {
     | '/tutor'
     | '/upgrade'
     | '/features/flashcards'
+    | '/share/$token'
     | '/classes/$classId'
     | '/flashcards/$deck'
     | '/quickvideo/$noteId'
@@ -432,6 +454,7 @@ export interface FileRouteTypes {
     | '/_authenticated/email'
     | '/_authenticated/feedback'
     | '/_authenticated/grades'
+    | '/_authenticated/lectures'
     | '/_authenticated/school'
     | '/_authenticated/settings'
     | '/_authenticated/snapquick'
@@ -439,6 +462,7 @@ export interface FileRouteTypes {
     | '/_authenticated/tutor'
     | '/_authenticated/upgrade'
     | '/features/flashcards'
+    | '/share/$token'
     | '/_authenticated/classes/$classId'
     | '/_authenticated/flashcards/$deck'
     | '/_authenticated/quickvideo/$noteId'
@@ -463,6 +487,7 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
   FeaturesFlashcardsRoute: typeof FeaturesFlashcardsRoute
+  ShareTokenRoute: typeof ShareTokenRoute
   OauthGoogleReturnRoute: typeof OauthGoogleReturnRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
   ApiPublicPushRunRoute: typeof ApiPublicPushRunRoute
@@ -589,6 +614,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedGradesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/lectures': {
+      id: '/_authenticated/lectures'
+      path: '/lectures'
+      fullPath: '/lectures'
+      preLoaderRoute: typeof AuthenticatedLecturesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/school': {
       id: '/_authenticated/school'
       path: '/school'
@@ -636,6 +668,13 @@ declare module '@tanstack/react-router' {
       path: '/features/flashcards'
       fullPath: '/features/flashcards'
       preLoaderRoute: typeof FeaturesFlashcardsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/share/$token': {
+      id: '/share/$token'
+      path: '/share/$token'
+      fullPath: '/share/$token'
+      preLoaderRoute: typeof ShareTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/classes/': {
@@ -727,6 +766,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedEmailRoute: typeof AuthenticatedEmailRoute
   AuthenticatedFeedbackRoute: typeof AuthenticatedFeedbackRoute
   AuthenticatedGradesRoute: typeof AuthenticatedGradesRoute
+  AuthenticatedLecturesRoute: typeof AuthenticatedLecturesRoute
   AuthenticatedSchoolRoute: typeof AuthenticatedSchoolRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSnapquickRoute: typeof AuthenticatedSnapquickRoute
@@ -752,6 +792,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedEmailRoute: AuthenticatedEmailRoute,
   AuthenticatedFeedbackRoute: AuthenticatedFeedbackRoute,
   AuthenticatedGradesRoute: AuthenticatedGradesRoute,
+  AuthenticatedLecturesRoute: AuthenticatedLecturesRoute,
   AuthenticatedSchoolRoute: AuthenticatedSchoolRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSnapquickRoute: AuthenticatedSnapquickRoute,
@@ -782,6 +823,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   UnsubscribeRoute: UnsubscribeRoute,
   FeaturesFlashcardsRoute: FeaturesFlashcardsRoute,
+  ShareTokenRoute: ShareTokenRoute,
   OauthGoogleReturnRoute: OauthGoogleReturnRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
   ApiPublicPushRunRoute: ApiPublicPushRunRoute,

@@ -127,6 +127,13 @@
       "when": 1790731614985,
       "tag": "0017_calendar_feeds",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790731797286,
+      "tag": "0018_share_links_and_lectures",
+      "breakpoints": true
     }
   ]
 }

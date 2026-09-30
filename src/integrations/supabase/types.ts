@@ -603,6 +603,50 @@ export type Database = {
           },
         ]
       }
+      lecture_notes: {
+        Row: {
+          class_id: string | null
+          created_at: string
+          deck: string | null
+          id: string
+          key_concepts: Json
+          summary: string
+          title: string
+          transcript: string
+          user_id: string
+        }
+        Insert: {
+          class_id?: string | null
+          created_at?: string
+          deck?: string | null
+          id?: string
+          key_concepts?: Json
+          summary?: string
+          title: string
+          transcript?: string
+          user_id: string
+        }
+        Update: {
+          class_id?: string | null
+          created_at?: string
+          deck?: string | null
+          id?: string
+          key_concepts?: Json
+          summary?: string
+          title?: string
+          transcript?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lecture_notes_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pricing_settings: {
         Row: {
           compare_price_usd: number | null
@@ -904,6 +948,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      shared_items: {
+        Row: {
+          created_at: string
+          kind: string
+          payload: Json
+          ref: string
+          title: string
+          token: string
+          user_id: string
+          views: number
+        }
+        Insert: {
+          created_at?: string
+          kind: string
+          payload: Json
+          ref: string
+          title: string
+          token?: string
+          user_id: string
+          views?: number
+        }
+        Update: {
+          created_at?: string
+          kind?: string
+          payload?: Json
+          ref?: string
+          title?: string
+          token?: string
+          user_id?: string
+          views?: number
+        }
+        Relationships: []
       }
       snap_conversations: {
         Row: {
@@ -1230,6 +1307,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_shared_item: {
+        Args: { _token: string }
+        Returns: {
+          kind: string
+          payload: Json
+          title: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

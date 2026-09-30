@@ -23,8 +23,7 @@ import {
   Sparkles,
   Sun,
   Bell,
-  X,
-} from "lucide-react";
+  X, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -83,6 +82,7 @@ const GROUPS: { key: string; label: string; collapsible: boolean; items: NavItem
     items: [
       { tint: "text-feature-ai", to: "/snapquick", label: "SnapQuick", icon: Camera },
       { tint: "text-feature-video", to: "/quickvideo", label: "QuickVideo", icon: Video },
+      { to: "/lectures", label: "Lecture Notes", icon: Mic },
       { to: "/studio", label: "AI Images", icon: ImageIcon },
       { to: "/ai-checker", label: "AI Checker", icon: ScanSearch },
     ],
