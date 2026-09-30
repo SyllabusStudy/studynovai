@@ -115,6 +115,14 @@ function LecturesPage() {
     void notes.refetch();
   }
 
+  async function removeAll() {
+    if (!user?.id) return;
+    const { error } = await supabase.from("lecture_notes").delete().eq("user_id", user.id);
+    if (error) throw new Error(error.message);
+    setOpen(null);
+    await notes.refetch();
+  }
+
   type Note = {
     id: string;
     title: string;
