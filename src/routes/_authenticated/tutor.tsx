@@ -1,9 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { ClassActionBar } from "@/components/ClassActionBar";
 import { PageHeader } from "@/components/PageHeader";
 import { TutorChat } from "@/components/TutorChat";
+import { TutorHistory } from "@/components/TutorHistory";
 import { Hint } from "@/components/Hint";
 import { AiKeySetupBanner } from "@/lib/ai-key-gate";
+import { clearTabMemory } from "@/lib/tab-memory";
+import type { ConversationRow } from "@/lib/data";
 
 export const Route = createFileRoute("/_authenticated/tutor")({
   head: () => ({
