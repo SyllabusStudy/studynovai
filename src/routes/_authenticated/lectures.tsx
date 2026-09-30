@@ -279,6 +279,18 @@ ${keys.length ? `<h2>Key exam concepts</h2><ul>${keys.map((k) => `<li>${escapeHt
         )}
       </div>
 
+      {(notes.data ?? []).length ? (
+        <div className="mb-2 flex items-baseline justify-between gap-2">
+          <h2 className="font-display text-lg font-bold">Your lecture notes</h2>
+          <ClearAllButton
+            label="saved lecture notes"
+            count={(notes.data ?? []).length}
+            description="Every lecture recording's notes and transcript will be removed from your account. This can't be undone."
+            onClear={removeAll}
+          />
+        </div>
+      ) : null}
+
       <div className="space-y-3">
         {(notes.data ?? []).map((n) => (
           <div key={n.id} className="surface-card p-4">
