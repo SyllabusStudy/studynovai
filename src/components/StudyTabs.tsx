@@ -24,6 +24,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { clearTabMemory } from "@/lib/tab-memory";
 import {
   DropdownMenu,
   DropdownMenuContent,
