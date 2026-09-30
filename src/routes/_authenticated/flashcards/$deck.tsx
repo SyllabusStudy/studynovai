@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { useFlashcards } from "@/lib/data";
+import { ShareButton } from "@/components/ShareButton";
 
 export const Route = createFileRoute("/_authenticated/flashcards/$deck")({
   head: () => ({
@@ -64,7 +65,12 @@ function DeckPage() {
         </Link>
       </Button>
 
-      <h1 className="text-xl font-semibold tracking-tight">{deckName}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-xl font-semibold tracking-tight">{deckName}</h1>
+        {deck.length ? (
+          <ShareButton kind="deck" refId={deckName} title={deckName} payload={() => ({ cards: deck.map((c) => ({ front: c.front, back: c.back })) })} />
+        ) : null}
+      </div>
 
       <div className="mt-6">
         {isLoading ? (

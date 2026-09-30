@@ -6,6 +6,7 @@ import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
+import { ShareButton } from "@/components/ShareButton";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -93,6 +94,7 @@ function QuizRunner() {
     <div className="mx-auto max-w-3xl">
       <PageHeader
         title={quiz.title}
+        actions={<ShareButton kind="quiz" refId={quiz.id} title={quiz.title} payload={() => ({ questions: questions.map(({ prompt, options, answer, explanation }) => ({ prompt, options, answer, explanation })) })} />}
         description={
           submitted
             ? `You scored ${Math.round((correctCount / Math.max(questions.length, 1)) * 100)}% (${correctCount}/${questions.length})`
