@@ -3,6 +3,7 @@ import { MessageSquare, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { DeleteButton } from "@/components/DeleteButton";
+import { ClearAllButton } from "@/components/ClearAllButton";
 import { useAuth } from "@/lib/auth";
 import { formatDate, useConversations, type ConversationRow } from "@/lib/data";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,14 @@ export function TutorHistory({
     if (error) throw new Error(error.message);
     await qc.invalidateQueries({ queryKey: ["conversations", user?.id] });
     if (id === activeId) onNew();
+  }
+
+  async function removeAll() {
+    if (!user?.id) return;
+    const { error } = await supabase.from("ai_conversations").delete().eq("user_id", user.id);
+    if (error) throw new Error(error.message);
+    await qc.invalidateQueries({ queryKey: ["conversations", user.id] });
+    onNew();
   }
 
   return (
