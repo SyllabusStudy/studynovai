@@ -1,4 +1,4 @@
-import logo from "@/assets/syllablestudy-logo.png";
+import logo from "@/assets/syllabusstudy-logo.png";
 import { cn } from "@/lib/utils";
 
 export function BrandLogo({ className }: { className?: string }) {

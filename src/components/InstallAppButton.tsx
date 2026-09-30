@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useInstall } from "@/lib/pwa-install";
-import logo from "@/assets/syllablestudy-logo.png";
+import logo from "@/assets/syllabusstudy-logo.png";
 
 function IosSteps() {
   return (
