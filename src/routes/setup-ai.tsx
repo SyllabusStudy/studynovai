@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { BrandLogo } from "@/components/BrandLogo";
 import { useAuth } from "@/lib/auth";
 import { getAiKeyStatus, saveAiKey } from "@/lib/ai-keys.functions";
+import { guestReturnPath } from "@/lib/guest-gate";
 import apiKeyTutorial from "@/assets/gemini-api-key-guide.mp4.asset.json";
 
 export const Route = createFileRoute("/setup-ai")({
