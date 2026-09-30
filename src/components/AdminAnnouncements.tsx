@@ -142,7 +142,7 @@ export function AdminAnnouncements() {
 
           <div className="rounded-xl border border-border bg-background p-4">
             <p className="text-xs font-semibold uppercase text-muted-foreground">Preview</p>
-            <p className="mt-3 text-sm font-bold text-primary">StudyNova</p>
+            <p className="mt-3 text-sm font-bold text-primary">SyllabusNova</p>
             <h3 className="mt-2 text-lg font-bold leading-snug">{draft.heading}</h3>
             {draft.paragraphs.map((p, i) => (
               <p key={i} className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
@@ -157,7 +157,7 @@ export function AdminAnnouncements() {
               </p>
             ) : null}
             <p className="mt-5 border-t border-border pt-3 text-xs text-muted-foreground">
-              StudyNova — Your semester, made simple. Unsubscribe from announcements.
+              SyllabusNova — Your semester, made simple. Unsubscribe from announcements.
             </p>
           </div>
 

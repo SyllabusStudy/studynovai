@@ -26,9 +26,9 @@ import {
 export const Route = createFileRoute("/_authenticated/classes/$classId")({
   head: () => ({
     meta: [
-      { title: "Class workspace — StudyNova" },
+      { title: "Class workspace — SyllabusNova" },
       { name: "description", content: "Course materials, policies, deadlines and AI study tools for this class." },
-      { property: "og:title", content: "Class workspace — StudyNova" },
+      { property: "og:title", content: "Class workspace — SyllabusNova" },
       { property: "og:description", content: "Materials, policies and AI study tools for this class." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -208,7 +208,7 @@ function ClassDetail() {
             <EmptyState
               icon={FileText}
               title="No policies extracted yet"
-              description="Upload the syllabus and mark it as a syllabus — StudyNova will pull out the policies."
+              description="Upload the syllabus and mark it as a syllabus — SyllabusNova will pull out the policies."
             />
           ) : (
             <>

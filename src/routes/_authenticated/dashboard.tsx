@@ -36,9 +36,9 @@ type CoachPlan = {
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Dashboard — StudyNova" },
+      { title: "Dashboard — SyllabusNova" },
       { name: "description", content: "Your classes, upcoming deadlines and today's AI study plan." },
-      { property: "og:title", content: "Dashboard — StudyNova" },
+      { property: "og:title", content: "Dashboard — SyllabusNova" },
       { property: "og:description", content: "Upcoming deadlines and today's AI study plan." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

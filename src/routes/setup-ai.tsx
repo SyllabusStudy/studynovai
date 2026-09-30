@@ -16,16 +16,16 @@ import apiKeyTutorial from "@/assets/gemini-api-key-guide.mp4.asset.json";
 export const Route = createFileRoute("/setup-ai")({
   head: () => ({
     meta: [
-      { title: "Turn on AI — StudyNova" },
+      { title: "Turn on AI — SyllabusNova" },
       {
         name: "description",
         content:
-          "Add your free Google Gemini key to unlock StudyNova's tutor, flashcards, quizzes and photo scans.",
+          "Add your free Google Gemini key to unlock SyllabusNova's tutor, flashcards, quizzes and photo scans.",
       },
-      { property: "og:title", content: "Turn on AI — StudyNova" },
+      { property: "og:title", content: "Turn on AI — SyllabusNova" },
       {
         property: "og:description",
-        content: "A quick guided setup that turns on StudyNova's AI study tools.",
+        content: "A quick guided setup that turns on SyllabusNova's AI study tools.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -88,13 +88,13 @@ function SetupAiPage() {
       <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
         <div className="flex items-center gap-2.5">
           <BrandLogo />
-          <span className="text-sm font-extrabold tracking-tight">StudyNova</span>
+          <span className="text-sm font-extrabold tracking-tight">SyllabusNova</span>
         </div>
 
         <div className="mt-6 max-w-2xl">
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">One quick step: turn on AI</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            StudyNova's tutor, flashcards, quizzes, photo scans and video notes run on your own free
+            SyllabusNova's tutor, flashcards, quizzes, photo scans and video notes run on your own free
             Google key, so your studying stays on your account. Watch the guide and follow along — it
             takes about a minute.
           </p>
@@ -118,7 +118,7 @@ function SetupAiPage() {
               playsInline
               preload="metadata"
               src={apiKeyTutorial.url}
-              aria-label="Guide showing how to get a free Gemini API key for StudyNova"
+              aria-label="Guide showing how to get a free Gemini API key for SyllabusNova"
             >
               Your browser does not support video playback.
             </video>

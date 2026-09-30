@@ -6,10 +6,10 @@ import { unsubscribeFromNews } from "@/lib/announce.functions";
 export const Route = createFileRoute("/unsubscribe")({
   head: () => ({
     meta: [
-      { title: "Unsubscribe from StudyNova announcements" },
-      { name: "description", content: "Stop receiving StudyNova announcement emails. Your account and study materials stay exactly as they are." },
-      { property: "og:title", content: "Unsubscribe from StudyNova announcements" },
-      { property: "og:description", content: "Stop receiving StudyNova announcement emails." },
+      { title: "Unsubscribe from SyllabusNova announcements" },
+      { name: "description", content: "Stop receiving SyllabusNova announcement emails. Your account and study materials stay exactly as they are." },
+      { property: "og:title", content: "Unsubscribe from SyllabusNova announcements" },
+      { property: "og:description", content: "Stop receiving SyllabusNova announcement emails." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "robots", content: "noindex" },
@@ -57,12 +57,12 @@ function UnsubscribePage() {
         <>
           <h1 className="mt-4 text-2xl font-bold">That link didn't work</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            You can turn announcement emails off any time in Settings inside StudyNova.
+            You can turn announcement emails off any time in Settings inside SyllabusNova.
           </p>
         </>
       )}
       <Link to="/" className="mt-6 text-sm font-semibold text-primary underline">
-        Back to StudyNova
+        Back to SyllabusNova
       </Link>
     </div>
   );

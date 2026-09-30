@@ -63,13 +63,13 @@ import {
 export const Route = createFileRoute("/_authenticated/email")({
   head: () => ({
     meta: [
-      { title: "Email — StudyNova" },
+      { title: "Email — SyllabusNova" },
       {
         name: "description",
         content:
-          "Read your school email inside StudyNova and turn professor announcements into assignments and calendar dates.",
+          "Read your school email inside SyllabusNova and turn professor announcements into assignments and calendar dates.",
       },
-      { property: "og:title", content: "Email — StudyNova" },
+      { property: "og:title", content: "Email — SyllabusNova" },
       {
         property: "og:description",
         content: "Your student inbox, right next to your classes and deadlines.",
@@ -271,8 +271,8 @@ function EmailPage() {
 }
 
 /** Outlook can't be shown inside another website (Microsoft blocks it), so the
- *  page stays a StudyNova panel: it launches Outlook in a small focused window
- *  and keeps a quick-capture box for turning email text into StudyNova items. */
+ *  page stays a SyllabusNova panel: it launches Outlook in a small focused window
+ *  and keeps a quick-capture box for turning email text into SyllabusNova items. */
 function OutlookView({ onUseGoogle }: { onUseGoogle: () => void }) {
   const winRef = useRef<Window | null>(null);
   const [open, setOpen] = useState(false);
@@ -304,7 +304,7 @@ function OutlookView({ onUseGoogle }: { onUseGoogle: () => void }) {
     );
 
     if (!win) {
-      toast.error("Allow pop-ups for StudyNova, then try again.");
+      toast.error("Allow pop-ups for SyllabusNova, then try again.");
       return;
     }
     try {
@@ -321,7 +321,7 @@ function OutlookView({ onUseGoogle }: { onUseGoogle: () => void }) {
     <div>
       <PageHeader
         title="Email"
-        description="Use your school Outlook next to your classes, and save what matters into StudyNova."
+        description="Use your school Outlook next to your classes, and save what matters into SyllabusNova."
       />
       <div className="mx-auto max-w-xl space-y-4">
         <div className="surface-card p-5 sm:p-6">
@@ -333,7 +333,7 @@ function OutlookView({ onUseGoogle }: { onUseGoogle: () => void }) {
               <h2 className="font-display text-lg font-extrabold">Outlook</h2>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                 Microsoft doesn't allow Outlook to be shown inside other sites, so it opens in a
-                small window right on top of StudyNova. Your password and messages stay with
+                small window right on top of SyllabusNova. Your password and messages stay with
                 Microsoft.
               </p>
             </div>
@@ -352,7 +352,7 @@ function OutlookView({ onUseGoogle }: { onUseGoogle: () => void }) {
         <div className="surface-card p-5 sm:p-6">
           <h3 className="font-display text-base font-extrabold">Save something from an email</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Copy a line from Outlook and paste it here. StudyNova pulls out the date and makes an
+            Copy a line from Outlook and paste it here. SyllabusNova pulls out the date and makes an
             assignment or calendar item.
           </p>
           <Textarea
@@ -373,7 +373,7 @@ function OutlookView({ onUseGoogle }: { onUseGoogle: () => void }) {
             onClick={() => setAddOpen(true)}
           >
             <Plus className="size-4" />
-            Add to StudyNova
+            Add to SyllabusNova
           </Button>
         </div>
 
@@ -395,7 +395,7 @@ function OutlookView({ onUseGoogle }: { onUseGoogle: () => void }) {
         </div>
       </div>
 
-      <AddToStudyNova
+      <AddToSyllabusNova
         open={addOpen}
         onOpenChange={setAddOpen}
         suggestions={suggestions}
@@ -425,7 +425,7 @@ function ConnectScreen({
     const popup = window.open("", "studynova-email", "width=600,height=720");
     if (!popup) {
       setBusy(false);
-      toast.error("Allow pop-ups for StudyNova, then try again.");
+      toast.error("Allow pop-ups for SyllabusNova, then try again.");
       return;
     }
     const controller = new AbortController();
@@ -471,7 +471,7 @@ function ConnectScreen({
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             {reconnect
               ? "Your email access needs to be renewed. Nothing else changes."
-              : "Sign in with your email provider. StudyNova never sees your password, and only you can see your messages."}
+              : "Sign in with your email provider. SyllabusNova never sees your password, and only you can see your messages."}
           </p>
           <Button className="mt-6 w-full gap-2" onClick={connect} disabled={busy}>
             {busy ? <Loader2 className="size-4 animate-spin" /> : <Mail className="size-4" />}
@@ -993,7 +993,7 @@ function MessageView({
         </Button>
         {suggestions.length > 0 ? (
           <Button size="sm" className="gap-1.5" onClick={() => setAddOpen(true)}>
-            <Plus className="size-4" /> Add to StudyNova
+            <Plus className="size-4" /> Add to SyllabusNova
           </Button>
         ) : null}
       </div>
@@ -1015,7 +1015,7 @@ function MessageView({
         {message.bodyText || "(no message text)"}
       </div>
 
-      <AddToStudyNova
+      <AddToSyllabusNova
         open={addOpen}
         onOpenChange={setAddOpen}
         suggestions={suggestions}
@@ -1025,7 +1025,7 @@ function MessageView({
   );
 }
 
-function AddToStudyNova({
+function AddToSyllabusNova({
   open,
   onOpenChange,
   suggestions,
@@ -1091,7 +1091,7 @@ function AddToStudyNova({
       qc.invalidateQueries({ queryKey: ["assignments"] });
       qc.invalidateQueries({ queryKey: ["events"] });
       onOpenChange(false);
-      toast.success("Added to StudyNova.");
+      toast.success("Added to SyllabusNova.");
     },
     onError: (error) =>
       toast.error(error instanceof Error ? error.message : "We couldn't add that."),
@@ -1101,7 +1101,7 @@ function AddToStudyNova({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Add to StudyNova</DialogTitle>
+          <DialogTitle>Add to SyllabusNova</DialogTitle>
           <DialogDescription>
             We found these in this email. Check the details before adding.
           </DialogDescription>

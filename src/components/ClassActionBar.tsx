@@ -43,7 +43,7 @@ export function ClassActionBar({ className, hide }: { className?: string; hide?:
           </span>
           <div>
             <p className="font-display font-bold">Which class are you studying?</p>
-            <p className="text-sm text-muted-foreground">Pick one and StudyNova remembers it everywhere.</p>
+            <p className="text-sm text-muted-foreground">Pick one and SyllabusNova remembers it everywhere.</p>
           </div>
         </div>
         {picker}

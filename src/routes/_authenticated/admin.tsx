@@ -23,9 +23,9 @@ import { useAuth } from "@/lib/auth";
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
     meta: [
-      { title: "Owner dashboard — StudyNova" },
-      { name: "description", content: "Sign-ups, Pro upgrades and AI usage across StudyNova." },
-      { property: "og:title", content: "Owner dashboard — StudyNova" },
+      { title: "Owner dashboard — SyllabusNova" },
+      { name: "description", content: "Sign-ups, Pro upgrades and AI usage across SyllabusNova." },
+      { property: "og:title", content: "Owner dashboard — SyllabusNova" },
       { property: "og:description", content: "Sign-ups, Pro upgrades and AI usage per student." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -60,7 +60,7 @@ function AdminPage() {
 
   return (
     <div>
-      <PageHeader title="Admin" description="Feedback and usage across every StudyNova account." />
+      <PageHeader title="Admin" description="Feedback and usage across every SyllabusNova account." />
 
       {gating ? (
         <Loader2 className="size-5 animate-spin text-primary" />

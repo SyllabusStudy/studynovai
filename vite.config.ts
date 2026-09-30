@@ -25,8 +25,8 @@ export default defineConfig({
         includeAssets: ["favicon.png", "apple-touch-icon.png"],
         manifest: {
           id: "/",
-          name: "StudyNova",
-          short_name: "StudyNova",
+          name: "SyllabusNova",
+          short_name: "SyllabusNova",
           description: "Your semester, made simple. Classes, deadlines, flashcards, quizzes and an AI tutor in one app.",
           start_url: "/dashboard?source=pwa",
           categories: ["education", "productivity"],

@@ -21,7 +21,7 @@ function IosSteps() {
         <SquarePlus className="size-4 text-primary" /> Choose <strong>Add to Home Screen</strong>.
       </li>
       <li className="flex items-center gap-2">
-        <Check className="size-4 text-primary" /> Tap <strong>Add</strong>. StudyNova opens like an app.
+        <Check className="size-4 text-primary" /> Tap <strong>Add</strong>. SyllabusNova opens like an app.
       </li>
     </ol>
   );
@@ -32,7 +32,7 @@ function IosDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: bo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>Install StudyNova on iPhone</DialogTitle>
+          <DialogTitle>Install SyllabusNova on iPhone</DialogTitle>
           <DialogDescription>Safari installs it in three taps.</DialogDescription>
         </DialogHeader>
         <IosSteps />
@@ -53,7 +53,7 @@ export function InstallAppButton({ className }: { className?: string }) {
         className={className}
         onClick={() => (canPrompt ? void install() : setIosOpen(true))}
       >
-        <Smartphone className="size-4" /> Install StudyNova
+        <Smartphone className="size-4" /> Install SyllabusNova
       </Button>
       <IosDialog open={iosOpen} onOpenChange={setIosOpen} />
     </>
@@ -99,12 +99,12 @@ export function InstallCard() {
     <>
       <Dialog open={open} onOpenChange={(v) => (v ? setOpen(true) : notNow())}>
         <DialogContent className="max-w-sm text-center">
-          <img src={logo.url} alt="StudyNova" className="mx-auto size-20 rounded-2xl" />
+          <img src={logo.url} alt="SyllabusNova" className="mx-auto size-20 rounded-2xl" />
           <DialogHeader className="items-center text-center">
-            <DialogTitle className="font-display text-2xl">StudyNova</DialogTitle>
+            <DialogTitle className="font-display text-2xl">SyllabusNova</DialogTitle>
             <DialogDescription>Your semester, made simple.</DialogDescription>
           </DialogHeader>
-          <p className="text-sm">📱 Install StudyNova on your device. It opens from your home screen in its own window.</p>
+          <p className="text-sm">📱 Install SyllabusNova on your device. It opens from your home screen in its own window.</p>
           <div className="flex flex-col gap-2 pt-2">
             <Button
               size="lg"

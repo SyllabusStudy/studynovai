@@ -4,13 +4,13 @@ import { useEffect, useState } from "react";
 export const Route = createFileRoute("/oauth/google/return")({
   head: () => ({
     meta: [
-      { title: "Finishing your email connection — StudyNova" },
+      { title: "Finishing your email connection — SyllabusNova" },
       {
         name: "description",
-        content: "StudyNova is finishing the secure connection to your email account.",
+        content: "SyllabusNova is finishing the secure connection to your email account.",
       },
-      { property: "og:title", content: "Finishing your email connection — StudyNova" },
-      { property: "og:description", content: "One moment while StudyNova connects your inbox." },
+      { property: "og:title", content: "Finishing your email connection — SyllabusNova" },
+      { property: "og:description", content: "One moment while SyllabusNova connects your inbox." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/oauth/google/return")({
 });
 
 /** Same-origin hand-back channel. Google's sign-in page can cut the link
- *  between this window and the StudyNova page that opened it, so the result is
+ *  between this window and the SyllabusNova page that opened it, so the result is
  *  also left in shared browser storage for that page to pick up. */
 const RELAY_KEY = "studynova.mailOAuthResult";
 const RELAY_CHANNEL = "studynova-mail-oauth";
@@ -91,7 +91,7 @@ function OAuthReturn() {
       handOff("appUserConnectorOAuthFailed", undefined, false);
       return;
     }
-    setMessage("All set — bringing you back to StudyNova…");
+    setMessage("All set — bringing you back to SyllabusNova…");
     handOff("appUserConnectorOAuthComplete", code);
   }, []);
 

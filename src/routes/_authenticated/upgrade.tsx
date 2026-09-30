@@ -19,12 +19,12 @@ import { getStripeEnvironment, PRO_PRICE_ID } from "@/lib/stripe";
 export const Route = createFileRoute("/_authenticated/upgrade")({
   head: () => ({
     meta: [
-      { title: "Upgrade to Pro — StudyNova" },
+      { title: "Upgrade to Pro — SyllabusNova" },
       {
         name: "description",
-        content: "Get unlimited AI assignment help and SnapQuick scans with StudyNova Pro.",
+        content: "Get unlimited AI assignment help and SnapQuick scans with SyllabusNova Pro.",
       },
-      { property: "og:title", content: "Upgrade to StudyNova Pro" },
+      { property: "og:title", content: "Upgrade to SyllabusNova Pro" },
       { property: "og:description", content: "Unlimited AI assignment help and photo scans." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * StudyNova design system.
+ * SyllabusNova design system.
  * Warm paper light theme + deep ink dark theme, teal primary, amber accent.
  * All colors are oklch semantic tokens. Never hardcode colors in components.
  */
