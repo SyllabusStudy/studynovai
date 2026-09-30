@@ -264,7 +264,22 @@ function FlashcardsPage() {
 
       <div className="mt-8 mb-3 flex items-baseline justify-between">
         <h2 className="font-display text-lg font-bold">Your decks</h2>
-        {decks.length ? <span className="text-xs text-muted-foreground">{decks.length} total</span> : null}
+        {decks.length ? (
+          <span className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">{decks.length} total</span>
+            <ClearAllButton
+              label={classId ? "decks in this class" : "your decks"}
+              count={decks.length}
+              buttonLabel="Clear all decks"
+              description={
+                classId
+                  ? "Every flashcard in this class will be removed from your account. This can't be undone."
+                  : "Every flashcard deck you've made will be removed from your account. This can't be undone."
+              }
+              onClear={deleteAllDecks}
+            />
+          </span>
+        ) : null}
       </div>
       {isLoading ? (
         <Loader2 className="size-5 animate-spin text-primary" />
