@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { classLabel, useClasses } from "@/lib/data";
 import { useAuth } from "@/lib/auth";
+import { useGuestGate, useRestoredGuestDraft } from "@/lib/guest-gate";
 
 export const Route = createFileRoute("/_authenticated/snapquick")({
   head: () => ({
@@ -135,6 +136,7 @@ const FOLLOW_UPS: { label: string; mode: SnapMode; text: string }[] = [
 function SnapQuickPage() {
   const { user } = useAuth();
   const { data: classes = [] } = useClasses(user?.id);
+  const guest = useGuestGate("snapquick");
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
@@ -222,9 +224,12 @@ function SnapQuickPage() {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, busy]);
 
+  useRestoredGuestDraft("snapquick", setInput);
+
   async function send(text: string, opts?: { mode?: SnapMode; img?: string | null; fresh?: boolean }) {
     const msgText = text.trim();
     if (!msgText || busyRef.current || (failed && !opts?.fresh)) return;
+    if (guest.requireAccount({ text: msgText })) return;
     const history = opts?.fresh ? [] : messages;
     const idForSave = opts?.fresh ? null : convId;
     if (opts?.fresh) setConvId(null);
@@ -319,6 +324,7 @@ function SnapQuickPage() {
 
   return (
     <div>
+      {guest.dialog}
       <PageHeader title="Stuck on a problem?" description="Snap it or type it. Learn every step." />
       <AiKeySetupBanner />
       <ClassActionBar />

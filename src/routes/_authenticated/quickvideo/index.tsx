@@ -26,6 +26,7 @@ import { importVideo } from "@/lib/video.functions";
 import { useAuth } from "@/lib/auth";
 import { classLabel, formatDate, useClasses, useVideoNotes } from "@/lib/data";
 import { AiKeySetupBanner, useAiKeyRedirect, useAiKeyStatus, useSendToAiKeySetup } from "@/lib/ai-key-gate";
+import { useGuestGate, useRestoredGuestDraft } from "@/lib/guest-gate";
 
 export const Route = createFileRoute("/_authenticated/quickvideo/")({
   head: () => ({
@@ -73,8 +74,11 @@ function QuickVideoPage() {
   const redirectForKey = useAiKeyRedirect();
   const { data: keyStatus } = useAiKeyStatus();
   const sendToKeySetup = useSendToAiKeySetup();
+  const guest = useGuestGate("quickvideo");
+  useRestoredGuestDraft("quickvideo", setUrl);
 
   async function submit(payload: { url?: string; dataUrl?: string; fileName?: string }) {
+    if (guest.requireAccount({ text: payload.url ?? "" })) return;
     if (keyStatus?.hasKey === false) {
       sendToKeySetup();
       return;
@@ -125,6 +129,7 @@ function QuickVideoPage() {
 
   return (
     <div>
+      {guest.dialog}
       <PageHeader
         title="QuickVideo"
         description="Paste a video link and get study notes in seconds."

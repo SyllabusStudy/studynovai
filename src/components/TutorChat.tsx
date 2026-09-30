@@ -22,6 +22,7 @@ import { Markdown } from "@/components/Markdown";
 import { STUDY_MODES } from "@/lib/constants";
 import { classLabel, useClasses, type ConversationRow } from "@/lib/data";
 import { useAuth } from "@/lib/auth";
+import { useGuestGate, useRestoredGuestDraft } from "@/lib/guest-gate";
 import { cn } from "@/lib/utils";
 
 export type ChatMsg = { role: "user" | "assistant"; content: string };
@@ -50,6 +51,7 @@ export function TutorChat({
   const queryClient = useQueryClient();
   const send = useServerFn(tutorChat);
   const redirectForKey = useAiKeyRedirect();
+  const guest = useGuestGate("tutor");
 
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -79,9 +81,12 @@ export function TutorChat({
     [classes, classId, fixedClassId],
   );
 
+  useRestoredGuestDraft("tutor", setInput);
+
   async function submit(text: string) {
     const message = text.trim();
     if (!message || busyRef.current || failed) return;
+    if (guest.requireAccount({ text: message })) return;
     const request = { message, mode, classId: fixedClassId ?? (classId === "all" ? null : classId), conversationId };
     setInput("");
     setMessages((prev) => [...prev, { role: "user", content: message }]);
@@ -123,6 +128,7 @@ export function TutorChat({
 
   return (
     <div className={cn("flex min-h-0 flex-1 flex-col", className)}>
+      {guest.dialog}
       <div className="flex flex-wrap items-center gap-2 border-b border-border pb-3">
         <Select value={mode} onValueChange={setMode}>
           <SelectTrigger className="h-9 w-[170px] text-xs">

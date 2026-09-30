@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth";
 import { lovable } from "@/integrations/lovable/index";
+import { guestReturnPath } from "@/lib/guest-gate";
 
 const searchSchema = z.object({
   mode: z.enum(["login", "signup", "reset"]).optional(),
@@ -50,7 +51,7 @@ function AuthPage() {
 
   useEffect(() => {
     if (creating) return;
-    if (!loading && user) navigate({ to: "/dashboard" });
+    if (!loading && user) navigate({ to: (guestReturnPath() ?? "/dashboard") as "/dashboard" });
   }, [loading, user, navigate, creating]);
 
 
@@ -84,7 +85,7 @@ function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Welcome back!");
-        navigate({ to: "/dashboard" });
+        navigate({ to: (guestReturnPath() ?? "/dashboard") as "/dashboard" });
       } else {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/reset-password`,

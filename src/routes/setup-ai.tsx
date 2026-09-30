@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { BrandLogo } from "@/components/BrandLogo";
 import { useAuth } from "@/lib/auth";
 import { getAiKeyStatus, saveAiKey } from "@/lib/ai-keys.functions";
+import { guestReturnPath } from "@/lib/guest-gate";
 import apiKeyTutorial from "@/assets/gemini-api-key-guide.mp4.asset.json";
 
 export const Route = createFileRoute("/setup-ai")({
@@ -57,9 +58,11 @@ function SetupAiPage() {
     enabled: !!user,
   });
 
+  const nextPath = () => (guestReturnPath() ?? "/dashboard") as "/dashboard";
+
   useEffect(() => {
     if (!data?.hasKey) return;
-    const t = setTimeout(() => navigate({ to: "/dashboard" }), 1200);
+    const t = setTimeout(() => navigate({ to: nextPath() }), 1200);
     return () => clearTimeout(t);
   }, [data?.hasKey, navigate]);
 
@@ -67,7 +70,7 @@ function SetupAiPage() {
     mutationFn: () => save({ data: { provider: "google", apiKey } }),
     onSuccess: () => {
       toast.success("AI is on — everything is ready to use.");
-      navigate({ to: "/dashboard" });
+      navigate({ to: nextPath() });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -176,7 +179,7 @@ function SetupAiPage() {
             <button
               type="button"
               className="w-full text-sm font-semibold text-muted-foreground underline"
-              onClick={() => navigate({ to: "/dashboard" })}
+              onClick={() => navigate({ to: nextPath() })}
             >
               I'll set this up later
             </button>

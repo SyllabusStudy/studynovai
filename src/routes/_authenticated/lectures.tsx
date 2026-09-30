@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth";
+import { useGuestGate } from "@/lib/guest-gate";
 import { classLabel, formatDate, useClasses } from "@/lib/data";
 
 export const Route = createFileRoute("/_authenticated/lectures")({
@@ -48,6 +49,7 @@ function LecturesPage() {
   const navigate = useNavigate();
   const { setActiveClassId } = useActiveClass();
   const [saving, setSaving] = useState<string | null>(null);
+  const guest = useGuestGate("lectures");
 
 
   const notes = useQuery({
@@ -61,6 +63,7 @@ function LecturesPage() {
   });
 
   async function process(blob: Blob, name: string) {
+    if (guest.requireAccount()) return;
     if (blob.size > MAX_BYTES) {
       toast.error("That recording is too long. Keep it under about 40 minutes (19 MB), or split it.");
       return;
@@ -225,6 +228,7 @@ ${keys.length ? `<h2>Key exam concepts</h2><ul>${keys.map((k) => `<li>${escapeHt
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
+      {guest.dialog}
       <PageHeader title="Lecture Notes" description="Record class or upload a voice memo. StudyNova writes the transcript, notes, flashcards and key exam concepts." />
 
       <div className="surface-card space-y-4 p-5">
