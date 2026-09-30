@@ -4,7 +4,7 @@ import type { Draft } from "./announce";
 
 export const FROM_ADDRESS = "SyllabusStudy <news@studynova.link>";
 export const REPLY_TO = "news@studynova.link";
-const SITE_URL = "https://studynovai.lovable.app";
+const SITE_URL = "https://syllabusstudy.com";
 const RESEND_GATEWAY = "https://connector-gateway.lovable.dev/resend";
 const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const BATCH_SIZE = 100;
