@@ -217,6 +217,14 @@ function SnapQuickPage() {
     void qc.invalidateQueries({ queryKey: ["snap-conversations", user?.id] });
   }
 
+  async function deleteAllConversations() {
+    if (!user?.id) return;
+    const { error } = await supabase.from("snap_conversations").delete().eq("user_id", user.id);
+    if (error) throw new Error(error.message);
+    reset();
+    await qc.invalidateQueries({ queryKey: ["snap-conversations", user.id] });
+  }
+
   const [revealed, setRevealed] = useState(false);
   const { open: openId } = Route.useSearch();
   useEffect(() => {
