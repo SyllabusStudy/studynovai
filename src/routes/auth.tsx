@@ -84,7 +84,7 @@ function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Welcome back!");
-        navigate({ to: "/dashboard" });
+        navigate({ to: (guestReturnPath() ?? "/dashboard") as "/dashboard" });
       } else {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/reset-password`,
