@@ -136,6 +136,7 @@ const FOLLOW_UPS: { label: string; mode: SnapMode; text: string }[] = [
 function SnapQuickPage() {
   const { user } = useAuth();
   const { data: classes = [] } = useClasses(user?.id);
+  const guest = useGuestGate("snapquick");
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
