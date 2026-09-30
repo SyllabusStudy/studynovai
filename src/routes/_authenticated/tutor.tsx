@@ -1,9 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { ClassActionBar } from "@/components/ClassActionBar";
 import { PageHeader } from "@/components/PageHeader";
 import { TutorChat } from "@/components/TutorChat";
+import { TutorHistory } from "@/components/TutorHistory";
 import { Hint } from "@/components/Hint";
 import { AiKeySetupBanner } from "@/lib/ai-key-gate";
+import { clearTabMemory } from "@/lib/tab-memory";
+import type { ConversationRow } from "@/lib/data";
 
 export const Route = createFileRoute("/_authenticated/tutor")({
   head: () => ({
@@ -22,7 +26,11 @@ export const Route = createFileRoute("/_authenticated/tutor")({
   component: TutorPage,
 });
 
+const MEMORY_SCOPE = "/tutor";
+
 function TutorPage() {
+  const [opened, setOpened] = useState<ConversationRow | null>(null);
+
   return (
     <div>
       <PageHeader
@@ -34,7 +42,24 @@ function TutorPage() {
       <Hint id="tutor-ask" point="down" className="mb-4">
         Ask anything about a class — SyllabusStudy already knows your syllabus, assignments and uploaded notes, so just type like you're texting a friend.
       </Hint>
-      <TutorChat />
+      <div className="mb-4">
+        <TutorHistory
+          activeId={opened?.id ?? null}
+          onOpen={(conversation) => {
+            clearTabMemory(MEMORY_SCOPE);
+            setOpened(conversation);
+          }}
+          onNew={() => {
+            clearTabMemory(MEMORY_SCOPE);
+            setOpened(null);
+          }}
+        />
+      </div>
+      <TutorChat
+        key={opened?.id ?? "new"}
+        conversation={opened ?? undefined}
+        memoryScope={MEMORY_SCOPE}
+      />
     </div>
   );
 }

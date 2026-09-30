@@ -23,9 +23,17 @@ import { STUDY_MODES } from "@/lib/constants";
 import { classLabel, useClasses, type ConversationRow } from "@/lib/data";
 import { useAuth } from "@/lib/auth";
 import { useGuestGate, useRestoredGuestDraft } from "@/lib/guest-gate";
+import { readTabMemory, writeTabMemory } from "@/lib/tab-memory";
 import { cn } from "@/lib/utils";
 
 export type ChatMsg = { role: "user" | "assistant"; content: string };
+
+type TutorMemory = {
+  messages: ChatMsg[];
+  conversationId: string | null;
+  mode: string;
+  input: string;
+};
 
 const STARTERS = [
   "What should I study today?",
@@ -40,11 +48,14 @@ export function TutorChat({
   conversation,
   compact = false,
   className,
+  memoryScope,
 }: {
   fixedClassId?: string | undefined;
   conversation?: ConversationRow | undefined;
   compact?: boolean;
   className?: string;
+  /** When set, unfinished work is kept for this tab until the tab is closed. */
+  memoryScope?: string | undefined;
 }) {
   const { user } = useAuth();
   const { data: classes = [] } = useClasses(user?.id);
@@ -71,6 +82,25 @@ export function TutorChat({
     setMode(conversation.study_mode ?? "explain");
     if (conversation.class_id) setClassId(conversation.class_id);
   }, [conversation]);
+
+  // Bring back whatever this tab was in the middle of, unless a different saved chat was opened.
+  const restored = useRef(false);
+  useEffect(() => {
+    if (!memoryScope || restored.current) return;
+    restored.current = true;
+    const saved = readTabMemory<TutorMemory>(memoryScope);
+    if (!saved) return;
+    if (conversation && saved.conversationId !== conversation.id) return;
+    if (Array.isArray(saved.messages) && saved.messages.length) setMessages(saved.messages);
+    if (saved.conversationId) setConversationId(saved.conversationId);
+    if (saved.mode) setMode(saved.mode);
+    if (saved.input) setInput(saved.input);
+  }, [memoryScope, conversation]);
+
+  useEffect(() => {
+    if (!memoryScope || !restored.current) return;
+    writeTabMemory(memoryScope, { messages, conversationId, mode, input } satisfies TutorMemory);
+  }, [memoryScope, messages, conversationId, mode, input]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });

@@ -2,7 +2,7 @@ import { recordStudyActivity } from "@/lib/activity";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ClassActionBar } from "@/components/ClassActionBar";
 import { useClassPicker } from "@/lib/active-class";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { FileVideo, Loader2, Sparkles, Upload, Video, Youtube } from "lucide-react";
@@ -27,6 +27,9 @@ import { useAuth } from "@/lib/auth";
 import { classLabel, formatDate, useClasses, useVideoNotes } from "@/lib/data";
 import { AiKeySetupBanner, useAiKeyRedirect, useAiKeyStatus, useSendToAiKeySetup } from "@/lib/ai-key-gate";
 import { useGuestGate, useRestoredGuestDraft } from "@/lib/guest-gate";
+import { readTabMemory, writeTabMemory } from "@/lib/tab-memory";
+
+const MEMORY_SCOPE = "/quickvideo";
 
 export const Route = createFileRoute("/_authenticated/quickvideo/")({
   head: () => ({
@@ -76,6 +79,20 @@ function QuickVideoPage() {
   const sendToKeySetup = useSendToAiKeySetup();
   const guest = useGuestGate("quickvideo");
   useRestoredGuestDraft("quickvideo", setUrl);
+
+  // Keep the half-typed link while this tab stays open.
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    if (restoredRef.current) return;
+    restoredRef.current = true;
+    const saved = readTabMemory<{ url: string }>(MEMORY_SCOPE);
+    if (saved?.url) setUrl(saved.url);
+  }, []);
+
+  useEffect(() => {
+    if (!restoredRef.current) return;
+    writeTabMemory(MEMORY_SCOPE, { url });
+  }, [url]);
 
   async function submit(payload: { url?: string; dataUrl?: string; fileName?: string }) {
     if (guest.requireAccount({ text: payload.url ?? "" })) return;

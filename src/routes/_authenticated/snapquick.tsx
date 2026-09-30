@@ -29,6 +29,10 @@ import {
 import { classLabel, useClasses } from "@/lib/data";
 import { useAuth } from "@/lib/auth";
 import { useGuestGate, useRestoredGuestDraft } from "@/lib/guest-gate";
+import { readTabMemory, writeTabMemory } from "@/lib/tab-memory";
+
+const MEMORY_SCOPE = "/snapquick";
+type SnapMemory = { messages: Msg[]; input: string; mode: SnapMode; convId: string | null };
 
 export const Route = createFileRoute("/_authenticated/snapquick")({
   head: () => ({
@@ -225,6 +229,34 @@ function SnapQuickPage() {
   }, [messages, busy]);
 
   useRestoredGuestDraft("snapquick", setInput);
+
+  // Keep this tab's unfinished work while the student hops to another tool and back.
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    if (restoredRef.current || openId) return;
+    restoredRef.current = true;
+    const saved = readTabMemory<SnapMemory>(MEMORY_SCOPE);
+    if (!saved) return;
+    if (Array.isArray(saved.messages) && saved.messages.length) {
+      setMessages(saved.messages);
+      setRevealed(true);
+    }
+    if (saved.convId) setConvId(saved.convId);
+    if (saved.mode) setMode(saved.mode);
+    if (saved.input) setInput(saved.input);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openId]);
+
+  useEffect(() => {
+    if (!restoredRef.current) return;
+    // Photos stay out of tab memory — they are far too large to store.
+    writeTabMemory(MEMORY_SCOPE, {
+      messages: messages.map((m) => ({ role: m.role, content: m.content })),
+      input,
+      mode,
+      convId,
+    } satisfies SnapMemory);
+  }, [messages, input, mode, convId]);
 
   async function send(text: string, opts?: { mode?: SnapMode; img?: string | null; fresh?: boolean }) {
     const msgText = text.trim();

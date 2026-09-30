@@ -24,6 +24,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { clearTabMemory } from "@/lib/tab-memory";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -151,6 +152,8 @@ export function StudyTabs() {
 
   const close = useCallback(
     (path: string) => {
+      // Closing a tab forgets that tool's unfinished work.
+      clearTabMemory(path);
       setTabs((current) => {
         const index = current.findIndex((t) => t.path === path);
         if (index < 0) return current;
