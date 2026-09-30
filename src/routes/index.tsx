@@ -4,19 +4,36 @@ import { useEffect } from "react";
 import {
   ArrowRight,
   Bot,
+  BookOpen,
   Brain,
   CalendarCheck,
   ChartColumn,
+  ClipboardList,
   FileText,
+  FolderOpen,
+  Layers,
   Moon,
+  NotebookPen,
   ShieldCheck,
   Sparkles,
   Sun,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InstallAppButton } from "@/components/InstallAppButton";
+import { TryItTools } from "@/components/TryItTools";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
+
+const HUB = [
+  { label: "Classes", to: "/classes", icon: BookOpen },
+  { label: "Calendar", to: "/calendar", icon: CalendarCheck },
+  { label: "Assignments", to: "/assignments", icon: ClipboardList },
+  { label: "Notes", to: "/lectures", icon: NotebookPen },
+  { label: "Flashcards", to: "/flashcards", icon: Layers },
+  { label: "AI Tutor", to: "/tutor", icon: Bot },
+  { label: "Grades", to: "/grades", icon: ChartColumn },
+  { label: "Study Materials", to: "/studio", icon: FolderOpen },
+] as const;
 
 export const Route = createFileRoute("/")({
   head: () => ({
