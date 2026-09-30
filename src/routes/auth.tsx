@@ -46,16 +46,21 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
+    if (creating) return;
     if (!loading && user) navigate({ to: "/dashboard" });
-  }, [loading, user, navigate]);
+  }, [loading, user, navigate, creating]);
+
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
+    if (mode === "signup") setCreating(true);
     try {
       if (mode === "signup") {
+
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -89,6 +94,7 @@ function AuthPage() {
         setMode("login");
       }
     } catch (err) {
+      setCreating(false);
       const message = err instanceof Error ? err.message : "Something went wrong.";
       toast.error(
         message.includes("Invalid login credentials")
@@ -99,6 +105,7 @@ function AuthPage() {
       setBusy(false);
     }
   }
+
 
   async function onGoogle() {
     setGoogleBusy(true);

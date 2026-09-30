@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as SetupAiRouteImport } from './routes/setup-ai'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
@@ -27,7 +28,6 @@ import { Route as AuthenticatedFeedbackRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedGradesRouteImport } from './routes/_authenticated/grades'
 import { Route as AuthenticatedSchoolRouteImport } from './routes/_authenticated/school'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
-import { Route as AuthenticatedSetupAiRouteImport } from './routes/_authenticated/setup-ai'
 import { Route as AuthenticatedSnapquickRouteImport } from './routes/_authenticated/snapquick'
 import { Route as AuthenticatedStudioRouteImport } from './routes/_authenticated/studio'
 import { Route as AuthenticatedTutorRouteImport } from './routes/_authenticated/tutor'
@@ -67,6 +67,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SetupAiRoute = SetupAiRouteImport.update({
+  id: '/setup-ai',
+  path: '/setup-ai',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -133,11 +138,6 @@ const AuthenticatedSchoolRoute = AuthenticatedSchoolRouteImport.update({
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedSetupAiRoute = AuthenticatedSetupAiRouteImport.update({
-  id: '/setup-ai',
-  path: '/setup-ai',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedSnapquickRoute = AuthenticatedSnapquickRouteImport.update({
@@ -235,6 +235,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/setup-ai': typeof SetupAiRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
@@ -248,7 +249,6 @@ export interface FileRoutesByFullPath {
   '/grades': typeof AuthenticatedGradesRoute
   '/school': typeof AuthenticatedSchoolRoute
   '/settings': typeof AuthenticatedSettingsRoute
-  '/setup-ai': typeof AuthenticatedSetupAiRoute
   '/snapquick': typeof AuthenticatedSnapquickRoute
   '/studio': typeof AuthenticatedStudioRoute
   '/tutor': typeof AuthenticatedTutorRoute
@@ -271,6 +271,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/setup-ai': typeof SetupAiRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
@@ -284,7 +285,6 @@ export interface FileRoutesByTo {
   '/grades': typeof AuthenticatedGradesRoute
   '/school': typeof AuthenticatedSchoolRoute
   '/settings': typeof AuthenticatedSettingsRoute
-  '/setup-ai': typeof AuthenticatedSetupAiRoute
   '/snapquick': typeof AuthenticatedSnapquickRoute
   '/studio': typeof AuthenticatedStudioRoute
   '/tutor': typeof AuthenticatedTutorRoute
@@ -309,6 +309,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/setup-ai': typeof SetupAiRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
@@ -322,7 +323,6 @@ export interface FileRoutesById {
   '/_authenticated/grades': typeof AuthenticatedGradesRoute
   '/_authenticated/school': typeof AuthenticatedSchoolRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
-  '/_authenticated/setup-ai': typeof AuthenticatedSetupAiRoute
   '/_authenticated/snapquick': typeof AuthenticatedSnapquickRoute
   '/_authenticated/studio': typeof AuthenticatedStudioRoute
   '/_authenticated/tutor': typeof AuthenticatedTutorRoute
@@ -347,6 +347,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/privacy'
     | '/reset-password'
+    | '/setup-ai'
     | '/sitemap.xml'
     | '/terms'
     | '/unsubscribe'
@@ -360,7 +361,6 @@ export interface FileRouteTypes {
     | '/grades'
     | '/school'
     | '/settings'
-    | '/setup-ai'
     | '/snapquick'
     | '/studio'
     | '/tutor'
@@ -383,6 +383,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/privacy'
     | '/reset-password'
+    | '/setup-ai'
     | '/sitemap.xml'
     | '/terms'
     | '/unsubscribe'
@@ -396,7 +397,6 @@ export interface FileRouteTypes {
     | '/grades'
     | '/school'
     | '/settings'
-    | '/setup-ai'
     | '/snapquick'
     | '/studio'
     | '/tutor'
@@ -420,6 +420,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/privacy'
     | '/reset-password'
+    | '/setup-ai'
     | '/sitemap.xml'
     | '/terms'
     | '/unsubscribe'
@@ -433,7 +434,6 @@ export interface FileRouteTypes {
     | '/_authenticated/grades'
     | '/_authenticated/school'
     | '/_authenticated/settings'
-    | '/_authenticated/setup-ai'
     | '/_authenticated/snapquick'
     | '/_authenticated/studio'
     | '/_authenticated/tutor'
@@ -458,6 +458,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SetupAiRoute: typeof SetupAiRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
@@ -502,6 +503,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/setup-ai': {
+      id: '/setup-ai'
+      path: '/setup-ai'
+      fullPath: '/setup-ai'
+      preLoaderRoute: typeof SetupAiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -593,13 +601,6 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/setup-ai': {
-      id: '/_authenticated/setup-ai'
-      path: '/setup-ai'
-      fullPath: '/setup-ai'
-      preLoaderRoute: typeof AuthenticatedSetupAiRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/snapquick': {
@@ -728,7 +729,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedGradesRoute: typeof AuthenticatedGradesRoute
   AuthenticatedSchoolRoute: typeof AuthenticatedSchoolRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
-  AuthenticatedSetupAiRoute: typeof AuthenticatedSetupAiRoute
   AuthenticatedSnapquickRoute: typeof AuthenticatedSnapquickRoute
   AuthenticatedStudioRoute: typeof AuthenticatedStudioRoute
   AuthenticatedTutorRoute: typeof AuthenticatedTutorRoute
@@ -754,7 +754,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedGradesRoute: AuthenticatedGradesRoute,
   AuthenticatedSchoolRoute: AuthenticatedSchoolRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
-  AuthenticatedSetupAiRoute: AuthenticatedSetupAiRoute,
   AuthenticatedSnapquickRoute: AuthenticatedSnapquickRoute,
   AuthenticatedStudioRoute: AuthenticatedStudioRoute,
   AuthenticatedTutorRoute: AuthenticatedTutorRoute,
@@ -778,6 +777,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  SetupAiRoute: SetupAiRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
   UnsubscribeRoute: UnsubscribeRoute,
