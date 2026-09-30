@@ -1,10 +1,10 @@
-import logo from "@/assets/studynova-logo.png.asset.json";
+import logo from "@/assets/syllablestudy-logo.png";
 import { cn } from "@/lib/utils";
 
 export function BrandLogo({ className }: { className?: string }) {
   return (
     <img
-      src={logo.url}
+      src={logo}
       alt="SyllableStudy logo"
       width={36}
       height={36}

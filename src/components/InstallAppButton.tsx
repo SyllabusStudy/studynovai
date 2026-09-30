@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useInstall } from "@/lib/pwa-install";
-import logo from "@/assets/studynova-logo.png.asset.json";
+import logo from "@/assets/syllablestudy-logo.png";
 
 function IosSteps() {
   return (
@@ -99,7 +99,7 @@ export function InstallCard() {
     <>
       <Dialog open={open} onOpenChange={(v) => (v ? setOpen(true) : notNow())}>
         <DialogContent className="max-w-sm text-center">
-          <img src={logo.url} alt="SyllableStudy" className="mx-auto size-20 rounded-2xl" />
+          <img src={logo} alt="SyllableStudy" className="mx-auto size-20 rounded-2xl" />
           <DialogHeader className="items-center text-center">
             <DialogTitle className="font-display text-2xl">SyllableStudy</DialogTitle>
             <DialogDescription>Your semester, made simple.</DialogDescription>
