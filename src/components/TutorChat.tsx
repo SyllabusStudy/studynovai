@@ -81,9 +81,12 @@ export function TutorChat({
     [classes, classId, fixedClassId],
   );
 
+  useRestoredGuestDraft("tutor", setInput);
+
   async function submit(text: string) {
     const message = text.trim();
     if (!message || busyRef.current || failed) return;
+    if (guest.requireAccount({ text: message })) return;
     const request = { message, mode, classId: fixedClassId ?? (classId === "all" ? null : classId), conversationId };
     setInput("");
     setMessages((prev) => [...prev, { role: "user", content: message }]);
