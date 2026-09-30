@@ -100,7 +100,7 @@ const LAUNCH: { to: string; label: string; icon: IconKey }[] = [
 
 const HOME = "/dashboard";
 const STORE = "studynova.tabs.v1";
-const MAX_TABS = 8;
+const MAX_TABS = 12;
 
 function describe(path: string): Tab | null {
   const match = KNOWN.find((k) => path === k.prefix || path.startsWith(`${k.prefix}/`));
