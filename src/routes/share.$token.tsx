@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getSharedItem } from "@/lib/share.functions";
 
-const SITE = "https://studynova.link";
+const SITE = "https://syllabusstudy.com";
 const SHARE_IMAGE = `${SITE}/share-card.jpg`;
 
 export const Route = createFileRoute("/share/$token")({
