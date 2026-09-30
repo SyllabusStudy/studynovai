@@ -45,6 +45,10 @@ function LecturesPage() {
   const rec = useRef<MediaRecorder | null>(null);
   const timer = useRef<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
+  const { setActiveClassId } = useActiveClass();
+  const [saving, setSaving] = useState<string | null>(null);
+
 
   const notes = useQuery({
     queryKey: ["lecture_notes", user?.id],
