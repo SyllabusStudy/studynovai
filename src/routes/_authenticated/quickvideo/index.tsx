@@ -26,6 +26,7 @@ import { importVideo } from "@/lib/video.functions";
 import { useAuth } from "@/lib/auth";
 import { classLabel, formatDate, useClasses, useVideoNotes } from "@/lib/data";
 import { AiKeySetupBanner, useAiKeyRedirect, useAiKeyStatus, useSendToAiKeySetup } from "@/lib/ai-key-gate";
+import { useGuestGate, useRestoredGuestDraft } from "@/lib/guest-gate";
 
 export const Route = createFileRoute("/_authenticated/quickvideo/")({
   head: () => ({
