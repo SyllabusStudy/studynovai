@@ -228,6 +228,7 @@ ${keys.length ? `<h2>Key exam concepts</h2><ul>${keys.map((k) => `<li>${escapeHt
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
+      {guest.dialog}
       <PageHeader title="Lecture Notes" description="Record class or upload a voice memo. StudyNova writes the transcript, notes, flashcards and key exam concepts." />
 
       <div className="surface-card space-y-4 p-5">
