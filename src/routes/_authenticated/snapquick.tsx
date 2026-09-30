@@ -224,9 +224,12 @@ function SnapQuickPage() {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, busy]);
 
+  useRestoredGuestDraft("snapquick", setInput);
+
   async function send(text: string, opts?: { mode?: SnapMode; img?: string | null; fresh?: boolean }) {
     const msgText = text.trim();
     if (!msgText || busyRef.current || (failed && !opts?.fresh)) return;
+    if (guest.requireAccount({ text: msgText })) return;
     const history = opts?.fresh ? [] : messages;
     const idForSave = opts?.fresh ? null : convId;
     if (opts?.fresh) setConvId(null);
