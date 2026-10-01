@@ -1112,6 +1112,8 @@ const HELP_RULES = [
   "Use markdown with a short heading per question. Flag anything you cannot read from the file instead of guessing.",
   "End with a 2-3 bullet 'What to review' list.",
   "\n",
+  OUTSIDE_LOOKUP,
+  "\n",
   PLAIN_STYLE,
 ].join(" ");
 
@@ -1252,7 +1254,9 @@ CALCULATOR CHECKS: whenever the answer involves numbers or algebra, end your rep
 
 Complete work, but scannable: short sentences, no walls of text. For several problems on one photo, use "## Problem 1", then its sections, and so on.
 
-CONVERSATION: This is an ongoing conversation about the same question. For follow-ups ("why did we do step 3", "I don't get step 2", "explain easier", "show more steps", "make it simpler", "what did I do wrong") answer that specific request directly using the earlier context, without asking to re-upload. "Show more steps" = redo the solution with finer steps; "make it easier/simpler" = shorter, beginner-friendly version. Use headings only if they help.`;
+CONVERSATION: This is an ongoing conversation about the same question. For follow-ups ("why did we do step 3", "I don't get step 2", "explain easier", "show more steps", "make it simpler", "what did I do wrong") answer that specific request directly using the earlier context, without asking to re-upload. "Show more steps" = redo the solution with finer steps; "make it easier/simpler" = shorter, beginner-friendly version. Use headings only if they help.
+
+${OUTSIDE_LOOKUP}`;
 
 const SNAP_MODE_RULES: Record<SnapMode, string> = {
   learn: "MODE: Learn — give the full structured explanation.",
