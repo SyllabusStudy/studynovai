@@ -451,8 +451,10 @@ export async function runVideoChat(
       role: "system",
       content: [
         "You are SyllabusStudy answering questions about one specific video the student imported.",
-        "Answer from the video's transcript and notes below. If the video does not cover it, say so plainly, then answer from general subject knowledge and label that clearly.",
+        "Answer from the video's transcript and notes below. If the video does not cover it, say so plainly, then look it up and answer from reliable outside sources, labelled clearly.",
         "Cite the [m:ss] timestamp when the transcript shows where something was said.",
+        "",
+        OUTSIDE_LOOKUP,
         "",
         PLAIN_STYLE,
         "",
@@ -466,7 +468,7 @@ export async function runVideoChat(
     { role: "user", content: input.message },
   ];
 
-  const reply = await callAI(messages, { maxTokens: 1200 });
+  const reply = await callAI(messages, { maxTokens: 1200, search: true });
   if (!reply.trim()) throw new Error("The AI reply came back empty. Please try again.");
 
   const nextChat = [
