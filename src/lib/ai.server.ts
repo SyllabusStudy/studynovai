@@ -41,7 +41,7 @@ export type ChatMessage = {
 async function callGeminiNative(
   key: string,
   messages: ChatMessage[],
-  opts?: { maxTokens?: number; temperature?: number },
+  opts?: { maxTokens?: number; temperature?: number; search?: boolean },
 ): Promise<string> {
   const system: string[] = [];
   const contents: Array<{ role: "user" | "model"; parts: unknown[] }> = [];
