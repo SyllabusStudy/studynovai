@@ -39,6 +39,7 @@ export function VideoWorkspace({
   const { user } = useAuth();
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
+  const adviceRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState(initialDraft);
   const [fileName, setFileName] = useState<string | null>(initialFileName);
   const [instruction, setInstruction] = useState("");
@@ -131,6 +132,8 @@ export function VideoWorkspace({
         toast.success("Your document was updated — check the changes before you turn it in.");
       } else if (result.reply) {
         setAdvice(result.reply);
+        toast.success("Answers ready — scroll down to see them.");
+        setTimeout(() => adviceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
       }
       await qc.invalidateQueries({ queryKey: ["video_note", noteId] });
     } catch (e) {
@@ -229,8 +232,16 @@ export function VideoWorkspace({
       </div>
 
       {advice ? (
-        <div className="rounded-xl bg-secondary/60 p-4">
+        <div ref={adviceRef} className="space-y-3 rounded-xl bg-secondary/60 p-4">
           <Markdown content={advice} />
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="secondary" onClick={() => { setDraft(`${draft.trim()}\n\n--- Answers ---\n${advice}`); toast.success("Answers added to your document — tap Save to keep them."); }}>
+              Add to my document
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => { void navigator.clipboard.writeText(advice); toast.success("Answers copied"); }}>
+              Copy answers
+            </Button>
+          </div>
         </div>
       ) : null}
     </div>
