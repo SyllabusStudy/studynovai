@@ -149,6 +149,9 @@ export function InstallCard() {
             >
               Install App
             </Button>
+            <Button variant="outline" onClick={alreadyInstalled}>
+              I already have it
+            </Button>
             <Button variant="ghost" onClick={notNow}>Not now</Button>
           </div>
         </DialogContent>
