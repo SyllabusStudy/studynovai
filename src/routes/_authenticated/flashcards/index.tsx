@@ -30,6 +30,7 @@ import { DIFFICULTIES } from "@/lib/constants";
 import { useAuth } from "@/lib/auth";
 import { classLabel, useAssignments, useClasses, useDocuments, useFlashcards } from "@/lib/data";
 import { AiKeySetupBanner, useAiKeyRedirect } from "@/lib/ai-key-gate";
+import { useGuestGate } from "@/lib/guest-gate";
 
 export const Route = createFileRoute("/_authenticated/flashcards/")({
   head: () => ({
@@ -63,6 +64,7 @@ function FlashcardsPage() {
   const [busy, setBusy] = useState(false);
   const run = useServerFn(generateFlashcards);
   const redirectForKey = useAiKeyRedirect();
+  const guest = useGuestGate("flashcards");
 
   const openAssignments = useMemo(
     () => assignments.filter((a) => a.status !== "completed"),
@@ -87,6 +89,7 @@ function FlashcardsPage() {
   const flaggedTotal = useMemo(() => cards.filter((c) => c.flagged).length, [cards]);
 
   async function generate() {
+    if (guest.requireAccount()) return;
     if (!classId) {
       toast.error("Pick a class first");
       return;
