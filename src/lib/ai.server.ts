@@ -220,7 +220,14 @@ async function providerError(res: Response, provider: string): Promise<Error> {
 
 export async function callAI(
   messages: ChatMessage[],
-  opts?: { model?: string; maxTokens?: number; temperature?: number; reasoningEffort?: string },
+  opts?: {
+    model?: string;
+    maxTokens?: number;
+    temperature?: number;
+    reasoningEffort?: string;
+    /** Allow the model to look up outside information on the web. */
+    search?: boolean;
+  },
 ): Promise<string> {
   // The student's own API key — the app never spends the workspace's AI credits.
   const cfg = requireAiKey();
