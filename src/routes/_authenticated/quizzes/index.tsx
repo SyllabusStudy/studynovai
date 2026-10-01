@@ -181,6 +181,15 @@ function QuizzesPage() {
           </div>
         </div>
 
+        <SourcePicker
+          documents={documents}
+          selected={documentIds}
+          onChange={setDocumentIds}
+          classPicked={Boolean(classId)}
+        />
+
+
+
         <MoreOptions
           summary={`${difficulty} · ${documentIds.length ? `${documentIds.length} files` : "all materials"} · ${types.length} types`}
         >
