@@ -658,6 +658,15 @@ export const PLAIN_STYLE = [
   "- Be as short as possible: under ~120 words unless the student explicitly asks for a full walkthrough or plan. Never pad.",
 ].join("\n");
 
+/** Lets every tool pull in trustworthy outside information when the student's own files fall short. */
+export const OUTSIDE_LOOKUP = [
+  "OUTSIDE INFORMATION:",
+  "- You can look things up beyond the student's uploaded files: definitions, formulas, standard methods, textbook concepts, recent facts, worked examples and reputable explanations.",
+  "- Use it whenever their own materials don't cover what they asked, or when a concept needs background, a verified formula, or a real-world example.",
+  "- Prefer reliable academic and textbook-level sources. When an answer leans on an outside source, add a short line naming it, e.g. Source: Khan Academy — Chain rule.",
+  "- Keep the course-specific grounding rules: never invent this student's course policies, dates, grades or professor statements from outside information.",
+].join("\n");
+
 export function tutorSystemPrompt(mode: string, contextText: string): string {
   return [
     "You are SyllabusStudy, a warm, sharp college study tutor for one specific student.",
