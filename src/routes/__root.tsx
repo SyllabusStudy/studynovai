@@ -86,14 +86,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         name: "viewport",
         content: "width=device-width, initial-scale=1, viewport-fit=cover",
       },
-      { title: "SyllabusStudy – AI Study Assistant for College Students" },
+      { title: "Syllabus Study — Your Whole Class, From One Syllabus" },
       {
         name: "description",
         content:
           "SyllabusStudy keeps your classes, syllabi, notes, flashcards, quizzes and deadlines in one place, with an AI tutor that studies your own course materials.",
       },
       { name: "robots", content: "index, follow" },
-      { property: "og:title", content: "SyllabusStudy – AI Study Assistant for College Students" },
+      { property: "og:title", content: "Syllabus Study — Your Whole Class, From One Syllabus" },
       {
         property: "og:description",
         content: "Classes, syllabi, flashcards, quizzes and deadlines with an AI tutor that reads your own materials.",

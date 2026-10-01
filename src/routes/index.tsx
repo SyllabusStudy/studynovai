@@ -38,14 +38,14 @@ const HUB = [
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "SyllabusStudy – AI Study Assistant for College Students" },
+      { title: "Syllabus Study — Your Whole Class, From One Syllabus" },
       {
         name: "description",
         content:
           "Upload your syllabus, get an instant semester calendar, AI-generated flashcards and quizzes, and a tutor that answers from your own course materials.",
       },
       { name: "robots", content: "index, follow" },
-      { property: "og:title", content: "SyllabusStudy – AI Study Assistant for College Students" },
+      { property: "og:title", content: "Syllabus Study — Your Whole Class, From One Syllabus" },
       {
         property: "og:description",
         content:
