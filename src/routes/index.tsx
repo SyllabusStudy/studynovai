@@ -38,14 +38,14 @@ const HUB = [
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Syllabus Study — Your Whole Class, From One Syllabus" },
+      { title: "Syllabus Study — Your Whole Classes, From One Syllabus" },
       {
         name: "description",
         content:
-          "Upload your syllabus, get an instant semester calendar, AI-generated flashcards and quizzes, and a tutor that answers from your own course materials.",
+          "Syllabus Study is an AI study assistant for college students. Upload your syllabus to organize your classes, deadlines and study materials, then study with AI flashcards, quizzes and a tutor.",
       },
       { name: "robots", content: "index, follow" },
-      { property: "og:title", content: "Syllabus Study — Your Whole Class, From One Syllabus" },
+      { property: "og:title", content: "Syllabus Study — Your Whole Classes, From One Syllabus" },
       {
         property: "og:description",
         content:
@@ -56,6 +56,23 @@ export const Route = createFileRoute("/")({
       { property: "og:image", content: "https://syllabusstudy.com/share-card.jpg" },
       { name: "twitter:image", content: "https://syllabusstudy.com/share-card.jpg" },
       { property: "og:url", content: "https://syllabusstudy.com/" },
+      { property: "og:site_name", content: "Syllabus Study" },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebApplication",
+          name: "Syllabus Study",
+          url: "https://syllabusstudy.com/",
+          applicationCategory: "EducationalApplication",
+          operatingSystem: "Web",
+          description:
+            "AI study assistant and study planner for college students that turns a syllabus into a semester calendar, flashcards, quizzes and an AI tutor.",
+          offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+        }),
+      },
     ],
     links: [{ rel: "canonical", href: "https://syllabusstudy.com/" }],
   }),
@@ -134,7 +151,7 @@ function Landing() {
           </h1>
           <p className="mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg">
             Turn your coursework into notes, quizzes, flashcards, study guides, and more — all in one
-            place.
+            place. Syllabus Study is the AI study assistant that turns your syllabus into a study plan.
           </p>
           <div className="mt-7 flex flex-wrap items-center gap-3">
             <Button asChild size="lg" className="gap-2">
