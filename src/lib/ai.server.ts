@@ -106,6 +106,8 @@ async function callGeminiNative(
     "google",
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
     { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body },
+    // A grounded attempt gives up after one try so the plain answer can take over quickly.
+    useSearch ? 1 : undefined,
   );
   if (!res.ok) throw await providerError(res, "Google AI Studio");
 
@@ -274,7 +276,7 @@ async function callAIOnce(
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders(provider, cfg.key) },
     body: buildPayload(provider, chatModel(provider)),
-  });
+  }, opts?.search ? 1 : undefined);
 
   if (!res.ok) {
     const status = res.status;
