@@ -17,8 +17,8 @@ function retryDelay(response: Response | null, attempt: number): number | null {
   return Math.min(MAX_WAIT_MS, 800 * 2 ** (attempt - 1) + Math.floor(Math.random() * 350));
 }
 
-export async function fetchAiWithRetry(provider: string, url: string, init: RequestInit): Promise<Response> {
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+export async function fetchAiWithRetry(provider: string, url: string, init: RequestInit, maxAttempts = MAX_ATTEMPTS): Promise<Response> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     let response: Response;
     try {
       response = await fetch(url, init);
