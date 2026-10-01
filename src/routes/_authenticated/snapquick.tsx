@@ -370,14 +370,14 @@ function SnapQuickPage() {
   const started = messages.length > 0;
 
   return (
-    <div>
+    <div className="w-full min-w-0">
       {guest.dialog}
       <PageHeader title="Stuck on a problem?" description="Snap it or type it. Learn every step." />
       <AiKeySetupBanner />
       <ClassActionBar />
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,20rem)_1fr]">
-        <div className="space-y-3">
+      <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
+        <div className="min-w-0 space-y-3">
           <button
             type="button"
             disabled={busy}
