@@ -134,7 +134,7 @@ function QuizzesPage() {
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+        <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
           <div className="space-y-1.5">
             <Label>Class</Label>
             <Select
