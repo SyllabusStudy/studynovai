@@ -27,6 +27,15 @@ function IosSteps() {
   );
 }
 
+/** Permanently remember that this device already has the app. */
+function markInstalled() {
+  try {
+    localStorage.setItem("studynova-installed", "1");
+  } catch {
+    /* ignore */
+  }
+}
+
 function IosDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -36,6 +45,15 @@ function IosDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: bo
           <DialogDescription>Safari installs it in three taps.</DialogDescription>
         </DialogHeader>
         <IosSteps />
+        <Button
+          variant="outline"
+          onClick={() => {
+            markInstalled();
+            onOpenChange(false);
+          }}
+        >
+          I already added it
+        </Button>
       </DialogContent>
     </Dialog>
   );
