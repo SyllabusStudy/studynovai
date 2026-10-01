@@ -27,6 +27,15 @@ function IosSteps() {
   );
 }
 
+/** Permanently remember that this device already has the app. */
+function markInstalled() {
+  try {
+    localStorage.setItem("studynova-installed", "1");
+  } catch {
+    /* ignore */
+  }
+}
+
 function IosDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -36,6 +45,15 @@ function IosDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: bo
           <DialogDescription>Safari installs it in three taps.</DialogDescription>
         </DialogHeader>
         <IosSteps />
+        <Button
+          variant="outline"
+          onClick={() => {
+            markInstalled();
+            onOpenChange(false);
+          }}
+        >
+          I already added it
+        </Button>
       </DialogContent>
     </Dialog>
   );
@@ -62,18 +80,22 @@ export function InstallAppButton({ className }: { className?: string }) {
 
 const DISMISS_KEY = "studynova-install-dismissed";
 
-/** One-time install card. "Not now" hides it for 14 days; never shows once installed. */
+/** One-time install card. "Not now" hides it for 90 days; never shows once installed. */
 export function InstallCard() {
   const { available, canPrompt, install } = useInstall();
   const [open, setOpen] = useState(false);
   const [iosOpen, setIosOpen] = useState(false);
+  const [done, setDone] = useState(false);
 
   useEffect(() => {
     if (!available) return;
     try {
       const at = Number(localStorage.getItem(DISMISS_KEY) ?? 0);
-      if (Date.now() - at < 14 * 864e5) return;
-      if (localStorage.getItem("studynova-installed")) return;
+      if (Date.now() - at < 90 * 864e5) return;
+      if (localStorage.getItem("studynova-installed")) {
+        setDone(true);
+        return;
+      }
     } catch {
       return;
     }
@@ -94,7 +116,14 @@ export function InstallCard() {
     setOpen(false);
   }
 
-  if (!available) return null;
+  function alreadyInstalled() {
+    markInstalled();
+    setDone(true);
+    setOpen(false);
+    setIosOpen(false);
+  }
+
+  if (!available || done) return null;
   return (
     <>
       <Dialog open={open} onOpenChange={(v) => (v ? setOpen(true) : notNow())}>
@@ -119,6 +148,9 @@ export function InstallCard() {
               }}
             >
               Install App
+            </Button>
+            <Button variant="outline" onClick={alreadyInstalled}>
+              I already have it
             </Button>
             <Button variant="ghost" onClick={notNow}>Not now</Button>
           </div>
