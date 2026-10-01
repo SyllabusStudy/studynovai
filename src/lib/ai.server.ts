@@ -241,7 +241,8 @@ export async function callAI(
 
   const buildPayload = (provider: AiProvider, model: string) =>
     JSON.stringify({
-      model,
+      // OpenRouter exposes web lookup through the ":online" model suffix.
+      model: provider === "openrouter" && opts?.search ? `${model}:online` : model,
       messages,
       temperature: opts?.temperature ?? 0.3,
       ...(opts?.maxTokens ? { max_tokens: opts.maxTokens } : {}),
