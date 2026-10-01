@@ -65,3 +65,17 @@ export const kickUser = createServerFn({ method: "POST" })
     const { deleteUserAccount } = await import("./admin.server");
     return deleteUserAccount(data.userId);
   });
+
+export const getSharedViews = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await requireAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("shared_items")
+      .select("token, kind, title, views, created_at")
+      .order("views", { ascending: false })
+      .limit(500);
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
