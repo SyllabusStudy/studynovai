@@ -185,31 +185,7 @@ function QuizzesPage() {
           summary={`${difficulty} · ${documentIds.length ? `${documentIds.length} files` : "all materials"} · ${types.length} types`}
         >
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label>Source material</Label>
-              {documents.length === 0 ? (
-                <p className="text-xs text-muted-foreground">
-                  {classId ? "No uploads for this class yet." : "Pick a class to choose materials."}
-                </p>
-              ) : (
-                <div className="max-h-40 space-y-1.5 overflow-y-auto rounded-xl border border-border/60 p-2.5">
-                  <p className="text-xs text-muted-foreground">
-                    {documentIds.length === 0 ? "All materials" : `${documentIds.length} selected`}
-                  </p>
-                  {documents.map((d) => (
-                    <label key={d.id} className="flex items-start gap-2 text-sm">
-                      <Checkbox
-                        checked={documentIds.includes(d.id)}
-                        onCheckedChange={(v) =>
-                          setDocumentIds((prev) => (v === true ? [...prev, d.id] : prev.filter((p) => p !== d.id)))
-                        }
-                      />
-                      <span className="break-words leading-tight">{d.file_name}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
+
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <Label>Difficulty</Label>
