@@ -33,7 +33,8 @@ export const Route = createFileRoute("/_authenticated/lectures")({
   component: LecturesPage,
 });
 
-const MAX_BYTES = 19 * 1024 * 1024;
+const MAX_BYTES = 28 * 1024 * 1024;
+const MAX_SECONDS = 60 * 60;
 
 function LecturesPage() {
   const { user } = useAuth();
@@ -52,6 +53,7 @@ function LecturesPage() {
   const { setActiveClassId } = useActiveClass();
   const [saving, setSaving] = useState<string | null>(null);
   const guest = useGuestGate("lectures");
+  const [failed, setFailed] = useState<{ blob: Blob; name: string } | null>(null);
 
 
   const notes = useQuery({
@@ -65,12 +67,16 @@ function LecturesPage() {
   });
 
   async function process(blob: Blob, name: string) {
-    if (guest.requireAccount()) return;
+    if (guest.requireAccount()) {
+      setFailed({ blob, name });
+      return;
+    }
     if (blob.size > MAX_BYTES) {
-      toast.error("That recording is too long. Keep it under about 40 minutes (19 MB), or split it.");
+      toast.error("That file is too big (over 28 MB). Recordings made here up to 1 hour always fit.");
       return;
     }
     setBusy(true);
+    setFailed(null);
     try {
       const audio = bytesToB64(new Uint8Array(await blob.arrayBuffer()));
       const mimeType = (blob.type || "audio/mpeg").split(";")[0]!.trim().toLowerCase();
@@ -79,6 +85,7 @@ function LecturesPage() {
       setOpen(r.id);
       await qc.invalidateQueries();
     } catch (e) {
+      setFailed({ blob, name });
       if (!showLimitIfQuota(e instanceof Error ? e.message : null)) toast.error(e instanceof Error ? e.message : "Couldn't make notes from that recording");
     } finally {
       setBusy(false);
@@ -87,9 +94,16 @@ function LecturesPage() {
 
   async function start() {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
+      });
       const chunks: Blob[] = [];
-      const mr = new MediaRecorder(stream);
+      let mr: MediaRecorder;
+      try {
+        mr = new MediaRecorder(stream, { audioBitsPerSecond: 32000 });
+      } catch {
+        mr = new MediaRecorder(stream);
+      }
       mr.ondataavailable = (e) => e.data.size && chunks.push(e.data);
       mr.onstop = () => {
         stream.getTracks().forEach((t) => t.stop());
@@ -99,15 +113,26 @@ function LecturesPage() {
       rec.current = mr;
       setSeconds(0);
       setRecording(true);
-      timer.current = window.setInterval(() => setSeconds((s) => s + 1), 1000);
+      timer.current = window.setInterval(() => {
+        setSeconds((s) => {
+          if (s + 1 >= MAX_SECONDS) {
+            toast.info("Reached 1 hour — stopping and making your notes.");
+            stop();
+            return MAX_SECONDS;
+          }
+          return s + 1;
+        });
+      }, 1000);
     } catch {
       toast.error("Allow microphone access to record your lecture.");
     }
   }
 
   function stop() {
-    rec.current?.stop();
+    if (rec.current && rec.current.state !== "inactive") rec.current.stop();
+    rec.current = null;
     if (timer.current) window.clearInterval(timer.current);
+    timer.current = null;
     setRecording(false);
   }
 
@@ -254,7 +279,7 @@ ${keys.length ? `<h2>Key exam concepts</h2><ul>${keys.map((k) => `<li>${escapeHt
         </div>
         <div className="flex flex-wrap gap-2">
           {recording ? (
-            <Button variant="destructive" className="gap-1.5" onClick={stop}><Square className="size-4" /> Stop · {mmss}</Button>
+            <Button variant="destructive" className="gap-1.5" onClick={stop}><Square className="size-4" /> Stop · {mmss} / 60:00</Button>
           ) : (
             <Button className="gap-1.5" disabled={busy} onClick={() => void start()}><Mic className="size-4" /> Record lecture</Button>
           )}
@@ -275,8 +300,19 @@ ${keys.length ? `<h2>Key exam concepts</h2><ul>${keys.map((k) => `<li>${escapeHt
         </div>
         {busy ? (
           <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" /> Listening to the lecture and writing your study guide… this can take a minute.</p>
+        ) : failed ? (
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/40 p-3 text-sm">
+            <span className="text-muted-foreground">Your recording is saved here. Notes didn't finish.</span>
+            <Button size="sm" onClick={() => void process(failed.blob, failed.name)}>Try again</Button>
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => {
+              const a = document.createElement("a");
+              a.href = URL.createObjectURL(failed.blob);
+              a.download = `${failed.name}.${(failed.blob.type.split("/")[1] || "webm").split(";")[0]}`;
+              a.click();
+            }}><Download className="size-4" /> Save audio</Button>
+          </div>
         ) : (
-          <p className="text-xs text-muted-foreground">Keep the phone near the professor. Recordings up to about 40 minutes work best. Ask your professor before recording.</p>
+          <p className="text-xs text-muted-foreground">Keep the phone near the professor. Recordings up to 1 hour — it stops on its own at 60:00 and makes your notes. Ask your professor before recording.</p>
         )}
       </div>
 
