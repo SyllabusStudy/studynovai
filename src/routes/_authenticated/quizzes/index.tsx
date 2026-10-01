@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { MoreOptions } from "@/components/MoreOptions";
+import { SourcePicker } from "@/components/SourcePicker";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ClassActionBar } from "@/components/ClassActionBar";
 import { useClassPicker } from "@/lib/active-class";

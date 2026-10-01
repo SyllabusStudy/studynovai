@@ -184,21 +184,6 @@ function FlashcardsPage() {
         <MoreOptions summary={`${count} cards · ${difficulty}`}>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-1.5">
-              <Label>Source document</Label>
-              <Select value={documentId} onValueChange={setDocumentId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All materials" />
-                </SelectTrigger>
-                <SelectContent>
-                  {documents.map((d) => (
-                    <SelectItem key={d.id} value={d.id}>
-                      {d.file_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
               <Label>Match my homework</Label>
               <Select value={assignmentId} onValueChange={setAssignmentId}>
                 <SelectTrigger>
