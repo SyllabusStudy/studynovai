@@ -39,13 +39,20 @@ import { classifyEvent, eventDateTime, localDateKey, useNow } from "@/lib/dates"
 export const Route = createFileRoute("/_authenticated/calendar")({
   head: () => ({
     meta: [
-      { title: "Calendar — SyllabusStudy" },
-      { name: "description", content: "Every exam, quiz, project and deadline for your semester in one view." },
-      { property: "og:title", content: "Calendar — SyllabusStudy" },
-      { property: "og:description", content: "Exams, quizzes and deadlines for your whole semester." },
+      { title: "Free Study Schedule Generator — Turn Your Syllabus Into a Semester Plan | SyllabusStudy" },
+      {
+        name: "description",
+        content:
+          "Free study schedule generator for college students. Upload your syllabus and SyllabusStudy builds a semester calendar with every exam, quiz and assignment deadline, plus reminders.",
+      },
+      { name: "robots", content: "index, follow" },
+      { property: "og:title", content: "Free Study Schedule Generator — Turn Your Syllabus Into a Semester Plan | SyllabusStudy" },
+      { property: "og:description", content: "Exams, quizzes and deadlines for your whole semester, built from your syllabus." },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://syllabusstudy.com/calendar" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
+    links: [{ rel: "canonical", href: "https://syllabusstudy.com/calendar" }],
   }),
   component: CalendarPage,
 });
