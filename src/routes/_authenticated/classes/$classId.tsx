@@ -1,7 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useActiveClass } from "@/lib/active-class";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Bot, Brain, FileQuestion, FileText, Loader2 } from "lucide-react";
+import { Bot, Brain, FileQuestion, FileText, FileUp, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
@@ -44,6 +44,7 @@ function ClassDetail() {
     void setActiveClassId(classId);
   }, [classId, setActiveClassId]);
   const { user } = useAuth();
+  const [tab, setTab] = useState("overview");
   const { data: klass, isLoading } = useClass(classId);
   const { data: documents = [] } = useDocuments(user?.id, classId);
   const { data: assignments = [] } = useAssignments(user?.id, classId);
