@@ -34,6 +34,7 @@ import { Route as AuthenticatedStudioRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedTutorRouteImport } from './routes/_authenticated/tutor'
 import { Route as AuthenticatedUpgradeRouteImport } from './routes/_authenticated/upgrade'
 import { Route as FeaturesFlashcardsRouteImport } from './routes/features.flashcards'
+import { Route as FeaturesStudyScheduleGeneratorRouteImport } from './routes/features.study-schedule-generator'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as AuthenticatedClassesIndexRouteImport } from './routes/_authenticated/classes/index'
 import { Route as AuthenticatedClassesClassIdRouteImport } from './routes/_authenticated/classes/$classId'
@@ -172,6 +173,12 @@ const FeaturesFlashcardsRoute = FeaturesFlashcardsRouteImport.update({
   path: '/features/flashcards',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FeaturesStudyScheduleGeneratorRoute =
+  FeaturesStudyScheduleGeneratorRouteImport.update({
+    id: '/features/study-schedule-generator',
+    path: '/features/study-schedule-generator',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ShareTokenRoute = ShareTokenRouteImport.update({
   id: '/share/$token',
   path: '/share/$token',
@@ -267,6 +274,7 @@ export interface FileRoutesByFullPath {
   '/tutor': typeof AuthenticatedTutorRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
   '/features/flashcards': typeof FeaturesFlashcardsRoute
+  '/features/study-schedule-generator': typeof FeaturesStudyScheduleGeneratorRoute
   '/share/$token': typeof ShareTokenRoute
   '/classes/$classId': typeof AuthenticatedClassesClassIdRoute
   '/flashcards/$deck': typeof AuthenticatedFlashcardsDeckRoute
@@ -305,6 +313,7 @@ export interface FileRoutesByTo {
   '/tutor': typeof AuthenticatedTutorRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
   '/features/flashcards': typeof FeaturesFlashcardsRoute
+  '/features/study-schedule-generator': typeof FeaturesStudyScheduleGeneratorRoute
   '/share/$token': typeof ShareTokenRoute
   '/classes/$classId': typeof AuthenticatedClassesClassIdRoute
   '/flashcards/$deck': typeof AuthenticatedFlashcardsDeckRoute
@@ -345,6 +354,7 @@ export interface FileRoutesById {
   '/_authenticated/tutor': typeof AuthenticatedTutorRoute
   '/_authenticated/upgrade': typeof AuthenticatedUpgradeRoute
   '/features/flashcards': typeof FeaturesFlashcardsRoute
+  '/features/study-schedule-generator': typeof FeaturesStudyScheduleGeneratorRoute
   '/share/$token': typeof ShareTokenRoute
   '/_authenticated/classes/$classId': typeof AuthenticatedClassesClassIdRoute
   '/_authenticated/flashcards/$deck': typeof AuthenticatedFlashcardsDeckRoute
@@ -385,6 +395,7 @@ export interface FileRouteTypes {
     | '/tutor'
     | '/upgrade'
     | '/features/flashcards'
+    | '/features/study-schedule-generator'
     | '/share/$token'
     | '/classes/$classId'
     | '/flashcards/$deck'
@@ -423,6 +434,7 @@ export interface FileRouteTypes {
     | '/tutor'
     | '/upgrade'
     | '/features/flashcards'
+    | '/features/study-schedule-generator'
     | '/share/$token'
     | '/classes/$classId'
     | '/flashcards/$deck'
@@ -462,6 +474,7 @@ export interface FileRouteTypes {
     | '/_authenticated/tutor'
     | '/_authenticated/upgrade'
     | '/features/flashcards'
+    | '/features/study-schedule-generator'
     | '/share/$token'
     | '/_authenticated/classes/$classId'
     | '/_authenticated/flashcards/$deck'
@@ -487,6 +500,7 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
   FeaturesFlashcardsRoute: typeof FeaturesFlashcardsRoute
+  FeaturesStudyScheduleGeneratorRoute: typeof FeaturesStudyScheduleGeneratorRoute
   ShareTokenRoute: typeof ShareTokenRoute
   OauthGoogleReturnRoute: typeof OauthGoogleReturnRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
@@ -670,6 +684,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FeaturesFlashcardsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/features/study-schedule-generator': {
+      id: '/features/study-schedule-generator'
+      path: '/features/study-schedule-generator'
+      fullPath: '/features/study-schedule-generator'
+      preLoaderRoute: typeof FeaturesStudyScheduleGeneratorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/share/$token': {
       id: '/share/$token'
       path: '/share/$token'
@@ -823,6 +844,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   UnsubscribeRoute: UnsubscribeRoute,
   FeaturesFlashcardsRoute: FeaturesFlashcardsRoute,
+  FeaturesStudyScheduleGeneratorRoute: FeaturesStudyScheduleGeneratorRoute,
   ShareTokenRoute: ShareTokenRoute,
   OauthGoogleReturnRoute: OauthGoogleReturnRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
