@@ -386,23 +386,23 @@ function SnapQuickPage() {
             aria-label={image ? "Snap a new problem" : "Take a picture of your homework"}
           >
             {image ? (
-              <img src={image} alt="Your problem" className="max-h-64 w-full object-contain" />
+              <img src={image} alt="Your problem" className="max-h-44 w-full object-contain" />
             ) : (
-              <div className="flex aspect-[4/3] flex-col items-center justify-center gap-3 bg-gradient-to-b from-primary/10 to-transparent p-6 text-center">
-                <span className="flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-card">
-                  <Camera className="size-7" />
+              <div className="flex flex-col items-center justify-center gap-2 bg-gradient-to-b from-primary/10 to-transparent px-4 py-5 text-center">
+                <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-card">
+                  <Camera className="size-5" />
                 </span>
-                <p className="font-display text-lg font-bold">Tap to snap your work</p>
+                <p className="font-display text-base font-bold">Tap to snap your work</p>
                 <p className="text-xs text-muted-foreground">Or type the problem below</p>
               </div>
             )}
           </button>
 
           <div className="grid grid-cols-2 gap-2">
-            <Button size="lg" className="gap-1.5" disabled={busy} onClick={() => cameraRef.current?.click()}>
+            <Button className="gap-1.5" disabled={busy} onClick={() => cameraRef.current?.click()}>
               <Camera className="size-4" /> Camera
             </Button>
-            <Button size="lg" variant="outline" className="gap-1.5" disabled={busy} onClick={() => galleryRef.current?.click()}>
+            <Button variant="outline" className="gap-1.5" disabled={busy} onClick={() => galleryRef.current?.click()}>
               <ImageUp className="size-4" /> Upload
             </Button>
           </div>
