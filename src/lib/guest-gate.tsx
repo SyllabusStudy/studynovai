@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 
 /** Tools a visitor can open and try before creating an account. */
-export const GUEST_TOOL_PATHS = ["/snapquick", "/quickvideo", "/lectures", "/tutor"] as const;
+export const GUEST_TOOL_PATHS = ["/snapquick", "/quickvideo", "/lectures", "/tutor", "/flashcards"] as const;
 
 export function isGuestToolPath(pathname: string): boolean {
   return GUEST_TOOL_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));

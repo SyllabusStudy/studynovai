@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 const TITLE = "Make College a Little Easier — AI Flashcards from Your Own Notes";
 const DESCRIPTION =
   "Turn your syllabus, lecture PDFs and homework into flashcards in seconds. SyllabusStudy builds titled decks from your own course materials, then quizzes you on the cards you keep missing.";
-const URL = "https://studymateaicollege.lovable.app/features/flashcards";
+const URL = "https://syllabusstudy.com/features/flashcards";
 
 export const Route = createFileRoute("/features/flashcards")({
   head: () => ({
@@ -110,7 +110,7 @@ function FlashcardsFeature() {
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Button asChild size="lg" className="gap-2">
-              <Link to="/auth" search={{ mode: "signup" }}>
+              <Link to="/flashcards">
                 Make my first deck free <ArrowRight className="size-4" />
               </Link>
             </Button>
@@ -166,7 +166,7 @@ function FlashcardsFeature() {
             </p>
           </div>
           <Button asChild size="lg" className="shrink-0">
-            <Link to="/auth" search={{ mode: "signup" }}>
+            <Link to="/flashcards">
               Start free
             </Link>
           </Button>
