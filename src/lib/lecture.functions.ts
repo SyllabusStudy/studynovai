@@ -23,7 +23,7 @@ export const createLectureNotes = createServerFn({ method: "POST" })
   .inputValidator((d) =>
     z
       .object({
-        audio: z.string().min(100).max(28_000_000),
+        audio: z.string().min(100).max(40_000_000),
         mimeType: z
           .string()
           .max(120)
