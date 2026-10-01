@@ -5,6 +5,7 @@ import {
   bytesToBase64,
   callAI,
   extractTextFromFile,
+  OUTSIDE_LOOKUP,
   parseJsonBlock,
   PLAIN_STYLE,
   tutorSystemPrompt,
@@ -640,7 +641,7 @@ export async function runTutorChat(
       ...history.slice(-8).map((m) => ({ role: m.role, content: m.content })),
       { role: "user", content: input.message },
     ],
-    { maxTokens: 1200 },
+    { maxTokens: 1200, search: true },
   );
 
   const now = new Date().toISOString();
@@ -1112,6 +1113,8 @@ const HELP_RULES = [
   "Use markdown with a short heading per question. Flag anything you cannot read from the file instead of guessing.",
   "End with a 2-3 bullet 'What to review' list.",
   "\n",
+  OUTSIDE_LOOKUP,
+  "\n",
   PLAIN_STYLE,
 ].join(" ");
 
@@ -1156,7 +1159,7 @@ ${input.question ? `My specific question: ${input.question}` : "Walk me through 
 ATTACHED FILES:
 ${attached.map((d) => `### ${d.file_name}\n${(d.extracted_text ?? "").slice(0, 12000)}`).join("\n\n")}`,
     },
-  ]);
+  ], { search: true });
 
   await supabase
     .from("documents")
@@ -1191,7 +1194,7 @@ export async function runSnapHelp(
         { type: "image_url", image_url: { url: input.imageDataUrl } },
       ],
     },
-  ]);
+  ], { search: true });
 
   return { reply };
 }
@@ -1252,7 +1255,9 @@ CALCULATOR CHECKS: whenever the answer involves numbers or algebra, end your rep
 
 Complete work, but scannable: short sentences, no walls of text. For several problems on one photo, use "## Problem 1", then its sections, and so on.
 
-CONVERSATION: This is an ongoing conversation about the same question. For follow-ups ("why did we do step 3", "I don't get step 2", "explain easier", "show more steps", "make it simpler", "what did I do wrong") answer that specific request directly using the earlier context, without asking to re-upload. "Show more steps" = redo the solution with finer steps; "make it easier/simpler" = shorter, beginner-friendly version. Use headings only if they help.`;
+CONVERSATION: This is an ongoing conversation about the same question. For follow-ups ("why did we do step 3", "I don't get step 2", "explain easier", "show more steps", "make it simpler", "what did I do wrong") answer that specific request directly using the earlier context, without asking to re-upload. "Show more steps" = redo the solution with finer steps; "make it easier/simpler" = shorter, beginner-friendly version. Use headings only if they help.
+
+${OUTSIDE_LOOKUP}`;
 
 const SNAP_MODE_RULES: Record<SnapMode, string> = {
   learn: "MODE: Learn — give the full structured explanation.",
@@ -1316,7 +1321,7 @@ export async function runSnapTutor(
     messages.push({ role: "user", content: input.message });
   }
 
-  const rawDraft = await callAI(messages, { temperature: 0.2, maxTokens: 6000 });
+  const rawDraft = await callAI(messages, { temperature: 0.2, maxTokens: 6000, search: true });
   const { text: draft, failures } = await runCalcChecks(rawDraft);
 
   // Independent check: a separate pass re-solves the problem and corrects the draft if needed.

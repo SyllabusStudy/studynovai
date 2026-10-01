@@ -41,7 +41,7 @@ export type ChatMessage = {
 async function callGeminiNative(
   key: string,
   messages: ChatMessage[],
-  opts?: { maxTokens?: number; temperature?: number },
+  opts?: { maxTokens?: number; temperature?: number; search?: boolean },
 ): Promise<string> {
   const system: string[] = [];
   const contents: Array<{ role: "user" | "model"; parts: unknown[] }> = [];
@@ -80,15 +80,6 @@ async function callGeminiNative(
     if (parts.length) contents.push({ role: m.role === "assistant" ? "model" : "user", parts });
   }
 
-  const body = JSON.stringify({
-    contents,
-    ...(system.length ? { systemInstruction: { parts: [{ text: system.join("\n\n") }] } } : {}),
-    generationConfig: {
-      temperature: opts?.temperature ?? 0.3,
-      ...(opts?.maxTokens ? { maxOutputTokens: opts.maxTokens } : {}),
-    },
-  });
-
   // Video needs the fuller Flash model; the lite model can reject video parts.
   const hasVideo = contents.some((c) =>
     c.parts.some((p) => {
@@ -96,6 +87,20 @@ async function callGeminiNative(
       return Boolean(part.file_data) || part.inline_data?.mime_type?.startsWith("video/");
     }),
   );
+
+  // Live web lookup, only for free-form answers (never for JSON-shaped generations).
+  const useSearch = opts?.search === true && !hasVideo;
+
+  const body = JSON.stringify({
+    contents,
+    ...(system.length ? { systemInstruction: { parts: [{ text: system.join("\n\n") }] } } : {}),
+    ...(useSearch ? { tools: [{ google_search: {} }] } : {}),
+    generationConfig: {
+      temperature: opts?.temperature ?? 0.3,
+      ...(opts?.maxTokens ? { maxOutputTokens: opts.maxTokens } : {}),
+    },
+  });
+
   const model = hasVideo ? "gemini-flash-latest" : CHAT_MODEL;
   const res = await fetchAiWithRetry(
     "google",
@@ -215,7 +220,14 @@ async function providerError(res: Response, provider: string): Promise<Error> {
 
 export async function callAI(
   messages: ChatMessage[],
-  opts?: { model?: string; maxTokens?: number; temperature?: number; reasoningEffort?: string },
+  opts?: {
+    model?: string;
+    maxTokens?: number;
+    temperature?: number;
+    reasoningEffort?: string;
+    /** Allow the model to look up outside information on the web. */
+    search?: boolean;
+  },
 ): Promise<string> {
   // The student's own API key — the app never spends the workspace's AI credits.
   const cfg = requireAiKey();
@@ -229,7 +241,8 @@ export async function callAI(
 
   const buildPayload = (provider: AiProvider, model: string) =>
     JSON.stringify({
-      model,
+      // OpenRouter exposes web lookup through the ":online" model suffix.
+      model: provider === "openrouter" && opts?.search ? `${model}:online` : model,
       messages,
       temperature: opts?.temperature ?? 0.3,
       ...(opts?.maxTokens ? { max_tokens: opts.maxTokens } : {}),
@@ -645,6 +658,15 @@ export const PLAIN_STYLE = [
   "- Be as short as possible: under ~120 words unless the student explicitly asks for a full walkthrough or plan. Never pad.",
 ].join("\n");
 
+/** Lets every tool pull in trustworthy outside information when the student's own files fall short. */
+export const OUTSIDE_LOOKUP = [
+  "OUTSIDE INFORMATION:",
+  "- You can look things up beyond the student's uploaded files: definitions, formulas, standard methods, textbook concepts, recent facts, worked examples and reputable explanations.",
+  "- Use it whenever their own materials don't cover what they asked, or when a concept needs background, a verified formula, or a real-world example.",
+  "- Prefer reliable academic and textbook-level sources. When an answer leans on an outside source, add a short line naming it, e.g. Source: Khan Academy — Chain rule.",
+  "- Keep the course-specific grounding rules: never invent this student's course policies, dates, grades or professor statements from outside information.",
+].join("\n");
+
 export function tutorSystemPrompt(mode: string, contextText: string): string {
   return [
     "You are SyllabusStudy, a warm, sharp college study tutor for one specific student.",
@@ -669,6 +691,8 @@ export function tutorSystemPrompt(mode: string, contextText: string): string {
     "- Answer fully in one response; do not offer to continue in another message.",
 
 
+    "",
+    OUTSIDE_LOOKUP,
     "",
     PLAIN_STYLE,
     "",
