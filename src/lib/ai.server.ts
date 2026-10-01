@@ -229,6 +229,22 @@ export async function callAI(
     search?: boolean;
   },
 ): Promise<string> {
+  if (opts?.search) {
+    try {
+      return await callAIOnce(messages, opts);
+    } catch (error) {
+      // Web lookup can hit tighter limits on student keys; answer without it instead of failing.
+      if (error instanceof Error && /free limit|API key|AI_KEY/i.test(error.message)) throw error;
+      return callAIOnce(messages, { ...opts, search: false });
+    }
+  }
+  return callAIOnce(messages, opts);
+}
+
+async function callAIOnce(
+  messages: ChatMessage[],
+  opts?: Parameters<typeof callAI>[1],
+): Promise<string> {
   // The student's own API key — the app never spends the workspace's AI credits.
   const cfg = requireAiKey();
   const providers = candidateProviders(cfg.provider, cfg.key);
