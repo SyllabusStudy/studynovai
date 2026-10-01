@@ -117,7 +117,7 @@ export async function loadAdminStats(): Promise<AdminStats> {
 
   const students = profiles.map((p) => {
     const sub = subByUser.get(p.id);
-    const pro = sub?.plan === "pro" && (PRO_STATUSES.has(sub.status) || sub.status === "trial");
+    const pro = sub?.plan === "pro" && PRO_STATUSES.has(sub.status);
     return {
       id: p.id,
       name: p.name,
