@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { PLAIN_STYLE, buildClassContext, callAI, type ChatMessage } from "./ai.server";
+import { OUTSIDE_LOOKUP, PLAIN_STYLE, buildClassContext, callAI, type ChatMessage } from "./ai.server";
 
 type DB = SupabaseClient<Database>;
 
