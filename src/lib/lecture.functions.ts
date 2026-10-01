@@ -66,7 +66,24 @@ export const createLectureNotes = createServerFn({ method: "POST" })
         },
       ], { maxTokens: 16000, temperature: 0.2 }),
     );
-    const ai = parseJsonBlock<LectureAi>(raw);
+    let ai: LectureAi;
+    try {
+      ai = parseJsonBlock<LectureAi>(raw);
+    } catch {
+      // Long recordings can overflow the reply; retry with a shorter answer (no full transcript).
+      const short = await withUserAiKey(context.supabase, context.userId, () =>
+        callAI([
+          {
+            role: "user",
+            content: [
+              { type: "text", text: PROMPT.replace('"clean full transcript (remove filler words like um/uh, keep ALL content, keep speaker changes as new paragraphs)"', '"a short 3-6 sentence recap of what was said (NOT a full transcript)"') },
+              { type: "file", file: { filename: data.fileName || "lecture", file_data: `data:${mime};base64,${data.audio}` } },
+            ],
+          },
+        ], { maxTokens: 16000, temperature: 0.2 }),
+      );
+      ai = parseJsonBlock<LectureAi>(short);
+    }
     if (!ai.transcript?.trim()) throw new Error("We couldn't hear any speech in that recording. Try a clearer or longer one.");
 
     const title = (ai.title || data.fileName || "Lecture").slice(0, 200);
