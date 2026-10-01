@@ -26,7 +26,7 @@ export async function fetchAiWithRetry(provider: string, url: string, init: Requ
       // Cancellation is intentional and must never start another generation.
       if (init.signal?.aborted || (error instanceof Error && error.name === "AbortError")) throw error;
       console.warn("AI request connection failure", { provider, attempt, kind: "network" });
-      if (attempt === MAX_ATTEMPTS) throw new Error(AI_CONNECTION_MESSAGE);
+      if (attempt === maxAttempts) throw new Error(AI_CONNECTION_MESSAGE);
       await new Promise((resolve) => setTimeout(resolve, retryDelay(null, attempt) ?? 800));
       continue;
     }
@@ -43,7 +43,7 @@ export async function fetchAiWithRetry(provider: string, url: string, init: Requ
 
     // Only status and attempt are logged: never keys, prompts, attachments or response bodies.
     console.warn("AI request temporarily failed", { provider, attempt, status: response.status });
-    if (attempt === MAX_ATTEMPTS) {
+    if (attempt === maxAttempts) {
       await response.body?.cancel();
       throw new Error(AI_CONNECTION_MESSAGE);
     }
