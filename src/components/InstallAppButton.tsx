@@ -116,7 +116,14 @@ export function InstallCard() {
     setOpen(false);
   }
 
-  if (!available) return null;
+  function alreadyInstalled() {
+    markInstalled();
+    setDone(true);
+    setOpen(false);
+    setIosOpen(false);
+  }
+
+  if (!available || done) return null;
   return (
     <>
       <Dialog open={open} onOpenChange={(v) => (v ? setOpen(true) : notNow())}>
