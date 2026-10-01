@@ -183,6 +183,28 @@ function QuickVideoPage() {
             className="mx-auto max-h-[60vh] w-full rounded-xl object-contain"
             loading="lazy"
           />
+          <div className="space-y-1.5 rounded-lg bg-secondary/60 p-3">
+            <p className="text-sm font-semibold">Other ways to copy the link</p>
+            <ul className="list-disc space-y-1 pl-4 text-xs text-muted-foreground">
+              <li>
+                In the YouTube app, tap <span className="font-medium text-foreground">Share</span> →{" "}
+                <span className="font-medium text-foreground">Copy link</span> — the short{" "}
+                <span className="font-mono">youtu.be</span> link usually works best.
+              </li>
+              <li>On a computer, copy the web address at the top of the browser while the video is open.</li>
+              <li>
+                If it still won't load, strip extras off the link: keep only the{" "}
+                <span className="font-mono">watch?v=…</span> part (remove <span className="font-mono">&list=…</span>,{" "}
+                <span className="font-mono">&t=…</span> and anything after it).
+              </li>
+              <li>Copy it from the video's share button in the browser instead of the app — or the other way around.</li>
+            </ul>
+            <p className="pt-1 text-xs text-muted-foreground">
+              Some videos can't be read no matter how the link is copied (private, age-restricted, or captions turned
+              off). If that happens, download the video and use <span className="font-medium text-foreground">Upload video</span> instead —
+              or upload the file later from the notes page.
+            </p>
+          </div>
         </DialogContent>
       </Dialog>
       <PageHeader

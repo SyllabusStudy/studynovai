@@ -369,8 +369,8 @@ export async function runVideoImport(
         } else {
           throw new Error(
             blockedReason
-              ? `YouTube would not play that video here (${blockedReason}). Try another link, or download it and upload the file.`
-              : "That video has no captions and could not be read from the link. Try a different link, or download the video and upload the file here (under 24MB).",
+              ? `YouTube would not play that video here (${blockedReason}). Try copying the link a different way (see the "How do I copy a YouTube link?" guide), or download the video and upload the file.`
+              : "That video has no captions and could not be read from the link. Try copying the link a different way (the guide under the link box shows how), or download the video and upload the file here (under 24MB).",
           );
         }
       }
