@@ -301,8 +301,8 @@
     input,
     textarea,
     select,
-    button {
-      font-size: max(1rem, 16px);
+    [contenteditable="true"] {
+      font-size: 16px;
     }
   }
 
