@@ -128,7 +128,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="w-72 bg-sidebar p-0">
+        <SheetContent side="left" className="flex h-dvh w-72 flex-col overflow-hidden bg-sidebar p-0">
           <BrandBlock />
           <NavList pathname={pathname} onNavigate={() => setMobileOpen(false)} compact />
           <SidebarFooter />
