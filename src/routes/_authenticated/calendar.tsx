@@ -35,6 +35,7 @@ import { AssignmentHelp } from "@/components/AssignmentHelp";
 import { classLabel, formatDate, useAssignments, useClasses, useEvents, useProfile } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { classifyEvent, eventDateTime, localDateKey, useNow } from "@/lib/dates";
+import { useGuestGate } from "@/lib/guest-gate";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
   head: () => ({
@@ -64,6 +65,7 @@ function iso(d: Date) {
 function CalendarPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const guest = useGuestGate("calendar");
   const { data: events = [], isLoading } = useEvents(user?.id);
   const { data: classes = [] } = useClasses(user?.id);
   const { data: assignments = [] } = useAssignments(user?.id);
@@ -123,14 +125,21 @@ function CalendarPage() {
 
   return (
     <div>
+      {guest.dialog}
       <PageHeader
         title="Calendar"
         description="Everything coming up, color-coded by class."
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <CalendarSync />
-            <SyllabusCsvExport label="Export CSV" />
-            <NewEventDialog />
+            {user ? (
+              <>
+                <CalendarSync />
+                <SyllabusCsvExport label="Export CSV" />
+                <NewEventDialog />
+              </>
+            ) : (
+              <Button onClick={() => guest.requireAccount()}>Upload my syllabus</Button>
+            )}
           </div>
         }
       />
