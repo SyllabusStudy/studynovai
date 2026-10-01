@@ -30,6 +30,7 @@ const MEMORY_SCOPE = "/tutor";
 
 function TutorPage() {
   const [opened, setOpened] = useState<ConversationRow | null>(null);
+  const [fresh, setFresh] = useState(0);
 
   return (
     <div>
@@ -52,11 +53,12 @@ function TutorPage() {
           onNew={() => {
             clearTabMemory(MEMORY_SCOPE);
             setOpened(null);
+            setFresh((n) => n + 1);
           }}
         />
       </div>
       <TutorChat
-        key={opened?.id ?? "new"}
+        key={opened?.id ?? `new-${fresh}`}
         conversation={opened ?? undefined}
         memoryScope={MEMORY_SCOPE}
       />
