@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, ExternalLink, Loader2, Send, Sparkles } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink, Loader2, Send, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { VideoWorkspace } from "@/components/VideoWorkspace";
 import { videoChat } from "@/lib/video.functions";
 import { classLabel, formatDate, useClasses, useVideoNote } from "@/lib/data";
 import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/quickvideo/$noteId")({
   head: () => ({
@@ -69,6 +70,46 @@ function VideoNotePage() {
     }
   }
 
+  const [saving, setSaving] = useState(false);
+
+  async function savePdf() {
+    if (!note || !user) return;
+    const title = /^video notes$/i.test(note.title) ? "Untitled lecture video" : note.title;
+    const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const w = window.open("", "_blank");
+    if (w) {
+      w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#18181b;margin:40px;line-height:1.5}h1{font-size:22px}pre{white-space:pre-wrap;font-family:inherit;font-size:13px}</style></head><body><h1>${esc(title)}</h1><pre>${esc(note.notes ?? "")}</pre></body></html>`);
+      w.document.close();
+      w.focus();
+      setTimeout(() => w.print(), 400);
+    } else toast.error("Allow pop-ups so the printable notes can open.");
+
+    if (!note.class_id) return;
+    setSaving(true);
+    try {
+      const fileName = `${title.replace(/[^\w .-]/g, "").slice(0, 80) || "Video"} (video notes).md`;
+      const { data: existing } = await supabase
+        .from("documents").select("id").eq("class_id", note.class_id).eq("file_name", fileName).limit(1);
+      if (existing?.length) return;
+      const text = note.notes ?? "";
+      const path = `${user.id}/${crypto.randomUUID()}-video-notes.md`;
+      const blob = new Blob([text], { type: "text/markdown" });
+      const up = await supabase.storage.from("course-materials").upload(path, blob);
+      if (up.error) throw new Error(up.error.message);
+      const { error } = await supabase.from("documents").insert({
+        user_id: user.id, class_id: note.class_id, file_name: fileName, file_type: "text/markdown",
+        file_size: blob.size, storage_path: path, extracted_text: text, processing_status: "ready", is_syllabus: false,
+      });
+      if (error) throw new Error(error.message);
+      await qc.invalidateQueries();
+      toast.success("Added to your class — use it for flashcards or quizzes!");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't add these notes to the class");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   if (isLoading) return <p className="text-sm text-muted-foreground">Loading your notes…</p>;
   if (!note) return <p className="text-sm text-muted-foreground">Those notes were not found.</p>;
 
@@ -97,6 +138,10 @@ function VideoNotePage() {
             </a>
           ) : null}
         </p>
+        <Button size="sm" variant="outline" className="mt-3 gap-1.5" disabled={saving} onClick={() => void savePdf()}>
+          {saving ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+          {note.class_id ? "Save as PDF & add to class" : "Save as PDF"}
+        </Button>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
