@@ -20,6 +20,14 @@ import {
   runTutorChat,
 } from "./study.server";
 
+/** Logs a successful tool use for the owner dashboard (never blocks the student). */
+function track<T>(ctx: { supabase: { from: (t: "usage_events") => any }; userId: string }, kind: string) {
+  return async (r: T) => {
+    await Promise.resolve(ctx.supabase.from("usage_events").insert({ user_id: ctx.userId, kind })).catch(() => {});
+    return r;
+  };
+}
+
 export const processDocument = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ documentId: z.string().uuid() }).parse(d))
@@ -139,7 +147,7 @@ export const studyCoach = createServerFn({ method: "POST" })
       return { summary: AI_KEY_HELP, tasks: [], needsAiKey: true };
     }
     const result = await withUserAiKey(context.supabase, context.userId, () =>
-      runStudyCoach(context.supabase, context.userId, data),
+      runStudyCoach(context.supabase, context.userId, data).then(track(context, "study_guide")),
     );
     return { ...result, needsAiKey: false };
   });
@@ -149,7 +157,7 @@ export const createStudyPlan = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ eventId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) =>
     withUserAiKey(context.supabase, context.userId, () =>
-      runStudyPlanEvents(context.supabase, context.userId, data),
+      runStudyPlanEvents(context.supabase, context.userId, data).then(track(context, "study_guide")),
     ),
   );
 
@@ -259,7 +267,7 @@ export const checkAiText = createServerFn({ method: "POST" })
     }
     try {
       const result = await withUserAiKey(context.supabase, context.userId, () =>
-        runAiTextCheck(data),
+        runAiTextCheck(data).then(track(context, "essay")),
       );
       return { result, error: null };
     } catch (e) {
@@ -286,7 +294,7 @@ export const humanizeAiText = createServerFn({ method: "POST" })
       return { text: null, similarity: null, error: AI_KEY_HELP, needsPro: false };
     }
     try {
-      const rewrite = await withUserAiKey(context.supabase, context.userId, () => runHumanize(data));
+      const rewrite = await withUserAiKey(context.supabase, context.userId, () => runHumanize(data).then(track(context, "humanize")));
       if (!rewrite.text) {
         return { text: null, similarity: null, error: "I couldn't produce a meaningful rewrite yet. Please try again.", needsPro: false };
       }
