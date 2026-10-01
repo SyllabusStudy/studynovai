@@ -5,6 +5,7 @@ import {
   bytesToBase64,
   callAI,
   extractTextFromFile,
+  OUTSIDE_LOOKUP,
   parseJsonBlock,
   PLAIN_STYLE,
   tutorSystemPrompt,
