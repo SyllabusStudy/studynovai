@@ -1321,7 +1321,7 @@ export async function runSnapTutor(
     messages.push({ role: "user", content: input.message });
   }
 
-  const rawDraft = await callAI(messages, { temperature: 0.2, maxTokens: 6000 });
+  const rawDraft = await callAI(messages, { temperature: 0.2, maxTokens: 6000, search: true });
   const { text: draft, failures } = await runCalcChecks(rawDraft);
 
   // Independent check: a separate pass re-solves the problem and corrects the draft if needed.
