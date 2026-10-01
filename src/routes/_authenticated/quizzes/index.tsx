@@ -161,6 +161,13 @@ function QuizzesPage() {
           </Button>
         </div>
 
+        <SourcePicker
+          documents={documents}
+          selected={documentIds}
+          onChange={setDocumentIds}
+          classPicked={Boolean(classId)}
+        />
+
         <div>
           <p className="mb-1.5 text-sm font-medium">Questions</p>
           <div className="flex flex-wrap gap-2">
@@ -181,12 +188,7 @@ function QuizzesPage() {
           </div>
         </div>
 
-        <SourcePicker
-          documents={documents}
-          selected={documentIds}
-          onChange={setDocumentIds}
-          classPicked={Boolean(classId)}
-        />
+
 
 
 
