@@ -692,6 +692,8 @@ export function tutorSystemPrompt(mode: string, contextText: string): string {
 
 
     "",
+    OUTSIDE_LOOKUP,
+    "",
     PLAIN_STYLE,
     "",
     `MODE: ${mode}. ${MODE_INSTRUCTIONS[mode] ?? MODE_INSTRUCTIONS["explain"]}`,
