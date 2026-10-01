@@ -80,18 +80,22 @@ export function InstallAppButton({ className }: { className?: string }) {
 
 const DISMISS_KEY = "studynova-install-dismissed";
 
-/** One-time install card. "Not now" hides it for 14 days; never shows once installed. */
+/** One-time install card. "Not now" hides it for 90 days; never shows once installed. */
 export function InstallCard() {
   const { available, canPrompt, install } = useInstall();
   const [open, setOpen] = useState(false);
   const [iosOpen, setIosOpen] = useState(false);
+  const [done, setDone] = useState(false);
 
   useEffect(() => {
     if (!available) return;
     try {
       const at = Number(localStorage.getItem(DISMISS_KEY) ?? 0);
-      if (Date.now() - at < 14 * 864e5) return;
-      if (localStorage.getItem("studynova-installed")) return;
+      if (Date.now() - at < 90 * 864e5) return;
+      if (localStorage.getItem("studynova-installed")) {
+        setDone(true);
+        return;
+      }
     } catch {
       return;
     }
