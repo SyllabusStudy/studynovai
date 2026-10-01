@@ -181,6 +181,15 @@ function FlashcardsPage() {
           </Button>
         </div>
 
+        <SourcePicker
+          documents={documents}
+          selected={documentId ? [documentId] : []}
+          onChange={(ids) => setDocumentId(ids[0] ?? "")}
+          multiple={false}
+          classPicked={Boolean(classId)}
+        />
+
+
         <MoreOptions summary={`${count} cards · ${difficulty}`}>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-1.5">
