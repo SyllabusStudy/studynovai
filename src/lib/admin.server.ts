@@ -3,6 +3,14 @@ import type { Database } from "@/integrations/supabase/types";
 
 type DB = SupabaseClient<Database>;
 
+export const TOOLS = [
+  "scans", "ai_helps", "quizzes", "flashcards", "study_guides", "assignments",
+  "syllabus", "tutor", "essays", "humanizer", "video",
+] as const;
+export type Tool = (typeof TOOLS)[number];
+
+export type Activity = { u: string; tool: Tool; at: string; detail: string };
+
 export type AdminStats = {
   totals: {
     students: number;
@@ -25,6 +33,7 @@ export type AdminStats = {
     helps: number;
     classes: number;
   }>;
+  activity: Activity[];
 };
 
 /** True only when the signed-in student's own role row says admin. */
@@ -40,36 +49,75 @@ export async function isAdmin(supabase: DB, userId: string) {
 
 const PRO_STATUSES = new Set(["active", "trialing", "promo"]);
 
-export async function loadAdminStats(): Promise<AdminStats> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+const EVENT_TOOL: Record<string, [Tool, string]> = {
+  snap: ["scans", "SnapQuick photo scan"],
+  assignment_help: ["ai_helps", "AI assignment help"],
+  video: ["video", "QuickVideo import"],
+  lecture: ["study_guides", "Lecture Notes study guide"],
+  study_guide: ["study_guides", "Study coach / study plan"],
+  essay: ["essays", "AI Checker scan"],
+  humanize: ["humanizer", "Humanize rewrite"],
+};
 
-  const [profiles, subs, usage, classes] = await Promise.all([
-    supabaseAdmin
-      .from("profiles")
-      .select("id, name, email, school, created_at")
-      .order("created_at", { ascending: false }),
-    supabaseAdmin.from("subscriptions").select("user_id, plan, status"),
-    supabaseAdmin.from("usage_events").select("user_id, kind"),
-    supabaseAdmin.from("classes").select("user_id"),
+/** Reads every row (the API returns max 1000 per call). */
+async function all<T>(q: (from: number, to: number) => PromiseLike<{ data: T[] | null }>) {
+  const out: T[] = [];
+  for (let i = 0; ; i += 1000) {
+    const { data } = await q(i, i + 999);
+    out.push(...(data ?? []));
+    if (!data || data.length < 1000) return out;
+  }
+}
+
+export async function loadAdminStats(): Promise<AdminStats> {
+  const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
+
+  const [profiles, subs, usage, classes, quizzes, cards, assignments, docs, convos] = await Promise.all([
+    all((a, b) => db.from("profiles").select("id, name, email, school, created_at").order("created_at", { ascending: false }).range(a, b)),
+    all((a, b) => db.from("subscriptions").select("user_id, plan, status").range(a, b)),
+    all((a, b) => db.from("usage_events").select("user_id, kind, created_at").range(a, b)),
+    all((a, b) => db.from("classes").select("user_id").range(a, b)),
+    all((a, b) => db.from("quizzes").select("user_id, title, created_at, completed_at, score").range(a, b)),
+    all((a, b) => db.from("flashcards").select("user_id, deck, class_id, created_at").range(a, b)),
+    all((a, b) => db.from("assignments").select("user_id, title, created_at").range(a, b)),
+    all((a, b) => db.from("documents").select("user_id, file_name, created_at").eq("is_syllabus", true).range(a, b)),
+    all((a, b) => db.from("ai_conversations").select("user_id, title, study_mode, created_at").range(a, b)),
   ]);
 
-  const rows = profiles.data ?? [];
-  const subByUser = new Map((subs.data ?? []).map((s) => [s.user_id, s]));
+  const activity: Activity[] = [];
+  for (const e of usage) {
+    const t = EVENT_TOOL[e.kind];
+    if (t) activity.push({ u: e.user_id, tool: t[0], at: e.created_at, detail: t[1] });
+  }
+  for (const q of quizzes)
+    activity.push({ u: q.user_id, tool: "quizzes", at: q.created_at, detail: `${q.title}${q.completed_at ? ` · taken${q.score != null ? ` (${Math.round(Number(q.score))}%)` : ""}` : " · generated"}` });
+  const sets = new Map<string, Activity>();
+  for (const c of cards) {
+    const name = c.deck || "Untitled deck";
+    const key = `${c.user_id}|${name}|${c.class_id ?? ""}`;
+    const prev = sets.get(key);
+    if (!prev || c.created_at < prev.at) sets.set(key, { u: c.user_id, tool: "flashcards", at: c.created_at, detail: `Flashcard set: ${name}` });
+  }
+  activity.push(...sets.values());
+  for (const a of assignments) activity.push({ u: a.user_id, tool: "assignments", at: a.created_at, detail: a.title });
+  for (const d of docs) activity.push({ u: d.user_id, tool: "syllabus", at: d.created_at, detail: d.file_name });
+  for (const c of convos) activity.push({ u: c.user_id, tool: "tutor", at: c.created_at, detail: `${c.title} · ${c.study_mode}` });
+  activity.sort((a, b) => (a.at < b.at ? 1 : -1));
 
-  const count = (list: Array<{ user_id: string }>) => {
+  const subByUser = new Map(subs.map((s) => [s.user_id, s]));
+  const count = (list: Array<{ u: string }>) => {
     const m = new Map<string, number>();
-    for (const r of list) m.set(r.user_id, (m.get(r.user_id) ?? 0) + 1);
+    for (const r of list) m.set(r.u, (m.get(r.u) ?? 0) + 1);
     return m;
   };
-  const snapMap = count((usage.data ?? []).filter((u) => u.kind === "snap"));
-  const helpMap = count((usage.data ?? []).filter((u) => u.kind === "assignment_help"));
-  const classMap = count(classes.data ?? []);
-
+  const snapMap = count(activity.filter((a) => a.tool === "scans"));
+  const helpMap = count(activity.filter((a) => a.tool === "ai_helps"));
+  const classMap = count(classes.map((c) => ({ u: c.user_id })));
   const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
 
-  const students = rows.map((p) => {
+  const students = profiles.map((p) => {
     const sub = subByUser.get(p.id);
-    const pro = sub?.plan === "pro" && PRO_STATUSES.has(sub.status);
+    const pro = sub?.plan === "pro" && (PRO_STATUSES.has(sub.status) || sub.status === "trial");
     return {
       id: p.id,
       name: p.name,
@@ -95,6 +143,7 @@ export async function loadAdminStats(): Promise<AdminStats> {
       signupsLast7Days: students.filter((s) => new Date(s.joined).getTime() >= weekAgo).length,
     },
     students,
+    activity,
   };
 }
 
