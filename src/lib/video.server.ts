@@ -513,7 +513,13 @@ export async function runVideoWorkSave(
 }
 
 const WORK_MODES = {
-  answer: "Answer the questions in the student's document using the video. For each question, give the answer and one short line of reasoning. Reply in markdown. Do NOT rewrite their document.",
+  answer: [
+    "Find EVERY question, prompt, blank and problem in the student's document and answer each one — never skip any.",
+    "Number answers to match the document (keep their numbering). Restate each question in bold, then give the correct answer.",
+    "Use the video first; when it doesn't cover something, use verified academic knowledge (correct formulas, definitions, standard methods).",
+    "For math/science, show short worked steps and double-check the final result before writing it. For multiple choice, name the right option and why.",
+    "Be accurate over brief. Reply in markdown. Do NOT rewrite their document.",
+  ].join("\n"),
   rewrite:
     "Rewrite the student's document so it is clearer, better organised and fully backed by the video. Keep their voice and every required part.",
   correct:
@@ -569,8 +575,8 @@ export async function runVideoWork(
         WORK_MODES[input.mode],
         editing
           ? "Return ONLY the finished document text — no preamble, no commentary, no code fences. Keep it in the same format the student used."
-          : PLAIN_STYLE,
-        editing ? "Length: whatever the document needs." : "",
+          : "Write plain readable text with no LaTeX (write x^2, (a+b)/c, sqrt(9)). No preamble. Bold each final answer.",
+        editing ? "Length: whatever the document needs." : OUTSIDE_LOOKUP,
         "",
         `VIDEO: ${note.title}`,
         `VIDEO NOTES:\n${(note.notes ?? "").slice(0, 10000)}`,
@@ -591,7 +597,7 @@ export async function runVideoWork(
     },
   ];
 
-  const reply = (await callAI(messages, { maxTokens: editing ? 2600 : 1400, temperature: 0.3, search: !editing })).trim();
+  const reply = (await callAI(messages, { maxTokens: editing ? 2600 : 4000, temperature: editing ? 0.3 : 0.1, search: !editing })).trim();
   if (!reply) throw new Error("The AI reply came back empty. Please try again.");
 
   if (editing) {
