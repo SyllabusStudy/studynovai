@@ -19,6 +19,7 @@ import { AdminFeedback } from "@/components/AdminFeedback";
 import { AdminAnnouncements } from "@/components/AdminAnnouncements";
 import { AdminPricing } from "@/components/AdminPricing";
 import { useAuth } from "@/lib/auth";
+import { AdminAiUsage, AdminUsers } from "@/components/AdminUsage";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -74,6 +75,7 @@ function AdminPage() {
           <TabsTrigger value="pricing">Pricing &amp; promos</TabsTrigger>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="ai-usage">AI Tools Usage</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
@@ -110,72 +112,10 @@ function AdminPage() {
 
           </TabsContent>
           <TabsContent value="users">
-
-          <div className="space-y-2 lg:hidden">
-            {data?.students.map((s) => (
-              <div key={s.id} className="surface-card min-w-0 p-4">
-                <p className="truncate text-sm font-semibold">{s.name ?? "Student"}</p>
-                <p className="truncate text-xs text-muted-foreground">{s.email}</p>
-                <p className="mt-2 text-xs">
-                  <span className={s.plan === "pro" ? "font-semibold text-primary" : "text-muted-foreground"}>
-                    {s.plan === "pro" ? `Pro (${s.status})` : "Free"}
-                  </span>
-                  {" · joined "}
-                  {new Date(s.joined).toLocaleDateString()}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {s.snaps} scans · {s.helps} AI helps · {s.classes} classes
-                </p>
-                <Button variant="outline" size="sm" className="mt-3" onClick={() => setManaging(s)}>
-                  Manage
-                </Button>
-              </div>
-            ))}
-          </div>
-
-          <div className="surface-card hidden overflow-x-auto lg:block">
-            <table className="w-full text-sm">
-              <thead className="border-b border-border text-left text-xs uppercase text-muted-foreground">
-                <tr>
-                  <th className="p-3 font-semibold">Student</th>
-                  <th className="p-3 font-semibold">Plan</th>
-                  <th className="p-3 font-semibold">Joined</th>
-                  <th className="p-3 text-right font-semibold">Scans</th>
-                  <th className="p-3 text-right font-semibold">AI helps</th>
-                  <th className="p-3 text-right font-semibold">Classes</th>
-                  <th className="p-3 text-right font-semibold">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data?.students.map((s) => (
-                  <tr key={s.id} className="border-b border-border/50 last:border-0">
-                    <td className="p-3">
-                      <p className="font-semibold">{s.name ?? "Student"}</p>
-                      <p className="text-xs text-muted-foreground">{s.email}</p>
-                    </td>
-                    <td className="p-3">
-                      {s.plan === "pro" ? (
-                        <span className="font-semibold text-primary">Pro · {s.status}</span>
-                      ) : (
-                        <span className="text-muted-foreground">Free</span>
-                      )}
-                    </td>
-                    <td className="p-3 text-muted-foreground">
-                      {new Date(s.joined).toLocaleDateString()}
-                    </td>
-                    <td className="p-3 text-right">{s.snaps}</td>
-                    <td className="p-3 text-right">{s.helps}</td>
-                    <td className="p-3 text-right">{s.classes}</td>
-                    <td className="p-3 text-right">
-                      <Button variant="outline" size="sm" onClick={() => setManaging(s)}>
-                        Manage
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+            {data ? <AdminUsers data={data} onManage={setManaging} /> : null}
+          </TabsContent>
+          <TabsContent value="ai-usage">
+            {data ? <AdminAiUsage data={data} /> : null}
           </TabsContent>
         </>
       )}
