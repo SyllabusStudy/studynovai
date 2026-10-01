@@ -10,13 +10,28 @@ type LectureAi = {
   flashcards?: Array<{ front: string; back: string }>;
 };
 
-const PROMPT = `You are SyllabusStudy. Listen to this class lecture recording and return ONLY JSON:
-{"title": "short lecture title",
- "transcript": "clean full transcript of what the professor said (remove filler words, keep all content)",
- "summary": "study notes in Markdown: headings, bullet points, definitions, formulas in $...$",
+const PROMPT = `You are SyllabusStudy, an expert note-taker for college students. Listen carefully to this whole recording. First figure out what it is: a class lecture, someone reading a book/textbook aloud, a discussion, or just a talk/voice memo. Adapt your notes to that type.
+
+Return ONLY JSON:
+{"title": "specific title naming the topic (and chapter/book if it is a reading)",
+ "transcript": "clean full transcript (remove filler words like um/uh, keep ALL content, keep speaker changes as new paragraphs)",
+ "summary": "detailed study notes in Markdown (see rules)",
  "key_concepts": ["the most likely exam concepts, one short line each", "..."],
  "flashcards": [{"front": "question", "back": "answer"}]}
-Make 8-20 flashcards covering the most testable ideas. Only use what is in the recording; never invent facts. If the audio has no understandable speech, return {"transcript": ""}.`;
+
+SUMMARY RULES (be thorough and detailed, not brief):
+- Start with "**Type:** Lecture / Book reading / Discussion / Talk" and a 2-3 sentence overview.
+- "## Main topics": a heading per topic in the order covered, with detailed bullets: explanations, reasoning, causes/effects, steps of processes.
+- "## Key terms & definitions": every term defined or emphasized, with its definition.
+- "## Formulas, dates, names & numbers": every formula (with what each variable means), date, person, place, statistic or figure mentioned.
+- "## Examples": every example, case, story or worked problem, with how it connects to the idea.
+- For a book: also note characters, plot points, themes, quotes and the author's main argument.
+- "## Professor emphasis": anything said to be important, "on the test", repeated, or assigned (homework, readings, deadlines) — quote the exact words when possible.
+- "## Helpful background": a few short bullets of standard, well-established context that a student would need to understand this material (prerequisite ideas, a definition the speaker assumed), clearly labeled as added background.
+- "## Review questions": 3-5 questions to self-test.
+- Write formulas in $...$.
+
+Make 12-30 flashcards covering definitions, formulas, dates, examples and exam-emphasized ideas. Everything except "Helpful background" must come from the recording; never invent what the speaker said. If the audio has no understandable speech, return {"transcript": ""}.`;
 
 export const createLectureNotes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -49,7 +64,7 @@ export const createLectureNotes = createServerFn({ method: "POST" })
             { type: "file", file: { filename: data.fileName || "lecture", file_data: `data:${mime};base64,${data.audio}` } },
           ],
         },
-      ]),
+      ], { maxTokens: 16000, temperature: 0.2 }),
     );
     const ai = parseJsonBlock<LectureAi>(raw);
     if (!ai.transcript?.trim()) throw new Error("We couldn't hear any speech in that recording. Try a clearer or longer one.");
