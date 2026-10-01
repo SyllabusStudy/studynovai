@@ -95,19 +95,20 @@ function ClassDetail() {
       />
 
       <div className="mb-6 flex flex-wrap gap-2">
-        <Button asChild size="sm"><Link to="/flashcards"><Brain className="size-4" /> Generate Flashcards</Link></Button>
+        <Button size="sm" onClick={() => setTab("materials")}><FileUp className="size-4" /> Upload Notes</Button>
+        <Button asChild size="sm" variant="outline"><Link to="/flashcards"><Brain className="size-4" /> Generate Flashcards</Link></Button>
         <Button asChild size="sm" variant="outline"><Link to="/quizzes"><FileQuestion className="size-4" /> Create Quiz</Link></Button>
-        <Button asChild size="sm" variant="outline"><Link to="/tutor"><Bot className="size-4" /> Explain Material</Link></Button>
+        <Button asChild size="sm" variant="outline"><Link to="/tutor"><Bot className="size-4" /> Explain Notes</Link></Button>
         <Button asChild size="sm" variant="outline"><Link to="/snapquick">🤖 SnapQuick</Link></Button>
         <Button asChild size="sm" variant="outline"><Link to="/quickvideo">🎥 QuickVideo</Link></Button>
       </div>
 
-      <Tabs defaultValue="overview">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="flex-wrap">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
           <TabsTrigger value="deadlines">Assignments</TabsTrigger>
-          <TabsTrigger value="materials">Materials</TabsTrigger>
+          <TabsTrigger value="materials"><FileUp className="size-4" /> Upload Notes</TabsTrigger>
           <TabsTrigger value="grades">Grades</TabsTrigger>
           <TabsTrigger value="tutor">AI Tutor</TabsTrigger>
         </TabsList>
