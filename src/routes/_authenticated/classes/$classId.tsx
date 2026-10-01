@@ -206,6 +206,17 @@ function ClassDetail() {
             <div className="rounded-lg bg-muted/50 px-4 py-3"><p className="text-lg font-bold">{documents.length}</p><p className="text-xs text-muted-foreground">Documents</p></div>
             <div className="rounded-lg bg-muted/50 px-4 py-3"><p className="text-lg font-bold">{flashcards.length}</p><p className="text-xs text-muted-foreground">Flashcards</p></div>
           </div>
+          <section className="space-y-3">
+            <h2 className="flex items-center gap-2 text-sm font-bold tracking-tight">
+              <FileUp className="size-4 text-primary" /> Upload Notes for this class
+            </h2>
+            <DocumentUploader
+              classId={classId}
+              category="notes"
+              title="Upload notes, slides or study guides"
+              hint="PDF, Word, PowerPoint, Excel, text, CSV or images. Flashcards, quizzes and the AI tutor use these."
+            />
+          </section>
           {allPolicies.length === 0 ? (
             <EmptyState
               icon={FileText}
