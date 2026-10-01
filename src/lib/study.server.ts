@@ -1644,25 +1644,44 @@ async function humanizePass(
       { role: "system", content: HUMANIZE_RULES + push },
       { role: "user", content: `Rewrite this passage:\n\n${original}` },
     ],
-    { temperature: attempt === 0 ? 0.75 : 0.9, maxTokens: Math.min(6000, 500 + Math.ceil(original.length * 0.7)) },
+    { temperature: attempt === 0 ? 0.75 : 0.9, maxTokens: Math.min(8000, 1200 + Math.ceil(original.length * 1.2)) },
   );
-  const parsed = parseJsonBlock<{ text?: string }>(raw);
-  return typeof parsed.text === "string" && parsed.text.trim() ? parsed.text.trim() : null;
+  try {
+    const parsed = parseJsonBlock<{ text?: string }>(raw);
+    if (typeof parsed.text === "string" && parsed.text.trim()) return parsed.text.trim();
+  } catch {
+    /* fall through to plain-text recovery */
+  }
+  // Model sometimes replies with plain text or truncated JSON — recover the passage.
+  const m = raw.match(/"text"\s*:\s*"([\s\S]*)/);
+  const plain = (m ? m[1]!.replace(/"\s*}?\s*`*\s*$/, "").replace(/\\n/g, "\n").replace(/\\"/g, '"') : raw.replace(/^```\w*|```$/g, "")).trim();
+  return plain.length > 20 ? plain : null;
 }
 
 /**
  * Rewrite the complete passage so paragraph-level rhythm and organization can
- * change naturally. Near-copies or drafts that lose protected details are retried.
+ * change naturally. Near-copies or drafts that lose protected details are retried;
+ * if no draft passes every check, the most different usable draft is returned.
  */
 export async function runHumanize(input: { sentences: { index: number; text: string }[]; context: string }) {
   const original = input.context.trim();
   if (!original) return { text: null, similarity: null };
 
+  let best: { text: string; similarity: number } | null = null;
   for (let attempt = 0; attempt < 3; attempt++) {
-    const rewrite = await humanizePass(original, attempt);
-    if (rewrite && isMeaningfullyRewritten(original, rewrite) && preservesProtectedDetails(original, rewrite)) {
-      return { text: rewrite, similarity: textSimilarity(original, rewrite) };
+    let rewrite: string | null = null;
+    try {
+      rewrite = await humanizePass(original, attempt);
+    } catch (e) {
+      if (attempt === 0 || (e instanceof Error && /key|settings|limit/i.test(e.message))) throw e;
+      break;
     }
+    if (!rewrite) continue;
+    const similarity = textSimilarity(original, rewrite);
+    if (isMeaningfullyRewritten(original, rewrite) && preservesProtectedDetails(original, rewrite)) {
+      return { text: rewrite, similarity };
+    }
+    if (similarity < 0.95 && (!best || similarity < best.similarity)) best = { text: rewrite, similarity };
   }
-  return { text: null, similarity: null };
+  return best ?? { text: null, similarity: null };
 }
