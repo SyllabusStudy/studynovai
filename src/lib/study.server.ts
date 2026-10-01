@@ -1159,7 +1159,7 @@ ${input.question ? `My specific question: ${input.question}` : "Walk me through 
 ATTACHED FILES:
 ${attached.map((d) => `### ${d.file_name}\n${(d.extracted_text ?? "").slice(0, 12000)}`).join("\n\n")}`,
     },
-  ]);
+  ], { search: true });
 
   await supabase
     .from("documents")
@@ -1194,7 +1194,7 @@ export async function runSnapHelp(
         { type: "image_url", image_url: { url: input.imageDataUrl } },
       ],
     },
-  ]);
+  ], { search: true });
 
   return { reply };
 }
