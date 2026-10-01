@@ -640,7 +640,7 @@ export async function runTutorChat(
       ...history.slice(-8).map((m) => ({ role: m.role, content: m.content })),
       { role: "user", content: input.message },
     ],
-    { maxTokens: 1200 },
+    { maxTokens: 1200, search: true },
   );
 
   const now = new Date().toISOString();
