@@ -276,7 +276,7 @@ async function callAIOnce(
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders(provider, cfg.key) },
     body: buildPayload(provider, chatModel(provider)),
-  });
+  }, opts?.search ? 1 : undefined);
 
   if (!res.ok) {
     const status = res.status;
