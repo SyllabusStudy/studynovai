@@ -138,6 +138,7 @@ function FlashcardsPage() {
 
   return (
     <div>
+      {guest.dialog}
       <PageHeader title="Flashcards" description="Make a deck from your notes, then study it." />
       <ClassActionBar hide={["flashcards"]} />
       <AiKeySetupBanner />
