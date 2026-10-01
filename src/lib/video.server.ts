@@ -591,7 +591,7 @@ export async function runVideoWork(
     },
   ];
 
-  const reply = (await callAI(messages, { maxTokens: editing ? 2600 : 1400, temperature: 0.3 })).trim();
+  const reply = (await callAI(messages, { maxTokens: editing ? 2600 : 1400, temperature: 0.3, search: !editing })).trim();
   if (!reply) throw new Error("The AI reply came back empty. Please try again.");
 
   if (editing) {
