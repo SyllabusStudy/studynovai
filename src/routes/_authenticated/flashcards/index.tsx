@@ -35,13 +35,20 @@ import { useGuestGate } from "@/lib/guest-gate";
 export const Route = createFileRoute("/_authenticated/flashcards/")({
   head: () => ({
     meta: [
-      { title: "Flashcards — SyllabusStudy" },
-      { name: "description", content: "AI-generated flashcard decks from your own chapters, notes and slides." },
-      { property: "og:title", content: "Flashcards — SyllabusStudy" },
+      { title: "Make College a Little Easier — AI Flashcards from Your Own Notes | SyllabusStudy" },
+      {
+        name: "description",
+        content:
+          "Turn your syllabus, lecture PDFs and homework into flashcards in seconds. SyllabusStudy builds decks from your own course materials, then quizzes you on the cards you keep missing.",
+      },
+      { name: "robots", content: "index, follow" },
+      { property: "og:title", content: "Make College a Little Easier — AI Flashcards from Your Own Notes | SyllabusStudy" },
       { property: "og:description", content: "AI flashcard decks generated from your own course materials." },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://syllabusstudy.com/flashcards" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
+    links: [{ rel: "canonical", href: "https://syllabusstudy.com/flashcards" }],
   }),
   component: FlashcardsPage,
 });

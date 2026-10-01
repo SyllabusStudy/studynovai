@@ -35,17 +35,25 @@ import { AssignmentHelp } from "@/components/AssignmentHelp";
 import { classLabel, formatDate, useAssignments, useClasses, useEvents, useProfile } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { classifyEvent, eventDateTime, localDateKey, useNow } from "@/lib/dates";
+import { useGuestGate } from "@/lib/guest-gate";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
   head: () => ({
     meta: [
-      { title: "Calendar — SyllabusStudy" },
-      { name: "description", content: "Every exam, quiz, project and deadline for your semester in one view." },
-      { property: "og:title", content: "Calendar — SyllabusStudy" },
-      { property: "og:description", content: "Exams, quizzes and deadlines for your whole semester." },
+      { title: "Free Study Schedule Generator — Turn Your Syllabus Into a Semester Plan | SyllabusStudy" },
+      {
+        name: "description",
+        content:
+          "Free study schedule generator for college students. Upload your syllabus and SyllabusStudy builds a semester calendar with every exam, quiz and assignment deadline, plus reminders.",
+      },
+      { name: "robots", content: "index, follow" },
+      { property: "og:title", content: "Free Study Schedule Generator — Turn Your Syllabus Into a Semester Plan | SyllabusStudy" },
+      { property: "og:description", content: "Exams, quizzes and deadlines for your whole semester, built from your syllabus." },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://syllabusstudy.com/calendar" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
+    links: [{ rel: "canonical", href: "https://syllabusstudy.com/calendar" }],
   }),
   component: CalendarPage,
 });
@@ -57,6 +65,7 @@ function iso(d: Date) {
 function CalendarPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const guest = useGuestGate("calendar");
   const { data: events = [], isLoading } = useEvents(user?.id);
   const { data: classes = [] } = useClasses(user?.id);
   const { data: assignments = [] } = useAssignments(user?.id);
@@ -116,14 +125,21 @@ function CalendarPage() {
 
   return (
     <div>
+      {guest.dialog}
       <PageHeader
         title="Calendar"
         description="Everything coming up, color-coded by class."
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <CalendarSync />
-            <SyllabusCsvExport label="Export CSV" />
-            <NewEventDialog />
+            {user ? (
+              <>
+                <CalendarSync />
+                <SyllabusCsvExport label="Export CSV" />
+                <NewEventDialog />
+              </>
+            ) : (
+              <Button onClick={() => guest.requireAccount()}>Upload my syllabus</Button>
+            )}
           </div>
         }
       />
