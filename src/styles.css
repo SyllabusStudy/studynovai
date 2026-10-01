@@ -293,6 +293,17 @@
 
   html {
     -webkit-text-size-adjust: 100%;
+    overflow-x: clip;
+  }
+
+  /* iOS Safari force-zooms when a focused field is under 16px and never zooms back. */
+  @media (max-width: 767px) {
+    input,
+    textarea,
+    select,
+    button {
+      font-size: max(1rem, 16px);
+    }
   }
 
   body {
