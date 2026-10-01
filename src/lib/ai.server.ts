@@ -80,15 +80,6 @@ async function callGeminiNative(
     if (parts.length) contents.push({ role: m.role === "assistant" ? "model" : "user", parts });
   }
 
-  const body = JSON.stringify({
-    contents,
-    ...(system.length ? { systemInstruction: { parts: [{ text: system.join("\n\n") }] } } : {}),
-    generationConfig: {
-      temperature: opts?.temperature ?? 0.3,
-      ...(opts?.maxTokens ? { maxOutputTokens: opts.maxTokens } : {}),
-    },
-  });
-
   // Video needs the fuller Flash model; the lite model can reject video parts.
   const hasVideo = contents.some((c) =>
     c.parts.some((p) => {
@@ -96,6 +87,20 @@ async function callGeminiNative(
       return Boolean(part.file_data) || part.inline_data?.mime_type?.startsWith("video/");
     }),
   );
+
+  // Live web lookup, only for free-form answers (never for JSON-shaped generations).
+  const useSearch = opts?.search === true && !hasVideo;
+
+  const body = JSON.stringify({
+    contents,
+    ...(system.length ? { systemInstruction: { parts: [{ text: system.join("\n\n") }] } } : {}),
+    ...(useSearch ? { tools: [{ google_search: {} }] } : {}),
+    generationConfig: {
+      temperature: opts?.temperature ?? 0.3,
+      ...(opts?.maxTokens ? { maxOutputTokens: opts.maxTokens } : {}),
+    },
+  });
+
   const model = hasVideo ? "gemini-flash-latest" : CHAT_MODEL;
   const res = await fetchAiWithRetry(
     "google",
