@@ -484,7 +484,7 @@ function SnapQuickPage() {
           <input ref={galleryRef} type="file" accept="image/*,application/pdf,.pdf" className="hidden" onChange={(e) => { void pick(e.target.files); e.target.value = ""; }} />
         </div>
 
-        <div className="surface-card flex min-h-[28rem] flex-col p-3 sm:p-5">
+        <div className="surface-card flex min-h-[28rem] min-w-0 flex-col p-3 sm:p-5">
           <div className="mb-3 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary">
               <Sigma className="size-4" /> SnapQuick tutor
