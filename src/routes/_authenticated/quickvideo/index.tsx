@@ -43,20 +43,27 @@ const MEMORY_SCOPE = "/quickvideo";
 export const Route = createFileRoute("/_authenticated/quickvideo/")({
   head: () => ({
     meta: [
-      { title: "QuickVideo — AI notes from any video — SyllabusStudy" },
+      { title: "AI Video Summarizer – Turn Videos Into Study Notes | SyllabusStudy" },
       {
         name: "description",
         content:
-          "Paste a YouTube link or upload a lecture recording and QuickVideo writes your study notes, then answers questions about the video.",
+          "Turn YouTube videos and lectures into organized study notes with SyllabusStudy QuickVideo. Get AI-generated summaries and notes from videos in seconds.",
       },
-      { property: "og:title", content: "QuickVideo — SyllabusStudy" },
+      { name: "robots", content: "index, follow" },
+      {
+        property: "og:title",
+        content: "AI Video Summarizer – Turn Videos Into Study Notes | SyllabusStudy",
+      },
       {
         property: "og:description",
-        content: "Import any video and get instant AI study notes you can ask questions about.",
+        content:
+          "Turn YouTube videos and lectures into organized study notes with SyllabusStudy QuickVideo. Get AI-generated summaries and notes from videos in seconds.",
       },
+      { property: "og:url", content: "https://syllabusstudy.com/quickvideo" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
+    links: [{ rel: "canonical", href: "https://syllabusstudy.com/quickvideo" }],
   }),
   component: QuickVideoPage,
 });
