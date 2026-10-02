@@ -180,11 +180,58 @@ function NewClassDialog() {
           <Plus className="size-4" /> Add class
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add a class</DialogTitle>
         </DialogHeader>
+        {showSyllabus ? (
+          <div className="space-y-3">
+            <DocumentUploader
+              syllabusOnly
+              hint="We'll create the class and fill in the name, professor and dates for you."
+            />
+            <Button type="button" variant="ghost" size="sm" onClick={() => setShowSyllabus(false)}>
+              ← Type it in instead
+            </Button>
+          </div>
+        ) : (
         <form onSubmit={submit} className="space-y-4">
+          <button
+            type="button"
+            onClick={() => setShowSyllabus(true)}
+            className="flex w-full items-center gap-3 rounded-xl border border-dashed border-primary/50 bg-primary/5 p-3 text-left transition-colors hover:bg-primary/10"
+          >
+            <Upload className="size-5 shrink-0 text-primary" />
+            <span className="text-sm">
+              <span className="font-semibold">Have your syllabus?</span>{" "}
+              <span className="text-muted-foreground">Drop it in and we'll fill everything in for you.</span>
+            </span>
+          </button>
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Or tap a popular class</p>
+            <div className="flex flex-wrap gap-2">
+              {QUICK_CLASSES.map((q, i) => (
+                <button
+                  key={q.code}
+                  type="button"
+                  onClick={() =>
+                    setForm({
+                      ...form,
+                      class_name: q.name,
+                      course_code: q.code,
+                      color: CLASS_COLORS[i % CLASS_COLORS.length]!.key,
+                    })
+                  }
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-xs font-medium transition-colors hover:border-primary hover:text-primary",
+                    form.course_code === q.code && "border-primary bg-primary/10 text-primary",
+                  )}
+                >
+                  {q.code} · {q.name}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="space-y-1.5">
             <Label htmlFor="class_name">Class name</Label>
             <Input
