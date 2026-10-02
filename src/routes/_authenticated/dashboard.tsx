@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useAiKeyStatus } from "@/lib/ai-key-gate";
 import { useServerFn } from "@tanstack/react-start";
 import { BookOpen, Bot, Brain, Camera, CalendarDays, CheckSquare, Flame, Loader2, Plus, Sparkles, Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -63,6 +64,15 @@ function Dashboard() {
   const { data: streakData } = useStreak(user?.id);
   const record = useRecordActivity();
   const streak = streakData?.streak ?? 0;
+  const { data: keyStatus } = useAiKeyStatus();
+
+  // New accounts (incl. "Continue with Google") set up their AI key before the dashboard.
+  useEffect(() => {
+    if (keyStatus?.hasKey !== false) return;
+    let skipped = false;
+    try { skipped = sessionStorage.getItem("studynova.setupAiSkipped") === "1"; } catch { /* ignore */ }
+    if (!skipped) void navigate({ to: "/setup-ai" });
+  }, [keyStatus?.hasKey, navigate]);
 
   function studyNow(t: NonNullable<CoachPlan["tasks"]>[number]) {
     const match = classes.find(

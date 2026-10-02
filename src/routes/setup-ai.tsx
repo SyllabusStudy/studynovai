@@ -179,7 +179,10 @@ function SetupAiPage() {
             <button
               type="button"
               className="w-full text-sm font-semibold text-muted-foreground underline"
-              onClick={() => navigate({ to: nextPath() })}
+              onClick={() => {
+                try { sessionStorage.setItem("studynova.setupAiSkipped", "1"); } catch { /* ignore */ }
+                navigate({ to: nextPath() });
+              }}
             >
               I'll set this up later
             </button>
