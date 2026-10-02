@@ -176,18 +176,8 @@ function SetupAiPage() {
               </Button>
             </div>
 
-            <button
-              type="button"
-              className="w-full text-sm font-semibold text-muted-foreground underline"
-              onClick={() => {
-                try { sessionStorage.setItem("studynova.setupAiSkipped", "1"); } catch { /* ignore */ }
-                navigate({ to: nextPath() });
-              }}
-            >
-              I'll set this up later
-            </button>
             <p className="text-center text-xs text-muted-foreground">
-              You can always add it from Settings → AI key.
+              Your key is needed before you can open your dashboard. You can change it later in Settings → AI key.
             </p>
           </div>
         </div>
