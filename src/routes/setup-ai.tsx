@@ -188,6 +188,16 @@ function SetupAiPage() {
             <p className="text-center text-xs text-muted-foreground">
               Your key is needed before you can open your dashboard. You can change it later in Settings → AI key.
             </p>
+            <button
+              type="button"
+              className="w-full text-xs font-semibold text-muted-foreground underline"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                navigate({ to: "/auth", search: { mode: "signup" } });
+              }}
+            >
+              Use a different account
+            </button>
           </div>
         </div>
       </div>
