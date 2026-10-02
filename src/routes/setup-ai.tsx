@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BrandLogo } from "@/components/BrandLogo";
 import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 import { getAiKeyStatus, saveAiKey } from "@/lib/ai-keys.functions";
 import { guestReturnPath } from "@/lib/guest-gate";
 import apiKeyTutorial from "@/assets/gemini-api-key-guide.mp4.asset.json";
@@ -72,7 +73,15 @@ function SetupAiPage() {
       toast.success("AI is on — everything is ready to use.");
       navigate({ to: nextPath() });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: async (e: Error) => {
+      if (e.message.includes("SESSION_EXPIRED")) {
+        toast.error("Your sign-in expired. Please sign up or log in again.");
+        await supabase.auth.signOut();
+        navigate({ to: "/auth", search: { mode: "signup" } });
+        return;
+      }
+      toast.error(e.message);
+    },
   });
 
   if (loading || !user) {
