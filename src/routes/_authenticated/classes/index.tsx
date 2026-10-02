@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Loader2, Plus } from "lucide-react";
+import { BookOpen, Loader2, Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
@@ -137,11 +137,21 @@ function DeleteClassButton({ classId, className_ }: { classId: string; className
   );
 }
 
+const QUICK_CLASSES = [
+  { code: "BIO 101", name: "General Biology" },
+  { code: "MATH 151", name: "Calculus I" },
+  { code: "PSY 101", name: "Intro to Psychology" },
+  { code: "ENG 101", name: "English Composition" },
+  { code: "CHEM 101", name: "General Chemistry" },
+  { code: "ECON 102", name: "Macroeconomics" },
+];
+
 function NewClassDialog() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [showSyllabus, setShowSyllabus] = useState(false);
   const [form, setForm] = useState({
     class_name: "",
     course_code: "",
@@ -296,6 +306,7 @@ function NewClassDialog() {
             </Button>
           </DialogFooter>
         </form>
+        )}
       </DialogContent>
     </Dialog>
   );
