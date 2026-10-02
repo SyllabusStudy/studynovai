@@ -120,7 +120,7 @@ function AuthPage() {
       }
       if (result.redirected) return;
       toast.success("Welcome to SyllabusStudy!");
-      navigate({ to: "/dashboard" });
+      navigate({ to: (guestReturnPath() ?? "/dashboard") as "/dashboard" });
     } catch {
       toast.error("We couldn't sign you in with Google. Please try again.");
     } finally {
