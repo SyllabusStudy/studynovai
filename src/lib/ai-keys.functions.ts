@@ -59,7 +59,12 @@ export const saveAiKey = createServerFn({ method: "POST" })
       },
       { onConflict: "user_id" },
     );
-    if (error) throw new Error(error.message);
+    if (error) {
+      if (error.code === "23503" || /foreign key/i.test(error.message)) {
+        throw new Error("SESSION_EXPIRED: Your sign-in expired. Please sign up or log in again.");
+      }
+      throw new Error(error.message);
+    }
     return { ok: true };
   });
 
