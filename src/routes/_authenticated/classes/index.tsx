@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Loader2, Plus } from "lucide-react";
+import { BookOpen, Loader2, Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
@@ -137,11 +137,21 @@ function DeleteClassButton({ classId, className_ }: { classId: string; className
   );
 }
 
+const QUICK_CLASSES = [
+  { code: "BIO 101", name: "General Biology" },
+  { code: "MATH 151", name: "Calculus I" },
+  { code: "PSY 101", name: "Intro to Psychology" },
+  { code: "ENG 101", name: "English Composition" },
+  { code: "CHEM 101", name: "General Chemistry" },
+  { code: "ECON 102", name: "Macroeconomics" },
+];
+
 function NewClassDialog() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [showSyllabus, setShowSyllabus] = useState(false);
   const [form, setForm] = useState({
     class_name: "",
     course_code: "",
@@ -180,11 +190,58 @@ function NewClassDialog() {
           <Plus className="size-4" /> Add class
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add a class</DialogTitle>
         </DialogHeader>
+        {showSyllabus ? (
+          <div className="space-y-3">
+            <DocumentUploader
+              syllabusOnly
+              hint="We'll create the class and fill in the name, professor and dates for you."
+            />
+            <Button type="button" variant="ghost" size="sm" onClick={() => setShowSyllabus(false)}>
+              ← Type it in instead
+            </Button>
+          </div>
+        ) : (
         <form onSubmit={submit} className="space-y-4">
+          <button
+            type="button"
+            onClick={() => setShowSyllabus(true)}
+            className="flex w-full items-center gap-3 rounded-xl border border-dashed border-primary/50 bg-primary/5 p-3 text-left transition-colors hover:bg-primary/10"
+          >
+            <Upload className="size-5 shrink-0 text-primary" />
+            <span className="text-sm">
+              <span className="font-semibold">Have your syllabus?</span>{" "}
+              <span className="text-muted-foreground">Drop it in and we'll fill everything in for you.</span>
+            </span>
+          </button>
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Or tap a popular class</p>
+            <div className="flex flex-wrap gap-2">
+              {QUICK_CLASSES.map((q, i) => (
+                <button
+                  key={q.code}
+                  type="button"
+                  onClick={() =>
+                    setForm({
+                      ...form,
+                      class_name: q.name,
+                      course_code: q.code,
+                      color: CLASS_COLORS[i % CLASS_COLORS.length]!.key,
+                    })
+                  }
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-xs font-medium transition-colors hover:border-primary hover:text-primary",
+                    form.course_code === q.code && "border-primary bg-primary/10 text-primary",
+                  )}
+                >
+                  {q.code} · {q.name}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="space-y-1.5">
             <Label htmlFor="class_name">Class name</Label>
             <Input
@@ -249,6 +306,7 @@ function NewClassDialog() {
             </Button>
           </DialogFooter>
         </form>
+        )}
       </DialogContent>
     </Dialog>
   );
