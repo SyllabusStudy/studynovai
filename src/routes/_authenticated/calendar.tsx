@@ -72,6 +72,16 @@ function CalendarPage() {
   const classById = new Map(classes.map((c) => [c.id, c]));
   const assignmentById = new Map(assignments.map((a) => [a.id, a]));
   const [selected, setSelected] = useState<string | null>(null);
+  const [syncOpen, setSyncOpen] = useState(false);
+  const [syncClass, setSyncClass] = useState<string | null>(null);
+  useEffect(() => {
+    const v = sessionStorage.getItem("open-canvas-sync");
+    if (v) {
+      sessionStorage.removeItem("open-canvas-sync");
+      setSyncClass(v === "auto" ? null : v);
+      setSyncOpen(true);
+    }
+  }, []);
   const [filter, setFilter] = useState<string>("all");
   const activeTypes = CALENDAR_FILTERS.find((f) => f.key === filter)?.types as readonly string[] | null | undefined;
   const [cursor, setCursor] = useState(() => {
@@ -133,7 +143,7 @@ function CalendarPage() {
           <div className="flex flex-wrap items-center gap-2">
             {user ? (
               <>
-                <CalendarSync />
+                <CalendarSync key={syncClass ?? "auto"} open={syncOpen} onOpenChange={setSyncOpen} defaultClassId={syncClass} />
                 <SyllabusCsvExport label="Export CSV" />
                 <NewEventDialog />
               </>
