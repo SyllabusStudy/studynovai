@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link2, Loader2, RefreshCw, Trash2 } from "lucide-react";
+import { Link2, Loader2, RefreshCw, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { listCalendarFeeds, removeCalendarFeed, syncCalendarFeed } from "@/lib/calendar-feed.functions";
 import { classLabel, formatDate, useClasses } from "@/lib/data";
@@ -27,7 +27,12 @@ export function CalendarSync() {
   const [busy, setBusy] = useState<string | null>(null);
   const feeds = useQuery({ queryKey: ["calendar-feeds", user?.id], enabled: open && !!user, queryFn: () => list() });
 
-  async function run(payload: { id?: string; url?: string; classId?: string | null }, key: string) {
+  async function fromFile(f: File) {
+    if (f.size > 5_000_000) return void toast.error("That file is too big.");
+    await run({ icsText: await f.text(), classId: classId === "auto" ? null : classId }, "file");
+  }
+
+  async function run(payload: { id?: string; url?: string; icsText?: string; classId?: string | null }, key: string) {
     setBusy(key);
     try {
       const r = await sync({ data: { ...payload, tz: tz() } });
@@ -86,6 +91,15 @@ export function CalendarSync() {
           <Button className="w-full" disabled={!url.trim() || busy !== null} onClick={() => void run({ url, classId: classId === "auto" ? null : classId }, "new")}>
             {busy === "new" ? <Loader2 className="size-4 animate-spin" /> : null} Connect & sync
           </Button>
+          <label
+            className="flex cursor-pointer flex-col items-center gap-1 rounded-lg border border-dashed border-border p-3 text-center text-xs text-muted-foreground hover:bg-secondary/60"
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) void fromFile(f); }}
+          >
+            {busy === "file" ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
+            <span>Link not working? Drop or pick your downloaded <strong>.ics</strong> calendar file</span>
+            <input type="file" accept=".ics,text/calendar" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void fromFile(f); e.target.value = ""; }} />
+          </label>
         </div>
 
         {feeds.data?.length ? (
