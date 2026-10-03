@@ -65,10 +65,27 @@ export function CalendarSync() {
           </DialogDescription>
         </DialogHeader>
 
-        <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
-          <li><strong>Canvas:</strong> Calendar → <em>Calendar Feed</em> (bottom right) → copy the link.</li>
-          <li><strong>Blackboard:</strong> Calendar → ⚙ or <em>Share calendar</em> → copy the iCal link.</li>
-        </ol>
+        <div className="space-y-2">
+          <p className="text-sm font-semibold">Canvas in 3 taps</p>
+          <ol className="grid grid-cols-3 gap-2">
+            {[
+              { n: 1, t: "Open Calendar", d: "Left menu in Canvas" },
+              { n: 2, t: "Tap Calendar Feed", d: "Bottom of the right side (scroll down on phone)" },
+              { n: 3, t: "Copy & paste", d: "Copy the link, paste it below" },
+            ].map((s) => (
+              <li key={s.n} className="rounded-lg border border-border bg-secondary/50 p-2">
+                <span className="mb-1 flex size-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{s.n}</span>
+                <p className="text-xs font-semibold">{s.t}</p>
+                <p className="text-[11px] leading-snug text-muted-foreground">{s.d}</p>
+              </li>
+            ))}
+          </ol>
+          <p className="text-xs text-muted-foreground">
+            On the Canvas phone app? Open Canvas in your browser instead — the feed button only shows there.
+            <br />
+            <strong>Blackboard:</strong> Calendar → ⚙ or <em>Share calendar</em> → copy the iCal link.
+          </p>
+        </div>
 
         <div className="space-y-3">
           <div className="space-y-1.5">
