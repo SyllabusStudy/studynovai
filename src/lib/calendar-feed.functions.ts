@@ -177,9 +177,9 @@ export const syncCalendarFeed = createServerFn({ method: "POST" })
 
     const { data: existing } = await supabase
       .from("calendar_events")
-      .select("id,source_document,title,event_date,event_time,class_id")
-      .like("source_document", `ics:${feed.id}:%`);
-    const byUid = new Map((existing ?? []).map((e) => [e.source_document!, e]));
+      .select("id,sync_key,title,event_date,event_time,class_id")
+      .like("sync_key", `ics:${feed.id}:%`);
+    const byUid = new Map((existing ?? []).map((e) => [e.sync_key!, e]));
 
     const inserts = [];
     let updated = 0;
@@ -195,7 +195,7 @@ export const syncCalendarFeed = createServerFn({ method: "POST" })
         class_id: matchClass(e.summary),
       };
       const prev = byUid.get(src);
-      if (!prev) inserts.push({ ...row, user_id: userId, source_document: src });
+      if (!prev) inserts.push({ ...row, user_id: userId, sync_key: src });
       else if (prev.title !== row.title || prev.event_date !== row.event_date || prev.event_time !== row.event_time) {
         await supabase.from("calendar_events").update(row).eq("id", prev.id);
         updated++;
