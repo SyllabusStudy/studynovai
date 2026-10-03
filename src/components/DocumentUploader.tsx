@@ -11,6 +11,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { CalendarSync } from "@/components/CalendarSync";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export function DocumentUploader({
   classId = null,
@@ -39,11 +41,25 @@ export function DocumentUploader({
   const STAGES = ["Reading your syllabus...", "Finding assignments...", "Finding exam dates...", "Building your semester..."];
 
 
-  async function upload(files: FileList | null) {
+  const [pending, setPending] = useState<File[] | null>(null);
+  const [syncOpen, setSyncOpen] = useState(false);
+  const [syncClassId, setSyncClassId] = useState<string | null>(null);
+
+  function upload(files: FileList | null) {
     if (!files?.length || !user) return;
+    const list = Array.from(files);
+    if (inputRef.current) inputRef.current.value = "";
+    if (syllabusOnly || isSyllabus) setPending(list);
+    else void doUpload(list, "syllabus");
+  }
+
+  async function doUpload(files: File[], mode: "syllabus" | "canvas") {
+    if (!user) return;
+    const skipDates = mode === "canvas";
+    let lastClass: string | null = classId;
     setBusy(true);
     try {
-      for (const file of Array.from(files)) {
+      for (const file of files) {
         const path = `${user.id}/${crypto.randomUUID()}-${file.name.replace(/[^\w.-]/g, "_")}`;
         const up = await supabase.storage.from("course-materials").upload(path, file);
         if (up.error) throw new Error(up.error.message);
@@ -73,13 +89,16 @@ export function DocumentUploader({
           if (syllabusOnly || isSyllabus) {
             setStage(1);
             const timer = setInterval(() => setStage((n) => (n === null ? n : Math.min(n + 1, 3))), 5000);
-            const result = await runSyllabus({ data: { documentId: row.id } }).finally(() => clearInterval(timer));
+            const result = await runSyllabus({ data: { documentId: row.id, skipDates } }).finally(() => clearInterval(timer));
             await qc.invalidateQueries({ queryKey: ["events"] });
             await qc.invalidateQueries({ queryKey: ["assignments"] });
             await qc.invalidateQueries({ queryKey: ["class"] });
             await qc.invalidateQueries({ queryKey: ["classes"] });
             await qc.invalidateQueries({ queryKey: ["grade-categories"] });
-            if (result?.createdClass) {
+            if (result?.createdClass) lastClass = result.createdClass.id;
+            if (skipDates) {
+              toast.success(result?.createdClass ? `Created "${result.createdClass.class_name}" — now sync your Canvas calendar` : `${file.name} saved — now sync your Canvas calendar`);
+            } else if (result?.createdClass) {
               toast.success(`Created "${result.createdClass.class_name}" with ${result.eventsCreated} dates`);
             } else {
               toast.success(`${file.name}: added ${result?.eventsCreated ?? 0} dates to your calendar`);
@@ -107,7 +126,10 @@ export function DocumentUploader({
     } finally {
       setBusy(false);
       setStage(null);
-      if (inputRef.current) inputRef.current.value = "";
+      if (skipDates) {
+        setSyncClassId(lastClass);
+        setSyncOpen(true);
+      }
     }
   }
 
@@ -161,8 +183,38 @@ export function DocumentUploader({
         multiple
         accept={ACCEPTED_UPLOAD_TYPES}
         className="hidden"
-        onChange={(e) => void upload(e.target.files)}
+        onChange={(e) => upload(e.target.files)}
       />
+      <Dialog open={!!pending} onOpenChange={(o) => !o && setPending(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>How should we fill your calendar?</DialogTitle>
+            <DialogDescription>
+              Either way we still read the syllabus for the class info, grade weights, policies and books.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-2">
+            <Button
+              className="h-auto flex-col items-start gap-0.5 py-3 text-left"
+              onClick={() => { const f = pending!; setPending(null); void doUpload(f, "syllabus"); }}
+            >
+              <span className="font-semibold">Add dates from the syllabus</span>
+              <span className="text-xs font-normal opacity-80">We pull exams, homework and due dates from the file.</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-auto flex-col items-start gap-0.5 py-3 text-left"
+              onClick={() => { const f = pending!; setPending(null); void doUpload(f, "canvas"); }}
+            >
+              <span className="font-semibold">Sync my Canvas calendar</span>
+              <span className="text-xs font-normal text-muted-foreground">Use your school's calendar for dates instead.</span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      {syncOpen ? (
+        <CalendarSync open={syncOpen} onOpenChange={setSyncOpen} hideTrigger defaultClassId={syncClassId} />
+      ) : null}
     </div>
   );
 }
