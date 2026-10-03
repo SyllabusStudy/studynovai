@@ -169,6 +169,10 @@ export const assignmentHelp = createServerFn({ method: "POST" })
       .object({
         assignmentId: z.string().uuid(),
         question: z.string().max(1000).nullable().optional(),
+        history: z
+          .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(20000) }))
+          .max(30)
+          .optional(),
       })
       .parse(d),
   )

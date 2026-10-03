@@ -1,4 +1,11 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+type Msg = { role: "user" | "assistant"; content: string };
+const FOLLOW_UPS = [
+  "Explain that in simpler words",
+  "What formula did you use?",
+  "Show me a similar example",
+];
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, Sparkles } from "lucide-react";
@@ -47,10 +54,31 @@ export function AssignmentHelp({
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [question, setQuestion] = useState("");
-  const [answer, setAnswer] = useState<string | null>(null);
+  const memKey = `studynova.assignhelp.v1:${assignmentId}`;
+  const [messages, setMessages] = useState<Msg[]>([]);
+  const endRef = useRef<HTMLDivElement>(null);
   const [selected, setSelected] = useState<DocumentRow | null>(null);
   const { data: docs = [] } = useAssignmentDocuments(user?.id, open ? assignmentId : undefined);
   const runHelp = useServerFn(assignmentHelp);
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(memKey);
+      if (raw) setMessages(JSON.parse(raw) as Msg[]);
+    } catch {
+      /* ignore */
+    }
+  }, [memKey]);
+
+  useEffect(() => {
+    try {
+      if (messages.length) sessionStorage.setItem(memKey, JSON.stringify(messages));
+      else sessionStorage.removeItem(memKey);
+    } catch {
+      /* ignore */
+    }
+    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages, memKey]);
 
   async function setCategory(value: string) {
     const { error } = await supabase
@@ -65,14 +93,20 @@ export function AssignmentHelp({
     toast.success("Category saved");
   }
 
-  async function ask() {
+  async function ask(text: string) {
+    const q = text.trim();
+    if (busy || (messages.length > 0 && !q)) return;
+    const history = messages;
     setBusy(true);
-    setAnswer(null);
+    setQuestion("");
+    setMessages([...history, { role: "user", content: q || "Walk me through the whole thing." }]);
     try {
-      const result = await runHelp({ data: { assignmentId, question: question || null } });
-      setAnswer(result.reply);
+      const result = await runHelp({ data: { assignmentId, question: q || null, history } });
+      setMessages((m) => [...m, { role: "assistant", content: result.reply }]);
       await qc.invalidateQueries({ queryKey: ["documents"] });
     } catch (e) {
+      setMessages(history);
+      setQuestion(q);
       toast.error(e instanceof Error ? e.message : "AI could not help with this yet");
     } finally {
       setBusy(false);
@@ -124,22 +158,54 @@ export function AssignmentHelp({
             </Hint>
             <DocumentList documents={docs} onSelect={(d) => setSelected(d)} />
 
-            <div className="flex flex-col gap-2 sm:flex-row">
+            {messages.length > 0 ? (
+              <div className="space-y-3">
+                {messages.map((m, i) =>
+                  m.role === "user" ? (
+                    <div key={i} className="ml-auto max-w-[85%] rounded-2xl bg-primary px-3 py-2 text-sm text-primary-foreground">
+                      {m.content}
+                    </div>
+                  ) : (
+                    <div key={i} className="surface-card p-4">
+                      <Markdown content={m.content} />
+                    </div>
+                  ),
+                )}
+                <div ref={endRef} />
+              </div>
+            ) : null}
+
+            {messages.length > 0 && !busy ? (
+              <div className="flex flex-wrap gap-2">
+                {FOLLOW_UPS.map((f) => (
+                  <Button key={f} type="button" variant="outline" size="sm" className="h-auto py-1 text-xs" onClick={() => void ask(f)}>
+                    {f}
+                  </Button>
+                ))}
+              </div>
+            ) : null}
+
+            <form
+              className="flex flex-col gap-2 sm:flex-row"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void ask(question);
+              }}
+            >
               <Input
-                placeholder="Optional: which question are you stuck on?"
+                placeholder={messages.length ? "Ask a follow-up…" : "Optional: which question are you stuck on?"}
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
               />
-              <Button onClick={() => void ask()} disabled={busy} className="gap-1.5">
+              <Button type="submit" disabled={busy || (messages.length > 0 && !question.trim())} className="gap-1.5">
                 {busy ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-                Help me with this
+                {messages.length ? "Send" : "Help me with this"}
               </Button>
-            </div>
-
-            {answer ? (
-              <div className="surface-card p-4">
-                <Markdown content={answer} />
-              </div>
+            </form>
+            {messages.length > 0 ? (
+              <button type="button" className="text-xs text-muted-foreground underline" onClick={() => setMessages([])}>
+                Start over
+              </button>
             ) : null}
           </div>
         </DialogContent>
