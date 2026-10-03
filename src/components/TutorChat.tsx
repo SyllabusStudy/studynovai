@@ -150,7 +150,8 @@ export function TutorChat({
     const texts = files.filter((f) => f.text).map((f) => `--- ${f.name} ---\n${f.text}`).join("\n\n");
     const message = texts ? `${typed}\n\n${texts}` : typed;
     const binary = files.filter((f) => f.dataUrl).map((f) => ({ name: f.name, dataUrl: f.dataUrl! }));
-    const request = { message, mode, classId: fixedClassId ?? (classId === "all" ? null : classId), conversationId, files: binary };
+    // No class picking: the tutor scans every class and matches the question itself.
+    const request = { message, mode, classId: fixedClassId ?? null, conversationId, files: binary };
     const label = files.length ? `${typed}\n\n📎 ${files.map((f) => f.name).join(", ")}` : typed;
     setInput("");
     setFiles([]);
@@ -208,23 +209,6 @@ export function TutorChat({
           </SelectContent>
         </Select>
 
-        {!fixedClassId ? (
-          <Select value={classId} onValueChange={setClassId}>
-            <SelectTrigger className="h-9 w-[170px] text-xs">
-              <SelectValue placeholder="All classes" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" className="text-xs">
-                All classes
-              </SelectItem>
-              {classes.map((c) => (
-                <SelectItem key={c.id} value={c.id} className="text-xs">
-                  {classLabel(c)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : null}
 
         <p className="ml-auto hidden text-xs text-muted-foreground sm:block">
           {STUDY_MODES.find((m) => m.key === mode)?.hint}
@@ -236,7 +220,7 @@ export function TutorChat({
           <div className="animate-fade-up rounded-xl border border-dashed border-border bg-card/60 p-5">
             <p className="flex items-center gap-2 text-sm font-semibold">
               <Sparkles className="size-4 text-primary" />
-              Ask me anything about {activeClass ? classLabel(activeClass) : "your courses"}
+              Ask me anything — I’ll match it to your class automatically
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               I answer from your own uploaded syllabi and notes — and I'll tell you when something isn't in them.
