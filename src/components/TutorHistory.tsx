@@ -62,7 +62,7 @@ export function TutorHistory({
           Your chats save automatically so you can come back to them later.
         </p>
       ) : (
-        <div className="scroll-slim mt-2 max-h-48 space-y-1 overflow-y-auto">
+        <div className="scroll-slim mt-2 max-h-48 space-y-1 overflow-y-auto lg:max-h-[70vh]">
           {conversations.map((c) => (
             <div
               key={c.id}

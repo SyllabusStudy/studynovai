@@ -41,25 +41,30 @@ function TutorPage() {
       <Hint id="tutor-ask" point="down" className="mb-4">
         Ask anything about a class — SyllabusStudy already knows your syllabus, assignments and uploaded notes, so just type like you're texting a friend.
       </Hint>
-      <div className="mb-4">
-        <TutorHistory
-          activeId={opened?.id ?? null}
-          onOpen={(conversation) => {
-            clearTabMemory(MEMORY_SCOPE);
-            setOpened(conversation);
-          }}
-          onNew={() => {
-            clearTabMemory(MEMORY_SCOPE);
-            setOpened(null);
-            setFresh((n) => n + 1);
-          }}
-        />
+      <div className="grid min-w-0 gap-4 lg:grid-cols-[16rem_minmax(0,1fr)]">
+        <aside className="min-w-0 lg:sticky lg:top-4 lg:self-start">
+          <TutorHistory
+            activeId={opened?.id ?? null}
+            onOpen={(conversation) => {
+              clearTabMemory(MEMORY_SCOPE);
+              setOpened(conversation);
+            }}
+            onNew={() => {
+              clearTabMemory(MEMORY_SCOPE);
+              setOpened(null);
+              setFresh((n) => n + 1);
+            }}
+          />
+        </aside>
+        <div className="min-w-0">
+          <TutorChat
+            key={opened?.id ?? `new-${fresh}`}
+            conversation={opened ?? undefined}
+            memoryScope={MEMORY_SCOPE}
+          />
+        </div>
       </div>
-      <TutorChat
-        key={opened?.id ?? `new-${fresh}`}
-        conversation={opened ?? undefined}
-        memoryScope={MEMORY_SCOPE}
-      />
+
     </div>
   );
 }
