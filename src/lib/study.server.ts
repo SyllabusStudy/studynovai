@@ -310,6 +310,16 @@ const DATE_RULES = [
 
 
 export async function runSyllabusAnalysis(supabase: DB, userId: string, documentId: string, skipDates = false) {
+  // Mark as analyzing so the Classes page can show a "building class" card even after navigation.
+  await supabase.from("documents").update({ processing_status: "analyzing" }).eq("id", documentId).eq("user_id", userId);
+  try {
+    return await runSyllabusAnalysisInner(supabase, userId, documentId, skipDates);
+  } finally {
+    await supabase.from("documents").update({ processing_status: "ready" }).eq("id", documentId).eq("user_id", userId);
+  }
+}
+
+async function runSyllabusAnalysisInner(supabase: DB, userId: string, documentId: string, skipDates = false) {
   const { data: doc } = await supabase
     .from("documents")
     .select("*")

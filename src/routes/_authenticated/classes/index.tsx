@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { BookOpen, Loader2, Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -46,6 +46,17 @@ function ClassesPage() {
   const { data: classes = [], isLoading } = useClasses(user?.id);
   const { data: documents = [] } = useDocuments(user?.id);
   const { data: assignments = [] } = useAssignments(user?.id);
+  const qc = useQueryClient();
+  const building = documents.filter(
+    (d) =>
+      d.is_syllabus &&
+      ["processing", "pending", "analyzing"].includes(d.processing_status ?? "") &&
+      Date.now() - new Date(d.created_at).getTime() < 10 * 60_000,
+  );
+  const buildingCount = building.length;
+  useEffect(() => {
+    if (buildingCount === 0) void qc.invalidateQueries({ queryKey: ["classes"] });
+  }, [buildingCount, qc]);
 
   return (
     <div>
@@ -71,7 +82,7 @@ function ClassesPage() {
 
       {isLoading ? (
         <Loader2 className="size-5 animate-spin text-primary" />
-      ) : classes.length === 0 ? (
+      ) : classes.length === 0 && building.length === 0 ? (
         <EmptyState
           icon={BookOpen}
           title="No classes yet"
@@ -80,6 +91,15 @@ function ClassesPage() {
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {building.map((d) => (
+            <div key={d.id} className="surface-card flex animate-pulse flex-col justify-center gap-2 border-primary/40 p-5" aria-live="polite">
+              <span className="flex items-center gap-2 text-sm font-bold text-primary">
+                <Loader2 className="size-4 animate-spin" /> Building class from syllabus...
+              </span>
+              <span className="text-sm text-muted-foreground">Reading course details, grade weights & policies</span>
+              <span className="truncate text-xs text-muted-foreground">{d.file_name}</span>
+            </div>
+          ))}
           {classes.map((c) => (
             <div key={c.id} className="surface-card relative p-5 transition-colors hover:border-primary/40">
               <div className="absolute right-2 top-2">

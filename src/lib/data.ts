@@ -63,8 +63,9 @@ export function useDocuments(userId?: string, classId?: string) {
     },
     refetchInterval: (query) => {
       const rows = (query.state.data ?? []) as DocumentRow[];
-      return rows.some((d) => d.processing_status === "processing" || d.processing_status === "pending")
-        ? 4000
+      const recent = (d: DocumentRow) => Date.now() - new Date(d.created_at).getTime() < 10 * 60_000;
+      return rows.some((d) => ["processing", "pending", "analyzing"].includes(d.processing_status ?? "") && recent(d))
+        ? 2500
         : false;
     },
   });
