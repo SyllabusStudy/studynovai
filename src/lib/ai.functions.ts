@@ -39,10 +39,10 @@ export const processDocument = createServerFn({ method: "POST" })
 
 export const analyzeSyllabus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ documentId: z.string().uuid() }).parse(d))
+  .inputValidator((d) => z.object({ documentId: z.string().uuid(), skipDates: z.boolean().optional() }).parse(d))
   .handler(async ({ data, context }) =>
     withUserAiKey(context.supabase, context.userId, () =>
-      runSyllabusAnalysis(context.supabase, context.userId, data.documentId),
+      runSyllabusAnalysis(context.supabase, context.userId, data.documentId, data.skipDates ?? false),
     ),
   );
 
