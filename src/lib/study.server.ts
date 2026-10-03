@@ -309,7 +309,7 @@ const DATE_RULES = [
 
 
 
-export async function runSyllabusAnalysis(supabase: DB, userId: string, documentId: string) {
+export async function runSyllabusAnalysis(supabase: DB, userId: string, documentId: string, skipDates = false) {
   const { data: doc } = await supabase
     .from("documents")
     .select("*")
@@ -517,7 +517,7 @@ ${syllabusText}`,
       );
     }
 
-    const valid = (parsed.dates ?? []).filter((d) => d?.title && /^\d{4}-\d{2}-\d{2}$/.test(d.date));
+    const valid = skipDates ? [] : (parsed.dates ?? []).filter((d) => d?.title && /^\d{4}-\d{2}-\d{2}$/.test(d.date));
     if (valid.length) {
       const { data: existing } = await supabase
         .from("calendar_events")

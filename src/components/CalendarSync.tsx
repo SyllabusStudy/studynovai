@@ -14,16 +14,28 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const tz = () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 
-export function CalendarSync() {
+export function CalendarSync({
+  open: controlledOpen,
+  onOpenChange,
+  hideTrigger = false,
+  defaultClassId,
+}: {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
+  defaultClassId?: string | null;
+} = {}) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data: classes = [] } = useClasses(user?.id);
   const list = useServerFn(listCalendarFeeds);
   const sync = useServerFn(syncCalendarFeed);
   const remove = useServerFn(removeCalendarFeed);
-  const [open, setOpen] = useState(false);
+  const [innerOpen, setInnerOpen] = useState(false);
+  const open = controlledOpen ?? innerOpen;
+  const setOpen = (v: boolean) => (onOpenChange ? onOpenChange(v) : setInnerOpen(v));
   const [url, setUrl] = useState("");
-  const [classId, setClassId] = useState("auto");
+  const [classId, setClassId] = useState(defaultClassId ?? "auto");
   const [busy, setBusy] = useState<string | null>(null);
   const feeds = useQuery({ queryKey: ["calendar-feeds", user?.id], enabled: open && !!user, queryFn: () => list() });
 
@@ -52,11 +64,13 @@ export function CalendarSync() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1.5">
-          <Link2 className="size-4" /> Sync Canvas
-        </Button>
-      </DialogTrigger>
+      {hideTrigger ? null : (
+        <DialogTrigger asChild>
+          <Button variant="outline" size="sm" className="gap-1.5">
+            <Link2 className="size-4" /> Sync Canvas
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Sync Canvas or Blackboard</DialogTitle>
