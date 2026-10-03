@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { clearTabMemory } from "@/lib/tab-memory";
+import { useLectureRecorder } from "@/lib/lecture-recorder";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -115,6 +116,7 @@ export function StudyTabs() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const [tabs, setTabs] = useState<Tab[]>([]);
+  const lecture = useLectureRecorder();
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -169,11 +171,21 @@ export function StudyTabs() {
   );
 
   const visible = useMemo(() => tabs.filter((t) => describe(t.path)), [tabs]);
-  if (visible.length < 1) return null;
+  if (visible.length < 1 && !lecture.recording) return null;
 
   return (
     <div className="sticky top-16 z-30 border-b border-border bg-card/85 backdrop-blur">
       <div className="mx-auto flex w-full max-w-[90rem] items-center gap-1.5 px-2 py-1.5 sm:px-6 xl:px-10">
+        {lecture.recording ? (
+          <Link
+            to="/lectures"
+            aria-label="Recording lecture — open Lecture Notes"
+            className="flex shrink-0 items-center gap-1.5 rounded-xl border border-destructive/40 bg-destructive/10 px-2.5 py-1.5 text-xs font-semibold text-destructive"
+          >
+            <span className="size-2 animate-pulse rounded-full bg-destructive" />
+            Recording {Math.floor(lecture.seconds / 60)}:{String(lecture.seconds % 60).padStart(2, "0")}
+          </Link>
+        ) : null}
         <div className="scroll-slim flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto">
           {visible.map((tab) => {
             const Icon = ICONS[(tab.icon as IconKey) in ICONS ? (tab.icon as IconKey) : "home"];

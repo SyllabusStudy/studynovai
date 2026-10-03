@@ -1,6 +1,12 @@
 import { showLimitIfQuota } from "@/components/LimitDialog";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import {
+  startLectureRecording,
+  stopLectureRecording,
+  takePendingRecording,
+  useLectureRecorder,
+} from "@/lib/lecture-recorder";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, FileAudio, FolderPlus, Loader2, Mic, Square, Trash2 } from "lucide-react";
@@ -42,12 +48,9 @@ function LecturesPage() {
   const { data: classes = [] } = useClasses(user?.id);
   const make = useServerFn(createLectureNotes);
   const [classId, setClassId] = useState("none");
-  const [recording, setRecording] = useState(false);
-  const [seconds, setSeconds] = useState(0);
+  const { recording, seconds, pending } = useLectureRecorder();
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
-  const rec = useRef<MediaRecorder | null>(null);
-  const timer = useRef<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { setActiveClassId } = useActiveClass();
@@ -94,47 +97,22 @@ function LecturesPage() {
 
   async function start() {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
-      });
-      const chunks: Blob[] = [];
-      let mr: MediaRecorder;
-      try {
-        mr = new MediaRecorder(stream, { audioBitsPerSecond: 32000 });
-      } catch {
-        mr = new MediaRecorder(stream);
-      }
-      mr.ondataavailable = (e) => e.data.size && chunks.push(e.data);
-      mr.onstop = () => {
-        stream.getTracks().forEach((t) => t.stop());
-        void process(new Blob(chunks, { type: mr.mimeType || "audio/webm" }), `Lecture ${new Date().toLocaleDateString()}`);
-      };
-      mr.start(1000);
-      rec.current = mr;
-      setSeconds(0);
-      setRecording(true);
-      timer.current = window.setInterval(() => {
-        setSeconds((s) => {
-          if (s + 1 >= MAX_SECONDS) {
-            toast.info("Reached 1 hour — stopping and making your notes.");
-            stop();
-            return MAX_SECONDS;
-          }
-          return s + 1;
-        });
-      }, 1000);
+      await startLectureRecording();
     } catch {
       toast.error("Allow microphone access to record your lecture.");
     }
   }
 
   function stop() {
-    if (rec.current && rec.current.state !== "inactive") rec.current.stop();
-    rec.current = null;
-    if (timer.current) window.clearInterval(timer.current);
-    timer.current = null;
-    setRecording(false);
+    stopLectureRecording();
   }
+
+  // When a recording finishes (here or while on another tab), make the notes.
+  useEffect(() => {
+    if (!pending) return;
+    const p = takePendingRecording();
+    if (p) void process(p.blob, p.name);
+  }, [pending]);
 
   async function remove(id: string) {
     await supabase.from("lecture_notes").delete().eq("id", id);
