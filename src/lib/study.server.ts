@@ -617,9 +617,21 @@ export async function runTutorChat(
     classId?: string | null | undefined;
     mode: string;
     message: string;
+    files?: Array<{ name: string; dataUrl: string }> | undefined;
   },
 ) {
   const { contextText } = await buildClassContext(supabase, userId, input.classId ?? null);
+  const files = input.files ?? [];
+  const userContent = files.length
+    ? [
+        { type: "text" as const, text: `${input.message}\n\n(The student attached: ${files.map((f) => f.name).join(", ")}. Read them carefully and use them to answer.)` },
+        ...files.map((f) =>
+          f.dataUrl.startsWith("data:image/")
+            ? { type: "image_url" as const, image_url: { url: f.dataUrl } }
+            : { type: "file" as const, file: { filename: f.name, file_data: f.dataUrl } },
+        ),
+      ]
+    : input.message;
 
   let history: TutorMessage[] = [];
   let conversationId = input.conversationId ?? null;
@@ -639,15 +651,15 @@ export async function runTutorChat(
     [
       { role: "system", content: tutorSystemPrompt(input.mode, contextText) },
       ...history.slice(-8).map((m) => ({ role: m.role, content: m.content })),
-      { role: "user", content: input.message },
+      { role: "user", content: userContent },
     ],
-    { maxTokens: 1200, search: true },
+    { maxTokens: files.length ? 2000 : 1200, search: true },
   );
 
   const now = new Date().toISOString();
   const messages: TutorMessage[] = [
     ...history,
-    { role: "user", content: input.message, at: now },
+    { role: "user", content: files.length ? `${input.message}\n\n📎 ${files.map((f) => f.name).join(", ")}` : input.message, at: now },
     { role: "assistant", content: reply, at: now },
   ];
 
