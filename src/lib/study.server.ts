@@ -1133,7 +1133,11 @@ const HELP_RULES = [
 export async function runAssignmentHelp(
   supabase: DB,
   userId: string,
-  input: { assignmentId: string; question?: string | null | undefined },
+  input: {
+    assignmentId: string;
+    question?: string | null | undefined;
+    history?: { role: "user" | "assistant"; content: string }[] | undefined;
+  },
 ) {
   const { data: assignment } = await supabase
     .from("assignments")
@@ -1160,18 +1164,24 @@ export async function runAssignmentHelp(
 
   const { contextText } = await buildClassContext(supabase, userId, assignment.class_id);
 
+  const history = (input.history ?? []).slice(-12);
+  const followUp = history.length > 0 && !!input.question;
   const reply = await callAI([
     { role: "system", content: `${HELP_RULES}\n\nSTUDENT COURSE CONTEXT:\n${contextText.slice(0, 8000)}` },
     {
       role: "user",
       content: `Assignment: ${assignment.title}${assignment.due_date ? ` (due ${assignment.due_date})` : ""}
 ${assignment.description ? `Notes: ${assignment.description}` : ""}
-${input.question ? `My specific question: ${input.question}` : "Walk me through the whole thing."}
+${followUp ? "Here is my assignment. I'll ask follow-up questions next." : input.question ? `My specific question: ${input.question}` : "Walk me through the whole thing."}
 
 ATTACHED FILES:
 ${attached.map((d) => `### ${d.file_name}\n${(d.extracted_text ?? "").slice(0, 12000)}`).join("\n\n")}`,
     },
+    ...history.map((m) => ({ role: m.role, content: m.content.slice(0, 6000) })),
+    ...(followUp ? [{ role: "user" as const, content: input.question! }] : []),
   ], { search: true });
+
+  if (followUp) return { reply };
 
   await supabase
     .from("documents")
