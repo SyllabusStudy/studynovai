@@ -117,5 +117,12 @@ export function collectDueReminders(
     }
   }
 
-  return out.sort((a, b) => a.dueAt.getTime() - b.dueAt.getTime());
+  // If several reminders for one item are already due, only send the most recent one.
+  const latest = new Map<string, PendingReminder>();
+  for (const r of out) {
+    const k = `${r.kind}:${r.id}`;
+    const prev = latest.get(k);
+    if (!prev || r.remindAt > prev.remindAt) latest.set(k, r);
+  }
+  return [...latest.values()].sort((a, b) => a.dueAt.getTime() - b.dueAt.getTime());
 }
