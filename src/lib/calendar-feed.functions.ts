@@ -101,6 +101,7 @@ export const syncCalendarFeed = createServerFn({ method: "POST" })
       .object({
         id: z.string().uuid().optional(),
         url: z.string().min(10).max(2000).optional(),
+        icsText: z.string().max(5_000_000).optional(),
         classId: z.string().uuid().nullable().optional(),
         tz: z.string().max(80).default("UTC"),
       })
@@ -116,10 +117,20 @@ export const syncCalendarFeed = createServerFn({ method: "POST" })
       const { data: row, error } = await supabase.from("calendar_feeds").select("id,url,class_id").eq("id", data.id).single();
       if (error) throw new Error("Calendar link not found.");
       feed = row;
+    } else if (data.icsText) {
+      const url = `https://upload.local-file/${userId}.ics`;
+      const { data: row, error } = await supabase
+        .from("calendar_feeds")
+        .upsert({ user_id: userId, url, label: "Uploaded calendar", class_id: data.classId ?? null }, { onConflict: "user_id,url" })
+        .select("id,url,class_id")
+        .single();
+      if (error) throw new Error(error.message);
+      feed = row;
     } else {
       if (!data.url) throw new Error("Paste your calendar link first.");
       const url = normalizeUrl(data.url);
-      const label = new URL(url).hostname.includes("instructure") ? "Canvas" : new URL(url).hostname.includes("blackboard") ? "Blackboard" : "School calendar";
+      const host = new URL(url).hostname;
+      const label = /instructure|canvas/.test(host) ? "Canvas" : host.includes("blackboard") ? "Blackboard" : "School calendar";
       const { data: row, error } = await supabase
         .from("calendar_feeds")
         .upsert({ user_id: userId, url, label, class_id: data.classId ?? null }, { onConflict: "user_id,url" })
@@ -129,10 +140,27 @@ export const syncCalendarFeed = createServerFn({ method: "POST" })
       feed = row;
     }
 
-    const res = await fetch(feed.url, { headers: { Accept: "text/calendar" }, redirect: "follow" });
-    if (!res.ok) throw new Error(`Your school calendar couldn't be reached (${res.status}). Check the link and try again.`);
-    const text = (await res.text()).slice(0, 5_000_000);
-    if (!text.includes("BEGIN:VCALENDAR")) throw new Error("That link isn't a calendar feed. Copy the calendar feed link from Canvas or Blackboard.");
+    let text = data.icsText ?? "";
+    if (!data.icsText) {
+      if (feed.url.startsWith("https://upload.local-file/")) throw new Error("This calendar was uploaded as a file. Drop the new file to update it.");
+      const blocked = "Your school calendar couldn't be reached. In Canvas, open the Calendar Feed link in your browser to download the .ics file, then drop it here instead.";
+      let res: Response | null = null;
+      for (let i = 0; i < 2 && !res?.ok; i++) {
+        try {
+          res = await fetch(feed.url, {
+            redirect: "follow",
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+              Accept: "text/calendar, text/plain, */*",
+              "Accept-Language": "en-US,en;q=0.9",
+            },
+          });
+        } catch { res = null; }
+      }
+      if (!res?.ok) throw new Error(res && (res.status === 404 || res.status === 401) ? "That calendar link no longer works. Copy a fresh Calendar Feed link from Canvas." : blocked);
+      text = (await res.text()).slice(0, 5_000_000);
+    }
+    if (!text.includes("BEGIN:VCALENDAR")) throw new Error("That isn't a calendar feed. Copy the Calendar Feed link (or .ics file) from Canvas or Blackboard.");
 
     const cutoff = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
     const items = parseIcs(text, tz).filter((e) => e.date >= cutoff).slice(0, 1500);
