@@ -240,6 +240,7 @@ export type Database = {
           reminder_days: number | null
           reminder_minutes: number | null
           source_document: string | null
+          sync_key: string | null
           title: string
           user_id: string
         }
@@ -255,6 +256,7 @@ export type Database = {
           reminder_days?: number | null
           reminder_minutes?: number | null
           source_document?: string | null
+          sync_key?: string | null
           title: string
           user_id: string
         }
@@ -270,6 +272,7 @@ export type Database = {
           reminder_days?: number | null
           reminder_minutes?: number | null
           source_document?: string | null
+          sync_key?: string | null
           title?: string
           user_id?: string
         }

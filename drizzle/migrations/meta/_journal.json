@@ -155,6 +155,13 @@
       "when": 1790754579666,
       "tag": "0021_add_flashcard_flag",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1791004914035,
+      "tag": "0022_calendar_events_sync_key",
+      "breakpoints": true
     }
   ]
 }
