@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { FileUp, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -35,6 +36,7 @@ export function DocumentUploader({
   const [dragging, setDragging] = useState(false);
   const [isSyllabus, setIsSyllabus] = useState(syllabusOnly);
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const runProcess = useServerFn(processDocument);
   const runSyllabus = useServerFn(analyzeSyllabus);
   const [stage, setStage] = useState<number | null>(null);
@@ -126,10 +128,7 @@ export function DocumentUploader({
     } finally {
       setBusy(false);
       setStage(null);
-      if (skipDates) {
-        setSyncClassId(lastClass);
-        setSyncOpen(true);
-      }
+      void lastClass;
     }
   }
 
@@ -204,7 +203,7 @@ export function DocumentUploader({
             <Button
               variant="outline"
               className="h-auto flex-col items-start gap-0.5 py-3 text-left"
-              onClick={() => { const f = pending!; setPending(null); void doUpload(f, "canvas"); }}
+              onClick={() => { const f = pending!; setPending(null); void doUpload(f, "canvas"); sessionStorage.setItem("open-canvas-sync", classId ?? "auto"); void navigate({ to: "/calendar" }); }}
             >
               <span className="font-semibold">Sync my Canvas calendar</span>
               <span className="text-xs font-normal text-muted-foreground">Use your school's calendar for dates instead.</span>
