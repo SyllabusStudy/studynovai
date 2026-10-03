@@ -220,7 +220,7 @@ export function TutorChat({
           <div className="animate-fade-up rounded-xl border border-dashed border-border bg-card/60 p-5">
             <p className="flex items-center gap-2 text-sm font-semibold">
               <Sparkles className="size-4 text-primary" />
-              Ask me anything about {activeClass ? classLabel(activeClass) : "your courses"}
+              Ask me anything — I’ll match it to your class automatically
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               I answer from your own uploaded syllabi and notes — and I'll tell you when something isn't in them.

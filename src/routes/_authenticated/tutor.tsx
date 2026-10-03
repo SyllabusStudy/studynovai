@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { ClassActionBar } from "@/components/ClassActionBar";
 import { PageHeader } from "@/components/PageHeader";
 import { TutorChat } from "@/components/TutorChat";
 import { TutorHistory } from "@/components/TutorHistory";
