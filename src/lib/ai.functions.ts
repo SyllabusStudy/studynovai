@@ -54,7 +54,8 @@ export const tutorChat = createServerFn({ method: "POST" })
         conversationId: z.string().uuid().nullable().optional(),
         classId: z.string().uuid().nullable().optional(),
         mode: z.string().default("explain"),
-        message: z.string().min(1).max(6000),
+        message: z.string().min(1).max(60000),
+        files: z.array(z.object({ name: z.string().max(200), dataUrl: z.string().max(14_000_000) })).max(4).optional(),
       })
       .parse(d),
   )
