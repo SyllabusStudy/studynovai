@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useClassPicker } from "@/lib/active-class";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
-import { Bot, Loader2, SendHorizonal, Sparkles, User } from "lucide-react";
+import { Bot, FileText, Loader2, Paperclip, SendHorizonal, Sparkles, User, X } from "lucide-react";
 import { toast } from "sonner";
 import { tutorChat } from "@/lib/ai.functions";
 import { AI_KEY_HELP } from "@/lib/ai-messages";
@@ -25,6 +25,9 @@ import { useAuth } from "@/lib/auth";
 import { useGuestGate, useRestoredGuestDraft } from "@/lib/guest-gate";
 import { readTabMemory, writeTabMemory } from "@/lib/tab-memory";
 import { cn } from "@/lib/utils";
+
+type Attachment = { name: string; dataUrl?: string; text?: string };
+type TutorRequest = { message: string; mode: string; classId: string | null; conversationId: string | null; files?: Array<{ name: string; dataUrl: string }> };
 
 export type ChatMsg = { role: "user" | "assistant"; content: string };
 
@@ -72,8 +75,35 @@ export function TutorChat({
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
-  const [failed, setFailed] = useState<{ message: string; mode: string; classId: string | null; conversationId: string | null; reason: string } | null>(null);
+  const [failed, setFailed] = useState<(TutorRequest & { reason: string }) | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [files, setFiles] = useState<Attachment[]>([]);
+  const [dragging, setDragging] = useState(false);
+
+  async function addFiles(list: FileList | File[] | null) {
+    const picked = Array.from(list ?? []);
+    for (const file of picked) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`${file.name} is too big (max 10 MB).`);
+        continue;
+      }
+      const isText = file.type.startsWith("text/") || /\.(txt|md|csv|json)$/i.test(file.name);
+      const name = file.name || "screenshot.png";
+      const next: Attachment = isText
+        ? { name, text: (await file.text()).slice(0, 40000) }
+        : {
+            name,
+            dataUrl: await new Promise<string>((res, rej) => {
+              const r = new FileReader();
+              r.onload = () => res(String(r.result));
+              r.onerror = () => rej(r.error);
+              r.readAsDataURL(file);
+            }),
+          };
+      setFiles((prev) => (prev.length >= 4 ? (toast.error("Up to 4 files at a time."), prev) : [...prev, next]));
+    }
+  }
 
   useEffect(() => {
     if (!conversation) return;
@@ -114,16 +144,21 @@ export function TutorChat({
   useRestoredGuestDraft("tutor", setInput);
 
   async function submit(text: string) {
-    const message = text.trim();
-    if (!message || busyRef.current || failed) return;
-    if (guest.requireAccount({ text: message })) return;
-    const request = { message, mode, classId: fixedClassId ?? (classId === "all" ? null : classId), conversationId };
+    const typed = text.trim() || (files.length ? "Help me with this." : "");
+    if (!typed || busyRef.current || failed) return;
+    if (guest.requireAccount({ text: typed })) return;
+    const texts = files.filter((f) => f.text).map((f) => `--- ${f.name} ---\n${f.text}`).join("\n\n");
+    const message = texts ? `${typed}\n\n${texts}` : typed;
+    const binary = files.filter((f) => f.dataUrl).map((f) => ({ name: f.name, dataUrl: f.dataUrl! }));
+    const request = { message, mode, classId: fixedClassId ?? (classId === "all" ? null : classId), conversationId, files: binary };
+    const label = files.length ? `${typed}\n\n📎 ${files.map((f) => f.name).join(", ")}` : typed;
     setInput("");
-    setMessages((prev) => [...prev, { role: "user", content: message }]);
+    setFiles([]);
+    setMessages((prev) => [...prev, { role: "user", content: label }]);
     await sendRequest(request);
   }
 
-  async function sendRequest(request: { message: string; mode: string; classId: string | null; conversationId: string | null }) {
+  async function sendRequest(request: TutorRequest) {
     if (busyRef.current) return;
     busyRef.current = true;
     setFailed(null);
@@ -262,9 +297,60 @@ export function TutorChat({
           e.preventDefault();
           submit(input);
         }}
-        className="flex items-end gap-2 border-t border-border pt-3"
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragging(true);
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragging(false);
+          void addFiles(e.dataTransfer.files);
+        }}
+        className={cn(
+          "flex flex-wrap items-end gap-2 rounded-xl border-t border-border pt-3 transition-colors",
+          dragging && "bg-primary/10 ring-2 ring-primary",
+        )}
       >
+        {files.length ? (
+          <div className="flex w-full flex-wrap gap-2">
+            {files.map((f, i) => (
+              <span key={i} className="flex max-w-[220px] items-center gap-1.5 rounded-lg border border-border bg-card px-2 py-1 text-xs">
+                {f.dataUrl?.startsWith("data:image/") ? (
+                  <img src={f.dataUrl} alt="" className="size-6 rounded object-cover" />
+                ) : (
+                  <FileText className="size-4 shrink-0 text-primary" />
+                )}
+                <span className="truncate">{f.name}</span>
+                <button type="button" aria-label={`Remove ${f.name}`} onClick={() => setFiles((p) => p.filter((_, j) => j !== i))}>
+                  <X className="size-3.5 text-muted-foreground hover:text-foreground" />
+                </button>
+              </span>
+            ))}
+          </div>
+        ) : null}
+        <input
+          ref={fileRef}
+          type="file"
+          multiple
+          accept="image/*,application/pdf,.txt,.md,.csv"
+          className="hidden"
+          onChange={(e) => {
+            void addFiles(e.target.files);
+            e.target.value = "";
+          }}
+        />
+        <Button type="button" variant="ghost" size="icon" aria-label="Attach file" onClick={() => fileRef.current?.click()}>
+          <Paperclip className="size-4" />
+        </Button>
         <Textarea
+          onPaste={(e) => {
+            const pasted = Array.from(e.clipboardData.files);
+            if (pasted.length) {
+              e.preventDefault();
+              void addFiles(pasted);
+            }
+          }}
           data-tour="tutor-input"
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -274,11 +360,11 @@ export function TutorChat({
               submit(input);
             }
           }}
-          placeholder="Ask your tutor…"
+          placeholder={dragging ? "Drop your file here…" : "Ask your tutor, or drop a file…"}
           rows={compact ? 2 : 2}
-          className="max-h-32 min-h-[44px] resize-none"
+          className="max-h-32 min-h-[44px] flex-1 resize-none"
         />
-        <Button type="submit" size="icon" disabled={busy || !!failed || !input.trim()} aria-label="Send">
+        <Button type="submit" size="icon" disabled={busy || !!failed || (!input.trim() && !files.length)} aria-label="Send">
           {busy ? <Loader2 className="size-4 animate-spin" /> : <SendHorizonal className="size-4" />}
         </Button>
       </form>
