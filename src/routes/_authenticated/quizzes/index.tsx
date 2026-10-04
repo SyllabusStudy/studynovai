@@ -86,9 +86,27 @@ function QuizzesPage() {
     }
     setBusy(true);
     try {
-      await run({
-        data: { classId, documentIds, documentId: null, count, difficulty, types },
+      const { collectQuizPages, cropFigure } = await import("@/lib/quiz-figures");
+      const chosen = documentIds.length
+        ? documents.filter((d) => documentIds.includes(d.id))
+        : documents.filter((d) => d.category !== "syllabus");
+      const pages = await collectQuizPages(chosen).catch(() => []);
+      const res = await run({
+        data: { classId, documentIds, documentId: null, count, difficulty, types, pageImages: pages.map((p) => p.dataUrl) },
       });
+      if (pages.length && res?.quizId) {
+        const { data: row } = await supabase.from("quizzes").select("questions").eq("id", res.quizId).single();
+        const qs = ((row?.questions ?? []) as unknown as Array<Record<string, unknown>>);
+        let changed = false;
+        for (const q of qs) {
+          const refs = q.image_options as { page: number; box: [number, number, number, number] }[] | undefined;
+          if (q.type !== "image_choice" || !refs?.length) continue;
+          q.option_images = await Promise.all(refs.map((r) => cropFigure(pages[r.page - 1]!, r.box)));
+          delete q.image_options;
+          changed = true;
+        }
+        if (changed) await supabase.from("quizzes").update({ questions: qs as never }).eq("id", res.quizId);
+      }
 
       await qc.invalidateQueries({ queryKey: ["quizzes"] });
       toast.success("Quiz ready");

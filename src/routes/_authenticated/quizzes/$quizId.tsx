@@ -33,6 +33,7 @@ type Question = {
   type: string;
   prompt: string;
   options?: string[];
+  option_images?: string[];
   answer: string;
   explanation?: string;
   topic?: string;
@@ -111,7 +112,33 @@ function QuizRunner() {
                 {i + 1}. {q.prompt}
               </p>
 
-              {q.options && q.options.length > 0 ? (
+              {q.option_images && q.option_images.length > 0 && q.options ? (
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  {q.options.map((opt, oi) => {
+                    const selected = answers[q.id] === opt;
+                    const showRight = submitted && opt === q.answer;
+                    return (
+                      <button
+                        key={opt}
+                        type="button"
+                        disabled={submitted}
+                        onClick={() => setAnswers((a) => ({ ...a, [q.id]: opt }))}
+                        className={cn(
+                          "overflow-hidden rounded-xl border-2 bg-card text-left transition",
+                          selected ? "border-primary" : "border-border hover:border-primary/50",
+                          showRight && "border-success",
+                          submitted && selected && !showRight && "border-destructive",
+                        )}
+                      >
+                        {q.option_images![oi] ? (
+                          <img src={q.option_images![oi]} alt={`Option ${opt}`} className="aspect-square w-full bg-background object-contain" />
+                        ) : null}
+                        <span className="block px-2 py-1 text-xs font-semibold">{opt}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : q.options && q.options.length > 0 ? (
                 <RadioGroup
                   className="mt-3 space-y-2"
                   value={answers[q.id] ?? ""}
