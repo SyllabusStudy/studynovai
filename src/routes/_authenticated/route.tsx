@@ -9,6 +9,8 @@ import { InstallCard } from "@/components/InstallAppButton";
 import { checkInDevice } from "@/lib/devices";
 import { isGuestToolPath } from "@/lib/guest-gate";
 import { useAiKeyStatus } from "@/lib/ai-key-gate";
+import { isSchoolEmail } from "@/lib/school-email";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
@@ -30,6 +32,15 @@ function AuthenticatedLayout() {
   useEffect(() => {
     if (needsKey) navigate({ to: "/setup-ai", replace: true });
   }, [needsKey, navigate]);
+
+  // Google sign-ins with a school account are signed out and sent back.
+  useEffect(() => {
+    if (user && isSchoolEmail(user.email)) {
+      void supabase.auth.signOut().then(() => {
+        window.location.href = "/auth?mode=signup&school=1";
+      });
+    }
+  }, [user?.email]);
 
   useEffect(() => {
     if (user) void checkInDevice(user.id).catch(() => {});
