@@ -96,10 +96,10 @@ function QuizzesPage() {
       });
       if (pages.length && res?.quizId) {
         const { data: row } = await supabase.from("quizzes").select("questions").eq("id", res.quizId).single();
-        const qs = ((row?.questions ?? []) as unknown as Array<Record<string, unknown>>);
+        const qs = ((row?.questions ?? []) as unknown as Array<{ type?: string; image_options?: { page: number; box: [number, number, number, number] }[]; option_images?: string[] }>);
         let changed = false;
         for (const q of qs) {
-          const refs = q.image_options as { page: number; box: [number, number, number, number] }[] | undefined;
+          const refs = q.image_options;
           if (q.type !== "image_choice" || !refs?.length) continue;
           q.option_images = await Promise.all(refs.map((r) => cropFigure(pages[r.page - 1]!, r.box)));
           delete q.image_options;

@@ -961,7 +961,7 @@ ${source.slice(0, 14000)}`,
       }
       return { ...q, id: q.id || `q${i + 1}`, options };
     })
-    .filter((q): q is QuizQuestion => q !== null);
+    .filter((q) => q !== null);
   if (!questions.length) throw new Error("The AI could not build a quiz from this material.");
 
   const { data, error } = await supabase
