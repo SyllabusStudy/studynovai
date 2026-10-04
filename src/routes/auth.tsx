@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth";
 import { lovable } from "@/integrations/lovable/index";
 import { guestReturnPath } from "@/lib/guest-gate";
+import { isSchoolEmail, SCHOOL_EMAIL_MESSAGE } from "@/lib/school-email";
 
 const searchSchema = z.object({
   mode: z.enum(["login", "signup", "reset"]).optional(),
@@ -51,12 +52,19 @@ function AuthPage() {
 
   useEffect(() => {
     if (creating) return;
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("school") === "1") toast.error(SCHOOL_EMAIL_MESSAGE, { id: "school" });
+    if (!loading && user && isSchoolEmail(user.email)) return;
     if (!loading && user) navigate({ to: (guestReturnPath() ?? "/dashboard") as "/dashboard" });
   }, [loading, user, navigate, creating]);
 
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (mode === "signup" && isSchoolEmail(email)) {
+      toast.error(SCHOOL_EMAIL_MESSAGE);
+      return;
+    }
     setBusy(true);
     if (mode === "signup") setCreating(true);
     try {

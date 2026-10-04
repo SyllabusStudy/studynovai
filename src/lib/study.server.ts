@@ -829,9 +829,11 @@ ${source.slice(0, 20000)}`,
 
 export type QuizQuestion = {
   id: string;
-  type: "multiple_choice" | "true_false" | "short_answer" | "problem";
+  type: "multiple_choice" | "true_false" | "short_answer" | "problem" | "image_choice";
   prompt: string;
   options?: string[];
+  image_options?: { page: number; box: [number, number, number, number] }[];
+  option_images?: string[];
   answer: string;
   explanation: string;
   topic: string;
@@ -848,8 +850,10 @@ export async function runQuizGeneration(
     difficulty: string;
     types: string[];
     title?: string | null | undefined;
+    pageImages?: string[] | null | undefined;
   },
 ) {
+  const pageImages = (input.pageImages ?? []).slice(0, 6);
   const picked = (input.documentIds ?? []).filter(Boolean);
   if (!picked.length && input.documentId) picked.push(input.documentId);
   const source = await sourceText(supabase, userId, input.classId, picked);
@@ -911,12 +915,20 @@ Quality rules:
 - Vary the correct option position across the quiz. Do not make the answer obvious by repeating words from the prompt.
 - Scenarios and problems must contain enough information to solve from the supplied material; never invent a required fact.
 - Prefer these angles for this quiz: ${focus}.
-${asked.length ? `Do not repeat these:\n${asked.map((p) => `- ${p}`).join("\n").slice(0, 1500)}` : ""}
+${pageImages.length ? `PICTURES: ${pageImages.length} page images (page 1..${pageImages.length}) from the student's material are attached. If they contain real diagrams, chemical structures, molecules, graphs, maps, anatomy or other figures, make about a third of the questions "image_choice": the prompt describes something (e.g. "Which structure is benzene?") and the student must pick the matching picture. For image_choice: options must be ["A","B","C","D"], answer is the correct letter, and add "image_options":[{"page":number,"box":[x,y,w,h]}] with 4 entries in the same order as the letters, where box is the tight bounding box of ONE figure as fractions 0-1 of the page width/height. Each box must contain exactly one distinct figure; never box text-only regions. If the pages have no usable figures, do not make image_choice questions.\n` : ""}${asked.length ? `Do not repeat these:\n${asked.map((p) => `- ${p}`).join("\n").slice(0, 1500)}` : ""}
 
 MATERIAL:
 ${source.slice(0, 14000)}`,
       },
-    ],
+      ...(pageImages.length
+        ? [
+            {
+              role: "user" as const,
+              content: pageImages.map((url) => ({ type: "image_url" as const, image_url: { url } })),
+            },
+          ]
+        : []),
+    ] as never,
     { temperature: 0.9, maxTokens: Math.min(1200 + input.count * 220, 16000) },
   );
 
@@ -928,6 +940,16 @@ ${source.slice(0, 14000)}`,
     .slice(0, input.count)
     .map((q, i) => {
       let options = q.options ?? [];
+      if (q.type === "image_choice") {
+        const refs = (q.image_options ?? []).filter(
+          (r) => r && Number.isInteger(r.page) && r.page >= 1 && r.page <= pageImages.length && Array.isArray(r.box) && r.box.length === 4,
+        );
+        if (refs.length < 2) return null;
+        const letters = ["A", "B", "C", "D"].slice(0, refs.length);
+        const correctIdx = letters.indexOf((q.answer ?? "").trim().toUpperCase());
+        if (correctIdx < 0) return null;
+        return { ...q, id: q.id || `q${i + 1}`, options: letters, image_options: refs, answer: letters[correctIdx]! };
+      }
       if (q.type === "multiple_choice" && options.length > 1) {
         options = [...options];
         for (let j = options.length - 1; j > 0; j--) {
@@ -938,7 +960,8 @@ ${source.slice(0, 14000)}`,
         }
       }
       return { ...q, id: q.id || `q${i + 1}`, options };
-    });
+    })
+    .filter((q) => q !== null);
   if (!questions.length) throw new Error("The AI could not build a quiz from this material.");
 
   const { data, error } = await supabase
