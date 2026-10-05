@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { MoreOptions } from "@/components/MoreOptions";
-import { SourcePicker } from "@/components/SourcePicker";
+import { QuizSourcePicker } from "@/components/QuizSourcePicker";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ClassActionBar } from "@/components/ClassActionBar";
 import { useClassPicker } from "@/lib/active-class";
@@ -68,6 +68,7 @@ function QuizzesPage() {
   const { data: documents = [] } = useDocuments(user?.id, classId || undefined);
   const { data: quizzes = [], isLoading } = useQuizzes(user?.id);
   const [documentIds, setDocumentIds] = useState<string[]>([]);
+  const [lectureIds, setLectureIds] = useState<string[]>([]);
   const [count, setCount] = useState(10);
   const [difficulty, setDifficulty] = useState<string>("medium");
   const [types, setTypes] = useState<string[]>(["multiple_choice", "true_false"]);
@@ -87,12 +88,12 @@ function QuizzesPage() {
     setBusy(true);
     try {
       const { collectQuizPages, cropFigure } = await import("@/lib/quiz-figures");
-      const chosen = documentIds.length
+      const chosen = documentIds.length || lectureIds.length
         ? documents.filter((d) => documentIds.includes(d.id))
         : documents.filter((d) => d.category !== "syllabus");
       const pages = await collectQuizPages(chosen).catch(() => []);
       const res = await run({
-        data: { classId, documentIds, documentId: null, count, difficulty, types, pageImages: pages.map((p) => p.dataUrl) },
+        data: { classId, documentIds, lectureIds, documentId: null, count, difficulty, types, pageImages: pages.map((p) => p.dataUrl) },
       });
       if (pages.length && res?.quizId) {
         const { data: row } = await supabase.from("quizzes").select("questions").eq("id", res.quizId).single();
@@ -138,7 +139,7 @@ function QuizzesPage() {
       <AiKeySetupBanner />
 
       <Hint id="quizzes-source" point="down" className="mb-4 hidden sm:flex">
-        Pick a class and hit Make quiz. Choose chapters and question types under More options.
+        Pick a class, choose what to study, then hit Make quiz.
       </Hint>
 
       <section className="surface-card space-y-4 p-4 sm:p-6">
@@ -154,12 +155,13 @@ function QuizzesPage() {
 
         <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
           <div className="space-y-1.5">
-            <Label>Class</Label>
+            <Label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">1 · Class</Label>
             <Select
               value={classId}
               onValueChange={(v) => {
                 setClassId(v);
                 setDocumentIds([]);
+                setLectureIds([]);
               }}
             >
               <SelectTrigger className="h-11">
@@ -180,15 +182,17 @@ function QuizzesPage() {
           </Button>
         </div>
 
-        <SourcePicker
+        <QuizSourcePicker
+          classId={classId}
+          className={classes.find((c) => c.id === classId) ? classLabel(classes.find((c) => c.id === classId)!) : "this class"}
           documents={documents}
-          selected={documentIds}
-          onChange={setDocumentIds}
-          classPicked={Boolean(classId)}
+          documentIds={documentIds}
+          lectureIds={lectureIds}
+          onChange={(d, l) => { setDocumentIds(d); setLectureIds(l); }}
         />
 
         <div>
-          <p className="mb-1.5 text-sm font-medium">Questions</p>
+          <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">3 · Number of questions</p>
           <div className="flex flex-wrap gap-2">
             {[5, 10, 20, 30, 50].map((n) => (
               <button
@@ -197,8 +201,8 @@ function QuizzesPage() {
                 onClick={() => setCount(n)}
                 aria-pressed={count === n}
                 className={cn(
-                  "min-w-12 rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors",
-                  count === n ? "border-primary bg-primary text-primary-foreground" : "border-border hover:border-primary/60",
+                  "min-w-14 rounded-xl border px-4 py-2 text-sm font-bold transition-all",
+                  count === n ? "border-primary bg-primary text-primary-foreground shadow-md ring-2 ring-primary/40" : "border-border hover:border-primary/60",
                 )}
               >
                 {n}
@@ -212,7 +216,7 @@ function QuizzesPage() {
 
 
         <MoreOptions
-          summary={`${difficulty} · ${documentIds.length ? `${documentIds.length} files` : "all materials"} · ${types.length} types`}
+          summary="Difficulty, question types, and other settings"
         >
           <div className="grid gap-4 sm:grid-cols-2">
 

@@ -847,6 +847,7 @@ export async function runQuizGeneration(
     classId: string;
     documentId?: string | null | undefined;
     documentIds?: string[] | null | undefined;
+    lectureIds?: string[] | null | undefined;
     count: number;
     difficulty: string;
     types: string[];
@@ -857,7 +858,13 @@ export async function runQuizGeneration(
   const pageImages = (input.pageImages ?? []).slice(0, 6);
   const picked = (input.documentIds ?? []).filter(Boolean);
   if (!picked.length && input.documentId) picked.push(input.documentId);
-  const source = await sourceText(supabase, userId, input.classId, picked);
+  const lecturePicked = (input.lectureIds ?? []).filter(Boolean);
+  const allMode = !picked.length && !lecturePicked.length;
+  const docPart = allMode || picked.length ? await sourceText(supabase, userId, input.classId, picked) : "";
+  const lecturePart = allMode || lecturePicked.length ? await lectureText(supabase, userId, input.classId, lecturePicked) : "";
+  if (lecturePicked.length && !lecturePart.trim())
+    throw new Error("We couldn't process these lecture notes yet. Try again or upload the notes manually.");
+  const source = [docPart, lecturePart].filter((s) => s.trim()).join("\n\n");
   if (!source) throw new Error("Upload notes, a study guide or an assignment for this class first — syllabi are not used as study material.");
 
   // A short list of recent questions is enough to keep the next quiz fresh
@@ -1180,6 +1187,21 @@ ${contextText}`,
 }
 
 /* ------------------------------------------------------------------ helpers */
+
+/** Lecture-note text (summary, key concepts, transcript). Empty notes are skipped so they never count as material. */
+async function lectureText(supabase: DB, userId: string, classId: string, ids: string[]): Promise<string> {
+  let q = supabase.from("lecture_notes").select("title,summary,key_concepts,transcript").eq("user_id", userId).eq("class_id", classId);
+  if (ids.length) q = q.in("id", ids);
+  const { data } = await q.order("created_at", { ascending: false }).limit(8);
+  const rows = (data ?? []).filter((r) => `${r.summary ?? ""}${r.transcript ?? ""}`.trim().length > 40);
+  const per = Math.max(1500, Math.floor(10000 / Math.max(1, rows.length)));
+  return rows
+    .map((r) => {
+      const concepts = Array.isArray(r.key_concepts) ? (r.key_concepts as unknown[]).map(String).join("; ") : "";
+      return `### Lecture: ${r.title}\n${r.summary ?? ""}\n${concepts ? `Key concepts: ${concepts}\n` : ""}${(r.transcript ?? "").slice(0, per)}`;
+    })
+    .join("\n\n");
+}
 
 async function sourceText(
   supabase: DB,
