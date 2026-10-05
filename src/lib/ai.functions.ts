@@ -109,7 +109,7 @@ export const generateQuiz = createServerFn({ method: "POST" })
         difficulty: z.string().default("medium"),
         types: z.array(z.string()).min(1),
         title: z.string().max(120).nullable().optional(),
-        pageImages: z.array(z.string().startsWith("data:image/").max(2_000_000)).max(6).nullable().optional(),
+        pageImages: z.array(z.string().startsWith("data:image/").max(2_000_000)).max(10).nullable().optional(),
       })
       .parse(d),
   )

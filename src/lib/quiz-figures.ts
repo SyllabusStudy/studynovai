@@ -5,7 +5,7 @@ import type { DocumentRow } from "@/lib/data";
 export type QuizPage = { dataUrl: string; width: number; height: number };
 export type FigureRef = { page: number; box: [number, number, number, number] };
 
-const MAX_PAGES = 6;
+const MAX_PAGES = 10;
 
 function loadImage(src: string) {
   return new Promise<HTMLImageElement>((res, rej) => {
