@@ -834,6 +834,7 @@ export type QuizQuestion = {
   options?: string[];
   image_options?: { page: number; box: [number, number, number, number] }[];
   option_images?: string[];
+  option_smiles?: string[];
   answer: string;
   explanation: string;
   topic: string;
@@ -904,9 +905,9 @@ export async function runQuizGeneration(
           "You are an expert college assessment writer. Build fair, rigorous quizzes from the student's own material. Reply with json only, no preamble. Never reuse a question the student already saw. Difficulty must change the depth of thinking, not merely use harder vocabulary.",
       },
       (() => {
-        const types = pageImages.length ? [...input.types.filter((t) => t !== "image_choice"), "image_choice"] : input.types;
+        const types = [...input.types.filter((t) => t !== "image_choice" && t !== "structure_choice"), "structure_choice"];
         const text = `Write exactly ${input.count} ${input.difficulty}-difficulty questions using only these types: ${types.join(", ")}.
-Return json: {"title":string,"questions":[{"id":string,"type":"multiple_choice"|"true_false"|"short_answer"|"problem"${pageImages.length ? `|"image_choice"` : ""},"prompt":string,"options":string[],"answer":string,"explanation":string,"topic":string${pageImages.length ? `,"image_options"?:[{"page":number,"box":[x,y,w,h]}]` : ""}}]}
+Return json: {"title":string,"questions":[{"id":string,"type":"multiple_choice"|"true_false"|"short_answer"|"problem"|"structure_choice","prompt":string,"options":string[],"answer":string,"explanation":string,"topic":string,"option_smiles"?:string[]}]}
 Rules: multiple_choice needs exactly 4 options and answer must match one option exactly. true_false options are ["True","False"]. short_answer and problem have an empty options array and a concise model answer. Explanations: one short sentence.
 Difficulty standard: ${challenge}
 Quality rules:
@@ -915,9 +916,8 @@ Quality rules:
 - Vary the correct option position across the quiz. Do not make the answer obvious by repeating words from the prompt.
 - Scenarios and problems must contain enough information to solve from the supplied material; never invent a required fact.
 - Prefer these angles for this quiz: ${focus}.
-${pageImages.length ? `PICTURES (high priority): ${pageImages.length} page images (page 1..${pageImages.length}) from the student's material are attached to this message. Look for diagrams, chemical structures, molecules, graphs, maps, anatomy or other figures. If any exist, make about a third of the questions (at least 1) "image_choice" where the student picks the matching picture. For image_choice: options must be ["A","B","C","D"], answer is the correct letter, and "image_options" must have 4 entries in letter order. box format is [x, y, width, height], x,y = TOP-LEFT corner, fractions 0-1 of the page. Figures may come from different pages.
-CROPPING (critical): each box contains ONLY the drawing itself. End the box ABOVE any caption ("Figure 2.16 ..."), title, heading or paragraph, and exclude any printed name or formula label that identifies the figure (e.g. "methane", "CH4", "benzene"). Never include body text. One figure per box, never a whole row of figures.
-SMART QUESTIONS (critical): the answer must NOT be readable in the pictures and the prompt must NOT just name the thing shown. Never ask "Which image shows X?". Test understanding by describing properties the student must reason about: geometry, bond types, atom/bond counts, functional groups, graph shape, function, cause/effect (e.g. "Which molecule has a C=O and an -OH on the same carbon?"). All 4 options must be the same kind of figure so distractors are plausible. Only make image_choice when there are at least 4 distinct real figures; otherwise write normal text questions instead.\n` : ""}${asked.length ? `Do not repeat these:\n${asked.map((p) => `- ${p}`).join("\n").slice(0, 1500)}` : ""}
+STRUCTURE QUESTIONS: only if the material involves chemistry/molecules, make about a third of the questions (at least 1) "structure_choice". The app DRAWS each option from SMILES — never use pictures from the material. For structure_choice: options must be ["A","B","C","D"], answer is the correct letter, "option_smiles" has exactly 4 valid, distinct SMILES strings in letter order (no names or labels). All 4 must be the same kind of molecule so distractors are plausible (e.g. rings of different sizes, isomers, different functional groups). The prompt must describe properties the student reasons about (ring size, bonds, functional groups, atom counts, products) and must never name the answer molecule. Double-check the correct SMILES truly matches the prompt and the explanation says why. If the material has no chemistry, do not use structure_choice.
+${pageImages.length ? `${pageImages.length} page images of the material are attached for reading only.\n` : ""}${asked.length ? `Do not repeat these:\n${asked.map((p) => `- ${p}`).join("\n").slice(0, 1500)}` : ""}
 
 MATERIAL:
 ${source.slice(0, 14000)}`;
@@ -940,6 +940,14 @@ ${source.slice(0, 14000)}`;
     .slice(0, input.count)
     .map((q, i) => {
       let options = q.options ?? [];
+      if (q.type === "structure_choice") {
+        const sm = (q.option_smiles ?? []).filter((x) => typeof x === "string" && /^[A-Za-z0-9@+\-\[\]\(\)=#$\\/%.:]{1,200}$/.test(x.trim())).map((x) => x.trim());
+        if (sm.length !== 4 || new Set(sm).size !== 4) return null;
+        const letters = ["A", "B", "C", "D"];
+        const correctIdx = letters.indexOf((q.answer ?? "").trim().toUpperCase());
+        if (correctIdx < 0) return null;
+        return { ...q, id: q.id || `q${i + 1}`, options: letters, option_smiles: sm, image_options: undefined, answer: letters[correctIdx]! };
+      }
       if (q.type === "image_choice") {
         const refs = (q.image_options ?? []).filter(
           (r) => r && Number.isInteger(r.page) && r.page >= 1 && r.page <= pageImages.length && Array.isArray(r.box) && r.box.length === 4,
