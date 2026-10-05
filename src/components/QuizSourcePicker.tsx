@@ -68,7 +68,7 @@ export function QuizSourcePicker({
       <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">2 · Source material</p>
       {!classId ? (
         <p className="rounded-xl border border-dashed border-border p-3 text-sm text-muted-foreground">Pick a class first.</p>
-      ) : picked || documentIds.length + lectureIds.length === 0 ? (
+      ) : (
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -85,7 +85,7 @@ export function QuizSourcePicker({
           </div>
           <span className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Change</span>
         </button>
-      ) : null}
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
