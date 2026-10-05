@@ -348,6 +348,39 @@ function repairJson(text: string): string {
   return out;
 }
 
+/** Cuts a clipped reply back to its last finished object at any depth and closes it, keeping completed items. */
+function salvageJson(text: string): unknown {
+  let end = text.length;
+  for (let tries = 0; tries < 300; tries++) {
+    end = text.lastIndexOf("}", end - 1);
+    if (end < 0) return undefined;
+    const cut = text.slice(0, end + 1);
+    const closers: string[] = [];
+    let s = false;
+    let esc = false;
+    for (let i = 0; i < cut.length; i++) {
+      const ch = cut[i]!;
+      if (s) {
+        if (esc) esc = false;
+        else if (ch === "\\") esc = true;
+        else if (ch === '"') s = false;
+        continue;
+      }
+      if (ch === '"') s = true;
+      else if (ch === "{") closers.push("}");
+      else if (ch === "[") closers.push("]");
+      else if (ch === "}" || ch === "]") closers.pop();
+    }
+    if (s) continue;
+    try {
+      return JSON.parse(cut + closers.reverse().join(""));
+    } catch {
+      /* try an earlier cut */
+    }
+  }
+  return undefined;
+}
+
 export function parseJsonBlock<T>(raw: string): T {
   let text = raw.trim();
   const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/);
@@ -366,6 +399,8 @@ export function parseJsonBlock<T>(raw: string): T {
     try {
       return JSON.parse(repairJson(text)) as T;
     } catch {
+      const salvaged = salvageJson(text);
+      if (salvaged !== undefined) return salvaged as T;
       throw new Error("The AI reply was cut off. Please try that again.");
     }
   }
