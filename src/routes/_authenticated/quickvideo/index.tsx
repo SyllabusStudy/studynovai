@@ -146,7 +146,7 @@ function QuickVideoPage() {
       const msg = e instanceof Error ? e.message : "QuickVideo could not read that video";
       if (redirectForKey(msg)) return;
       const isYt = !!payload.url && /youtu\.?be/i.test(payload.url);
-      if (isYt && /youtube would not play|not a bot|sign in|no captions|could not be read from the link|copy the link/i.test(msg)) {
+      if (isYt && /youtube would not play|took too long|not a bot|sign in|no captions|could not be read from the link|copy the link/i.test(msg)) {
         setYtError(true);
         setHelpOpen(true);
       } else toast.error(msg);
