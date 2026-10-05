@@ -119,15 +119,16 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   // One navy glass look for the whole signed-in app (incl. dialogs and menus).
+  // Honors the user's light/dark choice instead of forcing dark.
+  const { theme } = useTheme();
   useEffect(() => {
     const el = document.documentElement;
-    const hadDark = el.classList.contains("dark");
-    el.classList.add("app-theme", "dark");
+    el.classList.add("app-theme");
+    el.classList.toggle("dark", theme === "dark");
     return () => {
       el.classList.remove("app-theme");
-      if (!hadDark) el.classList.remove("dark");
     };
-  }, []);
+  }, [theme]);
 
   return (
     <div className="app-canvas min-h-screen">
