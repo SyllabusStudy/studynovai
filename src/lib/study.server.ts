@@ -935,12 +935,12 @@ ${source.slice(0, 14000)}`;
 
 
   const rawParsed = parseJsonBlock<unknown>(raw) as unknown;
-  const pr = (rawParsed && typeof rawParsed === "object" ? rawParsed : {}) as Record<string, unknown>;
+  const pr = (rawParsed && typeof rawParsed === "object" ? rawParsed : {}) as any;
   const list: unknown[] = Array.isArray(rawParsed)
     ? rawParsed
     : ((["questions", "quiz", "items", "data"].map((k) => pr[k]).find((v) => Array.isArray(v)) as unknown[]) ??
-      (pr.quiz && typeof pr.quiz === "object" && Array.isArray((pr.quiz as Record<string, unknown>).questions)
-        ? ((pr.quiz as Record<string, unknown>).questions as unknown[])
+      (pr.quiz && typeof pr.quiz === "object" && Array.isArray((pr.quiz as any).questions)
+        ? ((pr.quiz as any).questions as unknown[])
         : []));
   const parsed = { title: typeof pr.title === "string" ? pr.title : undefined };
   const str = (v: unknown) => (typeof v === "string" ? v.trim() : typeof v === "number" || typeof v === "boolean" ? String(v) : "");
@@ -961,7 +961,7 @@ ${source.slice(0, 14000)}`;
   const questions = list
     .map((item) => {
       if (!item || typeof item !== "object") return null;
-      const r = item as Record<string, unknown>;
+      const r = item as any;
       const prompt = str(r.prompt) || str(r.question) || str(r.text) || str(r.stem);
       const answer = str(r.answer) || str(r.correct_answer) || str(r.correctAnswer) || str(r.solution);
       if (!prompt || !answer) return null;
