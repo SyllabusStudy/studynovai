@@ -96,6 +96,7 @@ function QuickVideoPage() {
   const guest = useGuestGate("quickvideo");
   useRestoredGuestDraft("quickvideo", setUrl);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [ytError, setYtError] = useState(false);
 
   // Keep the half-typed link while this tab stays open.
   const restoredRef = useRef(false);
@@ -118,6 +119,7 @@ function QuickVideoPage() {
       return;
     }
     setBusy(true);
+    setYtError(false);
     try {
       void recordStudyActivity("quickvideo");
       const result = await run({
@@ -134,7 +136,11 @@ function QuickVideoPage() {
       void navigate({ to: "/quickvideo/$noteId", params: { noteId: result.id } });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "QuickVideo could not read that video";
-      if (!redirectForKey(msg)) toast.error(msg);
+      if (redirectForKey(msg)) return;
+      const isYt = !!payload.url && /youtu\.?be/i.test(payload.url);
+      if (isYt && /youtube would not play|no captions|could not be read from the link|copy the link/i.test(msg)) {
+        setYtError(true);
+      } else toast.error(msg);
     } finally {
       setBusy(false);
     }
@@ -296,6 +302,29 @@ function QuickVideoPage() {
         <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" /> Watching the video and writing your notes…
         </p>
+      ) : null}
+
+      {ytError && !busy ? (
+        <div role="alert" className="surface-card mt-4 space-y-3 border-destructive/40 p-4">
+          <div>
+            <p className="font-semibold">YouTube may be blocking access to this video</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Sometimes YouTube won't let us play or read a video from this link. Copying the link a different way
+              usually fixes it — then try again. Private or age-restricted videos may need to be uploaded as a file.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button className="gap-1.5" onClick={() => setHelpOpen(true)}>
+              <Youtube className="size-4" /> How do I copy a YouTube video link?
+            </Button>
+            <Button variant="outline" disabled={!url.trim()} onClick={() => void submit({ url: url.trim() })}>
+              Try again
+            </Button>
+            <Button variant="ghost" onClick={() => setYtError(false)}>
+              Dismiss
+            </Button>
+          </div>
+        </div>
       ) : null}
 
       {notes.length ? (
