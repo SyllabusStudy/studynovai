@@ -903,10 +903,10 @@ export async function runQuizGeneration(
         content:
           "You are an expert college assessment writer. Build fair, rigorous quizzes from the student's own material. Reply with json only, no preamble. Never reuse a question the student already saw. Difficulty must change the depth of thinking, not merely use harder vocabulary.",
       },
-      {
-        role: "user",
-        content: `Write exactly ${input.count} ${input.difficulty}-difficulty questions using only these types: ${input.types.join(", ")}.
-Return json: {"title":string,"questions":[{"id":string,"type":"multiple_choice"|"true_false"|"short_answer"|"problem","prompt":string,"options":string[],"answer":string,"explanation":string,"topic":string}]}
+      (() => {
+        const types = pageImages.length ? [...input.types.filter((t) => t !== "image_choice"), "image_choice"] : input.types;
+        const text = `Write exactly ${input.count} ${input.difficulty}-difficulty questions using only these types: ${types.join(", ")}.
+Return json: {"title":string,"questions":[{"id":string,"type":"multiple_choice"|"true_false"|"short_answer"|"problem"${pageImages.length ? `|"image_choice"` : ""},"prompt":string,"options":string[],"answer":string,"explanation":string,"topic":string${pageImages.length ? `,"image_options"?:[{"page":number,"box":[x,y,w,h]}]` : ""}}]}
 Rules: multiple_choice needs exactly 4 options and answer must match one option exactly. true_false options are ["True","False"]. short_answer and problem have an empty options array and a concise model answer. Explanations: one short sentence.
 Difficulty standard: ${challenge}
 Quality rules:
@@ -915,19 +915,17 @@ Quality rules:
 - Vary the correct option position across the quiz. Do not make the answer obvious by repeating words from the prompt.
 - Scenarios and problems must contain enough information to solve from the supplied material; never invent a required fact.
 - Prefer these angles for this quiz: ${focus}.
-${pageImages.length ? `PICTURES: ${pageImages.length} page images (page 1..${pageImages.length}) from the student's material are attached. If they contain real diagrams, chemical structures, molecules, graphs, maps, anatomy or other figures, make about a third of the questions "image_choice": the prompt describes something (e.g. "Which structure is benzene?") and the student must pick the matching picture. For image_choice: options must be ["A","B","C","D"], answer is the correct letter, and add "image_options":[{"page":number,"box":[x,y,w,h]}] with 4 entries in the same order as the letters, where box is the tight bounding box of ONE figure as fractions 0-1 of the page width/height. Each box must contain exactly one distinct figure; never box text-only regions. If the pages have no usable figures, do not make image_choice questions.\n` : ""}${asked.length ? `Do not repeat these:\n${asked.map((p) => `- ${p}`).join("\n").slice(0, 1500)}` : ""}
+${pageImages.length ? `PICTURES (high priority): ${pageImages.length} page images (page 1..${pageImages.length}) from the student's material are attached to this message. Look carefully for diagrams, chemical structures, formulas drawn as pictures, molecules, graphs, maps, anatomy or other figures. If any exist, make about a third of the questions (at least 1) "image_choice": the prompt describes something (e.g. "Which structure is benzene?") and the student must pick the matching picture. For image_choice: options must be ["A","B","C","D"], answer is the correct letter, and "image_options" must have 4 entries in the same order as the letters, where box is the tight bounding box of ONE figure as fractions 0-1 of the page width/height. Figures may come from different pages. Each box must contain exactly one distinct figure; never box text-only paragraphs. Only skip image_choice if the pages truly have no figures.\n` : ""}${asked.length ? `Do not repeat these:\n${asked.map((p) => `- ${p}`).join("\n").slice(0, 1500)}` : ""}
 
 MATERIAL:
-${source.slice(0, 14000)}`,
-      },
-      ...(pageImages.length
-        ? [
-            {
-              role: "user" as const,
-              content: pageImages.map((url) => ({ type: "image_url" as const, image_url: { url } })),
-            },
-          ]
-        : []),
+${source.slice(0, 14000)}`;
+        return {
+          role: "user" as const,
+          content: pageImages.length
+            ? [{ type: "text" as const, text }, ...pageImages.map((url) => ({ type: "image_url" as const, image_url: { url } }))]
+            : text,
+        };
+      })(),
     ] as never,
     { temperature: 0.9, maxTokens: Math.min(1200 + input.count * 220, 16000) },
   );
