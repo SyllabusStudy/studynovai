@@ -66,7 +66,7 @@ export async function cropFigure(page: QuizPage, box: FigureRef["box"]): Promise
   const div = maxV > 100 ? 1000 : maxV > 1.5 ? 100 : 1;
   let [x, y, w, h] = box.map((n) => clamp(n / div)) as [number, number, number, number];
   // Corner pairs [x1,y1,x2,y2]: if treated as size it would overflow the page.
-  if (x + w > 1.02 || y + h > 1.02 || (w > x && h > y && w - x > 0 && h - y > 0 && x + w > 1)) {
+  if ((x + w > 1.02 || y + h > 1.02) && w > x && h > y) {
     [w, h] = [Math.abs(w - x), Math.abs(h - y)];
   }
   // Never produce thin slivers: expand around the center to at least 14% each way.
