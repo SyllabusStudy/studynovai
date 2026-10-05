@@ -69,15 +69,15 @@ export async function cropFigure(page: QuizPage, box: FigureRef["box"]): Promise
   if ((x + w > 1.02 || y + h > 1.02) && w > x && h > y) {
     [w, h] = [Math.abs(w - x), Math.abs(h - y)];
   }
-  // Never produce thin slivers: expand around the center to at least 14% each way.
-  const MIN = 0.14;
+  // Avoid thin slivers, but grow upward (not down) so captions below stay out.
+  const MIN = 0.1;
   if (w < MIN) { x = clamp(x - (MIN - w) / 2); w = MIN; }
-  if (h < MIN) { y = clamp(y - (MIN - h) / 2); h = MIN; }
-  const pad = 0.015;
+  if (h < MIN) { y = clamp(y - (MIN - h)); h = MIN; }
+  const pad = 0.008;
   const sx = Math.max(0, x - pad) * img.width;
   const sy = Math.max(0, y - pad) * img.height;
   const sw = Math.min(1 - Math.max(0, x - pad), w + pad * 2) * img.width;
-  const sh = Math.min(1 - Math.max(0, y - pad), h + pad * 2) * img.height;
+  const sh = Math.min(1 - Math.max(0, y - pad), h + pad) * img.height;
   const scale = Math.min(1, 420 / sw);
   const c = document.createElement("canvas");
   c.width = Math.round(sw * scale);
