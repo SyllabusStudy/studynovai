@@ -973,7 +973,7 @@ ${source.slice(0, 14000)}`;
     .map((q, i) => {
       let options = q.options ?? [];
       const id = q.id || `q${i + 1}`;
-      const asText = (): QuizQuestion | null => {
+      const asText = (): any => {
         // Fallback: keep as a normal question rather than discarding it.
         const textOpts = options.filter((o) => !/^[A-F]$/i.test(o));
         if (textOpts.length > 1) {
