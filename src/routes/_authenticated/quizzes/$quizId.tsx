@@ -131,7 +131,9 @@ function QuizRunner() {
                         )}
                       >
                         {q.option_images![oi] ? (
-                          <img src={q.option_images![oi]} alt={`Option ${opt}`} className="aspect-square w-full bg-background object-contain" />
+                          <div className="flex h-44 items-center justify-center bg-card p-2 sm:h-52">
+                            <img src={q.option_images![oi]} alt={`Option ${opt}`} className="max-h-full max-w-full rounded-md object-contain" />
+                          </div>
                         ) : null}
                         <span className="block px-2 py-1 text-xs font-semibold">{opt}</span>
                       </button>

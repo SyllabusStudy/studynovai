@@ -61,12 +61,23 @@ export async function collectQuizPages(docs: DocumentRow[]): Promise<QuizPage[]>
 export async function cropFigure(page: QuizPage, box: FigureRef["box"]): Promise<string> {
   const img = await loadImage(page.dataUrl);
   const clamp = (n: number) => Math.max(0, Math.min(1, n));
-  const [x, y, w, h] = box.map(clamp) as [number, number, number, number];
-  const pad = 0.01;
+  // Accept 0-1, 0-100 or 0-1000 scales.
+  const maxV = Math.max(...box);
+  const div = maxV > 100 ? 1000 : maxV > 1.5 ? 100 : 1;
+  let [x, y, w, h] = box.map((n) => clamp(n / div)) as [number, number, number, number];
+  // Corner pairs [x1,y1,x2,y2]: if treated as size it would overflow the page.
+  if (x + w > 1.02 || y + h > 1.02 || (w > x && h > y && w - x > 0 && h - y > 0 && x + w > 1)) {
+    [w, h] = [Math.abs(w - x), Math.abs(h - y)];
+  }
+  // Never produce thin slivers: expand around the center to at least 14% each way.
+  const MIN = 0.14;
+  if (w < MIN) { x = clamp(x - (MIN - w) / 2); w = MIN; }
+  if (h < MIN) { y = clamp(y - (MIN - h) / 2); h = MIN; }
+  const pad = 0.015;
   const sx = Math.max(0, x - pad) * img.width;
   const sy = Math.max(0, y - pad) * img.height;
-  const sw = Math.max(0.05, Math.min(1 - x + pad, w + pad * 2)) * img.width;
-  const sh = Math.max(0.05, Math.min(1 - y + pad, h + pad * 2)) * img.height;
+  const sw = Math.min(1 - Math.max(0, x - pad), w + pad * 2) * img.width;
+  const sh = Math.min(1 - Math.max(0, y - pad), h + pad * 2) * img.height;
   const scale = Math.min(1, 420 / sw);
   const c = document.createElement("canvas");
   c.width = Math.round(sw * scale);
