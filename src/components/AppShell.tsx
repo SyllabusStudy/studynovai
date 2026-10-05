@@ -138,7 +138,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="lg:pl-56">
         <TopBar onMenu={() => setMobileOpen(true)} onSearch={() => setSearchOpen(true)} />
         <StudyTabs />
-        <main className="magazine-canvas mx-auto w-full max-w-[90rem] px-4 pb-28 pt-7 sm:px-8 lg:pb-16 lg:pt-10 xl:px-12">{children}</main>
+        {pathname === "/dashboard" ? (
+          <main className="dash-main w-full min-w-0 flex-1 pb-24 lg:pb-0">{children}</main>
+        ) : (
+          <main className="magazine-canvas mx-auto w-full max-w-[90rem] px-4 pb-28 pt-7 sm:px-8 lg:pb-16 lg:pt-10 xl:px-12">{children}</main>
+        )}
       </div>
 
       <nav
