@@ -847,6 +847,7 @@ export async function runQuizGeneration(
     classId: string;
     documentId?: string | null | undefined;
     documentIds?: string[] | null | undefined;
+    lectureIds?: string[] | null | undefined;
     count: number;
     difficulty: string;
     types: string[];
@@ -857,7 +858,13 @@ export async function runQuizGeneration(
   const pageImages = (input.pageImages ?? []).slice(0, 6);
   const picked = (input.documentIds ?? []).filter(Boolean);
   if (!picked.length && input.documentId) picked.push(input.documentId);
-  const source = await sourceText(supabase, userId, input.classId, picked);
+  const lecturePicked = (input.lectureIds ?? []).filter(Boolean);
+  const allMode = !picked.length && !lecturePicked.length;
+  const docPart = allMode || picked.length ? await sourceText(supabase, userId, input.classId, picked) : "";
+  const lecturePart = allMode || lecturePicked.length ? await lectureText(supabase, userId, input.classId, lecturePicked) : "";
+  if (lecturePicked.length && !lecturePart.trim())
+    throw new Error("We couldn't process these lecture notes yet. Try again or upload the notes manually.");
+  const source = [docPart, lecturePart].filter((s) => s.trim()).join("\n\n");
   if (!source) throw new Error("Upload notes, a study guide or an assignment for this class first — syllabi are not used as study material.");
 
   // A short list of recent questions is enough to keep the next quiz fresh

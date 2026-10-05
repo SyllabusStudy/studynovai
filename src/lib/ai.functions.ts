@@ -104,6 +104,7 @@ export const generateQuiz = createServerFn({ method: "POST" })
         classId: z.string().uuid(),
         documentId: z.string().uuid().nullable().optional(),
         documentIds: z.array(z.string().uuid()).max(12).nullable().optional(),
+        lectureIds: z.array(z.string().uuid()).max(12).nullable().optional(),
 
         count: z.number().int().min(5).max(50),
         difficulty: z.string().default("medium"),
