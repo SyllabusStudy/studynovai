@@ -1,5 +1,5 @@
 import { BrandLogo } from "@/components/BrandLogo";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   BookOpen,
@@ -118,8 +118,19 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
+  // One navy glass look for the whole signed-in app (incl. dialogs and menus).
+  useEffect(() => {
+    const el = document.documentElement;
+    const hadDark = el.classList.contains("dark");
+    el.classList.add("app-theme", "dark");
+    return () => {
+      el.classList.remove("app-theme");
+      if (!hadDark) el.classList.remove("dark");
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="app-canvas min-h-screen">
       <SeasonalDecorations />
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
         <BrandBlock />
@@ -141,7 +152,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {pathname === "/dashboard" ? (
           <main className="dash-main w-full min-w-0 flex-1 pb-24 lg:pb-0">{children}</main>
         ) : (
-          <main className="magazine-canvas mx-auto w-full max-w-[90rem] px-4 pb-28 pt-7 sm:px-8 lg:pb-16 lg:pt-10 xl:px-12">{children}</main>
+          <main className="w-full min-w-0 px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-16 lg:pt-8">{children}</main>
         )}
       </div>
 
@@ -312,7 +323,7 @@ function TopBar({ onMenu, onSearch }: { onMenu: () => void; onSearch: () => void
   const initials = (profile?.name ?? user?.email ?? "S").slice(0, 1).toUpperCase();
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/90 px-4 backdrop-blur sm:px-8 xl:px-12">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/70 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
       <Button
         variant="ghost"
         size="icon"
@@ -326,7 +337,7 @@ function TopBar({ onMenu, onSearch }: { onMenu: () => void; onSearch: () => void
       <Button
         variant="outline"
         onClick={onSearch}
-        className="h-10 min-w-0 flex-1 max-w-md justify-start gap-2 rounded-lg bg-card px-3 text-sm font-normal text-muted-foreground shadow-none hover:border-primary/50 hover:bg-card hover:text-foreground"
+        className="h-10 min-w-0 flex-1 max-w-xl justify-start gap-2 rounded-lg bg-card px-3 text-sm font-normal text-muted-foreground shadow-none hover:border-primary/50 hover:bg-card hover:text-foreground"
       >
         <Search className="size-4 shrink-0" />
         <span className="truncate">Search classes, notes, deadlines…</span>

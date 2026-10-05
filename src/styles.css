@@ -338,6 +338,7 @@
 }
 
 @utility soft-panel {
+  backdrop-filter: blur(14px);
   background-color: var(--color-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-2xl);
@@ -364,6 +365,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
+  backdrop-filter: blur(14px);
 }
 
 @utility magazine-canvas {
@@ -423,3 +425,50 @@
     radial-gradient(70% 60% at 70% 30%, oklch(0.7 0.16 40 / 0.65), transparent 70%),
     linear-gradient(160deg, oklch(0.42 0.16 300), oklch(0.3 0.12 265) 60%, oklch(0.22 0.06 260));
 }
+
+/* App-wide navy glass theme (master: Home dashboard). Applied to <html> inside the signed-in app
+   so pages, dialogs, menus and toasts all share it. */
+html.app-theme {
+  color-scheme: dark;
+  --background: oklch(0.15 0.035 268);
+  --foreground: oklch(0.97 0.01 270);
+  --surface: oklch(0.21 0.045 270);
+  --surface-foreground: oklch(0.97 0.01 270);
+  --card: oklch(0.24 0.05 272 / 0.55);
+  --card-foreground: oklch(0.97 0.01 270);
+  --popover: oklch(0.22 0.05 272);
+  --popover-foreground: oklch(0.97 0.01 270);
+  --primary: oklch(0.62 0.2 275);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.3 0.05 272 / 0.7);
+  --secondary-foreground: oklch(0.97 0.01 270);
+  --muted: oklch(0.3 0.05 272 / 0.6);
+  --muted-foreground: oklch(0.76 0.03 270);
+  --accent: oklch(0.32 0.06 272 / 0.7);
+  --accent-foreground: oklch(0.97 0.01 270);
+  --border: oklch(0.6 0.08 275 / 0.22);
+  --input: oklch(0.6 0.08 275 / 0.3);
+  --ring: oklch(0.65 0.22 290);
+  --sidebar: oklch(0.17 0.04 270);
+  --sidebar-foreground: oklch(0.9 0.02 270);
+  --sidebar-primary: oklch(0.72 0.16 280);
+  --sidebar-primary-foreground: oklch(0.15 0.035 268);
+  --sidebar-accent: oklch(0.27 0.05 272);
+  --sidebar-accent-foreground: oklch(0.97 0.01 270);
+  --sidebar-border: oklch(0.6 0.08 275 / 0.18);
+  --sidebar-ring: oklch(0.65 0.22 290);
+  --shadow-card: inset 0 1px 0 oklch(1 0 0 / 0.07), 0 18px 40px -24px oklch(0.08 0.05 270 / 0.9);
+  --dash-violet: oklch(0.65 0.22 300);
+  --dash-blue: oklch(0.62 0.2 262);
+  --dash-cyan: oklch(0.78 0.13 210);
+  --dash-teal: oklch(0.72 0.13 175);
+  --dash-amber: oklch(0.78 0.15 70);
+}
+.app-canvas {
+  background:
+    radial-gradient(55% 40% at 90% 0%, oklch(0.42 0.16 300 / 0.35), transparent 70%),
+    radial-gradient(45% 35% at 5% 5%, oklch(0.38 0.14 262 / 0.3), transparent 70%),
+    var(--background);
+  min-height: 100dvh;
+}
+html.app-theme h1 { letter-spacing: -0.01em; }
