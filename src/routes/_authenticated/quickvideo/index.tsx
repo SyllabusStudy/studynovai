@@ -122,14 +122,22 @@ function QuickVideoPage() {
     setYtError(false);
     try {
       void recordStudyActivity("quickvideo");
-      const result = await run({
-        data: {
-          url: payload.url ?? null,
-          dataUrl: payload.dataUrl ?? null,
-          fileName: payload.fileName ?? null,
-          classId: classId === "none" ? null : classId,
-        },
-      });
+      const result = await Promise.race([
+        run({
+          data: {
+            url: payload.url ?? null,
+            dataUrl: payload.dataUrl ?? null,
+            fileName: payload.fileName ?? null,
+            classId: classId === "none" ? null : classId,
+          },
+        }),
+        new Promise<never>((_, rej) =>
+          setTimeout(
+            () => rej(new Error("That video took too long to read. Try copying the link a different way, or upload the file.")),
+            4 * 60_000,
+          ),
+        ),
+      ]);
       await qc.invalidateQueries({ queryKey: ["video_notes"] });
       toast.success("Notes are ready");
       setUrl("");
