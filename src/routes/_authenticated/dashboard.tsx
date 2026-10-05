@@ -185,8 +185,8 @@ function Dashboard() {
   ];
 
   return (
-    <div className="dash -mx-2 space-y-6 p-4 sm:mx-0 sm:p-6 lg:p-8">
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
+    <div className="dash w-full min-w-0 space-y-6 p-4 sm:p-6 lg:p-8">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_21rem] 2xl:grid-cols-[minmax(0,1fr)_24rem]">
         <div className="min-w-0 space-y-6">
           {/* Greeting */}
           <div className="flex flex-wrap items-start justify-between gap-4" data-tour="dashboard">
