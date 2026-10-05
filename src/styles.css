@@ -428,7 +428,7 @@
 
 /* App-wide navy glass theme (master: Home dashboard). Applied to <html> inside the signed-in app
    so pages, dialogs, menus and toasts all share it. */
-html.app-theme {
+html.app-theme.dark {
   color-scheme: dark;
   --background: oklch(0.15 0.035 268);
   --foreground: oklch(0.97 0.01 270);
