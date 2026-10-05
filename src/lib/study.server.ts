@@ -934,31 +934,82 @@ ${source.slice(0, 14000)}`;
 
 
 
-  const parsed = parseJsonBlock<{ title?: string; questions: QuizQuestion[] }>(raw);
-  const questions = (parsed.questions ?? [])
-    .filter((q) => q?.prompt && q?.answer)
+  const rawParsed = parseJsonBlock<unknown>(raw) as unknown;
+  const pr = (rawParsed && typeof rawParsed === "object" ? rawParsed : {}) as Record<string, unknown>;
+  const list: unknown[] = Array.isArray(rawParsed)
+    ? rawParsed
+    : ((["questions", "quiz", "items", "data"].map((k) => pr[k]).find((v) => Array.isArray(v)) as unknown[]) ??
+      (pr.quiz && typeof pr.quiz === "object" && Array.isArray((pr.quiz as Record<string, unknown>).questions)
+        ? ((pr.quiz as Record<string, unknown>).questions as unknown[])
+        : []));
+  const parsed = { title: typeof pr.title === "string" ? pr.title : undefined };
+  const str = (v: unknown) => (typeof v === "string" ? v.trim() : typeof v === "number" || typeof v === "boolean" ? String(v) : "");
+  const LETTERS = ["A", "B", "C", "D", "E", "F"];
+  const resolveIdx = (ans: string, candidates: string[][]) => {
+    const a = ans.trim().replace(/^\(?([A-Fa-f])[).:]?\s*$/, "$1");
+    const li = LETTERS.indexOf(a.toUpperCase());
+    if (li >= 0 && a.length === 1) return li;
+    const low = ans.trim().toLowerCase();
+    for (const c of candidates) {
+      const i = c.findIndex((x) => x.trim().toLowerCase() === low);
+      if (i >= 0) return i;
+    }
+    const m = ans.trim().match(/^([A-Fa-f])[).:\s]/);
+    if (m) return LETTERS.indexOf(m[1]!.toUpperCase());
+    return -1;
+  };
+  const questions = list
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const r = item as Record<string, unknown>;
+      const prompt = str(r.prompt) || str(r.question) || str(r.text) || str(r.stem);
+      const answer = str(r.answer) || str(r.correct_answer) || str(r.correctAnswer) || str(r.solution);
+      if (!prompt || !answer) return null;
+      const opts = Array.isArray(r.options) ? (r.options as unknown[]).map(str).filter(Boolean) : Array.isArray(r.choices) ? (r.choices as unknown[]).map(str).filter(Boolean) : undefined;
+      return { ...(r as unknown as QuizQuestion), prompt, answer, options: opts, explanation: str(r.explanation) || undefined, type: str(r.type) || (opts && opts.length > 1 ? "multiple_choice" : "short_answer") } as QuizQuestion;
+    })
+    .filter((q): q is QuizQuestion => q !== null)
     .slice(0, input.count)
     .map((q, i) => {
       let options = q.options ?? [];
+      const id = q.id || `q${i + 1}`;
+      const asText = (): QuizQuestion | null => {
+        // Fallback: keep as a normal question rather than discarding it.
+        const textOpts = options.filter((o) => !/^[A-F]$/i.test(o));
+        if (textOpts.length > 1) {
+          const idx = resolveIdx(q.answer, [textOpts]);
+          const ans = idx >= 0 ? textOpts[idx]! : q.answer;
+          if (!textOpts.includes(ans)) textOpts[textOpts.length - 1] = ans;
+          return { ...q, id, type: "multiple_choice", options: textOpts, option_smiles: undefined, image_options: undefined, answer: ans };
+        }
+        if (/^[A-F]$/i.test(q.answer)) return null;
+        return { ...q, id, type: "short_answer", options: [], option_smiles: undefined, image_options: undefined };
+      };
       if (q.type === "structure_choice") {
         const sm = (q.option_smiles ?? []).filter((x) => typeof x === "string" && /^[A-Za-z0-9@+\-\[\]\(\)=#$\\/%.:]{1,200}$/.test(x.trim())).map((x) => x.trim());
-        if (sm.length !== 4 || new Set(sm).size !== 4) return null;
-        const letters = ["A", "B", "C", "D"];
-        const correctIdx = letters.indexOf((q.answer ?? "").trim().toUpperCase());
-        if (correctIdx < 0) return null;
-        return { ...q, id: q.id || `q${i + 1}`, options: letters, option_smiles: sm, image_options: undefined, answer: letters[correctIdx]! };
+        if (sm.length < 2 || new Set(sm).size !== sm.length) return asText();
+        const four = sm.slice(0, 4);
+        const letters = LETTERS.slice(0, four.length);
+        const correctIdx = resolveIdx(q.answer, [four, options]);
+        if (correctIdx < 0 || correctIdx >= four.length) return asText();
+        return { ...q, id, options: letters, option_smiles: four, image_options: undefined, answer: letters[correctIdx]! };
       }
       if (q.type === "image_choice") {
         const refs = (q.image_options ?? []).filter(
           (r) => r && Number.isInteger(r.page) && r.page >= 1 && r.page <= pageImages.length && Array.isArray(r.box) && r.box.length === 4,
         );
-        if (refs.length < 2) return null;
-        const letters = ["A", "B", "C", "D"].slice(0, refs.length);
-        const correctIdx = letters.indexOf((q.answer ?? "").trim().toUpperCase());
-        if (correctIdx < 0) return null;
-        return { ...q, id: q.id || `q${i + 1}`, options: letters, image_options: refs, answer: letters[correctIdx]! };
+        if (refs.length < 2) return asText();
+        const letters = LETTERS.slice(0, Math.min(refs.length, 4));
+        const correctIdx = resolveIdx(q.answer, [options]);
+        if (correctIdx < 0 || correctIdx >= letters.length) return asText();
+        return { ...q, id, options: letters, image_options: refs.slice(0, letters.length), answer: letters[correctIdx]! };
       }
       if (q.type === "multiple_choice" && options.length > 1) {
+        if (!options.includes(q.answer)) {
+          const idx = resolveIdx(q.answer, [options]);
+          if (idx >= 0 && idx < options.length) q = { ...q, answer: options[idx]! };
+          else options = [...options.slice(0, Math.max(options.length - 1, 1)), q.answer];
+        }
         options = [...options];
         for (let j = options.length - 1; j > 0; j--) {
           const k = Math.floor(Math.random() * (j + 1));
@@ -967,7 +1018,7 @@ ${source.slice(0, 14000)}`;
           options[k] = tmp;
         }
       }
-      return { ...q, id: q.id || `q${i + 1}`, options };
+      return { ...q, id, options };
     })
     .filter((q) => q !== null);
   if (!questions.length) throw new Error("The AI could not build a quiz from this material.");
