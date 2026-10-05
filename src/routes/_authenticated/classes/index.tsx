@@ -26,6 +26,10 @@ import { useAuth } from "@/lib/auth";
 import { useAssignments, useClasses, useDocuments } from "@/lib/data";
 import { DocumentUploader } from "@/components/DocumentUploader";
 import { cn } from "@/lib/utils";
+import { MoreVertical } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ClassCoverBg, ChangeCoverMenu } from "@/components/ClassCover";
+import { coverFor, useCoverOverrides } from "@/lib/class-covers";
 
 export const Route = createFileRoute("/_authenticated/classes/")({
   head: () => ({
@@ -46,6 +50,7 @@ function ClassesPage() {
   const { data: classes = [], isLoading } = useClasses(user?.id);
   const { data: documents = [] } = useDocuments(user?.id);
   const { data: assignments = [] } = useAssignments(user?.id);
+  const overrides = useCoverOverrides();
   const qc = useQueryClient();
   const building = documents.filter(
     (d) =>
