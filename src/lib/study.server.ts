@@ -1188,6 +1188,21 @@ ${contextText}`,
 
 /* ------------------------------------------------------------------ helpers */
 
+/** Lecture-note text (summary, key concepts, transcript). Empty notes are skipped so they never count as material. */
+async function lectureText(supabase: DB, userId: string, classId: string, ids: string[]): Promise<string> {
+  let q = supabase.from("lecture_notes").select("title,summary,key_concepts,transcript").eq("user_id", userId).eq("class_id", classId);
+  if (ids.length) q = q.in("id", ids);
+  const { data } = await q.order("created_at", { ascending: false }).limit(8);
+  const rows = (data ?? []).filter((r) => `${r.summary ?? ""}${r.transcript ?? ""}`.trim().length > 40);
+  const per = Math.max(1500, Math.floor(10000 / Math.max(1, rows.length)));
+  return rows
+    .map((r) => {
+      const concepts = Array.isArray(r.key_concepts) ? (r.key_concepts as unknown[]).map(String).join("; ") : "";
+      return `### Lecture: ${r.title}\n${r.summary ?? ""}\n${concepts ? `Key concepts: ${concepts}\n` : ""}${(r.transcript ?? "").slice(0, per)}`;
+    })
+    .join("\n\n");
+}
+
 async function sourceText(
   supabase: DB,
   userId: string,
