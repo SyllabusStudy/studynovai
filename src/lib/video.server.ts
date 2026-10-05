@@ -65,6 +65,7 @@ async function youtubePlayer(videoId: string): Promise<PlayerInfo> {
     try {
       const res = await fetch(`https://www.youtube.com/youtubei/v1/player?key=${INNERTUBE_KEY}`, {
         method: "POST",
+        signal: AbortSignal.timeout(8000),
         headers: { "Content-Type": "application/json", "User-Agent": c.ua },
         body: JSON.stringify({ context: { client: c.client }, videoId }),
       });
@@ -145,9 +146,16 @@ function parseXmlCaptions(body: string): string {
   return out.join("\n").trim();
 }
 
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, rej) => setTimeout(() => rej(new Error("timed out")), ms)),
+  ]);
+}
+
 async function fetchCaption(url: string): Promise<string | null> {
   try {
-    const res = await fetch(url, { headers: { "User-Agent": ANDROID_UA } });
+    const res = await fetch(url, { headers: { "User-Agent": ANDROID_UA }, signal: AbortSignal.timeout(6000) });
     const body = await res.text();
     if (!body.trim()) return null;
     const text = body.trimStart().startsWith("{") ? parseJson3(body) : parseXmlCaptions(body);
@@ -173,7 +181,9 @@ async function youtubeTranscript(
     ...tracks.filter((t) => !t.languageCode?.startsWith("en")),
   ];
 
+  const deadline = Date.now() + 25_000;
   for (const track of ordered) {
+    if (Date.now() > deadline) break;
     if (!track.baseUrl) continue;
     const base = track.baseUrl.replace(/&fmt=\w+/, "");
     const foreign = !track.languageCode?.startsWith("en");
@@ -192,6 +202,7 @@ async function youtubeTranscript(
   // Last resort: YouTube's public timedtext endpoint (works for some videos
   // whose player response hides the track list).
   for (const lang of ["en", "en-US", "en-GB"]) {
+    if (Date.now() > deadline) break;
     for (const extra of ["", "&kind=asr"]) {
       const transcript = await fetchCaption(
         `https://www.youtube.com/api/timedtext?v=${videoId}&lang=${lang}${extra}&fmt=json3`,
@@ -263,7 +274,7 @@ async function noteFromMedia(
 /** Reads a non-YouTube video page's own title/description (Vimeo, Loom, etc.). */
 async function pageMetadata(url: string): Promise<{ title: string | null; description: string | null }> {
   try {
-    const res = await fetch(url, { headers: { "User-Agent": WEB_UA } });
+    const res = await fetch(url, { headers: { "User-Agent": WEB_UA }, signal: AbortSignal.timeout(8000) });
     const type = res.headers.get("content-type") ?? "";
     if (!res.ok || !type.includes("html")) return { title: null, description: null };
     const html = (await res.text()).slice(0, 400_000);
@@ -362,7 +373,7 @@ export async function runVideoImport(
       // No captions: let the model watch the link itself, then fall back to the
       // video's own title/description so the student still gets usable notes.
       try {
-        notes = await noteFromMedia({ kind: "url", value: url }, title, contextText);
+        notes = await withTimeout(noteFromMedia({ kind: "url", value: url }, title, contextText), 120_000);
       } catch {
         if (description && description.length > 60) {
           notes = await noteFromDescription(title || "Untitled video", description, contextText);
@@ -387,7 +398,7 @@ export async function runVideoImport(
     if (ytId) thumbnail = `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg`;
     if (!title || /^video notes$/i.test(title)) {
       try {
-        const r = await fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(url)}`);
+        const r = await fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(5000) });
         if (r.ok) {
           const j = (await r.json()) as { title?: string; thumbnail_url?: string };
           if (j.title) title = j.title;

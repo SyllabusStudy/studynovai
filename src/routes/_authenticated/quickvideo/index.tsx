@@ -122,14 +122,22 @@ function QuickVideoPage() {
     setYtError(false);
     try {
       void recordStudyActivity("quickvideo");
-      const result = await run({
-        data: {
-          url: payload.url ?? null,
-          dataUrl: payload.dataUrl ?? null,
-          fileName: payload.fileName ?? null,
-          classId: classId === "none" ? null : classId,
-        },
-      });
+      const result = await Promise.race([
+        run({
+          data: {
+            url: payload.url ?? null,
+            dataUrl: payload.dataUrl ?? null,
+            fileName: payload.fileName ?? null,
+            classId: classId === "none" ? null : classId,
+          },
+        }),
+        new Promise<never>((_, rej) =>
+          setTimeout(
+            () => rej(new Error("That video took too long to read. Try copying the link a different way, or upload the file.")),
+            4 * 60_000,
+          ),
+        ),
+      ]);
       await qc.invalidateQueries({ queryKey: ["video_notes"] });
       toast.success("Notes are ready");
       setUrl("");
@@ -138,7 +146,7 @@ function QuickVideoPage() {
       const msg = e instanceof Error ? e.message : "QuickVideo could not read that video";
       if (redirectForKey(msg)) return;
       const isYt = !!payload.url && /youtu\.?be/i.test(payload.url);
-      if (isYt && /youtube would not play|not a bot|sign in|no captions|could not be read from the link|copy the link/i.test(msg)) {
+      if (isYt && /youtube would not play|took too long|not a bot|sign in|no captions|could not be read from the link|copy the link/i.test(msg)) {
         setYtError(true);
         setHelpOpen(true);
       } else toast.error(msg);
