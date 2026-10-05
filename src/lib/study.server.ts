@@ -829,7 +829,7 @@ ${source.slice(0, 20000)}`,
 
 export type QuizQuestion = {
   id: string;
-  type: "multiple_choice" | "true_false" | "short_answer" | "problem" | "image_choice";
+  type: "multiple_choice" | "true_false" | "short_answer" | "problem" | "image_choice" | "structure_choice";
   prompt: string;
   options?: string[];
   image_options?: { page: number; box: [number, number, number, number] }[];
