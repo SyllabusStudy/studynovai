@@ -139,8 +139,11 @@ function Dashboard() {
   async function toggle(a: AssignmentRow) {
     const done = a.status !== "completed";
     const { error } = await supabase.from("assignments").update({ status: done ? "completed" : "not_started" }).eq("id", a.id);
-    if (error) return toast.error(error.message);
-    if (done) record("assignment_completed" as never);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    if (done) record("assignment_done");
     await qc.invalidateQueries({ queryKey: ["assignments"] });
   }
 
