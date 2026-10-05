@@ -929,7 +929,7 @@ ${source.slice(0, 14000)}`;
         };
       })(),
     ] as never,
-    { temperature: 0.9, maxTokens: Math.min(1200 + input.count * 220, 16000) },
+    { temperature: 0.9, maxTokens: Math.min(3000 + input.count * 450, 20000) },
   );
 
 
