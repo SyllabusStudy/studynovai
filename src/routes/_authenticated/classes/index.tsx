@@ -26,6 +26,10 @@ import { useAuth } from "@/lib/auth";
 import { useAssignments, useClasses, useDocuments } from "@/lib/data";
 import { DocumentUploader } from "@/components/DocumentUploader";
 import { cn } from "@/lib/utils";
+import { MoreVertical } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ClassCoverBg, ChangeCoverMenu } from "@/components/ClassCover";
+import { coverFor, useCoverOverrides } from "@/lib/class-covers";
 
 export const Route = createFileRoute("/_authenticated/classes/")({
   head: () => ({
@@ -46,6 +50,7 @@ function ClassesPage() {
   const { data: classes = [], isLoading } = useClasses(user?.id);
   const { data: documents = [] } = useDocuments(user?.id);
   const { data: assignments = [] } = useAssignments(user?.id);
+  const overrides = useCoverOverrides();
   const qc = useQueryClient();
   const building = documents.filter(
     (d) =>
@@ -100,28 +105,53 @@ function ClassesPage() {
               <span className="truncate text-xs text-muted-foreground">{d.file_name}</span>
             </div>
           ))}
-          {classes.map((c) => (
-            <div key={c.id} className="surface-card relative p-5 transition-colors hover:border-primary/40">
-              <div className="absolute right-2 top-2">
-                <DeleteClassButton classId={c.id} className_={c.class_name} />
+          {classes.map((c) => {
+            const list = assignments.filter((a) => a.class_id === c.id);
+            const open = list.filter((a) => a.status !== "completed").length;
+            const pct = list.length ? Math.round(((list.length - open) / list.length) * 100) : 0;
+            return (
+            <div key={c.id} className="group relative min-h-56 overflow-hidden rounded-2xl border border-border transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg">
+              <ClassCoverBg src={coverFor(c, overrides)} />
+              <div className="absolute right-2 top-2 z-10 flex items-center gap-1">
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="rounded-md bg-background/50 p-1.5 backdrop-blur hover:bg-background/80" aria-label="Class options">
+                    <MoreVertical className="size-4" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild><Link to="/classes/$classId" params={{ classId: c.id }}>Open class</Link></DropdownMenuItem>
+                    <ChangeCoverMenu classId={c.id} />
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <div className="rounded-md bg-background/50 backdrop-blur"><DeleteClassButton classId={c.id} className_={c.class_name} /></div>
               </div>
-              <Link to="/classes/$classId" params={{ classId: c.id }} className="block">
-                <div className="flex items-center gap-2">
+              <Link to="/classes/$classId" params={{ classId: c.id }} className="relative flex h-full min-h-56 flex-col p-5">
+                <div className="flex items-center gap-2 self-start rounded-md bg-background/60 px-2 py-1 backdrop-blur">
                   <ClassDot color={c.color} />
-                  <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  <span className="text-xs font-bold uppercase tracking-wide">
                     {c.course_code || "Course"}
                   </span>
                 </div>
-                <h2 className="mt-2 text-base font-bold tracking-tight">{c.class_name}</h2>
-                <p className="mt-1 text-sm text-muted-foreground">{c.professor || "No instructor yet"}</p>
-                <div className="mt-4 flex gap-4 text-sm">
-                  <span><strong>{assignments.filter((a) => a.class_id === c.id && a.status !== "completed").length}</strong> <span className="text-muted-foreground">open tasks</span></span>
-                  <span><strong>{documents.filter((d) => d.class_id === c.id).length}</strong> <span className="text-muted-foreground">documents</span></span>
+                <div className="mt-auto pt-6">
+                  <h2 className="font-display text-lg font-bold leading-snug tracking-tight">{c.class_name}</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">{c.professor || "No instructor yet"}</p>
+                  <div className="mt-3 flex gap-4 text-sm">
+                    <span><strong>{open}</strong> <span className="text-muted-foreground">open tasks</span></span>
+                    <span><strong>{documents.filter((d) => d.class_id === c.id).length}</strong> <span className="text-muted-foreground">documents</span></span>
+                  </div>
+                  {list.length > 0 && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-background/60">
+                        <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="text-xs font-semibold">{pct}%</span>
+                    </div>
+                  )}
+                  <span className="mt-3 inline-flex text-sm font-semibold text-primary">Open Class →</span>
                 </div>
-                <span className="mt-4 inline-flex text-sm font-semibold text-primary">Open Class →</span>
               </Link>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

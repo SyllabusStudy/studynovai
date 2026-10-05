@@ -51,6 +51,8 @@ import { cn } from "@/lib/utils";
 import { useActiveClass } from "@/lib/active-class";
 import { useRecordActivity, useStreak } from "@/lib/activity";
 import { useNow } from "@/lib/dates";
+import { ClassCoverBg, ChangeCoverMenu } from "@/components/ClassCover";
+import { coverFor, useCoverOverrides } from "@/lib/class-covers";
 
 type CoachPlan = {
   summary?: string;
@@ -80,6 +82,7 @@ function Dashboard() {
   const { data: profile } = useProfile(user?.id);
   const { data: classes = [] } = useClasses(user?.id);
   const { data: assignments = [] } = useAssignments(user?.id);
+  const overrides = useCoverOverrides();
   const { data: events = [] } = useEvents(user?.id);
   const { data: quizzes = [] } = useQuizzes(user?.id);
   const [plan, setPlan] = useState<CoachPlan | null>(null);
@@ -260,12 +263,10 @@ function Dashboard() {
                   return (
                     <div
                       key={c.id}
-                      className="relative flex min-h-40 w-56 shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-border p-4 sm:w-auto"
-                      style={{
-                        background: `radial-gradient(80% 70% at 80% 10%, color-mix(in oklab, ${col} 70%, transparent), transparent 70%), linear-gradient(160deg, color-mix(in oklab, ${col} 45%, var(--background)), var(--background))`,
-                      } as CSSProperties}
+                      className="group relative flex min-h-40 w-56 shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-border p-4 transition-all hover:-translate-y-0.5 hover:border-primary/50 sm:w-auto"
                     >
-                      <div className="flex items-start justify-between">
+                      <ClassCoverBg src={coverFor(c, overrides)} />
+                      <div className="relative flex items-start justify-between">
                         <span className="rounded-md bg-background/60 px-2 py-0.5 text-xs font-bold backdrop-blur">{classLabel(c)}</span>
                         <DropdownMenu>
                           <DropdownMenuTrigger className="rounded-md p-1 hover:bg-background/40" aria-label="Class options">
@@ -275,10 +276,11 @@ function Dashboard() {
                             <DropdownMenuItem asChild><Link to="/classes/$classId" params={{ classId: c.id }}>Open class</Link></DropdownMenuItem>
                             <DropdownMenuItem onClick={() => { void setActiveClassId(c.id); void navigate({ to: "/quizzes" }); }}>Make a quiz</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => { void setActiveClassId(c.id); void navigate({ to: "/flashcards" }); }}>Make flashcards</DropdownMenuItem>
+                            <ChangeCoverMenu classId={c.id} />
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
-                      <Link to="/classes/$classId" params={{ classId: c.id }} className="mt-auto block">
+                      <Link to="/classes/$classId" params={{ classId: c.id }} className="relative mt-auto block">
                         <p className="line-clamp-2 font-display text-lg font-bold leading-snug">{c.class_name}</p>
                         <p className="mt-1 text-xs text-muted-foreground">{list.length} assignment{list.length === 1 ? "" : "s"}</p>
                         <div className="mt-2 flex items-center gap-2">
