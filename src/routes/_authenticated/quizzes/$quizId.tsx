@@ -1,3 +1,4 @@
+import { ChemStructure } from "@/components/TutorVisuals";
 import { recordStudyActivity } from "@/lib/activity";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
@@ -34,6 +35,7 @@ type Question = {
   prompt: string;
   options?: string[];
   option_images?: string[];
+  option_smiles?: string[];
   answer: string;
   explanation?: string;
   topic?: string;
@@ -112,7 +114,7 @@ function QuizRunner() {
                 {i + 1}. {q.prompt}
               </p>
 
-              {q.option_images && q.option_images.length > 0 && q.options ? (
+              {((q.option_images && q.option_images.length > 0) || (q.option_smiles && q.option_smiles.length > 0)) && q.options ? (
                 <div className="mt-3 grid grid-cols-2 gap-3">
                   {q.options.map((opt, oi) => {
                     const selected = answers[q.id] === opt;
@@ -130,9 +132,13 @@ function QuizRunner() {
                           submitted && selected && !showRight && "border-destructive",
                         )}
                       >
-                        {q.option_images![oi] ? (
+                        {q.option_smiles?.[oi] ? (
+                          <div className="flex h-56 items-center justify-center bg-card p-1 [&_figure]:my-0 [&_figure]:border-0">
+                            <ChemStructure code={q.option_smiles[oi]!} />
+                          </div>
+                        ) : q.option_images?.[oi] ? (
                           <div className="flex h-44 items-center justify-center bg-card p-2 sm:h-52">
-                            <img src={q.option_images![oi]} alt={`Option ${opt}`} className="max-h-full max-w-full rounded-md object-contain" />
+                            <img src={q.option_images[oi]} alt={`Option ${opt}`} className="max-h-full max-w-full rounded-md object-contain" />
                           </div>
                         ) : null}
                         <span className="block px-2 py-1 text-xs font-semibold">{opt}</span>
