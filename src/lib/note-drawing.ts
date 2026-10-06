@@ -103,7 +103,11 @@ function rdp(pts: Pt[], eps: number): Pt[] {
 const pathLen = (pts: Pt[]) => pts.reduce((s, p, i) => i ? s + Math.hypot(p[0] - pts[i - 1]![0], p[1] - pts[i - 1]![1]) : 0, 0);
 
 /** Turns rough strokes into clean shapes. Returns null when nothing is recognizable. */
-export function recognize(strokes: StrokeEl[]): ShapeEl | null {
+export function recognize(strokes: StrokeEl[]): { shape: ShapeEl; used: string[] } | null {
+  const r = recognizeShape(strokes);
+  return r;
+}
+function recognizeShape(strokes: StrokeEl[]): { shape: ShapeEl; used: string[] } | null {
   if (!strokes.length) return null;
   const base = { id: uid(), kind: "shape" as const, color: strokes[0]!.color, size: strokes[0]!.size, opacity: strokes[0]!.opacity };
   const sorted = [...strokes].sort((a, b) => pathLen(b.points) - pathLen(a.points));
@@ -120,25 +124,25 @@ export function recognize(strokes: StrokeEl[]): ShapeEl | null {
     const heads = sorted.slice(1).filter(s => s.points.some(q => near(q, end)) || s.points.some(q => near(q, start)));
     if (heads.length) {
       const atStart = heads[0]!.points.some(q => near(q, start)) && !heads[0]!.points.some(q => near(q, end));
-      return { ...base, shape: "arrow", a: atStart ? end : start, b: atStart ? start : end };
+      return { shape: { ...base, shape: "arrow", a: atStart ? end : start, b: atStart ? start : end }, used: [sorted[0]!.id, ...heads.map(h => h.id)] };
     }
     if (simple.length >= 4) {
       // Shaft then a hooked head: shaft is the longest segment.
       let best = 0, bi = 0;
       for (let i = 1; i < simple.length; i++) { const l = Math.hypot(simple[i]![0] - simple[i - 1]![0], simple[i]![1] - simple[i - 1]![1]); if (l > best) { best = l; bi = i; } }
-      if (best > diag * 0.55) return { ...base, shape: "arrow", a: simple[bi - 1]!, b: simple[bi]! };
+      if (best > diag * 0.55) return { shape: { ...base, shape: "arrow", a: simple[bi - 1]!, b: simple[bi]! }, used: [sorted[0]!.id] };
     }
-    return { ...base, shape: "line", a: start, b: end };
+    return { shape: { ...base, shape: "line", a: start, b: end }, used: [sorted[0]!.id] };
   }
   const corners = rdp(main, diag * 0.09);
   const n = corners.length - 1; // closed path repeats start
   const a: Pt = [box.x + base.size / 2, box.y + base.size / 2], b: Pt = [box.x + box.w - base.size / 2, box.y + box.h - base.size / 2];
-  if (n === 3) return { ...base, shape: "triangle", a, b };
+  if (n === 3) return { shape: { ...base, shape: "triangle", a, b }, used: [sorted[0]!.id] };
   if (n === 4 || n === 5) {
     // Diamond if corners sit at edge midpoints rather than box corners.
     const cx = (a[0] + b[0]) / 2;
     const midHits = corners.filter(c => Math.abs(c[0] - cx) < box.w * 0.2).length;
-    return { ...base, shape: midHits >= 2 ? "diamond" : "rect", a, b };
+    return { shape: { ...base, shape: midHits >= 2 ? "diamond" : "rect", a, b }, used: [sorted[0]!.id] };
   }
-  return { ...base, shape: "ellipse", a, b };
+  return { shape: { ...base, shape: "ellipse", a, b }, used: [sorted[0]!.id] };
 }

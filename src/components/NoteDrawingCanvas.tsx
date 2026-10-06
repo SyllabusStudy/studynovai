@@ -178,9 +178,9 @@ export function NoteDrawingCanvas({ value, onChange }: { value: Drawing; onChang
   const cleanUp = () => {
     if (!selection) return;
     const strokes = selectedEls.filter((el): el is StrokeEl => el.kind === "stroke");
-    const shape = recognize(strokes);
-    if (!shape) return;
-    const ids = new Set(strokes.map(s => s.id));
+    const result = recognize(strokes);
+    if (!result) return;
+    const { shape } = result; const ids = new Set(result.used);
     setPageEls(selection.page, [...drawing.pages[selection.page]!.elements.filter(el => !ids.has(el.id)), shape]);
     setSelection({ page: selection.page, ids: [shape.id] });
   };
