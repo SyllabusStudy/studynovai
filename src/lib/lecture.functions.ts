@@ -10,6 +10,9 @@ type LectureAi = {
   flashcards?: Array<{ front: string; back: string }>;
 };
 
+/** Shown as the summary when the AI couldn't turn a finished transcript into notes. */
+export const NOTES_FALLBACK = "Notes couldn't be written this time, but your full transcript is saved below.";
+
 const PROMPT = `You are SyllabusStudy, an expert note-taker for college students. Listen carefully to this whole recording. First figure out what it is: a class lecture, someone reading a book/textbook aloud, a discussion, or just a talk/voice memo. Adapt your notes to that type.
 
 Return ONLY JSON:
@@ -139,13 +142,13 @@ export const createLectureNotes = createServerFn({ method: "POST" })
       try {
         ai = parseJsonBlock<LectureAi>(raw);
       } catch {
-        ai = { transcript: raw.replace(/[{}"[\]]/g, " ").trim(), summary: "Notes couldn't be fully written this time, but your transcript is saved below.", key_concepts: [], flashcards: [] };
+        ai = { transcript: raw.replace(/[{}"[\]]/g, " ").trim(), summary: NOTES_FALLBACK, key_concepts: [], flashcards: [] };
       }
       transcript = (ai.transcript ?? "").trim();
       if (!transcript) throw new Error("We couldn't hear the professor in that recording. Try keeping the phone closer to the front.");
     } else {
       if (!transcript) throw new Error("We couldn't hear any speech in that recording.");
-      const notesPrompt = `${PROMPT.replace('"clean full transcript (remove filler words like um/uh, keep ALL content, keep speaker changes as new paragraphs)"', '"" (leave empty — the transcript is already saved)')}\n\nThe recording has already been transcribed (main speaker only). Work from this TRANSCRIPT:\n\n${transcript.slice(0, 200_000)}`;
+      const notesPrompt = notesPromptFor(transcript);
       const ask = () =>
         withUserAiKey(context.supabase, context.userId, () =>
           callAI([{ role: "user", content: notesPrompt }], { maxTokens: 12000, temperature: 0.2 }),
