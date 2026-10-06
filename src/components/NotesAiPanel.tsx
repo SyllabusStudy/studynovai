@@ -222,6 +222,12 @@ export function NotesAiPanel({ open, onClose, editor, title, classId, onAddDiagr
       <p className="flex items-center gap-2 font-display font-bold"><Sparkles className="size-4 text-primary" />AI Assistant</p>
       <Button size="icon" variant="ghost" aria-label="Close AI Assistant" onClick={onClose}><X className="size-5" /></Button>
     </div>
+    <div className="grid grid-cols-2 gap-2 border-b border-border p-3" aria-label="Quick AI tools">
+      <Button size="sm" variant="secondary" disabled={working} onClick={() => { setTab("study"); void runStudy("quiz"); }}><HelpCircle className="size-4" />Quiz me</Button>
+      <Button size="sm" variant="outline" disabled={working} onClick={() => { setTab("study"); void runStudy("flashcards"); }}><BookOpen className="size-4" />Make flashcards</Button>
+      <Button size="sm" variant="outline" disabled={working} onClick={() => { setTab("study"); void runStudy("guide"); }}><Brain className="size-4" />Study guide</Button>
+      <Button size="sm" variant="outline" disabled={working} onClick={async () => { setTab("explain"); const r = await call("explain"); if (r) setExplain(r.text); }}><Lightbulb className="size-4" />Explain notes</Button>
+    </div>
     <div className="flex gap-1 overflow-x-auto border-b border-border px-2 py-2" role="tablist">
       {TABS.map(t => <Button key={t.id} role="tab" aria-selected={tab === t.id} size="sm" variant={tab === t.id ? "default" : "ghost"} onClick={() => setTab(t.id)} className="shrink-0"><t.Icon className="size-4" />{t.label}{t.id === "lecture" && rec !== "idle" && <span className="size-2 animate-pulse rounded-full bg-destructive" />}</Button>)}
     </div>
