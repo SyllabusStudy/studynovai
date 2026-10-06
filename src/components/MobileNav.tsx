@@ -3,7 +3,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   BookOpen, Bot, Brain, CalendarDays, Camera, ChartColumn, CheckSquare, Crown, FileQuestion,
   GraduationCap, Image as ImageIcon, LayoutDashboard, Mail, MessageSquare, Mic, Moon, MoreHorizontal,
-  Plus, ScanSearch, Settings, Sun, Upload, Video,
+  Plus, ScanSearch, Settings, Sun, Upload, Video, FileText,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -34,6 +34,7 @@ const SECTIONS: { label: string; items: Tool[] }[] = [
     label: "My work",
     items: [
       { to: "/assignments", label: "Assignments", desc: "Everything due", icon: CheckSquare, tint: "text-primary bg-primary/15" },
+      { to: "/notes", label: "Notes", desc: "My notes", icon: FileText, tint: "text-primary bg-primary/15" },
       { to: "/grades", label: "Grades", desc: "Track your scores", icon: ChartColumn, tint: "text-primary bg-primary/15" },
     ],
   },

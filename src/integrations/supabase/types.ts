@@ -663,6 +663,39 @@ export type Database = {
           },
         ]
       }
+      personal_notes: {
+        Row: {
+          content: Json
+          created_at: string
+          id: string
+          plain_text: string
+          revision: number
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          id?: string
+          plain_text?: string
+          revision?: number
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          id?: string
+          plain_text?: string
+          revision?: number
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pricing_settings: {
         Row: {
           compare_price_usd: number | null

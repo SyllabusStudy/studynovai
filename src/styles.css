@@ -475,3 +475,31 @@ html.app-theme h1 { letter-spacing: -0.01em; }
 
 @keyframes mascot-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
 @keyframes mascot-wave { 0%, 100% { transform: rotate(-20deg); } 50% { transform: rotate(-60deg); } }
+
+/* Private document workspace: all styling remains scoped to Notes. */
+.notes-document { min-height: 60dvh; padding: 2rem 3rem; outline: none; font-size: 16px; line-height: 1.75; overflow-wrap: anywhere; letter-spacing: 0; }
+.notes-document p { margin: 0.6rem 0; }
+.notes-document h1 { font: 700 32px/1.3 var(--font-display); margin: 1.2rem 0 0.6rem; letter-spacing: 0; }
+.notes-document h2 { font: 700 24px/1.4 var(--font-display); margin: 1rem 0 0.5rem; }
+.notes-document h3 { font: 700 20px/1.4 var(--font-display); margin: 0.8rem 0 0.4rem; }
+.notes-document ul, .notes-document ol { padding-left: 1.6rem; margin: 0.7rem 0; }
+.notes-document ul { list-style: disc; }
+.notes-document ol { list-style: decimal; }
+.notes-document ul[data-type="taskList"] { list-style: none; padding-left: 0; }
+.notes-document li[data-checked] { display: flex; align-items: flex-start; gap: 0.7rem; }
+.notes-document li[data-checked] > label { flex: 0 0 auto; padding-top: 0.55rem; }
+.notes-document li[data-checked] > div { flex: 1; min-width: 0; }
+.notes-document input[type="checkbox"] { accent-color: var(--primary); width: 1rem; height: 1rem; }
+.notes-document mark { color: var(--warning-foreground); border-radius: 2px; padding: 0 2px; }
+.notes-document a { color: var(--info); text-decoration: underline; }
+.notes-document hr { border: 0; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+.notes-document img { max-width: 100%; height: auto; border-radius: var(--radius-sm); }
+.notes-document .tableWrapper { overflow-x: auto; margin: 1rem 0; }
+.notes-document table { border-collapse: collapse; table-layout: fixed; width: 100%; min-width: 320px; }
+.notes-document td, .notes-document th { min-width: 70px; border: 1px solid var(--border); padding: 0.5rem; position: relative; vertical-align: top; }
+.notes-document th { background: var(--muted); font-weight: 700; }
+.notes-document .selectedCell { background: var(--accent); }
+.notes-document .ProseMirror-selectednode { outline: 2px solid var(--ring); }
+.notes-document blockquote { border-left: 3px solid var(--primary); padding-left: 1rem; }
+.notes-document pre { background: var(--muted); padding: 1rem; overflow-x: auto; border-radius: var(--radius-sm); }
+@media (max-width: 640px) { .notes-document { padding: 1.25rem; } }
