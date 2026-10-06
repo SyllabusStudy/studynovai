@@ -84,16 +84,21 @@ function LecturesPage() {
     try {
       setStage("Cleaning up the audio…");
       const pieces = await prepareLectureAudio(blob);
-      const parts: string[] = [];
-      for (let i = 0; i < pieces.length; i++) {
-        setStage(`Listening to the lecture… part ${i + 1} of ${pieces.length}`);
-        const r = await transcribe({ data: { ...pieces[i]!, index: i, total: pieces.length } });
-        if (r.text) parts.push(r.text);
+      const cls = classId === "none" ? null : classId;
+      let r: { id: string; cards: number };
+      if (pieces.length === 1) {
+        setStage("Listening and writing your study guide…");
+        r = await make({ data: { audio: pieces[0]!.audio, mimeType: pieces[0]!.mimeType, fileName: name, classId: cls } });
+      } else {
+        setStage(`Listening to all ${pieces.length} parts at once…`);
+        const texts = await Promise.all(
+          pieces.map((p, i) => transcribe({ data: { ...p, index: i, total: pieces.length } }).then((x) => x.text ?? "")),
+        );
+        const transcript = texts.filter(Boolean).join("\n\n").trim();
+        if (!transcript) throw new Error("We couldn't hear the professor in that recording. Try keeping the phone closer to the front.");
+        setStage("Writing your study guide…");
+        r = await make({ data: { transcript, fileName: name, classId: cls } });
       }
-      const transcript = parts.join("\n\n").trim();
-      if (!transcript) throw new Error("We couldn't hear the professor in that recording. Try keeping the phone closer to the front.");
-      setStage("Writing your study guide…");
-      const r = await make({ data: { transcript, fileName: name, classId: classId === "none" ? null : classId } });
       toast.success(`Study guide ready${r.cards ? ` with ${r.cards} flashcards` : ""}`);
       setOpen(r.id);
       await qc.invalidateQueries();
