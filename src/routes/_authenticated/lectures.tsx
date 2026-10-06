@@ -85,18 +85,33 @@ function LecturesPage() {
       setStage("Cleaning up the audio…");
       const pieces = await prepareLectureAudio(blob);
       const cls = classId === "none" ? null : classId;
-      // Small pieces, a few at a time, each retried on its own — one hiccup never sinks the whole lecture.
+      // Small pieces, each retried on its own — one hiccup never sinks the whole lecture.
       const total = pieces.length;
       const texts: (string | null)[] = new Array(total).fill(null);
       let done = 0;
       setStage(`Listening… 0 of ${total} part${total > 1 ? "s" : ""} done`);
       const fatal = (e: unknown) => e instanceof Error && /free limit|API key|did not allow/i.test(e.message);
+      // Upload each piece to storage first — big audio never travels inside the server call.
+      const batch = crypto.randomUUID();
+      const paths: (string | null)[] = new Array(total).fill(null);
+      const upload = async (i: number) => {
+        if (paths[i]) return paths[i]!;
+        const path = `${user!.id}/lecture-audio/${batch}-${i}.wav`;
+        const up = await supabase.storage.from("course-materials").upload(path, pieces[i]!.blob, {
+          contentType: pieces[i]!.mimeType,
+          upsert: true,
+        });
+        if (up.error) throw new Error(up.error.message);
+        paths[i] = path;
+        return path;
+      };
       const runPiece = async (i: number) => {
         let lastErr: unknown;
         // One quick retry only — the server already retries brief hiccups, so no long backoff loops.
         for (let attempt = 0; attempt < 2; attempt++) {
           try {
-            const x = await transcribe({ data: { ...pieces[i]!, index: i, total } });
+            const path = await upload(i);
+            const x = await transcribe({ data: { path, mimeType: pieces[i]!.mimeType, index: i, total } });
             texts[i] = x.text ?? "";
             done++;
             setStage(`Listening… ${done} of ${total} part${total > 1 ? "s" : ""} done`);
@@ -111,8 +126,16 @@ function LecturesPage() {
         setStage(`Listening… ${done} of ${total} part${total > 1 ? "s" : ""} done`);
         console.warn("Lecture piece failed", i, lastErr);
       };
-      // One part at a time: sending several big audio parts at once makes the connection drop.
-      for (let i = 0; i < total; i++) await runPiece(i);
+      // First part alone (checks the free limit), then two at a time to keep long lectures quick.
+      await runPiece(0);
+      let next = 1;
+      const worker = async () => {
+        while (next < total) await runPiece(next++);
+      };
+      await Promise.all([worker(), worker()]);
+      // Clean up any pieces that never finished.
+      const leftover = paths.filter((p, i): p is string => !!p && texts[i] === null);
+      if (leftover.length) void supabase.storage.from("course-materials").remove(leftover);
       const failedParts = texts.filter((t) => t === null).length;
       const transcript = texts.filter(Boolean).join("\n\n").trim();
       if (!transcript) {
