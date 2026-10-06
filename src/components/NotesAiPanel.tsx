@@ -229,7 +229,7 @@ export function NotesAiPanel({ open, onClose, editor, title, classId, onAddDiagr
       <label className="flex items-center gap-1.5"><input type="checkbox" className="accent-primary" checked={autoSpell} onChange={e => { setAutoSpell(e.target.checked); saveAuto(e.target.checked, autoFeedback); }} />Auto spelling fixes</label>
       <label className="flex items-center gap-1.5"><input type="checkbox" className="accent-primary" checked={autoFeedback} onChange={e => { setAutoFeedback(e.target.checked); saveAuto(autoSpell, e.target.checked); }} />Auto feedback on my notes</label>
     </div>
-    <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+    <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
       {tab === "ask" && autoFeedback && feedback && <div><p className="mb-1 text-xs font-semibold text-muted-foreground">Feedback on your notes (updates as you write)</p><AiOutput text={feedback} onInsert={() => insert(feedback, "AI feedback")} /></div>}
       {tab !== "writing" && openSpell > 0 && <button type="button" onClick={() => setTab("writing")} className="w-full rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-left text-sm"><SpellCheck className="mr-1 inline size-4" />{openSpell} spelling/grammar fix{openSpell > 1 ? "es" : ""} ready — review</button>}
       {(tab === "ask" || tab === "research") && <>
