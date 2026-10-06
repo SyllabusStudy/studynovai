@@ -668,6 +668,8 @@ export type Database = {
           class_id: string | null
           content: Json
           created_at: string
+          drawing: Json
+          editor_mode: string
           id: string
           plain_text: string
           revision: number
@@ -680,6 +682,8 @@ export type Database = {
           class_id?: string | null
           content?: Json
           created_at?: string
+          drawing?: Json
+          editor_mode?: string
           id?: string
           plain_text?: string
           revision?: number
@@ -692,6 +696,8 @@ export type Database = {
           class_id?: string | null
           content?: Json
           created_at?: string
+          drawing?: Json
+          editor_mode?: string
           id?: string
           plain_text?: string
           revision?: number
