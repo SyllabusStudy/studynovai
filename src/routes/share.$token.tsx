@@ -4,6 +4,10 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getSharedItem } from "@/lib/share.functions";
+import { useNavigate } from "@tanstack/react-router";
+import { BookOpen, FileText, HelpCircle, Save } from "lucide-react";
+import { useAuth } from "@/lib/auth";
+import { setPendingShare, type ShareAction } from "@/lib/pending-share";
 
 const SITE = "https://syllabusstudy.com";
 const SHARE_IMAGE = `${SITE}/share-card.jpg`;
@@ -13,7 +17,9 @@ export const Route = createFileRoute("/share/$token")({
   head: ({ params, loaderData }) => {
     const item = loaderData ?? null;
     const label = item
-      ? item.kind === "deck"
+      ? item.kind === "note"
+        ? "Shared notes"
+        : item.kind === "deck"
         ? `${item.count} Flashcard${item.count === 1 ? "" : "s"}`
         : `${item.count} Question${item.count === 1 ? "" : "s"}`
       : null;
@@ -64,13 +70,15 @@ function SharePage() {
           <>
             <div className="space-y-2">
               <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                {data.kind === "deck" ? "Flashcard deck" : "Practice quiz"} · {count}{" "}
-                {data.kind === "deck" ? (count === 1 ? "card" : "cards") : count === 1 ? "question" : "questions"}
+                {data.kind === "note" ? "Shared notes" : data.kind === "deck" ? "Flashcard deck" : "Practice quiz"} · {count}{" "}
+                {data.kind === "note" ? (count === 1 ? "word" : "words") : data.kind === "deck" ? (count === 1 ? "card" : "cards") : count === 1 ? "question" : "questions"}
               </span>
               <h1 className="font-display text-2xl font-bold">{data.title}</h1>
               <p className="text-sm text-muted-foreground">Start studying right away — no account needed.</p>
             </div>
-            {data.kind === "deck" ? (
+            {data.kind === "note" ? (
+              <NoteView token={Route.useParams().token} text={data.payload.plainText ?? ""} />
+            ) : data.kind === "deck" ? (
               <Cards cards={(data.payload.cards ?? []) as Card[]} />
             ) : (
               <Quiz questions={(data.payload.questions ?? []) as Q[]} />
@@ -90,6 +98,33 @@ function SharePage() {
   );
 }
 
+
+function NoteView({ token, text }: { token: string; text: string }) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  function go(action: ShareAction) {
+    setPendingShare(token, action);
+    // Signed-in students are picked up by the app right away; visitors sign up first.
+    if (user) void navigate({ to: "/dashboard" });
+    else void navigate({ to: "/auth", search: { mode: "signup" } as never });
+  }
+  const actions: Array<[ShareAction, string, typeof Save]> = [["quiz", "Make a quiz", HelpCircle], ["flashcards", "Make flashcards", BookOpen], ["save", "Save to my notes", Save]];
+  return (
+    <div className="space-y-4">
+      <div className="surface-card space-y-3 p-4">
+        <p className="text-sm font-semibold">Study these notes with AI</p>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {actions.map(([a, label, Icon]) => <Button key={a} variant={a === "save" ? "outline" : "default"} onClick={() => go(a)}><Icon className="size-4" />{label}</Button>)}
+        </div>
+        {!user && <p className="text-xs text-muted-foreground">Make a free account and these notes are copied into your own Notes.</p>}
+      </div>
+      <article className="surface-card p-5">
+        <FileText className="mb-3 size-5 text-primary" />
+        <div className="whitespace-pre-wrap break-words text-sm leading-relaxed">{text || "This note is empty."}</div>
+      </article>
+    </div>
+  );
+}
 
 function Cards({ cards }: { cards: Card[] }) {
   const [i, setI] = useState(0);
