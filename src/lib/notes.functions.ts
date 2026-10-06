@@ -42,6 +42,7 @@ export const savePersonalNote = createServerFn({ method: "POST" })
     contentJson: z.string().max(8_000_000), plainText: z.string().max(1_000_000),
     revision: z.number().int().nonnegative(),
     classId: z.string().uuid().nullable(), titleIsAuto: z.boolean(),
+    drawingJson: z.string().max(12_000_000).optional(), editorMode: z.enum(["type", "draw"]).optional(),
   }))
   .handler(async ({ context, data: input }) => {
     let content: Json;
@@ -51,12 +52,19 @@ export const savePersonalNote = createServerFn({ method: "POST" })
         throw new Error("Invalid document");
       }
     } catch { throw new Error("This document couldn't be saved. Please try again."); }
+    let drawing: Json | undefined;
+    if (input.drawingJson !== undefined) {
+      try {
+        drawing = JSON.parse(input.drawingJson) as Json;
+        if (!drawing || typeof drawing !== "object" || Array.isArray(drawing) || !Array.isArray(drawing['pages'])) throw new Error("bad");
+      } catch { throw new Error("Your drawing couldn't be saved. Please try again."); }
+    }
     if (input.classId) {
       const { data: ownedClass, error: classError } = await context.supabase.from("classes").select("id").eq("id", input.classId).eq("user_id", context.userId).maybeSingle();
       if (classError || !ownedClass) throw new Error("Choose one of your own classes before saving.");
     }
     const { data, error } = await context.supabase.from("personal_notes")
-      .update({ title: input.titleIsAuto ? titleFromNotes(input.plainText) : input.title.trim() || "Untitled note", class_id: input.classId, title_is_auto: input.titleIsAuto, content, plain_text: input.plainText, revision: input.revision + 1 })
+      .update({ title: input.titleIsAuto ? titleFromNotes(input.plainText) : input.title.trim() || "Untitled note", class_id: input.classId, title_is_auto: input.titleIsAuto, content, plain_text: input.plainText, revision: input.revision + 1, ...(drawing !== undefined ? { drawing } : {}), ...(input.editorMode ? { editor_mode: input.editorMode } : {}) })
       .eq("user_id", context.userId).eq("id", input.id).eq("revision", input.revision)
       .select("revision,updated_at").maybeSingle();
     if (error) throw new Error("Your changes couldn't be saved. Keep this note open and try again.");

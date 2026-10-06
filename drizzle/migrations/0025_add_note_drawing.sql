@@ -1,0 +1,2 @@
+ALTER TABLE public.personal_notes ADD COLUMN IF NOT EXISTS drawing jsonb NOT NULL DEFAULT '{"version":1,"pages":[]}'::jsonb;
+ALTER TABLE public.personal_notes ADD COLUMN IF NOT EXISTS editor_mode text NOT NULL DEFAULT 'type' CHECK (editor_mode IN ('type','draw'));
