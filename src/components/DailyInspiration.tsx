@@ -94,7 +94,7 @@ export function DailyInspiration() {
   }, []);
 
   const list = mode === "quote" ? QUOTES : VERSES;
-  const item = list[(dayIndex() + shift) % list.length];
+  const item = list[(dayIndex() + shift) % list.length] ?? list[0]!;
   const id = `${mode}:${item.ref}:${item.text.slice(0, 24)}`;
   const fav = favs.includes(id);
   const long = item.text.length > 70;
