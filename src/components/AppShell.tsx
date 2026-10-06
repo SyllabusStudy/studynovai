@@ -157,37 +157,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
       </div>
 
-      <nav
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur lg:hidden"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-      >
-        <ul className="grid grid-cols-5">
-          {MOBILE_NAV.map((item) => {
-            const active = pathname.startsWith(item.to);
-            return (
-              <li key={item.to}>
-                <Link
-                  to={item.to}
-                  className={cn(
-                    "flex flex-col items-center gap-0.5 py-2 text-[11px] font-semibold transition-colors",
-                    active ? "text-primary" : "text-muted-foreground",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "flex size-9 items-center justify-center rounded-xl transition-colors",
-                      active ? "bg-primary/12" : "bg-transparent",
-                    )}
-                  >
-                    <item.icon className="size-5" />
-                  </span>
-                  {item.label.replace("My ", "")}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
+      <MobileNav />
 
       <AskAiDock />
       <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
