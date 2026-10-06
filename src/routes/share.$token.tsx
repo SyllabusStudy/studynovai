@@ -25,7 +25,7 @@ const SHARE_IMAGE = `${SITE}/share-card.jpg`;
 export const Route = createFileRoute("/share/$token")({
   loader: ({ params }) => getSharedItem({ data: { token: params.token } }),
   head: ({ params, loaderData }) => {
-    const item = loaderData ?? null;
+    const item = (loaderData ?? null) as SharedItem | null;
     const label = item
       ? item.kind === "note"
         ? "Shared notes"
