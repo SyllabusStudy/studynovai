@@ -30,6 +30,19 @@ import { ShareButton } from "@/components/ShareButton";
 import type { Json } from "@/integrations/supabase/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+const EDITOR_TAB = Math.random().toString(36).slice(2);
+/** True only if another browser tab/window currently has this same note open. */
+function otherEditorOpen(id: string): Promise<boolean> {
+  if (typeof BroadcastChannel === "undefined") return Promise.resolve(false);
+  return new Promise(resolve => {
+    const ch = new BroadcastChannel("syllabusstudy-note-editors");
+    const done = (v: boolean) => { clearTimeout(t); ch.close(); resolve(v); };
+    const t = setTimeout(() => done(false), 400);
+    ch.onmessage = ev => { const d = ev.data as { type?: string; id?: string; from?: string }; if (d?.type === "pong" && d.id === id && d.from !== EDITOR_TAB) done(true); };
+    ch.postMessage({ type: "ping", id, from: EDITOR_TAB });
+  });
+}
+
 export function PersonalNoteEditor({ note, initialAction }: { note: Note; initialAction?: "quiz" | "flashcards" | undefined }) {
   const save = useServerFn(savePersonalNote);
   const qc = useQueryClient();
@@ -54,6 +67,13 @@ export function PersonalNoteEditor({ note, initialAction }: { note: Note; initia
   const [recLabel, setRecLabel] = useState<string | null>(null);
   const [incoming, setIncoming] = useState<{ key: number; elements: DrawEl[] } | null>(null);
 
+  useEffect(() => {
+    if (typeof BroadcastChannel === "undefined") return;
+    const ch = new BroadcastChannel("syllabusstudy-note-editors");
+    ch.onmessage = ev => { const d = ev.data as { type?: string; id?: string; from?: string }; if (d?.type === "ping" && d.id === note.id && d.from !== EDITOR_TAB) ch.postMessage({ type: "pong", id: note.id, from: EDITOR_TAB }); };
+    return () => ch.close();
+  }, [note.id]);
+
   const persist = useCallback(async () => {
     if (saving.current || persisted.current === version.current) return;
     saving.current = true;
@@ -61,7 +81,12 @@ export function PersonalNoteEditor({ note, initialAction }: { note: Note; initia
     try {
       while (persisted.current !== version.current) {
         const sentVersion = version.current;
-        const result = await save({ data: { id: note.id, ...draft.current, revision: revision.current } });
+        let result;
+        try { result = await save({ data: { id: note.id, ...draft.current, revision: revision.current } }); }
+        catch (e) {
+          if (!(e instanceof Error && /another window/.test(e.message)) || await otherEditorOpen(note.id)) throw e;
+          result = await save({ data: { id: note.id, ...draft.current, revision: revision.current, force: true } });
+        }
         revision.current = result.revision;
         persisted.current = sentVersion;
       }
