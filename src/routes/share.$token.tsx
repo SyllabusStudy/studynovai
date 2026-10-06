@@ -87,7 +87,7 @@ function SharePage() {
               <p className="text-sm text-muted-foreground">Start studying right away — no account needed.</p>
             </div>
             {data.kind === "note" ? (
-              <NoteView token={Route.useParams().token} text={data.payload.plainText ?? ""} />
+              <NoteView token={Route.useParams().token} text={data.payload.plainText ?? ""} content={data.payload.content as JSONContent | undefined} />
             ) : data.kind === "deck" ? (
               <Cards cards={(data.payload.cards ?? []) as Card[]} />
             ) : (
@@ -138,7 +138,11 @@ function NoteView({ token, text, content }: { token: string; text: string; conte
       </div>
       <article className="surface-card p-5">
         <FileText className="mb-3 size-5 text-primary" />
-        <div className="whitespace-pre-wrap break-words text-sm leading-relaxed">{text || "This note is empty."}</div>
+        {content ? (
+          <EditorContent editor={editor} className="note-editor text-sm leading-relaxed [&_.ProseMirror]:outline-none" />
+        ) : (
+          <div className="whitespace-pre-wrap break-words text-sm leading-relaxed">{text || "This note is empty."}</div>
+        )}
       </article>
     </div>
   );
