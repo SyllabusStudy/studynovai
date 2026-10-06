@@ -234,8 +234,14 @@ function Landing() {
             deadlines and grades, and study with an AI tutor built on your own course materials.
           </p>
           <nav className="flex flex-wrap items-center justify-center gap-4 font-semibold">
-            <Link to="/features/study-schedule-generator" className="hover:text-foreground">
+            <Link to="/calendar" className="hover:text-foreground">
               Free Study Schedule Generator
+            </Link>
+            <Link to="/quickvideo" className="hover:text-foreground">
+              AI Video Summarizer
+            </Link>
+            <Link to="/flashcards" className="hover:text-foreground">
+              AI Flashcard Maker
             </Link>
             <Link to="/privacy" className="hover:text-foreground">
               Privacy Policy
