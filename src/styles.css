@@ -479,6 +479,8 @@ html.app-theme h1 { letter-spacing: -0.01em; }
 /* Private document workspace: all styling remains scoped to Notes. */
 .notes-document { min-height: 60dvh; padding: 2rem 3rem; outline: none; font-size: 16px; line-height: 1.75; overflow-wrap: anywhere; letter-spacing: 0; }
 .notes-document p { margin: 0.6rem 0; }
+.notes-document { white-space: pre-wrap; tab-size: 4; }
+.notes-document-shared { min-height: 0; }
 .notes-document h1 { font: 700 32px/1.3 var(--font-display); margin: 1.2rem 0 0.6rem; letter-spacing: 0; }
 .notes-document h2 { font: 700 24px/1.4 var(--font-display); margin: 1rem 0 0.5rem; }
 .notes-document h3 { font: 700 20px/1.4 var(--font-display); margin: 0.8rem 0 0.4rem; }
