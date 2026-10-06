@@ -8,7 +8,7 @@ type Question = { id?: string; prompt: string; options?: string[]; answer: strin
 export type SharedItem = {
   kind: string;
   title: string;
-  payload: { cards?: Card[]; questions?: Question[]; plainText?: string };
+  payload: { cards?: Card[]; questions?: Question[]; plainText?: string; content?: unknown };
   count: number;
 };
 
