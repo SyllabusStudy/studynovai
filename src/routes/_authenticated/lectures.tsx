@@ -214,6 +214,32 @@ function LecturesPage() {
     await notes.refetch();
   }
 
+  /** Downloads a kept recording so the student can retry from it later. */
+  function saveAudio(blob: Blob, name: string) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${name}.${(blob.type.split("/")[1] || "webm").split(";")[0]}`;
+    a.click();
+  }
+
+  /** Rewrites the notes for a saved lecture note from its transcript — no re-recording needed. */
+  async function retryNotes(n: Note) {
+    if (!n.transcript?.trim()) {
+      toast.error("There's no transcript saved for this note yet.");
+      return;
+    }
+    setSaving(n.id);
+    try {
+      await retry({ data: { noteId: n.id } });
+      toast.success("Notes are ready");
+      await notes.refetch();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't write the notes this time");
+    } finally {
+      setSaving(null);
+    }
+  }
+
   type Note = {
     id: string;
     title: string;
@@ -369,12 +395,13 @@ ${keys.length ? `<h2>Key exam concepts</h2><ul>${keys.map((k) => `<li>${escapeHt
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/40 p-3 text-sm">
             <span className="text-muted-foreground">Your recording is saved here. Notes didn't finish.</span>
             <Button size="sm" onClick={() => void process(failed.blob, failed.name)}>Try again</Button>
-            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => {
-              const a = document.createElement("a");
-              a.href = URL.createObjectURL(failed.blob);
-              a.download = `${failed.name}.${(failed.blob.type.split("/")[1] || "webm").split(";")[0]}`;
-              a.click();
-            }}><Download className="size-4" /> Save audio</Button>
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => saveAudio(failed.blob, failed.name)}><Download className="size-4" /> Save audio</Button>
+          </div>
+        ) : notesRetry ? (
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/40 p-3 text-sm">
+            <span className="min-w-0 flex-1 text-muted-foreground">Your transcript is saved and the note is below, but the notes didn't finish this time. Try again now, or download the recording so you can try again later.</span>
+            <Button size="sm" onClick={() => void process(notesRetry.blob, notesRetry.name)}>Try again</Button>
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => saveAudio(notesRetry.blob, notesRetry.name)}><Download className="size-4" /> Save audio</Button>
           </div>
         ) : (
           <p className="text-xs text-muted-foreground">Keep the phone near the professor. Recordings up to 1 hour — it stops on its own at 60:00 and makes your notes. Ask your professor before recording.</p>
