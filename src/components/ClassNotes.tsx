@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { createPersonalNote, listPersonalNotes } from "@/lib/notes.functions";
 
-export function ClassNotes({ userId, classId }: { userId?: string; classId: string }) {
+export function ClassNotes({ userId, classId }: { userId: string | undefined; classId: string }) {
   const list = useServerFn(listPersonalNotes);
   const create = useServerFn(createPersonalNote);
   const qc = useQueryClient();
