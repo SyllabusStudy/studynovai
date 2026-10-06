@@ -441,7 +441,14 @@ ${keys.length ? `<h2>Key exam concepts</h2><ul>${keys.map((k) => `<li>${escapeHt
                     <ul className="mt-1 list-disc pl-5 text-sm">{(n.key_concepts as string[]).map((k) => <li key={k}>{k}</li>)}</ul>
                   </div>
                 ) : null}
-                <div><p className="text-sm font-semibold">Study notes</p><Markdown content={n.summary} /></div>
+                {NEEDS_NOTES.test(n.summary) ? (
+                  <AiRetryNotice
+                    message="The notes didn't finish writing this time, but your full transcript is saved below. Try again in a little while — it usually works on the next try."
+                    onRetry={() => void retryNotes(n as Note)}
+                  />
+                ) : (
+                  <div><p className="text-sm font-semibold">Study notes</p><Markdown content={n.summary} /></div>
+                )}
                 <details><summary className="cursor-pointer text-sm font-semibold">Full transcript</summary><p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{n.transcript}</p></details>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Save these notes to a class</Label>
@@ -471,6 +478,11 @@ ${keys.length ? `<h2>Key exam concepts</h2><ul>${keys.map((k) => `<li>${escapeHt
                   <Button size="sm" variant="outline" className="gap-1.5" disabled={saving === n.id} onClick={() => void useFor(n as Note, "/flashcards")}>
                     <FolderPlus className="size-4" /> Make flashcards
                   </Button>
+                  {NEEDS_NOTES.test(n.summary) ? (
+                    <Button size="sm" className="gap-1.5" disabled={saving === n.id} onClick={() => void retryNotes(n as Note)}>
+                      {saving === n.id ? <Loader2 className="size-4 animate-spin" /> : <RotateCw className="size-4" />} Try notes again
+                    </Button>
+                  ) : null}
                   <Button size="sm" variant="outline" className="gap-1.5" onClick={() => downloadPdf(n as Note)}>
                     <Download className="size-4" /> Save as PDF
                   </Button>
