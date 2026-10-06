@@ -5,8 +5,8 @@ export function bytesToB64(bytes: Uint8Array): string {
 }
 
 const RATE = 8000;
-/** Up to 15 minutes per piece (~14 MB) so most lectures go in one single request. */
-const CHUNK_SECONDS = 900;
+/** 3-minute pieces (~3.8 MB each) stay small enough that the AI never drops the connection. */
+const CHUNK_SECONDS = 180;
 
 export type AudioPiece = { audio: string; mimeType: string };
 
