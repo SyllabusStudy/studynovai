@@ -288,7 +288,7 @@ function SidebarFooter() {
   );
 }
 
-function TopBar({ onMenu, onSearch }: { onMenu: () => void; onSearch: () => void }) {
+function TopBar({ onSearch }: { onMenu?: () => void; onSearch: () => void }) {
   const { user } = useAuth();
   const { data: profile } = useProfile(user?.id);
   const navigate = useNavigate();
