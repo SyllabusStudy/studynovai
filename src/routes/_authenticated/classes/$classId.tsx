@@ -10,6 +10,7 @@ import { DocumentUploader } from "@/components/DocumentUploader";
 import { DocumentList } from "@/components/DocumentList";
 import { TutorChat } from "@/components/TutorChat";
 import { ClassTasks } from "@/components/ClassTasks";
+import { ClassNotes } from "@/components/ClassNotes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/lib/auth";
 import { MATERIAL_CATEGORIES } from "@/lib/constants";
@@ -109,6 +110,7 @@ function ClassDetail() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
           <TabsTrigger value="deadlines">Assignments</TabsTrigger>
+          <TabsTrigger value="notes"><FileText className="size-4" /> Notes</TabsTrigger>
           <TabsTrigger value="materials"><FileUp className="size-4" /> Upload Notes</TabsTrigger>
           <TabsTrigger value="grades">Grades</TabsTrigger>
           <TabsTrigger value="tutor">AI Tutor</TabsTrigger>
@@ -116,6 +118,10 @@ function ClassDetail() {
 
         <TabsContent value="tasks" className="mt-5">
           <ClassTasks userId={user?.id} classId={classId} />
+        </TabsContent>
+
+        <TabsContent value="notes" className="mt-5">
+          <ClassNotes userId={user?.id} classId={classId} />
         </TabsContent>
 
         <TabsContent value="materials" className="mt-5 space-y-8">
