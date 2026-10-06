@@ -183,6 +183,13 @@
       "when": 1791317127928,
       "tag": "0025_add_note_drawing",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1791322751054,
+      "tag": "0026_allow_note_shares",
+      "breakpoints": true
     }
   ]
 }
