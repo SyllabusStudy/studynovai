@@ -3,7 +3,7 @@ import { useState } from "react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { getSharedItem } from "@/lib/share.functions";
+import { getSharedItem, type SharedItem } from "@/lib/share.functions";
 import { useNavigate } from "@tanstack/react-router";
 import { BookOpen, FileText, HelpCircle, Save } from "lucide-react";
 import { EditorContent, useEditor, type JSONContent } from "@tiptap/react";
@@ -64,7 +64,7 @@ type Card = { front: string; back: string };
 type Q = { id?: string; prompt: string; options?: string[]; answer: string; explanation?: string };
 
 function SharePage() {
-  const data = Route.useLoaderData();
+  const data = Route.useLoaderData() as SharedItem | null;
   const count = data?.count ?? 0;
 
   return (
