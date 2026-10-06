@@ -18,10 +18,10 @@ const TABS: { id: Tab; label: string; Icon: typeof Sparkles }[] = [
   { id: "ask", label: "Ask AI", Icon: Sparkles }, { id: "research", label: "Research", Icon: Search }, { id: "explain", label: "Explain", Icon: Lightbulb },
   { id: "writing", label: "Writing", Icon: Wand2 }, { id: "study", label: "Study", Icon: Brain }, { id: "lecture", label: "Lecture", Icon: Mic },
 ];
-type Msg = { role: "user" | "assistant"; content: string; sources?: NotesAiResult["sources"] };
+type Msg = { role: "user" | "assistant"; content: string; sources?: NotesAiResult["sources"] | undefined };
 const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
-function AiOutput({ text, onInsert, sources }: { text: string; onInsert: () => void; sources?: NotesAiResult["sources"] }) {
+function AiOutput({ text, onInsert, sources }: { text: string; onInsert: () => void; sources?: NotesAiResult["sources"] | undefined }) {
   return <div className="rounded-lg border border-primary/25 bg-primary/5 p-3 text-sm">
     <div className="mb-1.5 flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-primary"><Sparkles className="size-3" />AI — not part of your notes</div>
     <div className="notes-ai-output prose-sm max-w-none [&_h1]:text-base [&_h2]:text-sm [&_h2]:font-bold [&_h3]:font-semibold [&_li]:ml-4 [&_li]:list-disc [&_p]:my-1.5" dangerouslySetInnerHTML={{ __html: markdownToHtml(text) }} />
@@ -61,7 +61,7 @@ export function NotesAiPanel({ open, onClose, editor, title, classId, onAddDiagr
     toast.success("Added to your note");
   };
 
-  const call = async (action: NotesAiAction, extra: { question?: string; history?: Msg[]; noteText?: string } = {}) => {
+  const call = async (action: NotesAiAction, extra: { question?: string; history?: Msg[]; noteText?: string | undefined } = {}) => {
     setBusy(action);
     try {
       const r = await ai({ data: { action, noteText: extra.noteText ?? noteText(), selection: selection(), question: extra.question ?? "", writeMode, history: (extra.history ?? []).slice(-10).map(m => ({ role: m.role, content: m.content.slice(0, 20000) })) } });
@@ -147,7 +147,7 @@ export function NotesAiPanel({ open, onClose, editor, title, classId, onAddDiagr
       setStage("Organizing your lecture with your notes…");
       const r = await makeLecture({ data: { transcript, fileName: title || "Lecture", classId, contextNotes: noteText().slice(0, 60000) } });
       const { data: row } = await supabase.from("lecture_notes").select("id,title,summary,key_concepts,transcript").eq("id", r.id).maybeSingle();
-      if (row) setLecture({ ...row, summary: row.summary ?? "", key_concepts: row.key_concepts ?? [], transcript: row.transcript ?? "", cards: r.cards });
+      if (row) setLecture({ ...row, summary: row.summary ?? "", key_concepts: Array.isArray(row.key_concepts) ? row.key_concepts.map(String) : [], transcript: row.transcript ?? "", cards: r.cards });
       toast.success(`Lecture processed${r.cards ? ` — ${r.cards} flashcards saved` : ""}`);
     } catch (e) { toast.error(e instanceof Error ? e.message : "The lecture couldn't be processed. Your recording is kept — try again."); }
     finally { setBusy(null); setStage(""); }
