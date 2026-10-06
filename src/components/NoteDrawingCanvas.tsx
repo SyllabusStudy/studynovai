@@ -145,7 +145,7 @@ export function NoteDrawingCanvas({ value, onChange, incoming }: { value: Drawin
         const last = g.el.points[g.el.points.length - 1]!;
         for (const q of pts.length ? pts : [p]) if (Math.hypot(q[0] - last[0], q[1] - last[1]) > 0.8) g.el.points.push(q);
         g.el = { ...g.el, points: [...g.el.points] };
-      } else {
+      } else if (g.el.kind === "shape") {
         let b = p;
         if (e.shiftKey && g.el.shape !== "line" && g.el.shape !== "arrow") { const d = Math.max(Math.abs(p[0] - g.el.a[0]), Math.abs(p[1] - g.el.a[1])); b = [g.el.a[0] + Math.sign(p[0] - g.el.a[0]) * d, g.el.a[1] + Math.sign(p[1] - g.el.a[1]) * d]; }
         g.el = { ...g.el, b };
