@@ -42,21 +42,51 @@ export async function transcribeRecording(userId: string, blob: Blob, transcribe
 /** Minimal Markdown → HTML for inserting AI output into the Tiptap note. */
 export function markdownToHtml(md: string): string {
   const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  const inline = (s: string) => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/(^|[^*])\*(?!\s)(.+?)\*/g, "$1<em>$2</em>").replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2">$1</a>');
+  const inline = (s: string) => esc(s)
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/__(.+?)__/g, "<strong>$1</strong>")
+    .replace(/(^|[^*])\*(?!\s)(.+?)\*/g, "$1<em>$2</em>").replace(/~~(.+?)~~/g, "<s>$1</s>")
+    .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2">$1</a>');
   const out: string[] = [];
-  let list: "ul" | "ol" | null = null;
-  const close = () => { if (list) { out.push(`</${list}>`); list = null; } };
-  for (const raw of md.split("\n")) {
-    const line = raw.trimEnd();
-    const h = line.match(/^(#{1,3})\s+(.*)$/);
-    const ul = line.match(/^\s*[-*•]\s+(.*)$/);
-    const ol = line.match(/^\s*\d+[.)]\s+(.*)$/);
-    if (h) { close(); out.push(`<h${h[1]!.length}>${inline(h[2]!)}</h${h[1]!.length}>`); }
-    else if (ul) { if (list !== "ul") { close(); out.push("<ul>"); list = "ul"; } out.push(`<li><p>${inline(ul[1]!)}</p></li>`); }
-    else if (ol) { if (list !== "ol") { close(); out.push("<ol>"); list = "ol"; } out.push(`<li><p>${inline(ol[1]!)}</p></li>`); }
-    else if (!line.trim()) close();
-    else { close(); out.push(`<p>${inline(line)}</p>`); }
+  const stack: { type: "ul" | "ol"; indent: number }[] = [];
+  const closeLists = (toIndent = -1) => { while (stack.length && stack[stack.length - 1]!.indent > toIndent) out.push(`</li></${stack.pop()!.type}>`); };
+  const lines = md.replace(/\r\n?/g, "\n").split("\n");
+  const cells = (l: string) => l.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map(c => c.trim());
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!.replace(/\t/g, "    ").trimEnd();
+    if (/^\s*```/.test(line)) {
+      closeLists(); const code: string[] = [];
+      while (++i < lines.length && !/^\s*```/.test(lines[i]!)) code.push(lines[i]!);
+      out.push(`<pre><code>${esc(code.join("\n"))}</code></pre>`); continue;
+    }
+    if (/^\s*\|.*\|\s*$/.test(line) && /^\s*\|?\s*:?-{2,}/.test(lines[i + 1] ?? "")) {
+      closeLists(); const head = cells(line); i++;
+      const rows: string[][] = [];
+      while (i + 1 < lines.length && /^\s*\|.*\|\s*$/.test(lines[i + 1]!)) rows.push(cells(lines[++i]!));
+      out.push(`<table><tbody><tr>${head.map(c => `<th><p>${inline(c)}</p></th>`).join("")}</tr>${rows.map(r => `<tr>${head.map((_, k) => `<td><p>${inline(r[k] ?? "")}</p></td>`).join("")}</tr>`).join("")}</tbody></table>`);
+      continue;
+    }
+    const h = line.match(/^\s*(#{1,6})\s+(.*)$/);
+    const li = line.match(/^(\s*)([-*+•]|\d+[.)])\s+(.*)$/);
+    if (h) { closeLists(); const n = Math.min(h[1]!.length, 3); out.push(`<h${n}>${inline(h[2]!)}</h${n}>`); }
+    else if (li) {
+      const indent = li[1]!.length, type = /\d/.test(li[2]!) ? "ol" : "ul";
+      const top = stack[stack.length - 1];
+      if (!top || indent > top.indent) { out.push(`<${type}><li>`); stack.push({ type, indent }); }
+      else {
+        closeLists(indent);
+        const cur = stack[stack.length - 1];
+        if (cur && cur.type === type) out.push("</li><li>");
+        else { if (cur) out.push(`</li></${stack.pop()!.type}>`); out.push(`<${type}><li>`); stack.push({ type, indent }); }
+      }
+      out.push(`<p>${inline(li[3]!)}</p>`);
+    }
+    else if (/^\s*([-*_])\s*\1\s*\1[\s\1]*$/.test(line)) { closeLists(); out.push("<hr>"); }
+    else if (/^\s*>/.test(line)) { closeLists(); out.push(`<blockquote><p>${inline(line.replace(/^\s*>\s?/, ""))}</p></blockquote>`); }
+    else if (!line.trim()) { if (!stack.length || !/^\s*([-*+•]|\d+[.)])\s+/.test(lines[i + 1] ?? "")) closeLists(); }
+    else if (stack.length && /^\s{2,}/.test(line)) out.push(`<p>${inline(line.trim())}</p>`);
+    else { closeLists(); out.push(`<p>${inline(line)}</p>`); }
   }
-  close();
+  closeLists();
   return out.join("");
 }
