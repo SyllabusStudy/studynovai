@@ -7,6 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+import { ListChevronsUpDown } from "lucide-react";
+import { DropdownMenuRadioGroup, DropdownMenuRadioItem } from "@/components/ui/dropdown-menu";
 
 function Tool({ label, icon: Icon, active, disabled, onClick }: { label: string; icon: LucideIcon; active?: boolean; disabled?: boolean; onClick: () => void }) {
   return <Tooltip><TooltipTrigger asChild><Button type="button" size="icon" variant={active ? "secondary" : "ghost"} className="size-9 shrink-0" aria-label={label} aria-pressed={active} disabled={disabled} onMouseDown={(e) => e.preventDefault()} onClick={onClick}><Icon className="size-4" /></Button></TooltipTrigger><TooltipContent>{label}</TooltipContent></Tooltip>;
@@ -53,6 +55,16 @@ export function NotesToolbar({ editor }: { editor: Editor }) {
     <div className="flex flex-wrap items-center gap-0.5 border-b border-border bg-card/80 p-2" role="toolbar" aria-label="Document formatting">
       <Tool label="Undo" icon={Undo2} disabled={!editor.can().undo()} onClick={() => editor.chain().focus().undo().run()} />
       <Tool label="Redo" icon={Redo2} disabled={!editor.can().redo()} onClick={() => editor.chain().focus().redo().run()} />
+      <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="sm" aria-label="Line spacing"><ListChevronsUpDown className="size-4" />{editor.getAttributes("paragraph").lineSpacing || editor.getAttributes("heading").lineSpacing || "1.5"}</Button></DropdownMenuTrigger><DropdownMenuContent>
+        <DropdownMenuRadioGroup value={editor.getAttributes("paragraph").lineSpacing || editor.getAttributes("heading").lineSpacing || "1.5"} onValueChange={value => editor.chain().focus().command(({ tr, dispatch }) => {
+          if (dispatch) tr.doc.descendants((node, pos) => {
+            if (node.type.name === "paragraph" || node.type.name === "heading") tr.setNodeMarkup(pos, undefined, { ...node.attrs, lineSpacing: value });
+          });
+          return true;
+        }).run()}>
+          {["1", "1.5", "2"].map(value => <DropdownMenuRadioItem key={value} value={value}>{value} line spacing</DropdownMenuRadioItem>)}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent></DropdownMenu>
       <span className="mx-1 h-5 border-l border-border" />
       <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="sm" className="min-w-24">{editor.isActive("heading", { level: 1 }) ? "Heading 1" : editor.isActive("heading", { level: 2 }) ? "Heading 2" : editor.isActive("heading", { level: 3 }) ? "Heading 3" : "Paragraph"}</Button></DropdownMenuTrigger><DropdownMenuContent>
         <DropdownMenuItem onSelect={() => editor.chain().focus().setParagraph().run()}>Paragraph</DropdownMenuItem>
