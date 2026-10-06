@@ -95,7 +95,9 @@ export const createLectureNotes = createServerFn({ method: "POST" })
   .inputValidator((d) =>
     z
       .object({
-        transcript: z.string().min(1).max(400_000),
+        transcript: z.string().max(400_000).nullable().optional(),
+        audio: z.string().min(100).max(20_000_000).nullable().optional(),
+        mimeType: z.string().max(120).nullable().optional(),
         fileName: z.string().max(200),
         classId: z.string().uuid().nullable(),
       })
@@ -106,21 +108,51 @@ export const createLectureNotes = createServerFn({ method: "POST" })
     const { callAI, parseJsonBlock } = await import("./ai.server");
     const { assertQuota, recordUsage } = await import("./billing.server");
     await assertQuota(context.supabase, context.userId, "lecture");
-    const transcript = data.transcript.trim();
-    const notesPrompt = `${PROMPT.replace('"clean full transcript (remove filler words like um/uh, keep ALL content, keep speaker changes as new paragraphs)"', '"" (leave empty — the transcript is already saved)')}\n\nThe recording has already been transcribed (main speaker only). Work from this TRANSCRIPT:\n\n${transcript.slice(0, 200_000)}`;
-    const ask = () =>
-      withUserAiKey(context.supabase, context.userId, () =>
-        callAI([{ role: "user", content: notesPrompt }], { maxTokens: 12000, temperature: 0.2 }),
-      );
+    let transcript = (data.transcript ?? "").trim();
+    const fatal = (e: unknown) => e instanceof Error && /free limit|API key|did not allow/i.test(e.message);
     let ai: LectureAi;
-    try {
-      ai = parseJsonBlock<LectureAi>(await ask());
-    } catch (e) {
-      if (e instanceof Error && /free limit|API key|did not allow/i.test(e.message)) throw e;
+
+    if (data.audio) {
+      // One single pass: listen, isolate the professor, transcribe and write notes together.
+      const mime = /^(audio|video)\/[\w.+-]+$/.test((data.mimeType ?? "").split(";")[0]!) ? data.mimeType!.split(";")[0]! : "audio/wav";
+      const prompt = `${PROMPT}\n\nMAIN SPEAKER ONLY: ${TRANSCRIBE_PROMPT.split("FOCUS ON THE MAIN SPEAKER ONLY:")[1]!.split("Return ONLY")[0]!.trim()}`;
+      const ask = () =>
+        withUserAiKey(context.supabase, context.userId, () =>
+          callAI([
+            {
+              role: "user",
+              content: [
+                { type: "text", text: prompt },
+                { type: "file", file: { filename: data.fileName || "lecture", file_data: `data:${mime};base64,${data.audio}` } },
+              ],
+            },
+          ], { maxTokens: 16000, temperature: 0.2 }),
+        );
+      let raw = "";
+      try {
+        raw = await ask();
+      } catch (e) {
+        if (fatal(e)) throw e;
+        raw = await ask();
+      }
+      try {
+        ai = parseJsonBlock<LectureAi>(raw);
+      } catch {
+        ai = { transcript: raw.replace(/[{}"[\]]/g, " ").trim(), summary: "Notes couldn't be fully written this time, but your transcript is saved below.", key_concepts: [], flashcards: [] };
+      }
+      transcript = (ai.transcript ?? "").trim();
+      if (!transcript) throw new Error("We couldn't hear the professor in that recording. Try keeping the phone closer to the front.");
+    } else {
+      if (!transcript) throw new Error("We couldn't hear any speech in that recording.");
+      const notesPrompt = `${PROMPT.replace('"clean full transcript (remove filler words like um/uh, keep ALL content, keep speaker changes as new paragraphs)"', '"" (leave empty — the transcript is already saved)')}\n\nThe recording has already been transcribed (main speaker only). Work from this TRANSCRIPT:\n\n${transcript.slice(0, 200_000)}`;
+      const ask = () =>
+        withUserAiKey(context.supabase, context.userId, () =>
+          callAI([{ role: "user", content: notesPrompt }], { maxTokens: 12000, temperature: 0.2 }),
+        );
       try {
         ai = parseJsonBlock<LectureAi>(await ask());
-      } catch {
-        // Never lose the lecture: save the transcript with simple notes.
+      } catch (e) {
+        if (fatal(e)) throw e;
         ai = { summary: "Notes couldn't be written this time, but your full transcript is saved below.", key_concepts: [], flashcards: [] };
       }
     }
