@@ -11,6 +11,7 @@ import { isGuestToolPath } from "@/lib/guest-gate";
 import { useAiKeyStatus } from "@/lib/ai-key-gate";
 import { isSchoolEmail } from "@/lib/school-email";
 import { supabase } from "@/integrations/supabase/client";
+import { ToolSeoIntro, hasToolSeoIntro } from "@/components/ToolSeoIntro";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
@@ -46,7 +47,9 @@ function AuthenticatedLayout() {
     if (user) void checkInDevice(user.id).catch(() => {});
   }, [user?.id]);
 
-  if (loading || (!user && !guestAllowed) || (!!user && keyLoading) || needsKey) {
+  // Guest tool pages render right away (also on the server) so visitors and search engines see content.
+  const showGuestPage = guestAllowed && !user;
+  if (!showGuestPage && (loading || !user || keyLoading || needsKey)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="size-6 animate-spin text-primary" />
@@ -64,6 +67,7 @@ function AuthenticatedLayout() {
         </>
       ) : null}
       <Outlet />
+      {!user && hasToolSeoIntro(pathname) ? <ToolSeoIntro pathname={pathname} /> : null}
     </AppShell>
   );
 }
