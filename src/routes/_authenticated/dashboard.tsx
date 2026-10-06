@@ -123,7 +123,14 @@ function Dashboard() {
       const d = daysUntil(a.due_date);
       return d !== null && d <= 0 && (a.status !== "completed" || d === 0);
     })
-    .slice(0, 6);
+    // Things due today come first, so old overdue work never pushes them off the card.
+    .sort((x, y) => (daysUntil(y.due_date) ?? 0) - (daysUntil(x.due_date) ?? 0))
+    .slice(0, 8);
+  // Synced calendar items (Canvas/Blackboard, syllabus dates) due today that aren't already listed.
+  const shownAssignments = new Set(todayList.map((a) => a.id));
+  const todayEvents = events
+    .filter((e) => daysUntil(e.event_date) === 0 && !(e.assignment_id && shownAssignments.has(e.assignment_id)))
+    .slice(0, 8);
   const upcoming = open
     .filter((a) => {
       const d = daysUntil(a.due_date);
@@ -310,7 +317,7 @@ function Dashboard() {
                 </div>
                 <Link to="/assignments" className="text-sm font-semibold text-primary">View All</Link>
               </div>
-              {todayList.length === 0 ? (
+              {todayList.length === 0 && todayEvents.length === 0 ? (
                 <p className="py-4 text-sm text-muted-foreground">Nothing due today. 🎉</p>
               ) : (
                 <ul className="space-y-1">
@@ -326,6 +333,17 @@ function Dashboard() {
                         <span className={cn("shrink-0 text-xs", overdue ? "text-destructive" : "text-muted-foreground")}>
                           {overdue ? "Overdue" : done ? "Done" : "Today"}
                         </span>
+                      </li>
+                    );
+                  })}
+                  {todayEvents.map((e) => {
+                    const cls = e.class_id ? classById.get(e.class_id) : undefined;
+                    return (
+                      <li key={e.id} className="flex items-center gap-3 rounded-lg px-1 py-2">
+                        <span className="size-4 shrink-0 rounded-full border-2 border-primary/60" aria-hidden />
+                        <span className="min-w-0 flex-1 truncate text-sm">{e.title}</span>
+                        {cls ? <ClassChip color={cls.color} label={classLabel(cls)} /> : null}
+                        <span className="shrink-0 text-xs capitalize text-muted-foreground">{e.event_time || (e.event_type === "other" ? "Today" : e.event_type)}</span>
                       </li>
                     );
                   })}
