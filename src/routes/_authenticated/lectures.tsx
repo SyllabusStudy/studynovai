@@ -90,7 +90,7 @@ function LecturesPage() {
       const texts: (string | null)[] = new Array(total).fill(null);
       let done = 0;
       setStage(`Listening… 0 of ${total} part${total > 1 ? "s" : ""} done`);
-      const fatal = (e: unknown) => e instanceof Error && /free limit|API key|did not allow|limit/i.test(e.message);
+      const fatal = (e: unknown) => e instanceof Error && /free limit|API key|did not allow/i.test(e.message);
       const runPiece = async (i: number) => {
         let lastErr: unknown;
         for (let attempt = 0; attempt < 3; attempt++) {
@@ -106,7 +106,6 @@ function LecturesPage() {
             await new Promise((res) => setTimeout(res, 3000 * (attempt + 1)));
           }
         }
-        texts[i] = "";
         done++;
         console.warn("Lecture piece failed", i, lastErr);
       };
@@ -118,7 +117,7 @@ function LecturesPage() {
           while (next < total) await runPiece(next++);
         }),
       );
-      const failedParts = texts.filter((t) => t === "").length;
+      const failedParts = texts.filter((t) => t === null).length;
       const transcript = texts.filter(Boolean).join("\n\n").trim();
       if (!transcript) {
         throw new Error(
