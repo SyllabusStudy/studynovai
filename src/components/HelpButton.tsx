@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { startTour } from "@/lib/tour";
+import { useDraggable } from "@/lib/use-draggable";
 
 const TOPICS: { q: string; steps: string[]; focus?: string }[] = [
   { q: "How do I add a class?", focus: "add-class", steps: ["Go to your dashboard.", "Click + Add Class.", "Type the class name and details, then save."] },
@@ -17,6 +18,7 @@ const TOPICS: { q: string; steps: string[]; focus?: string }[] = [
 
 export function HelpButton() {
   const [open, setOpen] = useState(false);
+  const drag = useDraggable("studynova:drag-stuck");
 
   // Hide the Ask AI button while Help is open so they never overlap.
   useEffect(() => {
@@ -34,9 +36,10 @@ export function HelpButton() {
     <>
       <Button
         data-tour="help"
-        onClick={() => setOpen(true)}
+        {...drag.dragProps}
+        onClick={() => { if (!drag.wasDrag()) setOpen(true); }}
         variant="secondary"
-        className="fixed bottom-21 right-[9.5rem] z-40 h-10 gap-1.5 rounded-full shadow-lg lg:bottom-7 lg:right-[10.5rem]"
+        className="fixed bottom-[8.5rem] right-4 z-40 h-10 gap-1.5 rounded-full shadow-lg lg:bottom-7 lg:right-[10.5rem]"
       >
         <Lightbulb className="size-4" /> Stuck?
       </Button>
