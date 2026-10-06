@@ -210,6 +210,12 @@ export function NotesAiPanel({ open, onClose, editor, title, classId, onAddDiagr
   useEffect(() => { if (open && tab === "ask") setFeedbackNew(false); }, [open, tab, feedback]);
   const thread = tab === "research" ? research : chat;
   const working = !!busy;
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  // Keep the newest message in view so you never have to scroll down to see your text.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [thread.length, busy, tab]);
 
   return <aside aria-label="AI Assistant" className={cn(open ? "flex" : "hidden", "fixed inset-0 z-50 flex-col bg-background lg:sticky lg:top-4 lg:z-auto lg:h-[calc(100dvh-2rem)] lg:w-[380px] lg:shrink-0 lg:rounded-xl lg:border lg:border-border lg:bg-card lg:shadow-card")}>
     <div className="flex items-center justify-between border-b border-border px-4 py-3">
