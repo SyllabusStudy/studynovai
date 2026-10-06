@@ -29,7 +29,7 @@ import { ShareButton } from "@/components/ShareButton";
 import type { Json } from "@/integrations/supabase/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-export function PersonalNoteEditor({ note, initialAction }: { note: Note; initialAction?: "quiz" | "flashcards" }) {
+export function PersonalNoteEditor({ note, initialAction }: { note: Note; initialAction?: "quiz" | "flashcards" | undefined }) {
   const save = useServerFn(savePersonalNote);
   const qc = useQueryClient();
   const [title, setTitle] = useState(note.title);

@@ -31,13 +31,13 @@ export function ShareButton({
         .single();
       if (error) throw error;
       const url = `${window.location.origin}/share/${data.token}`;
-      if (navigator.share) {
+      await navigator.clipboard?.writeText(url).catch(() => undefined);
+      if ("share" in navigator) {
         await navigator.share({ title: `${title} — SyllabusStudy`, url }).catch(() => undefined);
       } else {
         await navigator.clipboard.writeText(url);
         toast.success("Link copied — send it to your classmates");
       }
-      if (navigator.share) void navigator.clipboard?.writeText(url).catch(() => undefined);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't create a link");
     } finally {
