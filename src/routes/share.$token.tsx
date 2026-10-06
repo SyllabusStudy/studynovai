@@ -109,7 +109,7 @@ function SharePage() {
 }
 
 
-function NoteView({ token, text, content }: { token: string; text: string; content?: JSONContent }) {
+function NoteView({ token, text, content }: { token: string; text: string; content: JSONContent | undefined }) {
   const { user } = useAuth();
   // Read-only editor so shared notes look exactly like the owner's note:
   // bullets, checklists, underline, highlights, tables, images — but no editing.
