@@ -139,12 +139,12 @@ export function QuizSourcePicker({
                       const ok = (n.plain_text ?? "").trim().length > 20;
                       return (
                         <li key={n.id}>
-                          <label className={cn("flex items-center gap-2.5 rounded-lg p-2 text-sm hover:bg-muted/50", !ok && "opacity-60")}>
-                            <Checkbox disabled={!ok} checked={nts.includes(n.id)} onCheckedChange={() => toggle(nts, setNts, n.id)} />
+                          <button type="button" disabled={!ok} onClick={() => toggle(nts, setNts, n.id)} className={cn("flex w-full items-center gap-2.5 rounded-lg p-2 text-left text-sm hover:bg-muted/50", nts.includes(n.id) && "bg-primary/10", !ok && "opacity-60")}>
+                            <Checkbox tabIndex={-1} disabled={!ok} checked={nts.includes(n.id)} className="pointer-events-none" />
                             <NotebookPen className="size-4 shrink-0 text-muted-foreground" />
                             <span className="min-w-0 flex-1 truncate">{n.title}</span>
                             {!ok && <span className="text-xs text-muted-foreground">Too short</span>}
-                          </label>
+                          </button>
                         </li>
                       );
                     })}
@@ -161,12 +161,12 @@ export function QuizSourcePicker({
                       const ok = usableDoc(d);
                       return (
                         <li key={d.id}>
-                          <label className={cn("flex items-center gap-2.5 rounded-lg p-2 text-sm hover:bg-muted/50", !ok && "opacity-60")}>
-                            <Checkbox disabled={!ok} checked={docs.includes(d.id)} onCheckedChange={() => toggle(docs, setDocs, d.id)} />
+                          <button type="button" disabled={!ok} onClick={() => toggle(docs, setDocs, d.id)} className={cn("flex w-full items-center gap-2.5 rounded-lg p-2 text-left text-sm hover:bg-muted/50", docs.includes(d.id) && "bg-primary/10", !ok && "opacity-60")}>
+                            <Checkbox tabIndex={-1} disabled={!ok} checked={docs.includes(d.id)} className="pointer-events-none" />
                             <FileText className="size-4 shrink-0 text-muted-foreground" />
                             <span className="min-w-0 flex-1 truncate">{d.file_name}</span>
                             {!ok && <span className="text-xs text-muted-foreground">{d.processing_status === "failed" ? "Couldn't read" : "Still reading…"}</span>}
-                          </label>
+                          </button>
                         </li>
                       );
                     })}
@@ -186,12 +186,12 @@ export function QuizSourcePicker({
                       const ok = usableLec(l);
                       return (
                         <li key={l.id}>
-                          <label className={cn("flex items-center gap-2.5 rounded-lg p-2 text-sm hover:bg-muted/50", !ok && "opacity-60")}>
-                            <Checkbox disabled={!ok} checked={lecs.includes(l.id)} onCheckedChange={() => toggle(lecs, setLecs, l.id)} />
+                          <button type="button" disabled={!ok} onClick={() => toggle(lecs, setLecs, l.id)} className={cn("flex w-full items-center gap-2.5 rounded-lg p-2 text-left text-sm hover:bg-muted/50", lecs.includes(l.id) && "bg-primary/10", !ok && "opacity-60")}>
+                            <Checkbox tabIndex={-1} disabled={!ok} checked={lecs.includes(l.id)} className="pointer-events-none" />
                             <Mic className="size-4 shrink-0 text-muted-foreground" />
                             <span className="min-w-0 flex-1 truncate">{l.title}</span>
                             {!ok && <span className="text-xs text-muted-foreground">No usable notes</span>}
-                          </label>
+                          </button>
                         </li>
                       );
                     })}
@@ -204,7 +204,7 @@ export function QuizSourcePicker({
             </div>
           )}
 
-          <DialogFooter className="gap-2">
+          <DialogFooter className="sticky -bottom-6 z-10 -mx-6 -mb-6 gap-2 border-t border-border bg-background/95 px-6 py-3 backdrop-blur">
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             <Button
               disabled={mode === "pick" && docs.length + lecs.length + nts.length === 0}
