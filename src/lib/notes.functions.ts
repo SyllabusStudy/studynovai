@@ -28,9 +28,15 @@ export const getPersonalNote = createServerFn({ method: "GET" })
 
 export const createPersonalNote = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d: unknown) => z.object({ classId: z.string().uuid().nullable().optional() }).optional().parse(d))
+  .handler(async ({ context, data: input }) => {
+    let classId: string | null = null;
+    if (input?.classId) {
+      const { data: owned } = await context.supabase.from("classes").select("id").eq("id", input.classId).eq("user_id", context.userId).maybeSingle();
+      if (owned) classId = owned.id;
+    }
     const { data, error } = await context.supabase.from("personal_notes")
-      .insert({ user_id: context.userId, title_is_auto: true }).select("id").single();
+      .insert({ user_id: context.userId, title_is_auto: true, class_id: classId }).select("id").single();
     if (error) throw new Error("Your note couldn't be created. Please try again.");
     return data;
   });
