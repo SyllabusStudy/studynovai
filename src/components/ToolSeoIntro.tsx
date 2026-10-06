@@ -48,7 +48,7 @@ export function ToolSeoIntro({ pathname }: { pathname: string }) {
   };
   return (
     <section className="dash-glass mx-auto mt-10 max-w-4xl p-6">
-      <h1 className="font-display text-2xl font-extrabold tracking-tight">{c.h1}</h1>
+      <h2 className="font-display text-2xl font-extrabold tracking-tight">{c.h1}</h2>
       <p className="mt-3 text-sm text-muted-foreground">{c.intro}</p>
       <ul className="mt-4 list-disc space-y-1 pl-5 text-sm">
         {c.points.map((p) => <li key={p}>{p}</li>)}
