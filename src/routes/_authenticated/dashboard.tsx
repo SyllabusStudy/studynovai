@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { ClassChip } from "@/components/ClassBadge";
 import { Markdown } from "@/components/Markdown";
 import { InstallAppButton } from "@/components/InstallAppButton";
+import { DailyInspiration } from "@/components/DailyInspiration";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -430,12 +431,7 @@ function Dashboard() {
             )}
           </section>
 
-          <div className="dash-motivation relative flex min-h-44 items-center justify-center overflow-hidden rounded-[1.25rem] border border-border p-6">
-            <p className="-rotate-6 text-center font-display text-3xl font-bold italic leading-tight">
-              Progress<br />over<br />perfection.
-            </p>
-            <Heart className="absolute bottom-4 right-5 size-6" />
-          </div>
+          <DailyInspiration />
         </aside>
       </div>
     </div>
