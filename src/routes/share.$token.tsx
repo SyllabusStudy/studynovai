@@ -3,9 +3,19 @@ import { useState } from "react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { getSharedItem } from "@/lib/share.functions";
+import { getSharedItem, type SharedItem } from "@/lib/share.functions";
 import { useNavigate } from "@tanstack/react-router";
 import { BookOpen, FileText, HelpCircle, Save } from "lucide-react";
+import { EditorContent, useEditor, type JSONContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import { TextStyle, FontSize } from "@tiptap/extension-text-style";
+import Color from "@tiptap/extension-color";
+import Highlight from "@tiptap/extension-highlight";
+import TextAlign from "@tiptap/extension-text-align";
+import Image from "@tiptap/extension-image";
+import { TableKit } from "@tiptap/extension-table";
+import TaskList from "@tiptap/extension-task-list";
+import TaskItem from "@tiptap/extension-task-item";
 import { useAuth } from "@/lib/auth";
 import { setPendingShare, type ShareAction } from "@/lib/pending-share";
 
@@ -15,7 +25,7 @@ const SHARE_IMAGE = `${SITE}/share-card.jpg`;
 export const Route = createFileRoute("/share/$token")({
   loader: ({ params }) => getSharedItem({ data: { token: params.token } }),
   head: ({ params, loaderData }) => {
-    const item = loaderData ?? null;
+    const item = (loaderData ?? null) as SharedItem | null;
     const label = item
       ? item.kind === "note"
         ? "Shared notes"
@@ -54,7 +64,7 @@ type Card = { front: string; back: string };
 type Q = { id?: string; prompt: string; options?: string[]; answer: string; explanation?: string };
 
 function SharePage() {
-  const data = Route.useLoaderData();
+  const data = Route.useLoaderData() as SharedItem | null;
   const count = data?.count ?? 0;
 
   return (
@@ -77,7 +87,7 @@ function SharePage() {
               <p className="text-sm text-muted-foreground">Start studying right away — no account needed.</p>
             </div>
             {data.kind === "note" ? (
-              <NoteView token={Route.useParams().token} text={data.payload.plainText ?? ""} />
+              <NoteView token={Route.useParams().token} text={data.payload.plainText ?? ""} content={data.payload.content as JSONContent | undefined} />
             ) : data.kind === "deck" ? (
               <Cards cards={(data.payload.cards ?? []) as Card[]} />
             ) : (
@@ -99,8 +109,16 @@ function SharePage() {
 }
 
 
-function NoteView({ token, text }: { token: string; text: string }) {
+function NoteView({ token, text, content }: { token: string; text: string; content: JSONContent | undefined }) {
   const { user } = useAuth();
+  // Read-only editor so shared notes look exactly like the owner's note:
+  // bullets, checklists, underline, highlights, tables, images — but no editing.
+  const editor = useEditor({
+    extensions: [StarterKit.configure({ link: { openOnClick: true, protocols: ["http", "https", "mailto"] } }), TextStyle, FontSize, Color, Highlight.configure({ multicolor: true }), TextAlign.configure({ types: ["heading", "paragraph"] }), Image.configure({ allowBase64: true }), TableKit, TaskList, TaskItem.configure({ nested: true })],
+    ...(content ? { content } : {}),
+    editable: false,
+    immediatelyRender: false,
+  });
   const navigate = useNavigate();
   function go(action: ShareAction) {
     setPendingShare(token, action);
@@ -120,7 +138,11 @@ function NoteView({ token, text }: { token: string; text: string }) {
       </div>
       <article className="surface-card p-5">
         <FileText className="mb-3 size-5 text-primary" />
-        <div className="whitespace-pre-wrap break-words text-sm leading-relaxed">{text || "This note is empty."}</div>
+        {content ? (
+          <EditorContent editor={editor} className="note-editor text-sm leading-relaxed [&_.ProseMirror]:outline-none" />
+        ) : (
+          <div className="whitespace-pre-wrap break-words text-sm leading-relaxed">{text || "This note is empty."}</div>
+        )}
       </article>
     </div>
   );
