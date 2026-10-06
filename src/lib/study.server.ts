@@ -848,6 +848,7 @@ export async function runQuizGeneration(
     documentId?: string | null | undefined;
     documentIds?: string[] | null | undefined;
     lectureIds?: string[] | null | undefined;
+    noteIds?: string[] | null | undefined;
     count: number;
     difficulty: string;
     types: string[];
@@ -859,12 +860,16 @@ export async function runQuizGeneration(
   const picked = (input.documentIds ?? []).filter(Boolean);
   if (!picked.length && input.documentId) picked.push(input.documentId);
   const lecturePicked = (input.lectureIds ?? []).filter(Boolean);
-  const allMode = !picked.length && !lecturePicked.length;
+  const notePicked = (input.noteIds ?? []).filter(Boolean);
+  const allMode = !picked.length && !lecturePicked.length && !notePicked.length;
   const docPart = allMode || picked.length ? await sourceText(supabase, userId, input.classId, picked) : "";
   const lecturePart = allMode || lecturePicked.length ? await lectureText(supabase, userId, input.classId, lecturePicked) : "";
   if (lecturePicked.length && !lecturePart.trim())
     throw new Error("We couldn't process these lecture notes yet. Try again or upload the notes manually.");
-  const source = [docPart, lecturePart].filter((s) => s.trim()).join("\n\n");
+  const notePart = allMode || notePicked.length ? await personalNoteText(supabase, userId, input.classId, notePicked) : "";
+  if (notePicked.length && !notePart.trim())
+    throw new Error("Those notes are empty — write a bit more, then try again.");
+  const source = [docPart, lecturePart, notePart].filter((s) => s.trim()).join("\n\n");
   if (!source) throw new Error("Upload notes, a study guide or an assignment for this class first — syllabi are not used as study material.");
 
   // A short list of recent questions is enough to keep the next quiz fresh
@@ -1187,6 +1192,16 @@ ${contextText}`,
 }
 
 /* ------------------------------------------------------------------ helpers */
+
+/** The student's own Notes for this class, used as quiz material. */
+async function personalNoteText(supabase: DB, userId: string, classId: string, ids: string[]): Promise<string> {
+  let q = supabase.from("personal_notes").select("title,plain_text").eq("user_id", userId).eq("class_id", classId);
+  if (ids.length) q = q.in("id", ids);
+  const { data } = await q.order("updated_at", { ascending: false }).limit(12);
+  const rows = (data ?? []).filter((r) => (r.plain_text ?? "").trim().length > 20);
+  const per = Math.max(2000, Math.floor(20000 / Math.max(1, rows.length)));
+  return rows.map((r) => `### My notes: ${r.title}\n${(r.plain_text ?? "").slice(0, per)}`).join("\n\n");
+}
 
 /** Lecture-note text (summary, key concepts, transcript). Empty notes are skipped so they never count as material. */
 async function lectureText(supabase: DB, userId: string, classId: string, ids: string[]): Promise<string> {
