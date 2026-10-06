@@ -12,7 +12,7 @@ import TaskItem from "@tiptap/extension-task-item";
 import { Link, useBlocker } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Check, Loader2, RotateCw } from "lucide-react";
+import { ArrowLeft, BookOpen, Brain, Check, HelpCircle, Lightbulb, Loader2, RotateCw } from "lucide-react";
 import { savePersonalNote } from "@/lib/notes.functions";
 import { NotesToolbar } from "@/components/NotesToolbar";
 import { Button } from "@/components/ui/button";
@@ -46,6 +46,7 @@ export function PersonalNoteEditor({ note }: { note: Note }) {
   const [initialDrawing] = useState(() => normalizeDrawing(note.drawing));
   const [aiOpen, setAiOpen] = useState(false);
   const [aiBadge, setAiBadge] = useState(0);
+  const [quickAction, setQuickAction] = useState<{ id: number; action: "quiz" | "flashcards" | "guide" | "explain" } | null>(null);
   const [recLabel, setRecLabel] = useState<string | null>(null);
   const [incoming, setIncoming] = useState<{ key: number; elements: DrawEl[] } | null>(null);
 
@@ -121,6 +122,14 @@ export function PersonalNoteEditor({ note }: { note: Note }) {
     </div>
     <Button variant={aiOpen ? "secondary" : "outline"} size="sm" className="mb-3 ml-2" onClick={() => setAiOpen(o => !o)} aria-pressed={aiOpen}><Sparkles className="size-4 text-primary" />AI Assistant{aiBadge > 0 && <span className="ml-1 rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground">{aiBadge}</span>}</Button>
     {recLabel && <button type="button" onClick={() => setAiOpen(true)} className="mb-3 ml-2 inline-flex items-center gap-1.5 rounded-full border border-destructive/40 bg-destructive/10 px-3 py-1 text-xs font-medium text-destructive" role="status"><span className="size-2 animate-pulse rounded-full bg-destructive" />{recLabel}</button>}
+    <div className="mb-3 flex flex-wrap gap-2" aria-label="Quick AI tools">
+      {([
+        ["quiz", "Quiz me", HelpCircle],
+        ["flashcards", "Flashcards", BookOpen],
+        ["guide", "Study guide", Brain],
+        ["explain", "Explain notes", Lightbulb],
+      ] as const).map(([action, label, Icon]) => <Button key={action} size="sm" variant="outline" onClick={() => { setQuickAction({ id: Date.now(), action }); setAiOpen(true); }}><Icon className="size-4" />{label}</Button>)}
+    </div>
     <div className={mode === "draw" ? "rounded-xl border border-border bg-card shadow-card" : "hidden"}>
       <NoteDrawingCanvas value={initialDrawing} incoming={incoming} onChange={(d: Drawing) => { draft.current.drawingJson = JSON.stringify(d); changed(); }} />
     </div>
@@ -130,6 +139,6 @@ export function PersonalNoteEditor({ note }: { note: Note }) {
       <div className="border-t border-border px-5 py-2 text-right text-xs text-muted-foreground">{editor?.getText().trim().split(/\s+/).filter(Boolean).length ?? 0} words</div>
     </div>
   </div>
-  <NotesAiPanel open={aiOpen} onClose={() => setAiOpen(false)} editor={editor} title={title} classId={classId} onRecordingChange={setRecLabel} onBadge={setAiBadge} onAddDiagram={els => { setIncoming({ key: Date.now(), elements: els }); setMode("draw"); draft.current.editorMode = "draw"; }} />
+  <NotesAiPanel open={aiOpen} onClose={() => setAiOpen(false)} editor={editor} title={title} classId={classId} quickAction={quickAction} onRecordingChange={setRecLabel} onBadge={setAiBadge} onAddDiagram={els => { setIncoming({ key: Date.now(), elements: els }); setMode("draw"); draft.current.editorMode = "draw"; }} />
   </div>;
 }
