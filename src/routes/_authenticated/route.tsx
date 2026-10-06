@@ -11,6 +11,10 @@ import { isGuestToolPath } from "@/lib/guest-gate";
 import { useAiKeyStatus } from "@/lib/ai-key-gate";
 import { isSchoolEmail } from "@/lib/school-email";
 import { supabase } from "@/integrations/supabase/client";
+import { takePendingShare } from "@/lib/pending-share";
+import { importSharedNote } from "@/lib/notes.functions";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 import { ToolSeoIntro, hasToolSeoIntro } from "@/components/ToolSeoIntro";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -42,6 +46,20 @@ function AuthenticatedLayout() {
       });
     }
   }, [user?.email]);
+
+  // A shared note the visitor chose to keep before signing up: copy it in once AI is set up.
+  const importShared = useServerFn(importSharedNote);
+  useEffect(() => {
+    if (!user || keyStatus?.hasKey !== true) return;
+    const pending = takePendingShare();
+    if (!pending) return;
+    void importShared({ data: { token: pending.token } })
+      .then((n) => {
+        toast.success("Shared note added to your Notes");
+        navigate({ to: "/notes", search: { note: n.id, ai: pending.action === "save" ? undefined : pending.action } });
+      })
+      .catch((e: unknown) => toast.error(e instanceof Error ? e.message : "Couldn't add the shared note."));
+  }, [user?.id, keyStatus?.hasKey]);
 
   useEffect(() => {
     if (user) void checkInDevice(user.id).catch(() => {});
