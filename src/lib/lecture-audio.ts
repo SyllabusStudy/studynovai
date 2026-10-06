@@ -5,10 +5,10 @@ export function bytesToB64(bytes: Uint8Array): string {
 }
 
 const RATE = 8000;
-/** 3-minute pieces (~3.8 MB each) stay small enough that the AI never drops the connection. */
+/** 3-minute pieces (~2.9 MB each) are uploaded to storage, then the server sends each to the AI. */
 const CHUNK_SECONDS = 180;
 
-export type AudioPiece = { audio: string; mimeType: string };
+export type AudioPiece = { blob: Blob; mimeType: string };
 
 function wav(samples: Float32Array): Uint8Array {
   const buf = new ArrayBuffer(44 + samples.length * 2);
@@ -43,7 +43,7 @@ export async function prepareLectureAudio(blob: Blob): Promise<AudioPiece[]> {
   if (!decoded) {
     // Couldn't read it here — send the original if it's small enough.
     if (blob.size > 14 * 1024 * 1024) throw new Error("We couldn't read that file. Try an MP3, M4A or MP4 file.");
-    return [{ audio: bytesToB64(new Uint8Array(raw)), mimeType: (blob.type || "audio/mpeg").split(";")[0]! }];
+    return [{ blob, mimeType: (blob.type || "audio/mpeg").split(";")[0]! }];
   }
 
   const length = Math.ceil(decoded.duration * RATE);
@@ -72,7 +72,7 @@ export async function prepareLectureAudio(blob: Blob): Promise<AudioPiece[]> {
   for (let start = 0; start < data.length; start += step) {
     const part = data.subarray(start, Math.min(data.length, start + step));
     if (part.length < RATE) continue; // skip a sub-second tail
-    pieces.push({ audio: bytesToB64(wav(part)), mimeType: "audio/wav" });
+    pieces.push({ blob: new Blob([wav(part) as BlobPart], { type: "audio/wav" }), mimeType: "audio/wav" });
   }
   if (!pieces.length) throw new Error("That recording is too short to make notes from.");
   return pieces;

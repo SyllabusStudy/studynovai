@@ -48,24 +48,31 @@ export const transcribeLecturePiece = createServerFn({ method: "POST" })
   .inputValidator((d) =>
     z
       .object({
-        audio: z.string().min(100).max(20_000_000),
+        // The audio piece is uploaded to storage first; only its path travels here.
+        path: z.string().min(10).max(400),
         mimeType: z
           .string()
           .max(120)
           .transform((v) => (v || "").split(";")[0]!.trim().toLowerCase())
           .transform((v) => (/^(audio|video)\/[\w.+-]+$/.test(v) ? v : "audio/wav")),
-        index: z.number().int().min(0).max(100),
-        total: z.number().int().min(1).max(100),
+        index: z.number().int().min(0).max(200),
+        total: z.number().int().min(1).max(200),
       })
       .parse(d),
   )
   .handler(async ({ context, data }) => {
+    if (!data.path.startsWith(`${context.userId}/lecture-audio/`) || data.path.includes("..")) {
+      throw new Error("That recording piece couldn't be found.");
+    }
     const { withUserAiKey } = await import("./ai-key.server");
     const { callAI } = await import("./ai.server");
     if (data.index === 0) {
       const { assertQuota } = await import("./billing.server");
       await assertQuota(context.supabase, context.userId, "lecture");
     }
+    const file = await context.supabase.storage.from("course-materials").download(data.path);
+    if (file.error || !file.data) throw new Error("That recording piece couldn't be read. Tap Try again.");
+    const audio = Buffer.from(await file.data.arrayBuffer()).toString("base64");
     const run = () =>
       withUserAiKey(context.supabase, context.userId, () =>
         callAI([
@@ -73,13 +80,14 @@ export const transcribeLecturePiece = createServerFn({ method: "POST" })
             role: "user",
             content: [
               { type: "text", text: `${TRANSCRIBE_PROMPT}\n\n(This is part ${data.index + 1} of ${data.total}.)` },
-              { type: "file", file: { filename: `part-${data.index + 1}`, file_data: `data:${data.mimeType};base64,${data.audio}` } },
+              { type: "file", file: { filename: `part-${data.index + 1}`, file_data: `data:${data.mimeType};base64,${audio}` } },
             ],
           },
         ], { maxTokens: 8000, temperature: 0.1 }),
       );
-    // No extra retry layer here: the AI request already retries briefly, and the page retries once.
     const text = (await run()).trim();
+    // Done with this piece — remove it so recordings don't pile up in storage.
+    await context.supabase.storage.from("course-materials").remove([data.path]);
     return { text: /^\[no speech\]$/i.test(text) ? "" : text };
   });
 
