@@ -9,13 +9,14 @@ import {
 } from "@/lib/lecture-recorder";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, FileAudio, FolderPlus, Loader2, Mic, Square, Trash2 } from "lucide-react";
+import { Download, FileAudio, FolderPlus, Loader2, Mic, RotateCw, Square, Trash2 } from "lucide-react";
 import { useActiveClass } from "@/lib/active-class";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { createLectureNotes, transcribeLecturePiece } from "@/lib/lecture.functions";
+import { createLectureNotes, retryLectureNotes, transcribeLecturePiece } from "@/lib/lecture.functions";
 import { prepareLectureAudio } from "@/lib/lecture-audio";
 import { PageHeader } from "@/components/PageHeader";
+import { AiRetryNotice } from "@/components/AiRetryNotice";
 import { Markdown } from "@/components/Markdown";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -41,12 +42,16 @@ export const Route = createFileRoute("/_authenticated/lectures")({
 
 const MAX_BYTES = 500 * 1024 * 1024;
 
+/** Matches the fallback summary saved when note-writing failed but the transcript succeeded. */
+const NEEDS_NOTES = /Notes couldn'?t be (fully )?written/i;
+
 function LecturesPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data: classes = [] } = useClasses(user?.id);
   const make = useServerFn(createLectureNotes);
   const transcribe = useServerFn(transcribeLecturePiece);
+  const retry = useServerFn(retryLectureNotes);
   const [stage, setStage] = useState("");
   const [classId, setClassId] = useState("none");
   const { recording, seconds, pending } = useLectureRecorder();
@@ -58,6 +63,7 @@ function LecturesPage() {
   const [saving, setSaving] = useState<string | null>(null);
   const guest = useGuestGate("lectures");
   const [failed, setFailed] = useState<{ blob: Blob; name: string } | null>(null);
+  const [notesRetry, setNotesRetry] = useState<{ blob: Blob; name: string } | null>(null);
   const heard = useRef(new Map<Blob, (string | null)[]>());
 
 
@@ -155,12 +161,20 @@ function LecturesPage() {
       if (failedParts) toast.message(`${failedParts} part${failedParts > 1 ? "s" : ""} couldn't be heard — making notes from the rest.`);
       setStage(`Transcript ready (${total - failedParts} of ${total} parts). Writing your study guide…`);
       const r = await make({ data: { transcript, fileName: name, classId: cls } });
-      heard.current.delete(blob);
-      toast.success(`Study guide ready${r.cards ? ` with ${r.cards} flashcards` : ""}`);
+      if (r.notesReady === false) {
+        // The transcript made it, but writing the notes didn't — keep the recording around so it can be retried or saved.
+        setNotesRetry({ blob, name });
+        toast.message("Your transcript is saved, but the notes didn't finish this time. Try again, or download the recording for later.");
+      } else {
+        heard.current.delete(blob);
+        setNotesRetry(null);
+        toast.success(`Study guide ready${r.cards ? ` with ${r.cards} flashcards` : ""}`);
+      }
       setOpen(r.id);
       await qc.invalidateQueries();
     } catch (e) {
       setFailed({ blob, name });
+      setNotesRetry(null);
       if (!showLimitIfQuota(e instanceof Error ? e.message : null)) toast.error(e instanceof Error ? e.message : "Couldn't make notes from that recording");
     } finally {
       setBusy(false);
