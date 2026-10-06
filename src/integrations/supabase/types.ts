@@ -665,36 +665,50 @@ export type Database = {
       }
       personal_notes: {
         Row: {
+          class_id: string | null
           content: Json
           created_at: string
           id: string
           plain_text: string
           revision: number
           title: string
+          title_is_auto: boolean
           updated_at: string
           user_id: string
         }
         Insert: {
+          class_id?: string | null
           content?: Json
           created_at?: string
           id?: string
           plain_text?: string
           revision?: number
           title?: string
+          title_is_auto?: boolean
           updated_at?: string
           user_id: string
         }
         Update: {
+          class_id?: string | null
           content?: Json
           created_at?: string
           id?: string
           plain_text?: string
           revision?: number
           title?: string
+          title_is_auto?: boolean
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "personal_notes_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pricing_settings: {
         Row: {

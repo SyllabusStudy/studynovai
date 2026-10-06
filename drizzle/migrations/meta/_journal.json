@@ -169,6 +169,13 @@
       "when": 1791316009585,
       "tag": "0023_create_personal_notes",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791317000820,
+      "tag": "0024_personal_notes_class_and_auto_titles",
+      "breakpoints": true
     }
   ]
 }
