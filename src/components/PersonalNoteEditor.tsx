@@ -160,8 +160,8 @@ export function PersonalNoteEditor({ note, initialAction }: { note: Note; initia
     <div className={mode === "draw" ? "rounded-xl border border-border bg-card shadow-card" : "hidden"}>
       <NoteDrawingCanvas value={initialDrawing} incoming={incoming} onChange={(d: Drawing) => { draft.current.drawingJson = JSON.stringify(d); changed(); }} />
     </div>
-    <div className={mode === "type" ? "overflow-hidden rounded-xl border border-border bg-card shadow-card" : "hidden"}>
-      {editor && <NotesToolbar editor={editor} />}
+    <div className={mode === "type" ? "overflow-clip rounded-xl border border-border bg-card shadow-card" : "hidden"}>
+      {editor && <div className="sticky top-[calc(4rem+env(safe-area-inset-top))] z-20 bg-card shadow-card"><NotesToolbar editor={editor} /></div>}
       <EditorContent editor={editor} className="notes-editor min-h-[60dvh] overflow-x-auto bg-background/50" />
       <div className="border-t border-border px-5 py-2 text-right text-xs text-muted-foreground">{editor?.getText().trim().split(/\s+/).filter(Boolean).length ?? 0} words</div>
     </div>
