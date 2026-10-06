@@ -6,6 +6,16 @@ import { cn } from "@/lib/utils";
 import { getSharedItem } from "@/lib/share.functions";
 import { useNavigate } from "@tanstack/react-router";
 import { BookOpen, FileText, HelpCircle, Save } from "lucide-react";
+import { EditorContent, useEditor, type JSONContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import { TextStyle, FontSize } from "@tiptap/extension-text-style";
+import Color from "@tiptap/extension-color";
+import Highlight from "@tiptap/extension-highlight";
+import TextAlign from "@tiptap/extension-text-align";
+import Image from "@tiptap/extension-image";
+import { TableKit } from "@tiptap/extension-table";
+import TaskList from "@tiptap/extension-task-list";
+import TaskItem from "@tiptap/extension-task-item";
 import { useAuth } from "@/lib/auth";
 import { setPendingShare, type ShareAction } from "@/lib/pending-share";
 
@@ -99,8 +109,16 @@ function SharePage() {
 }
 
 
-function NoteView({ token, text }: { token: string; text: string }) {
+function NoteView({ token, text, content }: { token: string; text: string; content?: JSONContent }) {
   const { user } = useAuth();
+  // Read-only editor so shared notes look exactly like the owner's note:
+  // bullets, checklists, underline, highlights, tables, images — but no editing.
+  const editor = useEditor({
+    extensions: [StarterKit.configure({ link: { openOnClick: true, protocols: ["http", "https", "mailto"] } }), TextStyle, FontSize, Color, Highlight.configure({ multicolor: true }), TextAlign.configure({ types: ["heading", "paragraph"] }), Image.configure({ allowBase64: true }), TableKit, TaskList, TaskItem.configure({ nested: true, readOnly: true })],
+    content: content ?? undefined,
+    editable: false,
+    immediatelyRender: false,
+  });
   const navigate = useNavigate();
   function go(action: ShareAction) {
     setPendingShare(token, action);
