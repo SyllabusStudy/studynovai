@@ -78,15 +78,8 @@ export const transcribeLecturePiece = createServerFn({ method: "POST" })
           },
         ], { maxTokens: 8000, temperature: 0.1 }),
       );
-    let text: string;
-    try {
-      text = await run();
-    } catch (e) {
-      if (e instanceof Error && /free limit|API key|did not allow/i.test(e.message)) throw e;
-      await new Promise((r) => setTimeout(r, 2500));
-      text = await run();
-    }
-    text = text.trim();
+    // No extra retry layer here: the AI request already retries briefly, and the page retries once.
+    const text = (await run()).trim();
     return { text: /^\[no speech\]$/i.test(text) ? "" : text };
   });
 

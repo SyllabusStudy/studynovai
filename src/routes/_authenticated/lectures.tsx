@@ -93,7 +93,8 @@ function LecturesPage() {
       const fatal = (e: unknown) => e instanceof Error && /free limit|API key|did not allow/i.test(e.message);
       const runPiece = async (i: number) => {
         let lastErr: unknown;
-        for (let attempt = 0; attempt < 3; attempt++) {
+        // One quick retry only — the server already retries brief hiccups, so no long backoff loops.
+        for (let attempt = 0; attempt < 2; attempt++) {
           try {
             const x = await transcribe({ data: { ...pieces[i]!, index: i, total } });
             texts[i] = x.text ?? "";
@@ -103,20 +104,15 @@ function LecturesPage() {
           } catch (e) {
             if (fatal(e)) throw e;
             lastErr = e;
-            await new Promise((res) => setTimeout(res, 3000 * (attempt + 1)));
+            if (attempt === 0) await new Promise((res) => setTimeout(res, 1500));
           }
         }
         done++;
+        setStage(`Listening… ${done} of ${total} part${total > 1 ? "s" : ""} done`);
         console.warn("Lecture piece failed", i, lastErr);
       };
-      // Index 0 first (checks the free limit), then the rest 3 at a time.
-      await runPiece(0);
-      let next = 1;
-      await Promise.all(
-        Array.from({ length: Math.min(3, total - 1) }, async () => {
-          while (next < total) await runPiece(next++);
-        }),
-      );
+      // One part at a time: sending several big audio parts at once makes the connection drop.
+      for (let i = 0; i < total; i++) await runPiece(i);
       const failedParts = texts.filter((t) => t === null).length;
       const transcript = texts.filter(Boolean).join("\n\n").trim();
       if (!transcript) {
