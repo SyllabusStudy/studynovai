@@ -110,7 +110,7 @@ export function NotesAiPanel({ open, onClose, editor, title, classId, quickActio
   const call = async (action: NotesAiAction, extra: { question?: string; history?: Msg[]; noteText?: string | undefined } = {}) => {
     setBusy(action);
     try {
-      const r = await ai({ data: { action, noteText: extra.noteText ?? noteText(), selection: selection(), question: extra.question ?? "", writeMode, history: (extra.history ?? []).slice(-10).map(m => ({ role: m.role, content: m.content.slice(0, 20000) })) } });
+      const r = await ai({ data: { action, noteText: extra.noteText ?? noteText(), selection: selection(), question: extra.question ?? "", writeMode, history: (extra.history ?? []).slice(-10).map(m => ({ role: m.role, content: m.content.slice(0, 60000) })) } });
       if (r.error) { toast.error(r.error); return null; }
       return r;
     } catch (e) { toast.error(e instanceof Error ? e.message : "The AI couldn't answer right now."); return null; }

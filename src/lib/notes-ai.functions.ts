@@ -22,7 +22,7 @@ const STYLE = "Write plain readable Markdown (headings, bullets, **bold**). No L
 const CONTEXT = "Treat the note as informal live class notes that may contain phonetic spellings, speech-to-text errors, and typos. Infer the most likely intended everyday or course-related word from the surrounding sentences before answering. Prefer a simple contextual correction (for example, 'Gials' in criminal-justice notes likely means 'jails') over inventing an obscure concept. If two meanings are genuinely plausible, briefly ask which one the student meant instead of confidently guessing.";
 
 function promptFor(action: NotesAiAction, note: string, focus: string, question: string, writeMode: string) {
-  const notes = `STUDENT'S NOTE (their own words — never claim you changed it):\n"""\n${note.slice(0, 60_000)}\n"""`;
+  const notes = `STUDENT'S NOTE (their own words — never claim you changed it):\n"""\n${note.slice(0, 200_000)}\n"""`;
   const sel = focus ? `\nTHE PART THEY SELECTED:\n"""\n${focus.slice(0, 8000)}\n"""` : "";
   switch (action) {
     case "ask": return `You are SyllabusStudy's note-taking study assistant. ${CONTEXT} Answer the student's question clearly and with depth (short answer, explanation, an example). Use their full note as context when relevant, and fill gaps with your own knowledge. ${STYLE}\n\n${notes}${sel}\n\nQUESTION: ${question}`;
@@ -38,7 +38,7 @@ function promptFor(action: NotesAiAction, note: string, focus: string, question:
   }
 }
 
-const historyItem = z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(20_000) });
+const historyItem = z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(60_000) });
 
 export const runNotesAi = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -58,7 +58,7 @@ export const runNotesAi = createServerFn({ method: "POST" })
         ? [...data.history.map(h => ({ role: h.role, content: h.content })), { role: "user" as const, content: prompt }]
         : [{ role: "user" as const, content: prompt }];
       const raw = await withUserAiKey(context.supabase, context.userId, () =>
-        callAI(messages, { maxTokens: 6000, temperature: data.action === "spelling" ? 0.1 : 0.3, search: data.action === "research" || data.action === "ask" }));
+        callAI(messages, { maxTokens: 12000, temperature: data.action === "spelling" ? 0.1 : 0.3, search: data.action === "research" || data.action === "ask" }));
       if (["improve", "spelling"].includes(data.action)) {
         const j = parseJsonBlock<{ suggestions?: NotesAiSuggestion[] }>(raw);
         out.suggestions = (j.suggestions ?? []).filter(s => s?.original && s.suggestion && s.original !== s.suggestion).slice(0, 30);
