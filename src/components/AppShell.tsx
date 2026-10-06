@@ -50,6 +50,7 @@ import { AskAiDock } from "@/components/AskAiDock";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { StudyTabs } from "@/components/StudyTabs";
 import { SeasonalDecorations } from "@/components/SeasonalDecorations";
+import { MobileNav } from "@/components/MobileNav";
 
 
 type NavItem = { to: string; label: string; icon: typeof BookOpen; tint?: string };
@@ -157,37 +158,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
       </div>
 
-      <nav
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur lg:hidden"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-      >
-        <ul className="grid grid-cols-5">
-          {MOBILE_NAV.map((item) => {
-            const active = pathname.startsWith(item.to);
-            return (
-              <li key={item.to}>
-                <Link
-                  to={item.to}
-                  className={cn(
-                    "flex flex-col items-center gap-0.5 py-2 text-[11px] font-semibold transition-colors",
-                    active ? "text-primary" : "text-muted-foreground",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "flex size-9 items-center justify-center rounded-xl transition-colors",
-                      active ? "bg-primary/12" : "bg-transparent",
-                    )}
-                  >
-                    <item.icon className="size-5" />
-                  </span>
-                  {item.label.replace("My ", "")}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
+      <MobileNav />
 
       <AskAiDock />
       <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
@@ -317,35 +288,33 @@ function SidebarFooter() {
   );
 }
 
-function TopBar({ onMenu, onSearch }: { onMenu: () => void; onSearch: () => void }) {
+function TopBar({ onSearch }: { onMenu?: () => void; onSearch: () => void }) {
   const { user } = useAuth();
   const { data: profile } = useProfile(user?.id);
   const navigate = useNavigate();
   const initials = (profile?.name ?? user?.email ?? "S").slice(0, 1).toUpperCase();
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/70 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
-      <Button
-        variant="ghost"
-        size="icon"
-        className="shrink-0 lg:hidden"
-        onClick={onMenu}
-        aria-label="Open menu"
-      >
-        <Menu className="size-5" />
+    <header className="sticky top-0 z-30 flex h-[calc(4rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] items-center gap-3 border-b border-border bg-background/70 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
+      <Link to="/dashboard" className="flex min-w-0 shrink-0 items-center gap-2 lg:hidden" aria-label="Home">
+        <BrandLogo className="size-8" />
+        <span className="font-display text-base font-extrabold">Syllabus<span className="dash-gradient-text">Study</span></span>
+      </Link>
+      <Button variant="ghost" size="icon" className="ml-auto shrink-0 lg:hidden" onClick={onSearch} aria-label="Search">
+        <Search className="size-5" />
       </Button>
 
       <Button
         variant="outline"
         onClick={onSearch}
-        className="h-10 min-w-0 flex-1 max-w-xl justify-start gap-2 rounded-lg bg-card px-3 text-sm font-normal text-muted-foreground shadow-none hover:border-primary/50 hover:bg-card hover:text-foreground"
+        className="hidden h-10 min-w-0 flex-1 max-w-xl justify-start lg:flex gap-2 rounded-lg bg-card px-3 text-sm font-normal text-muted-foreground shadow-none hover:border-primary/50 hover:bg-card hover:text-foreground"
       >
         <Search className="size-4 shrink-0" />
         <span className="truncate">Search classes, notes, deadlines…</span>
         <span className="ml-auto hidden rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-bold sm:inline">⌘ K</span>
       </Button>
 
-      <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1">
+      <div className="flex shrink-0 items-center gap-0.5 sm:gap-1 lg:ml-auto">
         <NotificationBell />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
