@@ -58,6 +58,7 @@ function LecturesPage() {
   const [saving, setSaving] = useState<string | null>(null);
   const guest = useGuestGate("lectures");
   const [failed, setFailed] = useState<{ blob: Blob; name: string } | null>(null);
+  const heard = useRef(new Map<Blob, (string | null)[]>());
 
 
   const notes = useQuery({
@@ -87,8 +88,12 @@ function LecturesPage() {
       const cls = classId === "none" ? null : classId;
       // Small pieces, each retried on its own — one hiccup never sinks the whole lecture.
       const total = pieces.length;
-      const texts: (string | null)[] = new Array(total).fill(null);
-      let done = 0;
+      // Parts already heard on an earlier try are kept, so "Try again" only redoes the missing ones.
+      const saved = heard.current.get(blob);
+      const texts: (string | null)[] = saved && saved.length === total ? saved : new Array(total).fill(null);
+      heard.current.set(blob, texts);
+      let done = texts.filter((t) => t !== null).length;
+      let lastProblem = "";
       setStage(`Listening… 0 of ${total} part${total > 1 ? "s" : ""} done`);
       const fatal = (e: unknown) => e instanceof Error && /free limit|API key|did not allow/i.test(e.message);
       // Upload each piece to storage first — big audio never travels inside the server call.
@@ -106,6 +111,7 @@ function LecturesPage() {
         return path;
       };
       const runPiece = async (i: number) => {
+        if (texts[i] !== null) return;
         let lastErr: unknown;
         // One quick retry only — the server already retries brief hiccups, so no long backoff loops.
         for (let attempt = 0; attempt < 2; attempt++) {
@@ -122,8 +128,7 @@ function LecturesPage() {
             if (attempt === 0) await new Promise((res) => setTimeout(res, 1500));
           }
         }
-        done++;
-        setStage(`Listening… ${done} of ${total} part${total > 1 ? "s" : ""} done`);
+        if (lastErr instanceof Error) lastProblem = lastErr.message;
         console.warn("Lecture piece failed", i, lastErr);
       };
       // First part alone (checks the free limit), then two at a time to keep long lectures quick.
@@ -141,12 +146,16 @@ function LecturesPage() {
       if (!transcript) {
         throw new Error(
           failedParts === total
-            ? "I’m having trouble connecting right now. Your recording is saved — tap Try again."
+            ? lastProblem && !/trouble connecting|failed to fetch|network/i.test(lastProblem)
+              ? `${lastProblem} Your recording is saved — tap Try again.`
+              : "I’m having trouble connecting right now. Your recording is saved — tap Try again."
             : "We couldn't hear the professor in that recording. Try keeping the phone closer to the front.",
         );
       }
-      setStage("Writing your study guide…");
+      if (failedParts) toast.message(`${failedParts} part${failedParts > 1 ? "s" : ""} couldn't be heard — making notes from the rest.`);
+      setStage(`Transcript ready (${total - failedParts} of ${total} parts). Writing your study guide…`);
       const r = await make({ data: { transcript, fileName: name, classId: cls } });
+      heard.current.delete(blob);
       toast.success(`Study guide ready${r.cards ? ` with ${r.cards} flashcards` : ""}`);
       setOpen(r.id);
       await qc.invalidateQueries();
