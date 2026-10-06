@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import type { Json } from "@/integrations/supabase/types";
 
 type Card = { front: string; back: string };
 type Question = { id?: string; prompt: string; options?: string[]; answer: string; explanation?: string };
