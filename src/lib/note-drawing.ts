@@ -105,7 +105,7 @@ const pathLen = (pts: Pt[]) => pts.reduce((s, p, i) => i ? s + Math.hypot(p[0] -
 /** Turns rough strokes into clean shapes. Returns null when nothing is recognizable. */
 export function recognize(strokes: StrokeEl[]): ShapeEl | null {
   if (!strokes.length) return null;
-  const base = { id: uid(), kind: "shape" as const, color: strokes[0].color, size: strokes[0].size, opacity: strokes[0].opacity };
+  const base = { id: uid(), kind: "shape" as const, color: strokes[0]!.color, size: strokes[0]!.size, opacity: strokes[0]!.opacity };
   const sorted = [...strokes].sort((a, b) => pathLen(b.points) - pathLen(a.points));
   const main = sorted[0]!.points;
   if (main.length < 2) return null;
