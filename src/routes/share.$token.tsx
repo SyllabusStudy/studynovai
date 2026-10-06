@@ -114,8 +114,8 @@ function NoteView({ token, text, content }: { token: string; text: string; conte
   // Read-only editor so shared notes look exactly like the owner's note:
   // bullets, checklists, underline, highlights, tables, images — but no editing.
   const editor = useEditor({
-    extensions: [StarterKit.configure({ link: { openOnClick: true, protocols: ["http", "https", "mailto"] } }), TextStyle, FontSize, Color, Highlight.configure({ multicolor: true }), TextAlign.configure({ types: ["heading", "paragraph"] }), Image.configure({ allowBase64: true }), TableKit, TaskList, TaskItem.configure({ nested: true, readOnly: true })],
-    content: content ?? undefined,
+    extensions: [StarterKit.configure({ link: { openOnClick: true, protocols: ["http", "https", "mailto"] } }), TextStyle, FontSize, Color, Highlight.configure({ multicolor: true }), TextAlign.configure({ types: ["heading", "paragraph"] }), Image.configure({ allowBase64: true }), TableKit, TaskList, TaskItem.configure({ nested: true })],
+    ...(content ? { content } : {}),
     editable: false,
     immediatelyRender: false,
   });
