@@ -163,8 +163,8 @@ function SetupAiPage() {
           </div>
         ) : null}
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start">
-          <div className="dash-glass rounded-3xl p-3 sm:p-5 lg:sticky lg:top-6">
+        <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)] lg:items-start">
+          <div className="dash-glass rounded-3xl p-2 sm:p-3 lg:sticky lg:top-6">
             <div className="overflow-hidden rounded-2xl border border-border">
               <video
                 className="aspect-video w-full bg-background"
