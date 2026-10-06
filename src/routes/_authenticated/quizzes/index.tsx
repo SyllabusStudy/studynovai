@@ -69,6 +69,7 @@ function QuizzesPage() {
   const { data: quizzes = [], isLoading } = useQuizzes(user?.id);
   const [documentIds, setDocumentIds] = useState<string[]>([]);
   const [lectureIds, setLectureIds] = useState<string[]>([]);
+  const [noteIds, setNoteIds] = useState<string[]>([]);
   const [count, setCount] = useState(10);
   const [difficulty, setDifficulty] = useState<string>("medium");
   const [types, setTypes] = useState<string[]>(["multiple_choice", "true_false"]);
@@ -88,12 +89,12 @@ function QuizzesPage() {
     setBusy(true);
     try {
       const { collectQuizPages, cropFigure } = await import("@/lib/quiz-figures");
-      const chosen = documentIds.length || lectureIds.length
+      const chosen = documentIds.length || lectureIds.length || noteIds.length
         ? documents.filter((d) => documentIds.includes(d.id))
         : documents.filter((d) => d.category !== "syllabus");
       const pages = await collectQuizPages(chosen).catch(() => []);
       const res = await run({
-        data: { classId, documentIds, lectureIds, documentId: null, count, difficulty, types, pageImages: pages.map((p) => p.dataUrl) },
+        data: { classId, documentIds, lectureIds, noteIds, documentId: null, count, difficulty, types, pageImages: pages.map((p) => p.dataUrl) },
       });
       if (pages.length && res?.quizId) {
         const { data: row } = await supabase.from("quizzes").select("questions").eq("id", res.quizId).single();
@@ -188,7 +189,8 @@ function QuizzesPage() {
           documents={documents}
           documentIds={documentIds}
           lectureIds={lectureIds}
-          onChange={(d, l) => { setDocumentIds(d); setLectureIds(l); }}
+          noteIds={noteIds}
+          onChange={(d, l, n) => { setDocumentIds(d); setLectureIds(l); setNoteIds(n); }}
         />
 
         <div>

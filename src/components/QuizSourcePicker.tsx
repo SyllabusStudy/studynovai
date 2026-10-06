@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, FileText, Mic } from "lucide-react";
+import { BookOpen, FileText, Mic, NotebookPen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -16,6 +16,7 @@ export function QuizSourcePicker({
   documents,
   documentIds,
   lectureIds,
+  noteIds,
   onChange,
 }: {
   classId: string;
@@ -23,12 +24,22 @@ export function QuizSourcePicker({
   documents: Doc[];
   documentIds: string[];
   lectureIds: string[];
-  onChange: (docs: string[], lectures: string[]) => void;
+  noteIds: string[];
+  onChange: (docs: string[], lectures: string[], notes: string[]) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"all" | "pick">("all");
   const [docs, setDocs] = useState<string[]>([]);
   const [lecs, setLecs] = useState<string[]>([]);
+  const [nts, setNts] = useState<string[]>([]);
+  const { data: myNotes = [] } = useQuery({
+    queryKey: ["quiz-personal-notes", classId],
+    enabled: Boolean(classId),
+    queryFn: async () => {
+      const { data } = await supabase.from("personal_notes").select("id,title,plain_text").eq("class_id", classId).order("updated_at", { ascending: false });
+      return data ?? [];
+    },
+  });
 
   const { data: lectures = [] } = useQuery({
     queryKey: ["quiz-lectures", classId],
@@ -47,8 +58,9 @@ export function QuizSourcePicker({
     if (!open) return;
     setDocs(documentIds);
     setLecs(lectureIds);
-    setMode(documentIds.length || lectureIds.length ? "pick" : "all");
-  }, [open, documentIds, lectureIds]);
+    setNts(noteIds);
+    setMode(documentIds.length || lectureIds.length || noteIds.length ? "pick" : "all");
+  }, [open, documentIds, lectureIds, noteIds]);
 
   const usableDoc = (d: Doc) => (d.extracted_text ?? "").trim().length > 0;
   const usableLec = (l: { summary: string | null; transcript: string | null }) =>
@@ -57,6 +69,7 @@ export function QuizSourcePicker({
   const names = [
     ...documents.filter((d) => documentIds.includes(d.id)).map((d) => d.file_name),
     ...lectures.filter((l) => lectureIds.includes(l.id)).map((l) => l.title),
+    ...myNotes.filter((n) => noteIds.includes(n.id)).map((n) => n.title),
   ];
   const picked = names.length > 0;
 
@@ -114,6 +127,31 @@ export function QuizSourcePicker({
           {mode === "pick" && (
             <div className="space-y-4">
               <section>
+                <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">My notes</p>
+                {myNotes.length === 0 ? (
+                  <div className="flex items-center justify-between gap-2 rounded-lg border border-dashed border-border p-2.5 text-sm">
+                    <span className="text-muted-foreground">No notes saved to this class yet.</span>
+                    <Button asChild size="sm" variant="outline"><Link to="/notes">Open Notes</Link></Button>
+                  </div>
+                ) : (
+                  <ul className="space-y-1">
+                    {myNotes.map((n) => {
+                      const ok = (n.plain_text ?? "").trim().length > 20;
+                      return (
+                        <li key={n.id}>
+                          <label className={cn("flex items-center gap-2.5 rounded-lg p-2 text-sm hover:bg-muted/50", !ok && "opacity-60")}>
+                            <Checkbox disabled={!ok} checked={nts.includes(n.id)} onCheckedChange={() => toggle(nts, setNts, n.id)} />
+                            <NotebookPen className="size-4 shrink-0 text-muted-foreground" />
+                            <span className="min-w-0 flex-1 truncate">{n.title}</span>
+                            {!ok && <span className="text-xs text-muted-foreground">Too short</span>}
+                          </label>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
+              <section>
                 <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">Notes & documents</p>
                 {documents.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No uploads for this class yet.</p>
@@ -169,10 +207,10 @@ export function QuizSourcePicker({
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             <Button
-              disabled={mode === "pick" && docs.length + lecs.length === 0}
+              disabled={mode === "pick" && docs.length + lecs.length + nts.length === 0}
               onClick={() => {
-                if (mode === "all") onChange([], []);
-                else onChange(docs, lecs);
+                if (mode === "all") onChange([], [], []);
+                else onChange(docs, lecs, nts);
                 setOpen(false);
               }}
             >
