@@ -45,6 +45,7 @@ export function PersonalNoteEditor({ note }: { note: Note }) {
   const [mode, setMode] = useState<"type" | "draw">(draft.current.editorMode);
   const [initialDrawing] = useState(() => normalizeDrawing(note.drawing));
   const [aiOpen, setAiOpen] = useState(false);
+  const [aiBadge, setAiBadge] = useState(0);
   const [recLabel, setRecLabel] = useState<string | null>(null);
   const [incoming, setIncoming] = useState<{ key: number; elements: DrawEl[] } | null>(null);
 
@@ -118,7 +119,7 @@ export function PersonalNoteEditor({ note }: { note: Note }) {
     <div className="mb-3 inline-flex rounded-lg border border-border bg-card p-1" role="tablist" aria-label="Note mode">
       {([["type", "Type", Keyboard], ["draw", "Draw", PenTool]] as const).map(([id, label, Icon]) => <Button key={id} role="tab" aria-selected={mode === id} size="sm" variant={mode === id ? "default" : "ghost"} onClick={() => { setMode(id); draft.current.editorMode = id; changed(); }}><Icon className="size-4" />{label}</Button>)}
     </div>
-    <Button variant={aiOpen ? "secondary" : "outline"} size="sm" className="mb-3 ml-2" onClick={() => setAiOpen(o => !o)} aria-pressed={aiOpen}><Sparkles className="size-4 text-primary" />AI Assistant</Button>
+    <Button variant={aiOpen ? "secondary" : "outline"} size="sm" className="mb-3 ml-2" onClick={() => setAiOpen(o => !o)} aria-pressed={aiOpen}><Sparkles className="size-4 text-primary" />AI Assistant{aiBadge > 0 && <span className="ml-1 rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground">{aiBadge}</span>}</Button>
     {recLabel && <button type="button" onClick={() => setAiOpen(true)} className="mb-3 ml-2 inline-flex items-center gap-1.5 rounded-full border border-destructive/40 bg-destructive/10 px-3 py-1 text-xs font-medium text-destructive" role="status"><span className="size-2 animate-pulse rounded-full bg-destructive" />{recLabel}</button>}
     <div className={mode === "draw" ? "rounded-xl border border-border bg-card shadow-card" : "hidden"}>
       <NoteDrawingCanvas value={initialDrawing} incoming={incoming} onChange={(d: Drawing) => { draft.current.drawingJson = JSON.stringify(d); changed(); }} />
@@ -129,6 +130,6 @@ export function PersonalNoteEditor({ note }: { note: Note }) {
       <div className="border-t border-border px-5 py-2 text-right text-xs text-muted-foreground">{editor?.getText().trim().split(/\s+/).filter(Boolean).length ?? 0} words</div>
     </div>
   </div>
-  <NotesAiPanel open={aiOpen} onClose={() => setAiOpen(false)} editor={editor} title={title} classId={classId} onRecordingChange={setRecLabel} onAddDiagram={els => { setIncoming({ key: Date.now(), elements: els }); setMode("draw"); draft.current.editorMode = "draw"; }} />
+  <NotesAiPanel open={aiOpen} onClose={() => setAiOpen(false)} editor={editor} title={title} classId={classId} onRecordingChange={setRecLabel} onBadge={setAiBadge} onAddDiagram={els => { setIncoming({ key: Date.now(), elements: els }); setMode("draw"); draft.current.editorMode = "draw"; }} />
   </div>;
 }

@@ -34,9 +34,9 @@ function AiOutput({ text, onInsert, sources }: { text: string; onInsert: () => v
   </div>;
 }
 
-export function NotesAiPanel({ open, onClose, editor, title, classId, onAddDiagram, onRecordingChange }: {
+export function NotesAiPanel({ open, onClose, editor, title, classId, onAddDiagram, onRecordingChange, onBadge }: {
   open: boolean; onClose: () => void; editor: Editor | null; title: string; classId: string | null;
-  onAddDiagram: (els: DrawEl[]) => void; onRecordingChange: (label: string | null) => void;
+  onAddDiagram: (els: DrawEl[]) => void; onRecordingChange: (label: string | null) => void; onBadge: (count: number) => void;
 }) {
   const ai = useServerFn(runNotesAi);
   const saveCards = useServerFn(saveNoteFlashcards);
@@ -54,6 +54,51 @@ export function NotesAiPanel({ open, onClose, editor, title, classId, onAddDiagr
   const [quizPick, setQuizPick] = useState<Record<number, number>>({});
 
   const noteText = () => editor?.getText() ?? "";
+  // ---- Always-on helpers (on by default, each can be switched off; choice remembered on this device) ----
+  const [autoSpell, setAutoSpell] = useState(true);
+  const [autoFeedback, setAutoFeedback] = useState(true);
+  const [feedback, setFeedback] = useState("");
+  const [feedbackNew, setFeedbackNew] = useState(false);
+  useEffect(() => {
+    try { const v = JSON.parse(localStorage.getItem("studynova-notes-ai-auto") ?? "{}"); if (v.spell === false) setAutoSpell(false); if (v.feedback === false) setAutoFeedback(false); } catch { /* ignore */ }
+  }, []);
+  const saveAuto = (spell: boolean, fb: boolean) => localStorage.setItem("studynova-notes-ai-auto", JSON.stringify({ spell, feedback: fb }));
+  const autoState = useRef({ spellText: "", fbText: "", spellBusy: false, fbBusy: false, lastFb: 0 });
+  useEffect(() => {
+    if (!editor) return;
+    let spellTimer: ReturnType<typeof setTimeout> | undefined, fbTimer: ReturnType<typeof setTimeout> | undefined;
+    const quiet = (e: unknown) => { if (e instanceof Error && /free limit|API key/i.test(e.message)) { setAutoSpell(false); setAutoFeedback(false); } };
+    const runSpell = async () => {
+      const text = editor.getText(); const st = autoState.current;
+      if (st.spellBusy || text.trim().length < 15 || text === st.spellText) return;
+      st.spellBusy = true; st.spellText = text;
+      try {
+        const r = await ai({ data: { action: "spelling", noteText: text, selection: "", question: "", writeMode: "", history: [] } });
+        if (r.error) { quiet(new Error(r.error)); return; }
+        const current = editor.getText();
+        setSuggestions(prev => [...prev.filter(s => s.state), ...r.suggestions.filter(s => current.includes(s.original))]);
+      } catch (e) { quiet(e); } finally { st.spellBusy = false; }
+    };
+    const runFeedback = async () => {
+      const text = editor.getText(); const st = autoState.current;
+      // Only when enough new writing has happened, and at most about once a minute.
+      if (st.fbBusy || text.trim().length < 120 || Math.abs(text.length - st.fbText.length) < 100 || Date.now() - st.lastFb < 60_000) return;
+      st.fbBusy = true; st.fbText = text; st.lastFb = Date.now();
+      try {
+        const r = await ai({ data: { action: "feedback", noteText: text, selection: "", question: "", writeMode: "", history: [] } });
+        if (r.error) { quiet(new Error(r.error)); return; }
+        if (r.text && !/^\[none\]$/i.test(r.text.trim())) { setFeedback(r.text); setFeedbackNew(true); }
+      } catch (e) { quiet(e); } finally { st.fbBusy = false; }
+    };
+    const onUpdate = () => {
+      if (autoSpell) { clearTimeout(spellTimer); spellTimer = setTimeout(() => void runSpell(), 2500); }
+      if (autoFeedback) { clearTimeout(fbTimer); fbTimer = setTimeout(() => void runFeedback(), 8000); }
+    };
+    editor.on("update", onUpdate);
+    if (autoSpell) spellTimer = setTimeout(() => void runSpell(), 1500);
+    if (autoFeedback) fbTimer = setTimeout(() => void runFeedback(), 4000);
+    return () => { editor.off("update", onUpdate); clearTimeout(spellTimer); clearTimeout(fbTimer); };
+  }, [editor, autoSpell, autoFeedback, ai]);
   const selection = () => { if (!editor) return ""; const { from, to } = editor.state.selection; return from === to ? "" : editor.state.doc.textBetween(from, to, "\n"); };
   const insert = (md: string, label = "From AI Assistant") => {
     if (!editor) return;
@@ -160,6 +205,9 @@ export function NotesAiPanel({ open, onClose, editor, title, classId, onAddDiagr
     setQuizPick({}); setStudy({ ...r, text: action === "guide" ? r.text : "" });
   };
 
+  const openSpell = suggestions.filter(x => !x.state).length;
+  useEffect(() => { onBadge(openSpell + (feedbackNew ? 1 : 0)); }, [openSpell, feedbackNew, onBadge]);
+  useEffect(() => { if (open && tab === "ask") setFeedbackNew(false); }, [open, tab, feedback]);
   const thread = tab === "research" ? research : chat;
   const working = !!busy;
 
@@ -171,7 +219,13 @@ export function NotesAiPanel({ open, onClose, editor, title, classId, onAddDiagr
     <div className="flex gap-1 overflow-x-auto border-b border-border px-2 py-2" role="tablist">
       {TABS.map(t => <Button key={t.id} role="tab" aria-selected={tab === t.id} size="sm" variant={tab === t.id ? "default" : "ghost"} onClick={() => setTab(t.id)} className="shrink-0"><t.Icon className="size-4" />{t.label}{t.id === "lecture" && rec !== "idle" && <span className="size-2 animate-pulse rounded-full bg-destructive" />}</Button>)}
     </div>
+    <div className="flex flex-wrap gap-x-4 gap-y-1 border-b border-border px-4 py-2 text-xs">
+      <label className="flex items-center gap-1.5"><input type="checkbox" className="accent-primary" checked={autoSpell} onChange={e => { setAutoSpell(e.target.checked); saveAuto(e.target.checked, autoFeedback); }} />Auto spelling fixes</label>
+      <label className="flex items-center gap-1.5"><input type="checkbox" className="accent-primary" checked={autoFeedback} onChange={e => { setAutoFeedback(e.target.checked); saveAuto(autoSpell, e.target.checked); }} />Auto feedback on my notes</label>
+    </div>
     <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+      {tab === "ask" && autoFeedback && feedback && <div><p className="mb-1 text-xs font-semibold text-muted-foreground">Feedback on your notes (updates as you write)</p><AiOutput text={feedback} onInsert={() => insert(feedback, "AI feedback")} /></div>}
+      {tab !== "writing" && openSpell > 0 && <button type="button" onClick={() => setTab("writing")} className="w-full rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-left text-sm"><SpellCheck className="mr-1 inline size-4" />{openSpell} spelling/grammar fix{openSpell > 1 ? "es" : ""} ready — review</button>}
       {(tab === "ask" || tab === "research") && <>
         <p className="text-xs text-muted-foreground">{tab === "ask" ? "Ask anything while you take notes. Answers stay here until you choose to add them." : "Look up outside information with sources. It stays separate from your notes."}</p>
         {!thread.length && <div className="flex flex-wrap gap-2">{(tab === "ask" ? ["Explain this in simple terms", "Can you give me an example?", "What should I know for the exam?"] : ["Latest research on this topic", "History and key people", "Real-world applications"]).map(q => <Button key={q} size="sm" variant="outline" onClick={() => setInput(q)}>{q}</Button>)}</div>}
@@ -183,7 +237,7 @@ export function NotesAiPanel({ open, onClose, editor, title, classId, onAddDiagr
         {explain && <AiOutput text={explain} onInsert={() => insert(explain, "Explanation from AI")} />}
       </>}
       {tab === "writing" && <>
-        <p className="text-xs text-muted-foreground">Suggestions only — nothing in your note changes until you tap Accept. Select text to check just that part. Misspelled words are also underlined while you type.</p>
+        <p className="text-xs text-muted-foreground">Spelling and grammar are checked automatically as you write. Nothing in your note changes until you tap Accept. Select text and use the buttons to improve just that part.</p>
         <div className="flex flex-wrap gap-2">
           <Button size="sm" variant="secondary" disabled={working} onClick={async () => { const r = await call("spelling"); if (r) { setSuggestions(r.suggestions); if (!r.suggestions.length) toast.success("No spelling or grammar mistakes found"); } }}><SpellCheck className="size-4" />Spelling & grammar</Button>
           {["better wording", "make clearer", "make shorter", "expand", "rewrite", "academic tone"].map(m => <Button key={m} size="sm" variant={writeMode === m ? "secondary" : "outline"} disabled={working} onClick={async () => { setWriteMode(m); setBusy("improve"); try { const r = await ai({ data: { action: "improve", noteText: noteText(), selection: selection(), question: "", writeMode: m, history: [] } }); if (r.error) toast.error(r.error); else { setSuggestions(r.suggestions); if (!r.suggestions.length) toast.message("No changes suggested"); } } finally { setBusy(null); } }} className="capitalize">{m}</Button>)}
