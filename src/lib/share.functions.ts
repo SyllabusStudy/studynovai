@@ -8,7 +8,7 @@ type Question = { id?: string; prompt: string; options?: string[]; answer: strin
 export type SharedItem = {
   kind: string;
   title: string;
-  payload: { cards?: Card[]; questions?: Question[] };
+  payload: { cards?: Card[]; questions?: Question[]; plainText?: string };
   count: number;
 };
 
@@ -25,7 +25,7 @@ export const getSharedItem = createServerFn({ method: "GET" })
     const row = (rows as Array<{ kind: string; title: string; payload: SharedItem["payload"] }> | null)?.[0];
     if (!row) return null;
     const payload = row.payload ?? {};
-    const count = row.kind === "deck" ? (payload.cards?.length ?? 0) : (payload.questions?.length ?? 0);
+    const count = row.kind === "note" ? (payload.plainText ?? "").trim().split(/\s+/).filter(Boolean).length : row.kind === "deck" ? (payload.cards?.length ?? 0) : (payload.questions?.length ?? 0);
     return { kind: row.kind, title: row.title, payload, count };
   });
 

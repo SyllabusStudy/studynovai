@@ -12,7 +12,7 @@ export function ShareButton({
   title,
   payload,
 }: {
-  kind: "deck" | "quiz";
+  kind: "deck" | "quiz" | "note";
   refId: string;
   title: string;
   payload: () => Json;
@@ -37,6 +37,7 @@ export function ShareButton({
         await navigator.clipboard.writeText(url);
         toast.success("Link copied — send it to your classmates");
       }
+      if (navigator.share) void navigator.clipboard?.writeText(url).catch(() => undefined);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't create a link");
     } finally {
@@ -47,7 +48,7 @@ export function ShareButton({
   return (
     <Button size="sm" variant="outline" className="gap-1.5" disabled={busy} onClick={() => void share()}>
       {busy ? <Loader2 className="size-4 animate-spin" /> : <Share2 className="size-4" />}
-      Share {kind === "deck" ? "deck" : "quiz"}
+      Share {kind === "deck" ? "deck" : kind === "note" ? "note" : "quiz"}
     </Button>
   );
 }
