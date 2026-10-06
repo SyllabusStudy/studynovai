@@ -85,20 +85,50 @@ function LecturesPage() {
       setStage("Cleaning up the audio…");
       const pieces = await prepareLectureAudio(blob);
       const cls = classId === "none" ? null : classId;
-      let r: { id: string; cards: number };
-      if (pieces.length === 1) {
-        setStage("Listening and writing your study guide…");
-        r = await make({ data: { audio: pieces[0]!.audio, mimeType: pieces[0]!.mimeType, fileName: name, classId: cls } });
-      } else {
-        setStage(`Listening to all ${pieces.length} parts at once…`);
-        const texts = await Promise.all(
-          pieces.map((p, i) => transcribe({ data: { ...p, index: i, total: pieces.length } }).then((x) => x.text ?? "")),
+      // Small pieces, a few at a time, each retried on its own — one hiccup never sinks the whole lecture.
+      const total = pieces.length;
+      const texts: (string | null)[] = new Array(total).fill(null);
+      let done = 0;
+      setStage(`Listening… 0 of ${total} part${total > 1 ? "s" : ""} done`);
+      const fatal = (e: unknown) => e instanceof Error && /free limit|API key|did not allow|limit/i.test(e.message);
+      const runPiece = async (i: number) => {
+        let lastErr: unknown;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            const x = await transcribe({ data: { ...pieces[i]!, index: i, total } });
+            texts[i] = x.text ?? "";
+            done++;
+            setStage(`Listening… ${done} of ${total} part${total > 1 ? "s" : ""} done`);
+            return;
+          } catch (e) {
+            if (fatal(e)) throw e;
+            lastErr = e;
+            await new Promise((res) => setTimeout(res, 3000 * (attempt + 1)));
+          }
+        }
+        texts[i] = "";
+        done++;
+        console.warn("Lecture piece failed", i, lastErr);
+      };
+      // Index 0 first (checks the free limit), then the rest 3 at a time.
+      await runPiece(0);
+      let next = 1;
+      await Promise.all(
+        Array.from({ length: Math.min(3, total - 1) }, async () => {
+          while (next < total) await runPiece(next++);
+        }),
+      );
+      const failedParts = texts.filter((t) => t === "").length;
+      const transcript = texts.filter(Boolean).join("\n\n").trim();
+      if (!transcript) {
+        throw new Error(
+          failedParts === total
+            ? "I’m having trouble connecting right now. Your recording is saved — tap Try again."
+            : "We couldn't hear the professor in that recording. Try keeping the phone closer to the front.",
         );
-        const transcript = texts.filter(Boolean).join("\n\n").trim();
-        if (!transcript) throw new Error("We couldn't hear the professor in that recording. Try keeping the phone closer to the front.");
-        setStage("Writing your study guide…");
-        r = await make({ data: { transcript, fileName: name, classId: cls } });
       }
+      setStage("Writing your study guide…");
+      const r = await make({ data: { transcript, fileName: name, classId: cls } });
       toast.success(`Study guide ready${r.cards ? ` with ${r.cards} flashcards` : ""}`);
       setOpen(r.id);
       await qc.invalidateQueries();
