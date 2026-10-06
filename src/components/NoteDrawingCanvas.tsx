@@ -24,6 +24,7 @@ type Gesture =
   | { type: "scroll"; lastY: number };
 
 function Ink({ el, selected }: { el: DrawEl; selected?: boolean }) {
+  if (el.kind === "text") return <text x={el.at[0]} y={el.at[1]} fill={el.color} fillOpacity={el.opacity} fontSize={el.size} textAnchor="middle" fontFamily="var(--font-sans, sans-serif)" stroke={selected ? "var(--primary)" : "none"} strokeOpacity={0.35} strokeWidth={selected ? 3 : 0} paintOrder="stroke">{el.text}</text>;
   const common = { stroke: el.color, strokeWidth: el.size, strokeOpacity: el.opacity, fill: "none", strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
   const glow = selected ? <path d={el.kind === "stroke" ? strokePath(el.points) : strokePath(shapeOutline(el))} stroke="var(--primary)" strokeOpacity={0.35} strokeWidth={el.size + 8} fill="none" strokeLinecap="round" /> : null;
   if (el.kind === "stroke") return <g>{glow}<path d={strokePath(el.points)} {...common} style={el.tool === "highlighter" ? { mixBlendMode: "multiply" } : undefined} /></g>;
@@ -40,7 +41,7 @@ function Ink({ el, selected }: { el: DrawEl; selected?: boolean }) {
   return <g>{glow}<path d={pts.map((p, i) => `${i ? "L" : "M"}${p[0]} ${p[1]}`).join(" ")} {...common} /></g>;
 }
 
-export function NoteDrawingCanvas({ value, onChange }: { value: Drawing; onChange: (d: Drawing) => void }) {
+export function NoteDrawingCanvas({ value, onChange, incoming }: { value: Drawing; onChange: (d: Drawing) => void; incoming?: { key: number; elements: DrawEl[] } | null }) {
   const [drawing, setDrawing] = useState(value);
   const past = useRef<Drawing[]>([]);
   const future = useRef<Drawing[]>([]);
@@ -58,10 +59,24 @@ export function NoteDrawingCanvas({ value, onChange }: { value: Drawing; onChang
   const svgs = useRef<(SVGSVGElement | null)[]>([]);
   const penSeen = useRef(false);
 
+  const lastIncoming = useRef(0);
+  const commitRef = useRef<(d: Drawing) => void>(() => {});
+  const drawingRef = useRef(drawing); drawingRef.current = drawing;
+  useEffect(() => {
+    if (!incoming || incoming.key === lastIncoming.current) return;
+    lastIncoming.current = incoming.key;
+    const d = drawingRef.current;
+    const last = d.pages[d.pages.length - 1];
+    // Diagrams go onto a fresh page (or the last page if it's still empty) so nothing the student drew is covered.
+    const pages = last && !last.elements.length ? d.pages.map((p, i) => i === d.pages.length - 1 ? { ...p, elements: incoming.elements } : p) : [...d.pages, { ...newPage(), elements: incoming.elements }];
+    commitRef.current({ ...d, pages });
+    setTimeout(() => svgs.current[pages.length - 1]?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  }, [incoming]);
   const commit = useCallback((next: Drawing) => {
     past.current.push(drawing); if (past.current.length > 100) past.current.shift();
     future.current = []; setDrawing(next); onChange(next);
   }, [drawing, onChange]);
+  commitRef.current = commit;
   const setPageEls = (page: number, els: DrawEl[]) => commit({ ...drawing, pages: drawing.pages.map((p, i) => i === page ? { ...p, elements: els } : p) });
   const undo = () => { const prev = past.current.pop(); if (!prev) return; future.current.push(drawing); setDrawing(prev); onChange(prev); setSelection(null); };
   const redo = () => { const next = future.current.pop(); if (!next) return; past.current.push(drawing); setDrawing(next); onChange(next); setSelection(null); };

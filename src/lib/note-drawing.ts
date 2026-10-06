@@ -4,7 +4,8 @@ export type Pt = [number, number];
 export type ShapeKind = "line" | "arrow" | "ellipse" | "rect" | "triangle" | "diamond";
 export type StrokeEl = { id: string; kind: "stroke"; tool: "pen" | "highlighter"; points: Pt[]; color: string; size: number; opacity: number; source?: "user" | "ai" };
 export type ShapeEl = { id: string; kind: "shape"; shape: ShapeKind; a: Pt; b: Pt; color: string; size: number; opacity: number; source?: "user" | "ai" };
-export type DrawEl = StrokeEl | ShapeEl;
+export type TextEl = { id: string; kind: "text"; at: Pt; text: string; color: string; size: number; opacity: number; source?: "user" | "ai" };
+export type DrawEl = StrokeEl | ShapeEl | TextEl;
 export type DrawPage = { id: string; elements: DrawEl[] };
 export type Drawing = { version: 1; pages: DrawPage[] };
 
@@ -22,6 +23,7 @@ export function normalizeDrawing(raw: unknown): Drawing {
 
 export type Box = { x: number; y: number; w: number; h: number };
 export function bounds(el: DrawEl): Box {
+  if (el.kind === "text") { const w = el.text.length * el.size * 0.55; return { x: el.at[0] - w / 2, y: el.at[1] - el.size * 0.8, w, h: el.size * 1.3 }; }
   const pts = el.kind === "stroke" ? el.points : [el.a, el.b];
   let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
   for (const [x, y] of pts) { x1 = Math.min(x1, x); y1 = Math.min(y1, y); x2 = Math.max(x2, x); y2 = Math.max(y2, y); }
@@ -54,6 +56,7 @@ export function shapeOutline(el: ShapeEl): Pt[] {
   }
 }
 export function hitTest(el: DrawEl, p: Pt, tol: number) {
+  if (el.kind === "text") { const b = bounds(el); return p[0] >= b.x - tol && p[0] <= b.x + b.w + tol && p[1] >= b.y - tol && p[1] <= b.y + b.h + tol; }
   const pts = el.kind === "stroke" ? el.points : shapeOutline(el);
   const t = tol + el.size / 2;
   if (pts.length === 1) return Math.hypot(p[0] - pts[0]![0], p[1] - pts[0]![1]) <= t;
@@ -66,7 +69,7 @@ export function eraseArea(els: DrawEl[], p: Pt, r: number): DrawEl[] {
   const out: DrawEl[] = [];
   for (const el of els) {
     if (!hitTest(el, p, r)) { out.push(el); continue; }
-    if (el.kind === "shape") continue;
+    if (el.kind !== "stroke") continue;
     let run: Pt[] = [];
     const flush = () => { if (run.length > 1) out.push({ ...el, id: uid(), points: run }); run = []; };
     for (const q of el.points) { if (Math.hypot(q[0] - p[0], q[1] - p[1]) <= r + el.size / 2) flush(); else run.push(q); }
@@ -77,6 +80,7 @@ export function eraseArea(els: DrawEl[], p: Pt, r: number): DrawEl[] {
 
 export function transformEl(el: DrawEl, f: (p: Pt) => Pt, scale = 1): DrawEl {
   const size = Math.max(1, el.size * scale);
+  if (el.kind === "text") return { ...el, size, at: f(el.at) };
   return el.kind === "stroke" ? { ...el, size, points: el.points.map(f) } : { ...el, size, a: f(el.a), b: f(el.b) };
 }
 
@@ -145,4 +149,41 @@ function recognizeShape(strokes: StrokeEl[]): { shape: ShapeEl; used: string[] }
     return { shape: { ...base, shape: midHits >= 2 ? "diamond" : "rect", a, b }, used: [sorted[0]!.id] };
   }
   return { shape: { ...base, shape: "ellipse", a, b }, used: [sorted[0]!.id] };
+}
+
+/** Lays out an AI diagram (flowchart or mind map) as regular, editable drawing elements. */
+export function diagramToElements(d: { title: string; layout: "flow" | "mind"; nodes: { id: string; label: string }[]; edges: { from: string; to: string; label?: string }[] }): DrawEl[] {
+  const ink = "var(--foreground)", accent = "var(--primary)";
+  const pos = new Map<string, Pt>();
+  const n = d.nodes.length;
+  if (d.layout === "mind") {
+    d.nodes.forEach((node, i) => {
+      if (i === 0) { pos.set(node.id, [PAGE_W / 2, PAGE_H / 2]); return; }
+      const t = ((i - 1) / Math.max(1, n - 1)) * Math.PI * 2 - Math.PI / 2;
+      pos.set(node.id, [PAGE_W / 2 + Math.cos(t) * 330, PAGE_H / 2 + Math.sin(t) * 420]);
+    });
+  } else {
+    const cols = n > 6 ? 2 : 1, rows = Math.ceil(n / cols);
+    d.nodes.forEach((node, i) => {
+      const c = cols === 1 ? 0 : i % 2, r = cols === 1 ? i : Math.floor(i / 2);
+      pos.set(node.id, [cols === 1 ? PAGE_W / 2 : 300 + c * 400, 200 + r * ((PAGE_H - 300) / Math.max(1, rows))]);
+    });
+  }
+  const els: DrawEl[] = [{ id: uid(), kind: "text", at: [PAGE_W / 2, 90], text: d.title, color: ink, size: 38, opacity: 1, source: "ai" }];
+  const hw = 130, hh = 38;
+  for (const e of d.edges) {
+    const a = pos.get(e.from), b = pos.get(e.to); if (!a || !b) continue;
+    const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1;
+    const k = (pt: Pt, sgn: number): Pt => { const s = Math.min(hw / Math.abs(dx || 1e-6), hh / Math.abs(dy || 1e-6)); return [pt[0] + sgn * dx * Math.min(s, 0.45), pt[1] + sgn * dy * Math.min(s, 0.45)]; };
+    void len;
+    els.push({ id: uid(), kind: "shape", shape: "arrow", a: k(a, 1), b: k(b, -1), color: accent, size: 3, opacity: 1, source: "ai" });
+    if (e.label) els.push({ id: uid(), kind: "text", at: [(a[0] + b[0]) / 2 + 12, (a[1] + b[1]) / 2], text: e.label.slice(0, 30), color: "var(--muted-foreground)", size: 18, opacity: 1, source: "ai" });
+  }
+  d.nodes.forEach((node, i) => {
+    const [x, y] = pos.get(node.id)!;
+    const center = d.layout === "mind" && i === 0;
+    els.push({ id: uid(), kind: "shape", shape: center ? "ellipse" : "rect", a: [x - hw, y - hh], b: [x + hw, y + hh], color: center ? accent : ink, size: center ? 4 : 2.5, opacity: 1, source: "ai" });
+    els.push({ id: uid(), kind: "text", at: [x, y + 8], text: node.label.slice(0, 40), color: ink, size: node.label.length > 22 ? 18 : 22, opacity: 1, source: "ai" });
+  });
+  return els;
 }
