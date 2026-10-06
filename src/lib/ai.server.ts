@@ -102,14 +102,32 @@ async function callGeminiNative(
     },
   });
 
-  const model = hasVideo ? "gemini-flash-latest" : CHAT_MODEL;
-  const res = await fetchAiWithRetry(
-    "google",
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-    { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body },
-    // A grounded attempt gives up after one try so the plain answer can take over quickly.
-    useSearch ? 1 : undefined,
-  );
+  // Media tries the fuller Flash model first; if its free quota is busy, the lite model (which also hears audio) takes over.
+  const models = hasVideo ? ["gemini-flash-latest", "gemini-flash-lite-latest"] : [CHAT_MODEL];
+  let res: Response | null = null;
+  for (let i = 0; i < models.length; i++) {
+    const last = i === models.length - 1;
+    try {
+      res = await fetchAiWithRetry(
+        "google",
+        `https://generativelanguage.googleapis.com/v1beta/models/${models[i]}:generateContent`,
+        { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body },
+        // A grounded attempt gives up after one try so the plain answer can take over quickly.
+        useSearch ? 1 : !last ? 2 : undefined,
+      );
+    } catch (e) {
+      if (last) throw e;
+      console.warn("Media model busy, trying the lite model", { model: models[i] });
+      continue;
+    }
+    if (!res.ok && !last && (res.status === 404 || res.status === 429 || res.status >= 500 || res.status === 400)) {
+      console.warn("Media model rejected request, trying the lite model", { model: models[i], status: res.status });
+      await res.body?.cancel();
+      continue;
+    }
+    break;
+  }
+  if (!res) throw new Error("I’m having trouble connecting right now. Your question is saved — try again in a moment.");
   if (!res.ok) throw await providerError(res, "Google AI Studio");
 
   const data = (await res.json()) as {
