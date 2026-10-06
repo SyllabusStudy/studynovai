@@ -210,6 +210,12 @@ export function NotesAiPanel({ open, onClose, editor, title, classId, onAddDiagr
   useEffect(() => { if (open && tab === "ask") setFeedbackNew(false); }, [open, tab, feedback]);
   const thread = tab === "research" ? research : chat;
   const working = !!busy;
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  // Keep the newest message in view so you never have to scroll down to see your text.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [thread.length, busy, tab]);
 
   return <aside aria-label="AI Assistant" className={cn(open ? "flex" : "hidden", "fixed inset-0 z-50 flex-col bg-background lg:sticky lg:top-4 lg:z-auto lg:h-[calc(100dvh-2rem)] lg:w-[380px] lg:shrink-0 lg:rounded-xl lg:border lg:border-border lg:bg-card lg:shadow-card")}>
     <div className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -223,7 +229,7 @@ export function NotesAiPanel({ open, onClose, editor, title, classId, onAddDiagr
       <label className="flex items-center gap-1.5"><input type="checkbox" className="accent-primary" checked={autoSpell} onChange={e => { setAutoSpell(e.target.checked); saveAuto(e.target.checked, autoFeedback); }} />Auto spelling fixes</label>
       <label className="flex items-center gap-1.5"><input type="checkbox" className="accent-primary" checked={autoFeedback} onChange={e => { setAutoFeedback(e.target.checked); saveAuto(autoSpell, e.target.checked); }} />Auto feedback on my notes</label>
     </div>
-    <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+    <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
       {tab === "ask" && autoFeedback && feedback && <div><p className="mb-1 text-xs font-semibold text-muted-foreground">Feedback on your notes (updates as you write)</p><AiOutput text={feedback} onInsert={() => insert(feedback, "AI feedback")} /></div>}
       {tab !== "writing" && openSpell > 0 && <button type="button" onClick={() => setTab("writing")} className="w-full rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-left text-sm"><SpellCheck className="mr-1 inline size-4" />{openSpell} spelling/grammar fix{openSpell > 1 ? "es" : ""} ready — review</button>}
       {(tab === "ask" || tab === "research") && <>
