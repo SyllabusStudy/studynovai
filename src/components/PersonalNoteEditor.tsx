@@ -17,14 +17,17 @@ import { savePersonalNote } from "@/lib/notes.functions";
 import { NotesToolbar } from "@/components/NotesToolbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { Database } from "@/integrations/supabase/types";
-
-type Note = Database["public"]["Tables"]["personal_notes"]["Row"];
+import { type PersonalNote as Note, titleFromNotes } from "@/lib/personal-notes";
+import { useClasses } from "@/lib/data";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function PersonalNoteEditor({ note }: { note: Note }) {
   const save = useServerFn(savePersonalNote);
   const qc = useQueryClient();
   const [title, setTitle] = useState(note.title);
+  const [classId, setClassId] = useState<string | null>(note.class_id);
+  const [autoTitle, setAutoTitle] = useState(note.title_is_auto);
+  const classes = useClasses(note.user_id);
   const [status, setStatus] = useState("Saved");
   const [error, setError] = useState("");
   const [dirty, setDirty] = useState(false);
@@ -33,7 +36,7 @@ export function PersonalNoteEditor({ note }: { note: Note }) {
   const persisted = useRef(0);
   const saving = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const draft = useRef({ title: note.title, contentJson: JSON.stringify(note.content), plainText: note.plain_text });
+  const draft = useRef({ title: note.title, contentJson: JSON.stringify(note.content), plainText: note.plain_text, classId: note.class_id, titleIsAuto: note.title_is_auto });
 
   const persist = useCallback(async () => {
     if (saving.current || persisted.current === version.current) return;
@@ -66,6 +69,11 @@ export function PersonalNoteEditor({ note }: { note: Note }) {
     onUpdate: ({ editor: current }) => {
       draft.current.contentJson = JSON.stringify(current.getJSON());
       draft.current.plainText = current.getText();
+      if (draft.current.titleIsAuto) {
+        const nextTitle = titleFromNotes(draft.current.plainText);
+        draft.current.title = nextTitle;
+        setTitle(nextTitle);
+      }
       changed();
     },
   });
@@ -83,8 +91,17 @@ export function PersonalNoteEditor({ note }: { note: Note }) {
   return <div className="mx-auto w-full max-w-5xl">
     <div className="mb-4 flex flex-wrap items-center gap-3">
       <Button asChild variant="ghost" size="icon"><Link to="/notes" search={{}} aria-label="Back to Notes"><ArrowLeft className="size-5" /></Link></Button>
-      <Input aria-label="Note title" maxLength={200} className="min-w-0 flex-1 border-transparent bg-transparent font-display text-lg font-bold shadow-none sm:text-xl" value={title} onChange={e => { setTitle(e.target.value); draft.current.title = e.target.value; changed(); }} />
+      <Input aria-label="Note title" maxLength={200} className="min-w-0 flex-1 border-transparent bg-transparent font-display text-lg font-bold shadow-none sm:text-xl" value={title} onChange={e => { setTitle(e.target.value); draft.current.title = e.target.value; draft.current.titleIsAuto = false; setAutoTitle(false); changed(); }} />
       <span className="flex items-center gap-1.5 text-xs text-muted-foreground" role="status">{status === "Saving…" ? <Loader2 className="size-3.5 animate-spin" /> : status === "Saved" ? <Check className="size-3.5 text-success" /> : null}{status}</span>
+    </div>
+    <div className="mb-4 flex flex-wrap items-center gap-3">
+      <span className="text-sm text-muted-foreground">Save to</span>
+      <Select value={classId ?? "none"} onValueChange={value => { const next = value === "none" ? null : value; setClassId(next); draft.current.classId = next; changed(); }} disabled={classes.isPending || !!classes.error}>
+        <SelectTrigger aria-label="Save note to class" className="w-full sm:w-72"><SelectValue placeholder="Choose class" /></SelectTrigger>
+        <SelectContent><SelectItem value="none">No class</SelectItem>{classes.data?.map(c => <SelectItem key={c.id} value={c.id}>{c.course_code ? `${c.course_code} — ` : ""}{c.class_name}</SelectItem>)}</SelectContent>
+      </Select>
+      <Button variant={autoTitle ? "secondary" : "outline"} size="sm" aria-pressed={autoTitle} onClick={() => { const next = !autoTitle; setAutoTitle(next); draft.current.titleIsAuto = next; if (next) { draft.current.title = titleFromNotes(draft.current.plainText); setTitle(draft.current.title); } changed(); }}>Auto title{autoTitle ? " on" : " off"}</Button>
+      {classes.error && <span className="text-sm text-destructive" role="alert">Classes couldn't be loaded.</span>}
     </div>
     {error && <div className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-3" role="alert"><p className="min-w-0 flex-1 text-sm">{error}</p><Button variant="outline" size="sm" onClick={() => void persist()}><RotateCw className="size-4" />Try again</Button></div>}
     <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card">
