@@ -8,6 +8,7 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/lib/theme";
+import { ToolsMascot } from "@/components/ToolsMascot";
 
 type Tool = { to: string; label: string; desc: string; icon: typeof BookOpen; tint: string };
 
@@ -112,6 +113,7 @@ export function MobileNav() {
         className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/90 backdrop-blur-xl lg:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
+        <ToolsMascot pathname={pathname} onOpen={() => setMore(true)} />
         <ul className="grid grid-cols-5 items-end">
           {tab("/dashboard", "Home", LayoutDashboard)}
           {tab("/calendar", "Calendar", CalendarDays)}
