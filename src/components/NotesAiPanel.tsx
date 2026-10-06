@@ -34,8 +34,9 @@ function AiOutput({ text, onInsert, sources }: { text: string; onInsert: () => v
   </div>;
 }
 
-export function NotesAiPanel({ open, onClose, editor, title, classId, onAddDiagram, onRecordingChange, onBadge }: {
+export function NotesAiPanel({ open, onClose, editor, title, classId, quickAction, onAddDiagram, onRecordingChange, onBadge }: {
   open: boolean; onClose: () => void; editor: Editor | null; title: string; classId: string | null;
+  quickAction?: { id: number; action: "quiz" | "flashcards" | "guide" | "explain" } | null;
   onAddDiagram: (els: DrawEl[]) => void; onRecordingChange: (label: string | null) => void; onBadge: (count: number) => void;
 }) {
   const ai = useServerFn(runNotesAi);
@@ -204,6 +205,19 @@ export function NotesAiPanel({ open, onClose, editor, title, classId, onAddDiagr
     if (action === "diagram" && r.diagram) { onAddDiagram(diagramToElements(r.diagram)); toast.success("Diagram added on a new drawing page — switch to Draw to edit it"); return; }
     setQuizPick({}); setStudy({ ...r, text: action === "guide" ? r.text : "" });
   };
+
+  const handledQuickAction = useRef<number | null>(null);
+  useEffect(() => {
+    if (!open || !quickAction || handledQuickAction.current === quickAction.id) return;
+    handledQuickAction.current = quickAction.id;
+    if (quickAction.action === "explain") {
+      setTab("explain");
+      void call("explain").then(r => { if (r) setExplain(r.text); });
+      return;
+    }
+    setTab("study");
+    void runStudy(quickAction.action);
+  }, [open, quickAction]);
 
   const openSpell = suggestions.filter(x => !x.state).length;
   useEffect(() => { onBadge(openSpell + (feedbackNew ? 1 : 0)); }, [openSpell, feedbackNew, onBadge]);
