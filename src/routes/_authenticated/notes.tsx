@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export const Route = createFileRoute("/_authenticated/notes")({
   ssr: false,
-  validateSearch: z.object({ note: z.string().uuid().optional().catch(undefined) }),
+  validateSearch: z.object({ note: z.string().uuid().optional().catch(undefined), ai: z.enum(["quiz", "flashcards"]).optional().catch(undefined) }),
   head: () => ({ meta: [
     { title: "My Notes — SyllabusStudy" },
     { name: "description", content: "Your private SyllabusStudy notes workspace with rich document editing and automatic saving." },
@@ -34,7 +34,7 @@ function NotesPage() {
   const { user } = useAuth();
   const classes = useClasses(user?.id);
   const [classFilter, setClassFilter] = useState("all");
-  const { note: noteId } = Route.useSearch();
+  const { note: noteId, ai } = Route.useSearch();
   const navigate = Route.useNavigate();
   const qc = useQueryClient();
   const list = useServerFn(listPersonalNotes);
@@ -73,7 +73,7 @@ function NotesPage() {
     if (opened.isPending) return <div className="flex justify-center py-20" role="status"><Loader2 className="size-6 animate-spin text-primary" /><span className="sr-only">Loading note</span></div>;
     if (opened.error) return <div className="space-y-4 py-12 text-center"><p role="alert">{opened.error.message}</p><Button variant="outline" onClick={() => void opened.refetch()}>Try again</Button></div>;
     if (!opened.data) return <div className="space-y-4 py-12 text-center"><h1 className="font-display text-xl font-bold">Note unavailable</h1><Button asChild variant="outline"><Link to="/notes" search={{}}>Back to Notes</Link></Button></div>;
-    return <PersonalNoteEditor key={opened.data.id} note={opened.data} />;
+    return <PersonalNoteEditor key={opened.data.id} note={opened.data} initialAction={ai} />;
   }
 
   const filtered = (notes.data ?? []).filter(n => `${n.title} ${n.plain_text}`.toLowerCase().includes(search.toLowerCase()) && (classFilter === "all" || (classFilter === "none" ? !n.class_id : n.class_id === classFilter)));

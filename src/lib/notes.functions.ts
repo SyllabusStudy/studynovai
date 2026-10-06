@@ -102,3 +102,19 @@ export const deletePersonalNote = createServerFn({ method: "POST" })
     if (error) throw new Error("Your note couldn't be deleted. Please try again.");
     return { ok: true };
   });
+export const importSharedNote = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(z.object({ token: z.string().min(1).max(200) }))
+  .handler(async ({ context, data: input }) => {
+    const { data: rows, error } = await context.supabase.rpc("get_shared_item", { _token: input.token });
+    const row = (rows as Array<{ kind: string; title: string; payload: Json }> | null)?.[0];
+    if (error || !row || row.kind !== "note") throw new Error("This shared note isn't available anymore.");
+    const p = (row.payload ?? {}) as { content?: Json; plainText?: string };
+    const content = p.content && typeof p.content === "object" && !Array.isArray(p.content) && (p.content as { type?: string }).type === "doc"
+      ? p.content : ({ type: "doc", content: [] } as Json);
+    const { data, error: insertError } = await context.supabase.from("personal_notes")
+      .insert({ user_id: context.userId, title: row.title.slice(0, 200) || "Shared note", title_is_auto: false, content, plain_text: (p.plainText ?? "").slice(0, 1_000_000) })
+      .select("id").single();
+    if (insertError) throw new Error("The shared note couldn't be added to your notes.");
+    return data;
+  });

@@ -12,7 +12,7 @@ export function ShareButton({
   title,
   payload,
 }: {
-  kind: "deck" | "quiz";
+  kind: "deck" | "quiz" | "note";
   refId: string;
   title: string;
   payload: () => Json;
@@ -31,7 +31,8 @@ export function ShareButton({
         .single();
       if (error) throw error;
       const url = `${window.location.origin}/share/${data.token}`;
-      if (navigator.share) {
+      await navigator.clipboard?.writeText(url).catch(() => undefined);
+      if (typeof navigator.share === "function") {
         await navigator.share({ title: `${title} — SyllabusStudy`, url }).catch(() => undefined);
       } else {
         await navigator.clipboard.writeText(url);
@@ -47,7 +48,7 @@ export function ShareButton({
   return (
     <Button size="sm" variant="outline" className="gap-1.5" disabled={busy} onClick={() => void share()}>
       {busy ? <Loader2 className="size-4 animate-spin" /> : <Share2 className="size-4" />}
-      Share {kind === "deck" ? "deck" : "quiz"}
+      Share {kind === "deck" ? "deck" : kind === "note" ? "note" : "quiz"}
     </Button>
   );
 }

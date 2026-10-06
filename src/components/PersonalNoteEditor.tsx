@@ -25,9 +25,11 @@ import { normalizeDrawing, type Drawing } from "@/lib/note-drawing";
 import { Keyboard, PenTool, Sparkles } from "lucide-react";
 import { NotesAiPanel } from "@/components/NotesAiPanel";
 import type { DrawEl } from "@/lib/note-drawing";
+import { ShareButton } from "@/components/ShareButton";
+import type { Json } from "@/integrations/supabase/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-export function PersonalNoteEditor({ note }: { note: Note }) {
+export function PersonalNoteEditor({ note, initialAction }: { note: Note; initialAction?: "quiz" | "flashcards" | undefined }) {
   const save = useServerFn(savePersonalNote);
   const qc = useQueryClient();
   const [title, setTitle] = useState(note.title);
@@ -45,9 +47,9 @@ export function PersonalNoteEditor({ note }: { note: Note }) {
   const draft = useRef({ title: note.title, contentJson: JSON.stringify(note.content), plainText: note.plain_text, classId: note.class_id, titleIsAuto: note.title_is_auto, drawingJson: undefined as string | undefined, editorMode: (note.editor_mode === "draw" ? "draw" : "type") as "type" | "draw" });
   const [mode, setMode] = useState<"type" | "draw">(draft.current.editorMode);
   const [initialDrawing] = useState(() => normalizeDrawing(note.drawing));
-  const [aiOpen, setAiOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(!!initialAction);
   const [aiBadge, setAiBadge] = useState(0);
-  const [quickAction, setQuickAction] = useState<{ id: number; action: "quiz" | "flashcards" | "guide" | "explain" } | null>(null);
+  const [quickAction, setQuickAction] = useState<{ id: number; action: "quiz" | "flashcards" | "guide" | "explain" } | null>(() => initialAction ? { id: 1, action: initialAction } : null);
   const [recLabel, setRecLabel] = useState<string | null>(null);
   const [incoming, setIncoming] = useState<{ key: number; elements: DrawEl[] } | null>(null);
 
@@ -146,6 +148,7 @@ export function PersonalNoteEditor({ note }: { note: Note }) {
         {([["type", "Type", Keyboard], ["draw", "Draw", PenTool]] as const).map(([id, label, Icon]) => <Button key={id} role="tab" aria-selected={mode === id} size="sm" variant={mode === id ? "default" : "ghost"} onClick={() => { setMode(id); draft.current.editorMode = id; changed(); }}><Icon className="size-4" />{label}</Button>)}
       </div>
       <Button variant={aiOpen ? "secondary" : "outline"} size="sm" onClick={() => setAiOpen(o => !o)} aria-pressed={aiOpen}><Sparkles className="size-4 text-primary" />AI Assistant{aiBadge > 0 && <span className="ml-1 rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground">{aiBadge}</span>}</Button>
+      <ShareButton kind="note" refId={note.id} title={title} payload={() => ({ content: (editor?.getJSON() ?? note.content) as Json, plainText: editor?.getText() ?? note.plain_text }) as Json} />
       {recLabel && <button type="button" onClick={() => setAiOpen(true)} className="inline-flex items-center gap-1.5 rounded-full border border-destructive/40 bg-destructive/10 px-3 py-1 text-xs font-medium text-destructive" role="status"><span className="size-2 animate-pulse rounded-full bg-destructive" />{recLabel}</button>}
       {([
         ["quiz", "Quiz me", HelpCircle],
