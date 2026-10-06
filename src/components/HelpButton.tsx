@@ -36,7 +36,7 @@ export function HelpButton() {
         data-tour="help"
         onClick={() => setOpen(true)}
         variant="secondary"
-        className="fixed bottom-36 right-4 z-40 h-10 gap-1.5 rounded-full shadow-lg lg:bottom-[5.5rem] lg:right-6"
+        className="fixed bottom-21 right-[9.5rem] z-40 h-10 gap-1.5 rounded-full shadow-lg lg:bottom-7 lg:right-[10.5rem]"
       >
         <Lightbulb className="size-4" /> Stuck?
       </Button>
