@@ -212,7 +212,7 @@ function Landing() {
           ))}
         </div>
 
-        <div className="dash-glass dash-motivation mt-14 flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="dash-glass mt-14 shadow-[0_0_40px_-10px_var(--primary)] flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-lg font-bold tracking-tight">Your entire semester, in one place.</h2>
             <p className="mt-1 text-sm text-muted-foreground">

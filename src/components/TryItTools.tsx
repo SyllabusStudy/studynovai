@@ -361,7 +361,7 @@ export function TryItTools() {
   return (
     <section id="try-it" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
       <div className="max-w-2xl">
-        <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
+        <h2 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">
           Study smarter. Try it yourself.
         </h2>
         <p className="mt-2 text-sm text-muted-foreground sm:text-base">
