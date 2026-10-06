@@ -117,12 +117,12 @@ export function PersonalNoteEditor({ note }: { note: Note }) {
       {classes.error && <span className="text-sm text-destructive" role="alert">Classes couldn't be loaded.</span>}
     </div>
     {error && <div className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-3" role="alert"><p className="min-w-0 flex-1 text-sm">{error}</p><Button variant="outline" size="sm" onClick={() => void persist()}><RotateCw className="size-4" />Try again</Button></div>}
-    <div className="mb-3 inline-flex rounded-lg border border-border bg-card p-1" role="tablist" aria-label="Note mode">
-      {([["type", "Type", Keyboard], ["draw", "Draw", PenTool]] as const).map(([id, label, Icon]) => <Button key={id} role="tab" aria-selected={mode === id} size="sm" variant={mode === id ? "default" : "ghost"} onClick={() => { setMode(id); draft.current.editorMode = id; changed(); }}><Icon className="size-4" />{label}</Button>)}
-    </div>
-    <Button variant={aiOpen ? "secondary" : "outline"} size="sm" className="mb-3 ml-2" onClick={() => setAiOpen(o => !o)} aria-pressed={aiOpen}><Sparkles className="size-4 text-primary" />AI Assistant{aiBadge > 0 && <span className="ml-1 rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground">{aiBadge}</span>}</Button>
-    {recLabel && <button type="button" onClick={() => setAiOpen(true)} className="mb-3 ml-2 inline-flex items-center gap-1.5 rounded-full border border-destructive/40 bg-destructive/10 px-3 py-1 text-xs font-medium text-destructive" role="status"><span className="size-2 animate-pulse rounded-full bg-destructive" />{recLabel}</button>}
-    <div className="mb-3 flex flex-wrap gap-2" aria-label="Quick AI tools">
+    <div className="mb-3 flex flex-wrap items-center gap-2">
+      <div className="inline-flex rounded-lg border border-border bg-card p-1" role="tablist" aria-label="Note mode">
+        {([["type", "Type", Keyboard], ["draw", "Draw", PenTool]] as const).map(([id, label, Icon]) => <Button key={id} role="tab" aria-selected={mode === id} size="sm" variant={mode === id ? "default" : "ghost"} onClick={() => { setMode(id); draft.current.editorMode = id; changed(); }}><Icon className="size-4" />{label}</Button>)}
+      </div>
+      <Button variant={aiOpen ? "secondary" : "outline"} size="sm" onClick={() => setAiOpen(o => !o)} aria-pressed={aiOpen}><Sparkles className="size-4 text-primary" />AI Assistant{aiBadge > 0 && <span className="ml-1 rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground">{aiBadge}</span>}</Button>
+      {recLabel && <button type="button" onClick={() => setAiOpen(true)} className="inline-flex items-center gap-1.5 rounded-full border border-destructive/40 bg-destructive/10 px-3 py-1 text-xs font-medium text-destructive" role="status"><span className="size-2 animate-pulse rounded-full bg-destructive" />{recLabel}</button>}
       {([
         ["quiz", "Quiz me", HelpCircle],
         ["flashcards", "Flashcards", BookOpen],
