@@ -19,6 +19,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { type PersonalNote as Note, titleFromNotes } from "@/lib/personal-notes";
 import { useClasses } from "@/lib/data";
+import { NoteDrawingCanvas } from "@/components/NoteDrawingCanvas";
+import { normalizeDrawing, type Drawing } from "@/lib/note-drawing";
+import { Keyboard, PenTool } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function PersonalNoteEditor({ note }: { note: Note }) {
@@ -36,7 +39,9 @@ export function PersonalNoteEditor({ note }: { note: Note }) {
   const persisted = useRef(0);
   const saving = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const draft = useRef({ title: note.title, contentJson: JSON.stringify(note.content), plainText: note.plain_text, classId: note.class_id, titleIsAuto: note.title_is_auto });
+  const draft = useRef({ title: note.title, contentJson: JSON.stringify(note.content), plainText: note.plain_text, classId: note.class_id, titleIsAuto: note.title_is_auto, drawingJson: undefined as string | undefined, editorMode: (note.editor_mode === "draw" ? "draw" : "type") as "type" | "draw" });
+  const [mode, setMode] = useState<"type" | "draw">(draft.current.editorMode);
+  const [initialDrawing] = useState(() => normalizeDrawing(note.drawing));
 
   const persist = useCallback(async () => {
     if (saving.current || persisted.current === version.current) return;
@@ -104,7 +109,13 @@ export function PersonalNoteEditor({ note }: { note: Note }) {
       {classes.error && <span className="text-sm text-destructive" role="alert">Classes couldn't be loaded.</span>}
     </div>
     {error && <div className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-3" role="alert"><p className="min-w-0 flex-1 text-sm">{error}</p><Button variant="outline" size="sm" onClick={() => void persist()}><RotateCw className="size-4" />Try again</Button></div>}
-    <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card">
+    <div className="mb-3 inline-flex rounded-lg border border-border bg-card p-1" role="tablist" aria-label="Note mode">
+      {([["type", "Type", Keyboard], ["draw", "Draw", PenTool]] as const).map(([id, label, Icon]) => <Button key={id} role="tab" aria-selected={mode === id} size="sm" variant={mode === id ? "default" : "ghost"} onClick={() => { setMode(id); draft.current.editorMode = id; changed(); }}><Icon className="size-4" />{label}</Button>)}
+    </div>
+    <div className={mode === "draw" ? "rounded-xl border border-border bg-card shadow-card" : "hidden"}>
+      <NoteDrawingCanvas value={initialDrawing} onChange={(d: Drawing) => { draft.current.drawingJson = JSON.stringify(d); changed(); }} />
+    </div>
+    <div className={mode === "type" ? "overflow-hidden rounded-xl border border-border bg-card shadow-card" : "hidden"}>
       {editor && <NotesToolbar editor={editor} />}
       <EditorContent editor={editor} className="notes-editor min-h-[60dvh] overflow-x-auto bg-background/50" />
       <div className="border-t border-border px-5 py-2 text-right text-xs text-muted-foreground">{editor?.getText().trim().split(/\s+/).filter(Boolean).length ?? 0} words</div>
