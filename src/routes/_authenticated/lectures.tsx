@@ -273,12 +273,12 @@ ${keys.length ? `<h2>Key exam concepts</h2><ul>${keys.map((k) => `<li>${escapeHt
             <Button className="gap-1.5" disabled={busy} onClick={() => void start()}><Mic className="size-4" /> Record lecture</Button>
           )}
           <Button variant="outline" className="gap-1.5" disabled={busy || recording} onClick={() => fileRef.current?.click()}>
-            <FileAudio className="size-4" /> Upload voice memo
+            <FileAudio className="size-4" /> Upload audio or video
           </Button>
           <input
             ref={fileRef}
             type="file"
-            accept="audio/*,.m4a,.mp3,.wav,.aac,.ogg,.webm"
+            accept="audio/*,video/*,.m4a,.mp3,.wav,.aac,.ogg,.webm,.mp4,.mov"
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
@@ -288,7 +288,7 @@ ${keys.length ? `<h2>Key exam concepts</h2><ul>${keys.map((k) => `<li>${escapeHt
           />
         </div>
         {busy ? (
-          <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" /> Listening to the lecture and writing your study guide… this can take a minute.</p>
+          <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" /> {stage || "Working on your lecture…"}</p>
         ) : failed ? (
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/40 p-3 text-sm">
             <span className="text-muted-foreground">Your recording is saved here. Notes didn't finish.</span>

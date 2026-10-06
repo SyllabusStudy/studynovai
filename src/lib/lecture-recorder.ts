@@ -32,7 +32,7 @@ export function useLectureRecorder() {
 export async function startLectureRecording() {
   if (state.recording) return;
   const stream = await navigator.mediaDevices.getUserMedia({
-    audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
+    audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true },
   });
   const chunks: Blob[] = [];
   let mr: MediaRecorder;
