@@ -109,6 +109,8 @@ export const createLectureNotes = createServerFn({ method: "POST" })
         mimeType: z.string().max(120).nullable().optional(),
         fileName: z.string().max(200),
         classId: z.string().uuid().nullable(),
+        // Optional: the student's own note, used only as extra context (never overwritten).
+        contextNotes: z.string().max(60_000).nullable().optional(),
       })
       .parse(d),
   )
@@ -153,7 +155,7 @@ export const createLectureNotes = createServerFn({ method: "POST" })
       if (!transcript) throw new Error("We couldn't hear the professor in that recording. Try keeping the phone closer to the front.");
     } else {
       if (!transcript) throw new Error("We couldn't hear any speech in that recording.");
-      const notesPrompt = notesPromptFor(transcript);
+      const notesPrompt = notesPromptFor(transcript) + (data.contextNotes?.trim() ? `\n\nThe student also took their OWN NOTES during this lecture. Use them as extra context to organize the study notes together with the lecture (mention when a point came from their notes), but never invent lecture content:\n"""\n${data.contextNotes.slice(0, 60_000)}\n"""` : "");
       const ask = () =>
         withUserAiKey(context.supabase, context.userId, () =>
           callAI([{ role: "user", content: notesPrompt }], { maxTokens: 12000, temperature: 0.2 }),

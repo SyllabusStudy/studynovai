@@ -21,7 +21,9 @@ import { type PersonalNote as Note, titleFromNotes } from "@/lib/personal-notes"
 import { useClasses } from "@/lib/data";
 import { NoteDrawingCanvas } from "@/components/NoteDrawingCanvas";
 import { normalizeDrawing, type Drawing } from "@/lib/note-drawing";
-import { Keyboard, PenTool } from "lucide-react";
+import { Keyboard, PenTool, Sparkles } from "lucide-react";
+import { NotesAiPanel } from "@/components/NotesAiPanel";
+import type { DrawEl } from "@/lib/note-drawing";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function PersonalNoteEditor({ note }: { note: Note }) {
@@ -42,6 +44,9 @@ export function PersonalNoteEditor({ note }: { note: Note }) {
   const draft = useRef({ title: note.title, contentJson: JSON.stringify(note.content), plainText: note.plain_text, classId: note.class_id, titleIsAuto: note.title_is_auto, drawingJson: undefined as string | undefined, editorMode: (note.editor_mode === "draw" ? "draw" : "type") as "type" | "draw" });
   const [mode, setMode] = useState<"type" | "draw">(draft.current.editorMode);
   const [initialDrawing] = useState(() => normalizeDrawing(note.drawing));
+  const [aiOpen, setAiOpen] = useState(false);
+  const [recLabel, setRecLabel] = useState<string | null>(null);
+  const [incoming, setIncoming] = useState<{ key: number; elements: DrawEl[] } | null>(null);
 
   const persist = useCallback(async () => {
     if (saving.current || persisted.current === version.current) return;
@@ -70,7 +75,7 @@ export function PersonalNoteEditor({ note }: { note: Note }) {
     immediatelyRender: false,
     extensions: [StarterKit.configure({ link: { openOnClick: false, protocols: ["http", "https", "mailto"] } }), TextStyle, FontSize, Color, Highlight.configure({ multicolor: true }), TextAlign.configure({ types: ["heading", "paragraph"] }), Image.configure({ allowBase64: true }), TableKit, TaskList, TaskItem.configure({ nested: true })],
     content: note.content as JSONContent,
-    editorProps: { attributes: { class: "notes-document", "aria-label": "Note document", role: "textbox", "aria-multiline": "true" } },
+    editorProps: { attributes: { spellcheck: "true", class: "notes-document", "aria-label": "Note document", role: "textbox", "aria-multiline": "true" } },
     onUpdate: ({ editor: current }) => {
       draft.current.contentJson = JSON.stringify(current.getJSON());
       draft.current.plainText = current.getText();
@@ -93,7 +98,8 @@ export function PersonalNoteEditor({ note }: { note: Note }) {
   }, [blocker, persist]);
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
-  return <div className="mx-auto w-full max-w-5xl">
+  return <div className="flex w-full items-start gap-4">
+  <div className="mx-auto w-full min-w-0 max-w-5xl">
     <div className="mb-4 flex flex-wrap items-center gap-3">
       <Button asChild variant="ghost" size="icon"><Link to="/notes" search={{}} aria-label="Back to Notes"><ArrowLeft className="size-5" /></Link></Button>
       <Input aria-label="Note title" maxLength={200} className="min-w-0 flex-1 border-transparent bg-transparent font-display text-lg font-bold shadow-none sm:text-xl" value={title} onChange={e => { setTitle(e.target.value); draft.current.title = e.target.value; draft.current.titleIsAuto = false; setAutoTitle(false); changed(); }} />
@@ -112,13 +118,17 @@ export function PersonalNoteEditor({ note }: { note: Note }) {
     <div className="mb-3 inline-flex rounded-lg border border-border bg-card p-1" role="tablist" aria-label="Note mode">
       {([["type", "Type", Keyboard], ["draw", "Draw", PenTool]] as const).map(([id, label, Icon]) => <Button key={id} role="tab" aria-selected={mode === id} size="sm" variant={mode === id ? "default" : "ghost"} onClick={() => { setMode(id); draft.current.editorMode = id; changed(); }}><Icon className="size-4" />{label}</Button>)}
     </div>
+    <Button variant={aiOpen ? "secondary" : "outline"} size="sm" className="mb-3 ml-2" onClick={() => setAiOpen(o => !o)} aria-pressed={aiOpen}><Sparkles className="size-4 text-primary" />AI Assistant</Button>
+    {recLabel && <button type="button" onClick={() => setAiOpen(true)} className="mb-3 ml-2 inline-flex items-center gap-1.5 rounded-full border border-destructive/40 bg-destructive/10 px-3 py-1 text-xs font-medium text-destructive" role="status"><span className="size-2 animate-pulse rounded-full bg-destructive" />{recLabel}</button>}
     <div className={mode === "draw" ? "rounded-xl border border-border bg-card shadow-card" : "hidden"}>
-      <NoteDrawingCanvas value={initialDrawing} onChange={(d: Drawing) => { draft.current.drawingJson = JSON.stringify(d); changed(); }} />
+      <NoteDrawingCanvas value={initialDrawing} incoming={incoming} onChange={(d: Drawing) => { draft.current.drawingJson = JSON.stringify(d); changed(); }} />
     </div>
     <div className={mode === "type" ? "overflow-hidden rounded-xl border border-border bg-card shadow-card" : "hidden"}>
       {editor && <NotesToolbar editor={editor} />}
       <EditorContent editor={editor} className="notes-editor min-h-[60dvh] overflow-x-auto bg-background/50" />
       <div className="border-t border-border px-5 py-2 text-right text-xs text-muted-foreground">{editor?.getText().trim().split(/\s+/).filter(Boolean).length ?? 0} words</div>
     </div>
+  </div>
+  <NotesAiPanel open={aiOpen} onClose={() => setAiOpen(false)} editor={editor} title={title} classId={classId} onRecordingChange={setRecLabel} onAddDiagram={els => { setIncoming({ key: Date.now(), elements: els }); setMode("draw"); draft.current.editorMode = "draw"; }} />
   </div>;
 }
