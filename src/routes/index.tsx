@@ -121,9 +121,17 @@ function Landing() {
     if (!loading && user) navigate({ to: "/dashboard" });
   }, [loading, user, navigate]);
 
+  // Same navy glass look as the signed-in Home dashboard.
+  useEffect(() => {
+    const el = document.documentElement;
+    el.classList.add("app-theme");
+    el.classList.toggle("dark", theme === "dark");
+    return () => { el.classList.remove("app-theme"); };
+  }, [theme]);
+
   return (
-    <div className="min-h-screen bg-background">
-      <header className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:px-6">
+    <div className="app-canvas min-h-screen">
+      <header className="sticky top-0 z-30 border-b border-border bg-background/60 backdrop-blur-xl"><div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:px-6">
         <BrandLogo />
         <span className="text-sm font-extrabold tracking-tight">SyllabusStudy</span>
         <div className="ml-auto flex items-center gap-2">
@@ -133,20 +141,20 @@ function Landing() {
           <Button asChild variant="ghost" size="sm">
             <Link to="/auth">Log in</Link>
           </Button>
-          <Button asChild size="sm">
+          <Button asChild size="sm" className="rounded-full shadow-[0_0_20px_color-mix(in_oklab,var(--primary)_45%,transparent)]">
             <Link to="/auth" search={{ mode: "signup" }}>
               Get started
             </Link>
           </Button>
         </div>
-      </header>
+      </div></header>
 
       <section className="mx-auto max-w-6xl px-4 pb-10 pt-8 sm:px-6 sm:pt-14">
         <div className="max-w-3xl animate-fade-up">
-          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-muted-foreground">
+          <span className="inline-flex items-center gap-2 dash-glass rounded-full px-3 py-1 text-xs font-semibold text-muted-foreground">
             <Sparkles className="size-3.5 text-primary" /> Built for real coursework
           </span>
-          <h1 className="mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl">
+          <h1 className="mt-5 font-display text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl">
             Your <span className="text-gradient-brand">AI-powered</span> college companion.
           </h1>
           <p className="mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg">
@@ -154,12 +162,12 @@ function Landing() {
             place. Syllabus Study is the AI study assistant that turns your syllabus into a study plan.
           </p>
           <div className="mt-7 flex flex-wrap items-center gap-3">
-            <Button asChild size="lg" className="gap-2">
+            <Button asChild size="lg" className="gap-2 rounded-full shadow-[0_0_28px_color-mix(in_oklab,var(--primary)_50%,transparent)]">
               <Link to="/auth" search={{ mode: "signup" }}>
                 Create your free account <ArrowRight className="size-4" />
               </Link>
             </Button>
-            <Button asChild size="lg" variant="outline">
+            <Button asChild size="lg" variant="outline" className="dash-glass rounded-full">
               <a href="#try-it">Try SyllabusStudy</a>
             </Button>
             <InstallAppButton className="gap-2" />
@@ -170,7 +178,7 @@ function Landing() {
       <TryItTools />
 
       <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
-        <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
+        <h2 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">
           One place for everything
         </h2>
         <p className="mt-2 text-sm text-muted-foreground sm:text-base">
@@ -181,9 +189,9 @@ function Landing() {
             <Link
               key={h.label}
               to={h.to}
-              className="surface-card group flex items-center gap-3 p-4 transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[var(--shadow-pop)]"
+              className="dash-glass group flex items-center gap-3 p-4 transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[var(--shadow-pop)]"
             >
-              <span className="flex size-9 items-center justify-center rounded-xl bg-secondary text-primary">
+              <span className="flex size-9 items-center justify-center rounded-xl bg-primary/15 text-primary">
                 <h.icon className="size-4" />
               </span>
               <span className="text-sm font-semibold tracking-tight">{h.label}</span>
@@ -194,8 +202,8 @@ function Landing() {
 
         <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f) => (
-            <article key={f.title} className="surface-card animate-fade-up p-5">
-              <span className="flex size-10 items-center justify-center rounded-xl bg-secondary text-primary">
+            <article key={f.title} className="dash-glass animate-fade-up p-5">
+              <span className="flex size-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
                 <f.icon className="size-5" />
               </span>
               <h3 className="mt-4 text-base font-bold tracking-tight">{f.title}</h3>
@@ -204,7 +212,7 @@ function Landing() {
           ))}
         </div>
 
-        <div className="surface-card mt-14 flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="dash-glass dash-motivation mt-14 flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-lg font-bold tracking-tight">Your entire semester, in one place.</h2>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -219,7 +227,7 @@ function Landing() {
         </div>
       </section>
 
-      <footer className="border-t border-border py-8">
+      <footer className="border-t border-border bg-background/40 py-8 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-4 text-center text-xs text-muted-foreground sm:px-6">
           <p>
             SyllabusStudy — your AI-powered college companion. Organize classes, syllabi, assignments,

@@ -68,9 +68,9 @@ function ToolCard({
   children: React.ReactNode;
 }) {
   return (
-    <article className="surface-card group flex flex-col gap-3 p-5 transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[var(--shadow-pop)]">
+    <article className="dash-glass group flex flex-col gap-3 p-5 transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[var(--shadow-pop)]">
       <div className="flex items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary transition-colors group-hover:bg-primary/15">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary transition-colors group-hover:bg-primary/15">
           <Icon className="size-5" />
         </span>
         <div>
