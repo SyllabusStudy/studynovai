@@ -49,6 +49,7 @@ export const savePersonalNote = createServerFn({ method: "POST" })
     revision: z.number().int().nonnegative(),
     classId: z.string().uuid().nullable(), titleIsAuto: z.boolean(),
     drawingJson: z.string().max(12_000_000).optional(), editorMode: z.enum(["type", "draw"]).optional(),
+    force: z.boolean().optional(),
   }))
   .handler(async ({ context, data: input }) => {
     let content: Json;
@@ -69,9 +70,15 @@ export const savePersonalNote = createServerFn({ method: "POST" })
       const { data: ownedClass, error: classError } = await context.supabase.from("classes").select("id").eq("id", input.classId).eq("user_id", context.userId).maybeSingle();
       if (classError || !ownedClass) throw new Error("Choose one of your own classes before saving.");
     }
+    let base = input.revision;
+    if (input.force) {
+      // No other editor has this note open, so a revision mismatch is our own earlier save (e.g. a dropped response).
+      const { data: cur } = await context.supabase.from("personal_notes").select("revision").eq("user_id", context.userId).eq("id", input.id).maybeSingle();
+      if (cur) base = cur.revision;
+    }
     const { data, error } = await context.supabase.from("personal_notes")
-      .update({ title: input.titleIsAuto ? titleFromNotes(input.plainText) : input.title.trim() || "Untitled note", class_id: input.classId, title_is_auto: input.titleIsAuto, content, plain_text: input.plainText, revision: input.revision + 1, ...(drawing !== undefined ? { drawing } : {}), ...(input.editorMode ? { editor_mode: input.editorMode } : {}) })
-      .eq("user_id", context.userId).eq("id", input.id).eq("revision", input.revision)
+      .update({ title: input.titleIsAuto ? titleFromNotes(input.plainText) : input.title.trim() || "Untitled note", class_id: input.classId, title_is_auto: input.titleIsAuto, content, plain_text: input.plainText, revision: base + 1, ...(drawing !== undefined ? { drawing } : {}), ...(input.editorMode ? { editor_mode: input.editorMode } : {}) })
+      .eq("user_id", context.userId).eq("id", input.id).eq("revision", base)
       .select("revision,updated_at").maybeSingle();
     if (error) throw new Error("Your changes couldn't be saved. Keep this note open and try again.");
     if (!data) throw new Error("This note changed in another window. Copy your changes before reopening it.");
