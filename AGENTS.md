@@ -13,3 +13,5 @@
 - School calendar sync (Canvas/Blackboard .ics) stores links in `calendar_feeds` and dedupes events via `calendar_events.sync_key = ics:<feedId>:<uid>` (source_document is a uuid FK to documents) and keeps re-syncs idempotent.
 - Shared links snapshot content into `shared_items` and are read publicly only via the security-definer `get_shared_item(token)` RPC — no anon table access.
 - The visible product brand is SyllabusStudy, while existing `studynova.link` URLs, sender addresses, and persisted storage keys stay unchanged so old links and user state continue working.
+- Personal Notes use authenticated server functions and owner-only RLS with revision-checked autosaves; this prevents cross-account access and silent concurrent overwrites.
+- Personal Notes persist extensible Tiptap JSON documents separately from lecture notes; this preserves existing tools and supports future editor extensions without implementing them now.
