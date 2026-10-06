@@ -218,7 +218,7 @@ export function NotesAiPanel({ open, onClose, editor, title, classId, quickActio
       if (!auth.user) throw new Error("Please sign in again.");
       const transcript = await transcribeRecording(auth.user.id, recording.blob, transcribe, setStage);
       setStage("Organizing your lecture with your notes…");
-      const r = await makeLecture({ data: { transcript, fileName: title || "Lecture", classId, contextNotes: noteText().slice(0, 200000) } });
+      const r = await makeLecture({ data: { transcript, fileName: title || "Lecture", classId, contextNotes: noteText().slice(0, 60000) } });
       const { data: row } = await supabase.from("lecture_notes").select("id,title,summary,key_concepts,transcript").eq("id", r.id).maybeSingle();
       if (row) setLecture({ ...row, summary: row.summary ?? "", key_concepts: Array.isArray(row.key_concepts) ? row.key_concepts.map(String) : [], transcript: row.transcript ?? "", cards: r.cards });
       toast.success(`Lecture processed${r.cards ? ` — ${r.cards} flashcards saved` : ""}`);
