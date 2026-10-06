@@ -145,6 +145,33 @@ export function NotesAiPanel({ open, onClose, editor, title, classId, quickActio
     return true;
   };
 
+  const acceptAll = () => {
+    if (!editor) return;
+    const accepted = new Set<number>();
+    editor.chain().focus().command(({ tr }) => {
+      suggestions.forEach((s, index) => {
+        if (s.state || !s.original || s.original === s.suggestion) return;
+        let applied = false;
+        tr.doc.descendants((node, pos) => {
+          if (applied || !node.isText || !node.text) return !applied;
+          const offset = node.text.indexOf(s.original);
+          if (offset >= 0) {
+            const from = pos + offset;
+            tr.replaceWith(from, from + s.original.length, s.suggestion ? tr.doc.type.schema.text(s.suggestion, node.marks) : []);
+            applied = true;
+            accepted.add(index);
+          }
+          return false;
+        });
+      });
+      return true;
+    }).run();
+    setSuggestions(current => current.map((s, index) => accepted.has(index) ? { ...s, state: "accepted" } : s));
+    const skipped = suggestions.filter(s => !s.state).length - accepted.size;
+    if (accepted.size) toast.success(`${accepted.size} suggestion${accepted.size === 1 ? "" : "s"} accepted`);
+    if (skipped) toast.message(`${skipped} suggestion${skipped === 1 ? " needs" : "s need"} review because the text changed or spans formatting.`);
+  };
+
   // ---- Lecture recording ----
   const [rec, setRec] = useState<"idle" | "recording" | "paused">("idle");
   const [secs, setSecs] = useState(0);
@@ -268,6 +295,7 @@ export function NotesAiPanel({ open, onClose, editor, title, classId, quickActio
           <Button size="sm" variant="secondary" disabled={working} onClick={async () => { const r = await call("spelling"); if (r) { setSuggestions(r.suggestions); if (!r.suggestions.length) toast.success("No spelling or grammar mistakes found"); } }}><SpellCheck className="size-4" />Spelling & grammar</Button>
           {["better wording", "make clearer", "make shorter", "expand", "rewrite", "academic tone"].map(m => <Button key={m} size="sm" variant={writeMode === m ? "secondary" : "outline"} disabled={working} onClick={async () => { setWriteMode(m); setBusy("improve"); try { const r = await ai({ data: { action: "improve", noteText: noteText(), selection: selection(), question: "", writeMode: m, history: [] } }); if (r.error) toast.error(r.error); else { setSuggestions(r.suggestions); if (!r.suggestions.length) toast.message("No changes suggested"); } } finally { setBusy(null); } }} className="capitalize">{m}</Button>)}
         </div>
+        {openSpell > 0 && <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-sm text-muted-foreground">{openSpell} suggestion{openSpell === 1 ? "" : "s"}</span><Button size="sm" disabled={working || !editor} onClick={acceptAll}><Check className="size-4" />Accept All</Button></div>}
         {suggestions.map((s, i) => <div key={i} className={cn("rounded-lg border border-border p-3 text-sm", s.state && "opacity-60")}>
           <p className="text-muted-foreground line-through decoration-destructive/60">{s.original}</p>
           <p className="mt-1 font-medium">{s.suggestion}</p>
