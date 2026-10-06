@@ -32,7 +32,7 @@ export function ShareButton({
       if (error) throw error;
       const url = `${window.location.origin}/share/${data.token}`;
       await navigator.clipboard?.writeText(url).catch(() => undefined);
-      if ("share" in navigator) {
+      if (typeof navigator.share === "function") {
         await navigator.share({ title: `${title} — SyllabusStudy`, url }).catch(() => undefined);
       } else {
         await navigator.clipboard.writeText(url);
