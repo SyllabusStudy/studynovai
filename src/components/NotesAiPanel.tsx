@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { BookOpen, Brain, Check, Copy, ExternalLink, HelpCircle, Lightbulb, Loader2, Mic, Network, Pause, Play, Plus, Search, Send, Sparkles, Square, SpellCheck, Wand2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { VoiceTypeButton } from "@/components/VoiceTypeButton";
 import { cn } from "@/lib/utils";
 import { runNotesAi, saveNoteFlashcards, type NotesAiAction, type NotesAiResult, type NotesAiSuggestion } from "@/lib/notes-ai.functions";
 import { createLectureNotes, transcribeLecturePiece } from "@/lib/lecture.functions";
@@ -367,6 +368,7 @@ export function NotesAiPanel({ open, onClose, editor, title, classId, quickActio
     </div>
     {(tab === "ask" || tab === "research" || tab === "explain" || tab === "study") && <form className="flex shrink-0 gap-2 border-t border-border p-3" onSubmit={e => { e.preventDefault(); if (tab === "ask" || tab === "research") void send(); }}>
       <Textarea value={input} onChange={e => setInput(e.target.value)} rows={2} placeholder={tab === "research" ? "Research a topic…" : tab === "explain" ? "Optional: what should it focus on?" : tab === "study" ? "Optional: what should the diagram show?" : "Ask about your notes…"} className="min-h-0 resize-none" onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && (tab === "ask" || tab === "research")) { e.preventDefault(); void send(); } }} aria-label="Message to AI" />
+      <VoiceTypeButton label="Speak your question" onText={t => setInput(v => (v.trim() ? v.trimEnd() + " " : "") + t)} />
       {(tab === "ask" || tab === "research") && <Button type="submit" size="icon" disabled={working || !input.trim()} aria-label="Send"><Send className="size-4" /></Button>}
     </form>}
   </aside>;
