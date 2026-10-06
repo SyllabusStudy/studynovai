@@ -107,7 +107,7 @@ export function PersonalNoteEditor({ note, initialAction }: { note: Note; initia
     extensions: [NoteLineSpacing, StarterKit.configure({ link: { openOnClick: false, protocols: ["http", "https", "mailto"] } }), TextStyle, FontSize, Color, Highlight.configure({ multicolor: true }), TextAlign.configure({ types: ["heading", "paragraph"] }), Image.configure({ allowBase64: true }), TableKit, TaskList, TaskItem.configure({ nested: true })],
     content: note.content as JSONContent,
     editorProps: {
-      attributes: { spellcheck: "true", class: "notes-document", "aria-label": "Note document", role: "textbox", "aria-multiline": "true" },
+      attributes: { spellcheck: "true", class: "notes-document", "data-no-voice": "true", "aria-label": "Note document", role: "textbox", "aria-multiline": "true" },
       handleKeyDown: (view, event) => {
         if (event.key !== "Tab") return false;
         const { state, dispatch } = view;

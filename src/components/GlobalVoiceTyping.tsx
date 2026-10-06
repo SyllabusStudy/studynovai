@@ -75,7 +75,7 @@ export function GlobalVoiceTyping() {
 
   return (
     <button type="button" data-no-voice aria-label={on ? "Stop voice typing" : "Voice typing — speak to type"} title={on ? "Stop voice typing" : "Speak to type"} aria-pressed={on}
-      onMouseDown={e => e.preventDefault()} onTouchStart={e => e.preventDefault()} onClick={on ? stop : start}
+      onPointerDown={e => e.preventDefault()} onMouseDown={e => e.preventDefault()} onClick={on ? stop : start}
       style={{ position: "fixed", top, left, width: size, height: size, zIndex: 100 }}
       className={cn("flex items-center justify-center rounded-full border border-border shadow-card transition", on ? "animate-pulse bg-primary text-primary-foreground" : "bg-card/90 text-muted-foreground hover:text-foreground")}>
       {on ? <MicOff className="size-4" /> : <Mic className="size-4" />}
