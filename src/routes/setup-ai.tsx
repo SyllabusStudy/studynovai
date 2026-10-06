@@ -210,7 +210,28 @@ function SetupAiPage() {
               variant="outline"
               className="mt-4 h-12 w-full gap-2 rounded-full border-primary/60 bg-transparent text-base font-semibold"
             >
-              <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">
+              <a
+                href="https://aistudio.google.com/apikey"
+                target="_blank"
+                rel="noreferrer"
+                onClick={(e) => {
+                  if (window.innerWidth < 1024) return; // phones/tablets: normal tab
+                  const sw = window.screen.availWidth;
+                  const sh = window.screen.availHeight;
+                  const w = Math.floor(sw / 2);
+                  const left = (window.screen as Screen & { availLeft?: number }).availLeft ?? 0;
+                  const top = (window.screen as Screen & { availTop?: number }).availTop ?? 0;
+                  const popup = window.open(
+                    "https://aistudio.google.com/apikey",
+                    "syllabusstudy-gemini-key",
+                    `popup=yes,width=${w},height=${sh},left=${left + sw - w},top=${top}`,
+                  );
+                  if (popup) {
+                    e.preventDefault();
+                    popup.focus();
+                  }
+                }}
+              >
                 Get my free key
                 <ExternalLink className="size-4" />
               </a>
