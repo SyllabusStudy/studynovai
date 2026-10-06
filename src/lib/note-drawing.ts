@@ -56,8 +56,8 @@ export function shapeOutline(el: ShapeEl): Pt[] {
 export function hitTest(el: DrawEl, p: Pt, tol: number) {
   const pts = el.kind === "stroke" ? el.points : shapeOutline(el);
   const t = tol + el.size / 2;
-  if (pts.length === 1) return Math.hypot(p[0] - pts[0][0], p[1] - pts[0][1]) <= t;
-  for (let i = 1; i < pts.length; i++) if (distSeg(p, pts[i - 1], pts[i]) <= t) return true;
+  if (pts.length === 1) return Math.hypot(p[0] - pts[0]![0], p[1] - pts[0]![1]) <= t;
+  for (let i = 1; i < pts.length; i++) if (distSeg(p, pts[i - 1]!, pts[i]!) <= t) return true;
   return false;
 }
 
@@ -82,13 +82,13 @@ export function transformEl(el: DrawEl, f: (p: Pt) => Pt, scale = 1): DrawEl {
 
 export function strokePath(points: Pt[]) {
   if (!points.length) return "";
-  if (points.length === 1) { const [x, y] = points[0]; return `M${x} ${y} L${x + 0.1} ${y}`; }
-  let d = `M${points[0][0]} ${points[0][1]}`;
+  if (points.length === 1) { const [x, y] = points[0]!; return `M${x} ${y} L${x + 0.1} ${y}`; }
+  let d = `M${points[0]![0]} ${points[0]![1]}`;
   for (let i = 1; i < points.length - 1; i++) {
-    const [x, y] = points[i], [nx, ny] = points[i + 1];
+    const [x, y] = points[i]!, [nx, ny] = points[i + 1]!;
     d += ` Q${x} ${y} ${(x + nx) / 2} ${(y + ny) / 2}`;
   }
-  const last = points[points.length - 1];
+  const last = points[points.length - 1]!;
   return d + ` L${last[0]} ${last[1]}`;
 }
 
@@ -96,22 +96,22 @@ export function strokePath(points: Pt[]) {
 function rdp(pts: Pt[], eps: number): Pt[] {
   if (pts.length < 3) return pts;
   let max = 0, idx = 0;
-  for (let i = 1; i < pts.length - 1; i++) { const d = distSeg(pts[i], pts[0], pts[pts.length - 1]); if (d > max) { max = d; idx = i; } }
-  if (max <= eps) return [pts[0], pts[pts.length - 1]];
+  for (let i = 1; i < pts.length - 1; i++) { const d = distSeg(pts[i]!, pts[0]!, pts[pts.length - 1]!); if (d > max) { max = d; idx = i; } }
+  if (max <= eps) return [pts[0]!, pts[pts.length - 1]!];
   return [...rdp(pts.slice(0, idx + 1), eps).slice(0, -1), ...rdp(pts.slice(idx), eps)];
 }
-const pathLen = (pts: Pt[]) => pts.reduce((s, p, i) => i ? s + Math.hypot(p[0] - pts[i - 1][0], p[1] - pts[i - 1][1]) : 0, 0);
+const pathLen = (pts: Pt[]) => pts.reduce((s, p, i) => i ? s + Math.hypot(p[0] - pts[i - 1]![0], p[1] - pts[i - 1]![1]) : 0, 0);
 
 /** Turns rough strokes into clean shapes. Returns null when nothing is recognizable. */
 export function recognize(strokes: StrokeEl[]): ShapeEl | null {
   if (!strokes.length) return null;
   const base = { id: uid(), kind: "shape" as const, color: strokes[0].color, size: strokes[0].size, opacity: strokes[0].opacity };
   const sorted = [...strokes].sort((a, b) => pathLen(b.points) - pathLen(a.points));
-  const main = sorted[0].points;
+  const main = sorted[0]!.points;
   if (main.length < 2) return null;
-  const box = bounds(sorted[0]);
+  const box = bounds(sorted[0]!);
   const diag = Math.hypot(box.w, box.h) || 1;
-  const start = main[0], end = main[main.length - 1];
+  const start = main[0]!, end = main[main.length - 1]!;
   const closed = Math.hypot(end[0] - start[0], end[1] - start[1]) < diag * 0.22;
   if (!closed) {
     const simple = rdp(main, diag * 0.08);
@@ -119,14 +119,14 @@ export function recognize(strokes: StrokeEl[]): ShapeEl | null {
     const near = (q: Pt, t: Pt) => Math.hypot(q[0] - t[0], q[1] - t[1]) < diag * 0.3;
     const heads = sorted.slice(1).filter(s => s.points.some(q => near(q, end)) || s.points.some(q => near(q, start)));
     if (heads.length) {
-      const atStart = heads[0].points.some(q => near(q, start)) && !heads[0].points.some(q => near(q, end));
+      const atStart = heads[0]!.points.some(q => near(q, start)) && !heads[0]!.points.some(q => near(q, end));
       return { ...base, shape: "arrow", a: atStart ? end : start, b: atStart ? start : end };
     }
     if (simple.length >= 4) {
       // Shaft then a hooked head: shaft is the longest segment.
       let best = 0, bi = 0;
-      for (let i = 1; i < simple.length; i++) { const l = Math.hypot(simple[i][0] - simple[i - 1][0], simple[i][1] - simple[i - 1][1]); if (l > best) { best = l; bi = i; } }
-      if (best > diag * 0.55) return { ...base, shape: "arrow", a: simple[bi - 1], b: simple[bi] };
+      for (let i = 1; i < simple.length; i++) { const l = Math.hypot(simple[i]![0] - simple[i - 1]![0], simple[i]![1] - simple[i - 1]![1]); if (l > best) { best = l; bi = i; } }
+      if (best > diag * 0.55) return { ...base, shape: "arrow", a: simple[bi - 1]!, b: simple[bi]! };
     }
     return { ...base, shape: "line", a: start, b: end };
   }

@@ -46,8 +46,8 @@ export function NoteDrawingCanvas({ value, onChange }: { value: Drawing; onChang
   const future = useRef<Drawing[]>([]);
   const [, force] = useState(0);
   const [tool, setTool] = useState<Tool>("pen");
-  const [color, setColor] = useState(INKS[0]);
-  const [hlColor, setHlColor] = useState(HIGHLIGHTS[0]);
+  const [color, setColor] = useState(INKS[0]!);
+  const [hlColor, setHlColor] = useState(HIGHLIGHTS[0]!);
   const [size, setSize] = useState(3);
   const [hlSize, setHlSize] = useState(18);
   const [opacity, setOpacity] = useState(1);
@@ -84,7 +84,7 @@ export function NoteDrawingCanvas({ value, onChange }: { value: Drawing; onChang
     const pt = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
     return [Math.round(pt.x * 10) / 10, Math.round(pt.y * 10) / 10];
   };
-  const selectedEls = selection ? drawing.pages[selection.page]?.elements.filter(el => selection.ids.includes(el.id)) ?? [] : [];
+  const selectedEls = selection ? drawing.pages[selection.page]!?.elements.filter(el => selection.ids.includes(el.id)) ?? [] : [];
   const selBox = unionBox(selectedEls);
 
   const down = (page: number) => (e: RPointerEvent<SVGSVGElement>) => {
@@ -95,7 +95,7 @@ export function NoteDrawingCanvas({ value, onChange }: { value: Drawing; onChang
     if (e.button > 0) return;
     e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId);
     const p = toPage(page, e);
-    const els = drawing.pages[page].elements;
+    const els = drawing.pages[page]!.elements;
     if (tool === "select") {
       if (selection?.page === page && selBox) {
         const hx = selBox.x + selBox.w, hy = selBox.y + selBox.h;
@@ -123,11 +123,11 @@ export function NoteDrawingCanvas({ value, onChange }: { value: Drawing; onChang
     if (g.type === "scroll") { window.scrollBy(0, g.lastY - e.clientY); document.querySelector("main")?.scrollBy(0, g.lastY - e.clientY); g.lastY = e.clientY; return; }
     if (g.page !== page) return;
     const p = toPage(page, e);
-    const els = drawing.pages[page].elements;
+    const els = drawing.pages[page]!.elements;
     if (g.type === "draw") {
       if (g.el.kind === "stroke") {
         const pts = (e.nativeEvent.getCoalescedEvents?.() ?? []).map(ce => toPage(page, ce as unknown as RPointerEvent));
-        const last = g.el.points[g.el.points.length - 1];
+        const last = g.el.points[g.el.points.length - 1]!;
         for (const q of pts.length ? pts : [p]) if (Math.hypot(q[0] - last[0], q[1] - last[1]) > 0.8) g.el.points.push(q);
         g.el = { ...g.el, points: [...g.el.points] };
       } else {
@@ -157,7 +157,7 @@ export function NoteDrawingCanvas({ value, onChange }: { value: Drawing; onChang
   const up = () => {
     const g = gesture.current; gesture.current = null;
     if (!g || g.type === "scroll") return;
-    const els = drawing.pages[g.page].elements;
+    const els = drawing.pages[g.page]!.elements;
     if (g.type === "draw") {
       const el = g.el;
       const tiny = el.kind === "shape" && Math.hypot(el.b[0] - el.a[0], el.b[1] - el.a[1]) < 4;
@@ -173,7 +173,7 @@ export function NoteDrawingCanvas({ value, onChange }: { value: Drawing; onChang
 
   const deleteSelection = () => {
     if (!selection) return;
-    setPageEls(selection.page, drawing.pages[selection.page].elements.filter(el => !selection.ids.includes(el.id))); setSelection(null);
+    setPageEls(selection.page, drawing.pages[selection.page]!.elements.filter(el => !selection.ids.includes(el.id))); setSelection(null);
   };
   const cleanUp = () => {
     if (!selection) return;
@@ -181,13 +181,13 @@ export function NoteDrawingCanvas({ value, onChange }: { value: Drawing; onChang
     const shape = recognize(strokes);
     if (!shape) return;
     const ids = new Set(strokes.map(s => s.id));
-    setPageEls(selection.page, [...drawing.pages[selection.page].elements.filter(el => !ids.has(el.id)), shape]);
+    setPageEls(selection.page, [...drawing.pages[selection.page]!.elements.filter(el => !ids.has(el.id)), shape]);
     setSelection({ page: selection.page, ids: [shape.id] });
   };
   const addPage = () => commit({ ...drawing, pages: [...drawing.pages, newPage()] });
   const removePage = (i: number) => {
     if (drawing.pages.length < 2) { setPageEls(0, []); return; }
-    if (drawing.pages[i].elements.length && !window.confirm(`Delete page ${i + 1} and everything on it?`)) return;
+    if (drawing.pages[i]!.elements.length && !window.confirm(`Delete page ${i + 1} and everything on it?`)) return;
     commit({ ...drawing, pages: drawing.pages.filter((_, j) => j !== i) }); setSelection(null);
   };
 
