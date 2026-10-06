@@ -6,6 +6,7 @@ import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
 import TextAlign from "@tiptap/extension-text-align";
 import Image from "@tiptap/extension-image";
+import { liftListItem, sinkListItem } from "prosemirror-schema-list";
 import { TableKit } from "@tiptap/extension-table";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
@@ -77,7 +78,30 @@ export function PersonalNoteEditor({ note }: { note: Note }) {
     immediatelyRender: false,
     extensions: [StarterKit.configure({ link: { openOnClick: false, protocols: ["http", "https", "mailto"] } }), TextStyle, FontSize, Color, Highlight.configure({ multicolor: true }), TextAlign.configure({ types: ["heading", "paragraph"] }), Image.configure({ allowBase64: true }), TableKit, TaskList, TaskItem.configure({ nested: true })],
     content: note.content as JSONContent,
-    editorProps: { attributes: { spellcheck: "true", class: "notes-document", "aria-label": "Note document", role: "textbox", "aria-multiline": "true" } },
+    editorProps: {
+      attributes: { spellcheck: "true", class: "notes-document", "aria-label": "Note document", role: "textbox", "aria-multiline": "true" },
+      handleKeyDown: (view, event) => {
+        if (event.key !== "Tab") return false;
+        const { state, dispatch } = view;
+        event.preventDefault();
+        // Inside a list? Tab indents the item, Shift+Tab outdents it.
+        const item = [state.schema.nodes["listItem"], state.schema.nodes["taskItem"]].find(
+          (t) => {
+            let found = false;
+            state.doc.nodesBetween(state.selection.from, state.selection.to, (node) => { if (node.type === t) found = true; });
+            return found;
+          },
+        );
+        if (item) {
+          const move = event.shiftKey ? liftListItem(item) : sinkListItem(item);
+          return move(state, dispatch);
+        }
+        // Plain text: Tab types a tab character instead of jumping around the page.
+        if (event.shiftKey) return true;
+        dispatch(state.tr.insertText("\t"));
+        return true;
+      },
+    },
     onUpdate: ({ editor: current }) => {
       draft.current.contentJson = JSON.stringify(current.getJSON());
       draft.current.plainText = current.getText();
