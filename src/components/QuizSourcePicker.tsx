@@ -101,7 +101,7 @@ export function QuizSourcePicker({
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
+        <DialogContent className="w-[calc(100vw-1.5rem)] max-w-md max-h-[85vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle>Choose source material</DialogTitle>
           </DialogHeader>
