@@ -85,7 +85,7 @@ export function PersonalNoteEditor({ note }: { note: Note }) {
         const { state, dispatch } = view;
         event.preventDefault();
         // Inside a list? Tab indents the item, Shift+Tab outdents it.
-        const item = [state.schema.nodes.listItem, state.schema.nodes.taskItem].find(
+        const item = [state.schema.nodes["listItem"], state.schema.nodes["taskItem"]].find(
           (t) => {
             let found = false;
             state.doc.nodesBetween(state.selection.from, state.selection.to, (node) => { if (node.type === t) found = true; });
