@@ -4,9 +4,9 @@ export function bytesToB64(bytes: Uint8Array): string {
   return btoa(bin);
 }
 
-const RATE = 16000;
-/** Each piece is short so every upload is small (~6 MB) and finishes fast. */
-const CHUNK_SECONDS = 180;
+const RATE = 8000;
+/** Up to 15 minutes per piece (~14 MB) so most lectures go in one single request. */
+const CHUNK_SECONDS = 900;
 
 export type AudioPiece = { audio: string; mimeType: string };
 
@@ -53,7 +53,7 @@ export async function prepareLectureAudio(blob: Blob): Promise<AudioPiece[]> {
   const hp = off.createBiquadFilter();
   hp.type = "highpass"; hp.frequency.value = 90;
   const lp = off.createBiquadFilter();
-  lp.type = "lowpass"; lp.frequency.value = 7500;
+  lp.type = "lowpass"; lp.frequency.value = 3800;
   const comp = off.createDynamicsCompressor();
   comp.threshold.value = -42; comp.knee.value = 12; comp.ratio.value = 6;
   comp.attack.value = 0.004; comp.release.value = 0.25;
