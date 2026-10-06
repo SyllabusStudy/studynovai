@@ -566,6 +566,7 @@ export async function buildClassContext(
     { data: quizzes },
     { data: memory },
     { data: categories },
+    { data: lectures },
   ] = await Promise.all([
       supabase.from("classes").select("*").eq("user_id", userId),
       supabase
@@ -589,6 +590,12 @@ export async function buildClassContext(
         .order("created_at", { ascending: false })
         .limit(60),
       supabase.from("grade_categories").select("class_id,name,weight").eq("user_id", userId),
+      supabase
+        .from("lecture_notes")
+        .select("title,class_id,summary,key_concepts,transcript,created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(40),
     ]);
 
 
@@ -633,14 +640,25 @@ export async function buildClassContext(
     const classDocs = (docs ?? [])
       .filter((d) => d.class_id === c.id)
       .sort((a, b) => Number(b.is_syllabus) - Number(a.is_syllabus));
-    const budget = Math.max(6000, Math.floor(DOC_CHAR_BUDGET / Math.max(relevantClasses.length, 1)));
-    for (const d of classDocs) {
-      const text = (d.extracted_text ?? "").slice(0, budget);
-      if (!text) continue;
+    // Per-class budget, shared across its documents so every file gets a fair slice.
+    let remaining = Math.max(12000, Math.floor(DOC_CHAR_BUDGET / Math.max(relevantClasses.length, 1)));
+    const readable = classDocs.filter((d) => (d.extracted_text ?? "").trim());
+    readable.forEach((d, i) => {
+      if (remaining <= 0) return;
+      const share = Math.max(3000, Math.floor(remaining / (readable.length - i)));
+      const text = (d.extracted_text ?? "").slice(0, Math.min(share, remaining));
+      remaining -= text.length;
       lines.push(
         `### DOCUMENT: ${d.file_name}${d.is_syllabus ? " (SYLLABUS)" : ""} [doc:${d.id}]`,
         text,
       );
+    });
+
+    const cl = (lectures ?? []).filter((l) => l.class_id === c.id).slice(0, 8);
+    for (const l of cl) {
+      const concepts = Array.isArray(l.key_concepts) ? (l.key_concepts as unknown[]).map((k) => (typeof k === "string" ? k : JSON.stringify(k))).join("; ") : "";
+      const body = [l.summary, concepts && `Key concepts: ${concepts}`, !l.summary && l.transcript ? l.transcript.slice(0, 4000) : ""].filter(Boolean).join("\n").slice(0, 5000);
+      if (body.trim()) lines.push(`### LECTURE NOTE: ${l.title}`, body);
     }
 
     const ca = (assignments ?? []).filter((a) => a.class_id === c.id);
