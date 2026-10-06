@@ -162,6 +162,13 @@
       "when": 1791004914035,
       "tag": "0022_calendar_events_sync_key",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791316009585,
+      "tag": "0023_create_personal_notes",
+      "breakpoints": true
     }
   ]
 }
