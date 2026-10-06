@@ -118,6 +118,9 @@ function NoteView({ token, text, content }: { token: string; text: string; conte
     ...(content ? { content } : {}),
     editable: false,
     immediatelyRender: false,
+    editorProps: {
+      attributes: { class: "notes-document notes-document-shared", "aria-label": "Shared note document" },
+    },
   });
   const navigate = useNavigate();
   function go(action: ShareAction) {
@@ -139,7 +142,7 @@ function NoteView({ token, text, content }: { token: string; text: string; conte
       <article className="surface-card p-5">
         <FileText className="mb-3 size-5 text-primary" />
         {content ? (
-          <EditorContent editor={editor} className="note-editor text-sm leading-relaxed [&_.ProseMirror]:outline-none" />
+          <EditorContent editor={editor} className="notes-editor overflow-x-auto" />
         ) : (
           <div className="whitespace-pre-wrap break-words text-sm leading-relaxed">{text || "This note is empty."}</div>
         )}
