@@ -204,7 +204,7 @@ export function QuizSourcePicker({
             </div>
           )}
 
-          <DialogFooter className="gap-2">
+          <DialogFooter className="sticky -bottom-6 z-10 -mx-6 -mb-6 gap-2 border-t border-border bg-background/95 px-6 py-3 backdrop-blur">
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             <Button
               disabled={mode === "pick" && docs.length + lecs.length + nts.length === 0}
