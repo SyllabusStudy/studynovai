@@ -1,7 +1,7 @@
 # Current work
 
-- [ ] Add private class selection and content-based automatic titles to Personal Notes.
-- [ ] Verify class saving, automatic naming, and custom title preservation on computers.
+- [x] Add private class selection and content-based automatic titles to Personal Notes.
+- [x] Verify class saving, automatic naming, and custom title preservation on computers.
 
 - [x] Make transient AI failures retry safely through a single shared request path.
 - [x] Preserve student inputs and add a retry action after exhausted attempts.
