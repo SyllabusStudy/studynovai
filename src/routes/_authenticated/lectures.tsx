@@ -13,8 +13,8 @@ import { Download, FileAudio, FolderPlus, Loader2, Mic, Square, Trash2 } from "l
 import { useActiveClass } from "@/lib/active-class";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { createLectureNotes } from "@/lib/lecture.functions";
-import { bytesToB64 } from "@/lib/lecture-audio";
+import { createLectureNotes, transcribeLecturePiece } from "@/lib/lecture.functions";
+import { prepareLectureAudio } from "@/lib/lecture-audio";
 import { PageHeader } from "@/components/PageHeader";
 import { Markdown } from "@/components/Markdown";
 import { Button } from "@/components/ui/button";
@@ -39,14 +39,15 @@ export const Route = createFileRoute("/_authenticated/lectures")({
   component: LecturesPage,
 });
 
-const MAX_BYTES = 28 * 1024 * 1024;
-const MAX_SECONDS = 60 * 60;
+const MAX_BYTES = 500 * 1024 * 1024;
 
 function LecturesPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data: classes = [] } = useClasses(user?.id);
   const make = useServerFn(createLectureNotes);
+  const transcribe = useServerFn(transcribeLecturePiece);
+  const [stage, setStage] = useState("");
   const [classId, setClassId] = useState("none");
   const { recording, seconds, pending } = useLectureRecorder();
   const [busy, setBusy] = useState(false);
@@ -75,15 +76,24 @@ function LecturesPage() {
       return;
     }
     if (blob.size > MAX_BYTES) {
-      toast.error("That file is too big (over 28 MB). Recordings made here up to 1 hour always fit.");
+      toast.error("That file is too big (over 500 MB). Try a shorter recording.");
       return;
     }
     setBusy(true);
     setFailed(null);
     try {
-      const audio = bytesToB64(new Uint8Array(await blob.arrayBuffer()));
-      const mimeType = (blob.type || "audio/mpeg").split(";")[0]!.trim().toLowerCase();
-      const r = await make({ data: { audio, mimeType, fileName: name, classId: classId === "none" ? null : classId } });
+      setStage("Cleaning up the audio…");
+      const pieces = await prepareLectureAudio(blob);
+      const parts: string[] = [];
+      for (let i = 0; i < pieces.length; i++) {
+        setStage(`Listening to the lecture… part ${i + 1} of ${pieces.length}`);
+        const r = await transcribe({ data: { ...pieces[i]!, index: i, total: pieces.length } });
+        if (r.text) parts.push(r.text);
+      }
+      const transcript = parts.join("\n\n").trim();
+      if (!transcript) throw new Error("We couldn't hear the professor in that recording. Try keeping the phone closer to the front.");
+      setStage("Writing your study guide…");
+      const r = await make({ data: { transcript, fileName: name, classId: classId === "none" ? null : classId } });
       toast.success(`Study guide ready${r.cards ? ` with ${r.cards} flashcards` : ""}`);
       setOpen(r.id);
       await qc.invalidateQueries();
@@ -92,6 +102,7 @@ function LecturesPage() {
       if (!showLimitIfQuota(e instanceof Error ? e.message : null)) toast.error(e instanceof Error ? e.message : "Couldn't make notes from that recording");
     } finally {
       setBusy(false);
+      setStage("");
     }
   }
 
@@ -262,12 +273,12 @@ ${keys.length ? `<h2>Key exam concepts</h2><ul>${keys.map((k) => `<li>${escapeHt
             <Button className="gap-1.5" disabled={busy} onClick={() => void start()}><Mic className="size-4" /> Record lecture</Button>
           )}
           <Button variant="outline" className="gap-1.5" disabled={busy || recording} onClick={() => fileRef.current?.click()}>
-            <FileAudio className="size-4" /> Upload voice memo
+            <FileAudio className="size-4" /> Upload audio or video
           </Button>
           <input
             ref={fileRef}
             type="file"
-            accept="audio/*,.m4a,.mp3,.wav,.aac,.ogg,.webm"
+            accept="audio/*,video/*,.m4a,.mp3,.wav,.aac,.ogg,.webm,.mp4,.mov"
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
@@ -277,7 +288,7 @@ ${keys.length ? `<h2>Key exam concepts</h2><ul>${keys.map((k) => `<li>${escapeHt
           />
         </div>
         {busy ? (
-          <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" /> Listening to the lecture and writing your study guide… this can take a minute.</p>
+          <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" /> {stage || "Working on your lecture…"}</p>
         ) : failed ? (
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/40 p-3 text-sm">
             <span className="text-muted-foreground">Your recording is saved here. Notes didn't finish.</span>

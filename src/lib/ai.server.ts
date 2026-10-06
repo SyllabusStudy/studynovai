@@ -80,11 +80,12 @@ async function callGeminiNative(
     if (parts.length) contents.push({ role: m.role === "assistant" ? "model" : "user", parts });
   }
 
-  // Video needs the fuller Flash model; the lite model can reject video parts.
+  // Video and audio need the fuller Flash model; the lite model can reject media parts.
   const hasVideo = contents.some((c) =>
     c.parts.some((p) => {
       const part = p as { inline_data?: { mime_type?: string }; file_data?: unknown };
-      return Boolean(part.file_data) || part.inline_data?.mime_type?.startsWith("video/");
+      const mt = part.inline_data?.mime_type ?? "";
+      return Boolean(part.file_data) || mt.startsWith("video/") || mt.startsWith("audio/");
     }),
   );
 
