@@ -36,6 +36,11 @@ SUMMARY RULES (be thorough and detailed, not brief):
 
 Make 12-30 flashcards covering definitions, formulas, dates, examples and exam-emphasized ideas. Everything except "Helpful background" must come from the recording; never invent what the speaker said. If the audio has no understandable speech, return {"transcript": ""}.`;
 
+/** Builds the notes-writing prompt from an already-finished transcript. */
+function notesPromptFor(transcript: string) {
+  return `${PROMPT.replace('"clean full transcript (remove filler words like um/uh, keep ALL content, keep speaker changes as new paragraphs)"', '"" (leave empty — the transcript is already saved)')}\n\nThe recording has already been transcribed (main speaker only). Work from this TRANSCRIPT:\n\n${transcript.slice(0, 200_000)}`;
+}
+
 const TRANSCRIBE_PROMPT = `You are transcribing one piece of a college class recording made on a student's phone.
 
 FOCUS ON THE MAIN SPEAKER ONLY:
