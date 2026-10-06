@@ -9,13 +9,14 @@ import {
 } from "@/lib/lecture-recorder";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, FileAudio, FolderPlus, Loader2, Mic, Square, Trash2 } from "lucide-react";
+import { Download, FileAudio, FolderPlus, Loader2, Mic, RotateCw, Square, Trash2 } from "lucide-react";
 import { useActiveClass } from "@/lib/active-class";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { createLectureNotes, transcribeLecturePiece } from "@/lib/lecture.functions";
+import { createLectureNotes, retryLectureNotes, transcribeLecturePiece } from "@/lib/lecture.functions";
 import { prepareLectureAudio } from "@/lib/lecture-audio";
 import { PageHeader } from "@/components/PageHeader";
+import { AiRetryNotice } from "@/components/AiRetryNotice";
 import { Markdown } from "@/components/Markdown";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -41,12 +42,16 @@ export const Route = createFileRoute("/_authenticated/lectures")({
 
 const MAX_BYTES = 500 * 1024 * 1024;
 
+/** Matches the fallback summary saved when note-writing failed but the transcript succeeded. */
+const NEEDS_NOTES = /Notes couldn'?t be (fully )?written/i;
+
 function LecturesPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data: classes = [] } = useClasses(user?.id);
   const make = useServerFn(createLectureNotes);
   const transcribe = useServerFn(transcribeLecturePiece);
+  const retry = useServerFn(retryLectureNotes);
   const [stage, setStage] = useState("");
   const [classId, setClassId] = useState("none");
   const { recording, seconds, pending } = useLectureRecorder();
@@ -58,6 +63,7 @@ function LecturesPage() {
   const [saving, setSaving] = useState<string | null>(null);
   const guest = useGuestGate("lectures");
   const [failed, setFailed] = useState<{ blob: Blob; name: string } | null>(null);
+  const [notesRetry, setNotesRetry] = useState<{ blob: Blob; name: string } | null>(null);
   const heard = useRef(new Map<Blob, (string | null)[]>());
 
 
@@ -155,12 +161,20 @@ function LecturesPage() {
       if (failedParts) toast.message(`${failedParts} part${failedParts > 1 ? "s" : ""} couldn't be heard — making notes from the rest.`);
       setStage(`Transcript ready (${total - failedParts} of ${total} parts). Writing your study guide…`);
       const r = await make({ data: { transcript, fileName: name, classId: cls } });
-      heard.current.delete(blob);
-      toast.success(`Study guide ready${r.cards ? ` with ${r.cards} flashcards` : ""}`);
+      if (r.notesReady === false) {
+        // The transcript made it, but writing the notes didn't — keep the recording around so it can be retried or saved.
+        setNotesRetry({ blob, name });
+        toast.message("Your transcript is saved, but the notes didn't finish this time. Try again, or download the recording for later.");
+      } else {
+        heard.current.delete(blob);
+        setNotesRetry(null);
+        toast.success(`Study guide ready${r.cards ? ` with ${r.cards} flashcards` : ""}`);
+      }
       setOpen(r.id);
       await qc.invalidateQueries();
     } catch (e) {
       setFailed({ blob, name });
+      setNotesRetry(null);
       if (!showLimitIfQuota(e instanceof Error ? e.message : null)) toast.error(e instanceof Error ? e.message : "Couldn't make notes from that recording");
     } finally {
       setBusy(false);
@@ -198,6 +212,32 @@ function LecturesPage() {
     if (error) throw new Error(error.message);
     setOpen(null);
     await notes.refetch();
+  }
+
+  /** Downloads a kept recording so the student can retry from it later. */
+  function saveAudio(blob: Blob, name: string) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${name}.${(blob.type.split("/")[1] || "webm").split(";")[0]}`;
+    a.click();
+  }
+
+  /** Rewrites the notes for a saved lecture note from its transcript — no re-recording needed. */
+  async function retryNotes(n: Note) {
+    if (!n.transcript?.trim()) {
+      toast.error("There's no transcript saved for this note yet.");
+      return;
+    }
+    setSaving(n.id);
+    try {
+      await retry({ data: { noteId: n.id } });
+      toast.success("Notes are ready");
+      await notes.refetch();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't write the notes this time");
+    } finally {
+      setSaving(null);
+    }
   }
 
   type Note = {
@@ -355,12 +395,13 @@ ${keys.length ? `<h2>Key exam concepts</h2><ul>${keys.map((k) => `<li>${escapeHt
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/40 p-3 text-sm">
             <span className="text-muted-foreground">Your recording is saved here. Notes didn't finish.</span>
             <Button size="sm" onClick={() => void process(failed.blob, failed.name)}>Try again</Button>
-            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => {
-              const a = document.createElement("a");
-              a.href = URL.createObjectURL(failed.blob);
-              a.download = `${failed.name}.${(failed.blob.type.split("/")[1] || "webm").split(";")[0]}`;
-              a.click();
-            }}><Download className="size-4" /> Save audio</Button>
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => saveAudio(failed.blob, failed.name)}><Download className="size-4" /> Save audio</Button>
+          </div>
+        ) : notesRetry ? (
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/40 p-3 text-sm">
+            <span className="min-w-0 flex-1 text-muted-foreground">Your transcript is saved and the note is below, but the notes didn't finish this time. Try again now, or download the recording so you can try again later.</span>
+            <Button size="sm" onClick={() => void process(notesRetry.blob, notesRetry.name)}>Try again</Button>
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => saveAudio(notesRetry.blob, notesRetry.name)}><Download className="size-4" /> Save audio</Button>
           </div>
         ) : (
           <p className="text-xs text-muted-foreground">Keep the phone near the professor. Recordings up to 1 hour — it stops on its own at 60:00 and makes your notes. Ask your professor before recording.</p>
@@ -400,7 +441,14 @@ ${keys.length ? `<h2>Key exam concepts</h2><ul>${keys.map((k) => `<li>${escapeHt
                     <ul className="mt-1 list-disc pl-5 text-sm">{(n.key_concepts as string[]).map((k) => <li key={k}>{k}</li>)}</ul>
                   </div>
                 ) : null}
-                <div><p className="text-sm font-semibold">Study notes</p><Markdown content={n.summary} /></div>
+                {NEEDS_NOTES.test(n.summary) ? (
+                  <AiRetryNotice
+                    message="The notes didn't finish writing this time, but your full transcript is saved below. Try again in a little while — it usually works on the next try."
+                    onRetry={() => void retryNotes(n as Note)}
+                  />
+                ) : (
+                  <div><p className="text-sm font-semibold">Study notes</p><Markdown content={n.summary} /></div>
+                )}
                 <details><summary className="cursor-pointer text-sm font-semibold">Full transcript</summary><p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{n.transcript}</p></details>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Save these notes to a class</Label>
@@ -430,6 +478,11 @@ ${keys.length ? `<h2>Key exam concepts</h2><ul>${keys.map((k) => `<li>${escapeHt
                   <Button size="sm" variant="outline" className="gap-1.5" disabled={saving === n.id} onClick={() => void useFor(n as Note, "/flashcards")}>
                     <FolderPlus className="size-4" /> Make flashcards
                   </Button>
+                  {NEEDS_NOTES.test(n.summary) ? (
+                    <Button size="sm" className="gap-1.5" disabled={saving === n.id} onClick={() => void retryNotes(n as Note)}>
+                      {saving === n.id ? <Loader2 className="size-4 animate-spin" /> : <RotateCw className="size-4" />} Try notes again
+                    </Button>
+                  ) : null}
                   <Button size="sm" variant="outline" className="gap-1.5" onClick={() => downloadPdf(n as Note)}>
                     <Download className="size-4" /> Save as PDF
                   </Button>
