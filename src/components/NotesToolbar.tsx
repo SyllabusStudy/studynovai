@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+import { VoiceTypeButton } from "@/components/VoiceTypeButton";
 import { ListChevronsUpDown } from "lucide-react";
 import { DropdownMenuRadioGroup, DropdownMenuRadioItem } from "@/components/ui/dropdown-menu";
 
@@ -55,6 +56,7 @@ export function NotesToolbar({ editor }: { editor: Editor }) {
     <div className="flex flex-wrap items-center gap-0.5 border-b border-border bg-card/80 p-2" role="toolbar" aria-label="Document formatting">
       <Tool label="Undo" icon={Undo2} disabled={!editor.can().undo()} onClick={() => editor.chain().focus().undo().run()} />
       <Tool label="Redo" icon={Redo2} disabled={!editor.can().redo()} onClick={() => editor.chain().focus().redo().run()} />
+      <VoiceTypeButton label="Voice typing — speak to write in your note" onText={t => { const before = editor.state.doc.textBetween(Math.max(0, editor.state.selection.from - 1), editor.state.selection.from); editor.chain().focus().insertContent((before && !/\s/.test(before) ? " " : "") + t).run(); }} />
       <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="sm" aria-label="Line spacing"><ListChevronsUpDown className="size-4" />{editor.getAttributes("paragraph")['lineSpacing'] || editor.getAttributes("heading")['lineSpacing'] || "1.5"}</Button></DropdownMenuTrigger><DropdownMenuContent>
         <DropdownMenuRadioGroup value={editor.getAttributes("paragraph")['lineSpacing'] || editor.getAttributes("heading")['lineSpacing'] || "1.5"} onValueChange={value => editor.chain().focus().command(({ tr, dispatch }) => {
           if (dispatch) tr.doc.descendants((node, pos) => {
