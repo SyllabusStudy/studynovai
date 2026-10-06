@@ -81,7 +81,7 @@ export function markdownToHtml(md: string): string {
       }
       out.push(`<p>${inline(li[3]!)}</p>`);
     }
-    else if (/^\s*([-*_])\s*\1\s*\1[\s\1]*$/.test(line)) { closeLists(); out.push("<hr>"); }
+    else if (/^\s*(-\s*){3,}$|^\s*(\*\s*){3,}$|^\s*(_\s*){3,}$/.test(line)) { closeLists(); out.push("<hr>"); }
     else if (/^\s*>/.test(line)) { closeLists(); out.push(`<blockquote><p>${inline(line.replace(/^\s*>\s?/, ""))}</p></blockquote>`); }
     else if (!line.trim()) { if (!stack.length || !/^\s*([-*+•]|\d+[.)])\s+/.test(lines[i + 1] ?? "")) closeLists(); }
     else if (stack.length && /^\s{2,}/.test(line)) out.push(`<p>${inline(line.trim())}</p>`);
