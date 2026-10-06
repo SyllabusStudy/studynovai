@@ -162,7 +162,7 @@ export const createLectureNotes = createServerFn({ method: "POST" })
         ai = parseJsonBlock<LectureAi>(await ask());
       } catch (e) {
         if (fatal(e)) throw e;
-        ai = { summary: "Notes couldn't be written this time, but your full transcript is saved below.", key_concepts: [], flashcards: [] };
+        ai = { summary: NOTES_FALLBACK, key_concepts: [], flashcards: [] };
       }
     }
     ai.transcript = transcript;
@@ -191,5 +191,56 @@ export const createLectureNotes = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
     await recordUsage(context.supabase, context.userId, "lecture");
-    return { id: row.id, cards: cards.length };
+    return { id: row.id, cards: cards.length, notesReady: !!(ai.summary ?? "").trim() && ai.summary !== NOTES_FALLBACK };
+  });
+
+/** Rewrites the notes for an existing lecture note from its saved transcript (the recording itself isn't needed). */
+export const retryLectureNotes = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ noteId: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const { withUserAiKey } = await import("./ai-key.server");
+    const { callAI, parseJsonBlock } = await import("./ai.server");
+    const { assertQuota, recordUsage } = await import("./billing.server");
+    await assertQuota(context.supabase, context.userId, "lecture");
+    const { data: note, error: fetchErr } = await context.supabase
+      .from("lecture_notes")
+      .select("id, title, transcript, class_id, deck")
+      .eq("id", data.noteId)
+      .single();
+    if (fetchErr || !note) throw new Error("That lecture note couldn't be found.");
+    const transcript = (note.transcript ?? "").trim();
+    if (!transcript) throw new Error("There's no transcript saved for this note yet.");
+    const fatal = (e: unknown) => e instanceof Error && /free limit|API key|did not allow/i.test(e.message);
+    const ask = () =>
+      withUserAiKey(context.supabase, context.userId, () =>
+        callAI([{ role: "user", content: notesPromptFor(transcript) }], { maxTokens: 12000, temperature: 0.2 }),
+      );
+    let ai: LectureAi;
+    try {
+      ai = parseJsonBlock<LectureAi>(await ask());
+    } catch (e) {
+      if (fatal(e)) throw e;
+      throw new Error("Still couldn't write the notes this time. Try again in a little while.");
+    }
+    const summary = (ai.summary ?? "").trim();
+    if (!summary || summary === NOTES_FALLBACK) throw new Error("Still couldn't write the notes this time. Try again in a little while.");
+
+    const title = (ai.title || note.title || "Lecture").slice(0, 200);
+    const cards = (ai.flashcards ?? []).filter((c) => c?.front && c?.back).slice(0, 30);
+    let deck = note.deck as string | null;
+    if (cards.length && !deck) {
+      deck = `Lecture: ${title}`.slice(0, 200);
+      const { error } = await context.supabase.from("flashcards").insert(
+        cards.map((c) => ({ user_id: context.userId, class_id: note.class_id as string | null, deck, front: c.front, back: c.back, topic: title })),
+      );
+      if (error) throw new Error(error.message);
+    }
+    const { error: updErr } = await context.supabase
+      .from("lecture_notes")
+      .update({ title, summary, key_concepts: (ai.key_concepts ?? []).slice(0, 30), deck })
+      .eq("id", note.id);
+    if (updErr) throw new Error(updErr.message);
+    await recordUsage(context.supabase, context.userId, "lecture");
+    return { cards: cards.length };
   });
