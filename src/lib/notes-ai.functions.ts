@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-export type NotesAiAction = "ask" | "research" | "explain" | "improve" | "spelling" | "flashcards" | "quiz" | "guide" | "diagram";
+export type NotesAiAction = "ask" | "research" | "explain" | "improve" | "spelling" | "flashcards" | "quiz" | "guide" | "diagram" | "feedback";
 export type NotesAiSuggestion = { original: string; suggestion: string; reason: string };
 export type NotesAiSource = { title: string; url: string };
 export type NotesAiDiagram = { title: string; layout: "flow" | "mind"; nodes: { id: string; label: string }[]; edges: { from: string; to: string; label?: string }[] };
@@ -32,6 +32,7 @@ function promptFor(action: NotesAiAction, note: string, focus: string, question:
     case "flashcards": return `Make 8-20 study flashcards from the student's note (selected part if given). Cover definitions, key facts, processes and examples. Return ONLY JSON: {"cards":[{"front":"question","back":"answer"}]}\n\n${notes}${sel}`;
     case "quiz": return `Write a 5-8 question multiple-choice quiz from the student's note (selected part if given). 4 choices each, one correct. Return ONLY JSON: {"quiz":[{"question":"...","choices":["a","b","c","d"],"answer":0,"explanation":"why"}]}\n\n${notes}${sel}`;
     case "guide": return `Turn the student's note into a study guide: ## Summary, ## Key points, ## Important terms (term — definition), ## Likely exam questions, ## What to review next. Base it on the note; clearly label any added background. ${STYLE}\n\n${notes}${sel}`;
+    case "feedback": return `You are a friendly study coach glancing over a student's notes while they write. Give 2-4 short, specific bullets of feedback: a factual mistake or misconception (most important), something unclear, a key idea that's missing, or a tip to remember it. Be encouraging and concrete. Under 90 words total. If the notes are too short to comment on, return exactly: [none]\n${STYLE}\n\n${notes}`;
     case "diagram": return `Turn the student's note (selected part if given) into a diagram. Choose "flow" for processes/sequences/cause-effect, or "mind" for concepts around a central idea (node "n1" is the center). 4-12 nodes, labels under 6 words.${question ? ` Student request: ${question}.` : ""}\nReturn ONLY JSON: {"title":"...","layout":"flow"|"mind","nodes":[{"id":"n1","label":"..."}],"edges":[{"from":"n1","to":"n2","label":"optional short"}]}\n\n${notes}${sel}`;
   }
 }
@@ -41,7 +42,7 @@ const historyItem = z.object({ role: z.enum(["user", "assistant"]), content: z.s
 export const runNotesAi = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({
-    action: z.enum(["ask", "research", "explain", "improve", "spelling", "flashcards", "quiz", "guide", "diagram"]),
+    action: z.enum(["ask", "research", "explain", "improve", "spelling", "flashcards", "quiz", "guide", "diagram", "feedback"]),
     noteText: z.string().max(200_000), selection: z.string().max(20_000).default(""),
     question: z.string().max(8000).default(""), writeMode: z.string().max(60).default("better wording"),
     history: z.array(historyItem).max(12).default([]),
