@@ -45,7 +45,7 @@ export const savePersonalNote = createServerFn({ method: "POST" })
     let content: Json;
     try {
       content = JSON.parse(input.contentJson) as Json;
-      if (!content || typeof content !== "object" || Array.isArray(content) || content.type !== "doc") {
+      if (!content || typeof content !== "object" || Array.isArray(content) || content['type'] !== "doc") {
         throw new Error("Invalid document");
       }
     } catch { throw new Error("This document couldn't be saved. Please try again."); }

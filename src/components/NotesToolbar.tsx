@@ -58,7 +58,7 @@ export function NotesToolbar({ editor }: { editor: Editor }) {
         <DropdownMenuItem onSelect={() => editor.chain().focus().setParagraph().run()}>Paragraph</DropdownMenuItem>
         {([1, 2, 3] as const).map(level => <DropdownMenuItem key={level} onSelect={() => editor.chain().focus().toggleHeading({ level }).run()}>Heading {level}</DropdownMenuItem>)}
       </DropdownMenuContent></DropdownMenu>
-      <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="sm" aria-label="Text size">{editor.getAttributes("textStyle").fontSize?.replace("px", "") || "16"}</Button></DropdownMenuTrigger><DropdownMenuContent>{[12, 14, 16, 18, 20, 24, 32].map(size => <DropdownMenuItem key={size} onSelect={() => editor.chain().focus().setFontSize(`${size}px`).run()}>{size}</DropdownMenuItem>)}</DropdownMenuContent></DropdownMenu>
+      <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="sm" aria-label="Text size">{editor.getAttributes("textStyle")['fontSize']?.replace("px", "") || "16"}</Button></DropdownMenuTrigger><DropdownMenuContent>{[12, 14, 16, 18, 20, 24, 32].map(size => <DropdownMenuItem key={size} onSelect={() => editor.chain().focus().setFontSize(`${size}px`).run()}>{size}</DropdownMenuItem>)}</DropdownMenuContent></DropdownMenu>
       <Tool label="Bold" icon={Bold} active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()} />
       <Tool label="Italic" icon={Italic} active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()} />
       <Tool label="Underline" icon={Underline} active={editor.isActive("underline")} onClick={() => editor.chain().focus().toggleUnderline().run()} />
@@ -74,7 +74,7 @@ export function NotesToolbar({ editor }: { editor: Editor }) {
       <DropdownMenu><DropdownMenuTrigger asChild><Button size="icon" variant="ghost" className="size-9" aria-label="Text alignment"><AlignLeft className="size-4" /></Button></DropdownMenuTrigger><DropdownMenuContent>{[{ name: "Left", value: "left", icon: AlignLeft }, { name: "Center", value: "center", icon: AlignCenter }, { name: "Right", value: "right", icon: AlignRight }, { name: "Justify", value: "justify", icon: AlignJustify }].map(a => <DropdownMenuItem key={a.value} onSelect={() => editor.chain().focus().setTextAlign(a.value).run()}><a.icon className="size-4" />{a.name}</DropdownMenuItem>)}</DropdownMenuContent></DropdownMenu>
       <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="sm"><Plus className="size-4" />Insert</Button></DropdownMenuTrigger><DropdownMenuContent>
         <DropdownMenuItem onSelect={() => imageInput.current?.click()}><ImagePlus className="size-4" />Image</DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => { setUrl(editor.getAttributes("link").href || ""); setLinkError(""); setLinkOpen(true); }}><Link2 className="size-4" />Link</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => { setUrl(editor.getAttributes("link")['href'] || ""); setLinkError(""); setLinkOpen(true); }}><Link2 className="size-4" />Link</DropdownMenuItem>
         <DropdownMenuItem onSelect={() => editor.chain().focus().setHorizontalRule().run()}><Minus className="size-4" />Divider</DropdownMenuItem>
         <DropdownMenuItem onSelect={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}><Table2 className="size-4" />Table</DropdownMenuItem>
       </DropdownMenuContent></DropdownMenu>
