@@ -252,27 +252,30 @@ export function NotesAiPanel({ open, onClose, editor, title, classId, quickActio
   const thread = tab === "research" ? research : chat;
   const working = !!busy;
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  // Keep the newest message in view so you never have to scroll down to see your text.
+  // New messages stay visible, but changing tools starts at their controls.
   useEffect(() => {
     const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [thread.length, busy, tab]);
+    if (el && (tab === "ask" || tab === "research")) el.scrollTop = el.scrollHeight;
+  }, [thread.length, busy]);
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, [tab]);
 
-  return <aside aria-label="AI Assistant" className={cn(open ? "flex" : "hidden", "fixed inset-0 z-50 flex-col bg-background lg:sticky lg:top-4 lg:z-auto lg:h-[calc(100dvh-2rem)] lg:w-[380px] lg:shrink-0 lg:rounded-xl lg:border lg:border-border lg:bg-card lg:shadow-card")}>
-    <div className="flex items-center justify-between border-b border-border px-4 py-3">
+  return <aside aria-label="AI Assistant" className={cn(open ? "flex" : "hidden", "fixed inset-0 z-50 min-h-0 flex-col overflow-hidden bg-background lg:sticky lg:top-[calc(7rem+env(safe-area-inset-top))] lg:z-40 lg:max-h-[calc(100dvh-8rem-env(safe-area-inset-top))] lg:w-[380px] lg:shrink-0 lg:rounded-xl lg:border lg:border-border lg:bg-card lg:shadow-card")}>
+    <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
       <p className="flex items-center gap-2 font-display font-bold"><Sparkles className="size-4 text-primary" />AI Assistant</p>
       <Button size="icon" variant="ghost" aria-label="Close AI Assistant" onClick={onClose}><X className="size-5" /></Button>
     </div>
-    <div className="grid grid-cols-2 gap-2 border-b border-border p-3" aria-label="Quick AI tools">
-      <Button size="sm" variant="secondary" disabled={working} onClick={() => { setTab("study"); void runStudy("quiz"); }}><HelpCircle className="size-4" />Quiz me</Button>
-      <Button size="sm" variant="outline" disabled={working} onClick={() => { setTab("study"); void runStudy("flashcards"); }}><BookOpen className="size-4" />Make flashcards</Button>
-      <Button size="sm" variant="outline" disabled={working} onClick={() => { setTab("study"); void runStudy("guide"); }}><Brain className="size-4" />Study guide</Button>
-      <Button size="sm" variant="outline" disabled={working} onClick={async () => { setTab("explain"); const r = await call("explain"); if (r) setExplain(r.text); }}><Lightbulb className="size-4" />Explain notes</Button>
+    <div className="grid shrink-0 grid-cols-2 gap-2 border-b border-border p-3" aria-label="Quick AI tools">
+      <Button size="sm" variant="secondary" onClick={() => { setTab("study"); if (!working) void runStudy("quiz"); }}><HelpCircle className="size-4" />Quiz me</Button>
+      <Button size="sm" variant="outline" onClick={() => { setTab("study"); if (!working) void runStudy("flashcards"); }}><BookOpen className="size-4" />Make flashcards</Button>
+      <Button size="sm" variant="outline" onClick={() => { setTab("study"); if (!working) void runStudy("guide"); }}><Brain className="size-4" />Study guide</Button>
+      <Button size="sm" variant="outline" onClick={async () => { setTab("explain"); if (working) return; const r = await call("explain"); if (r) setExplain(r.text); }}><Lightbulb className="size-4" />Explain notes</Button>
     </div>
-    <div className="flex gap-1 overflow-x-auto border-b border-border px-2 py-2" role="tablist">
-      {TABS.map(t => <Button key={t.id} role="tab" aria-selected={tab === t.id} size="sm" variant={tab === t.id ? "default" : "ghost"} onClick={() => setTab(t.id)} className="shrink-0"><t.Icon className="size-4" />{t.label}{t.id === "lecture" && rec !== "idle" && <span className="size-2 animate-pulse rounded-full bg-destructive" />}</Button>)}
+    <div className="grid shrink-0 grid-cols-3 gap-1 border-b border-border px-2 py-2" role="tablist" aria-label="AI Assistant tools">
+      {TABS.map(t => <Button key={t.id} role="tab" aria-selected={tab === t.id} size="sm" variant={tab === t.id ? "default" : "ghost"} onClick={() => setTab(t.id)} className="min-w-0 px-2"><t.Icon className="size-4 shrink-0" />{t.label}{t.id === "lecture" && rec !== "idle" && <span className="size-2 animate-pulse rounded-full bg-destructive" />}</Button>)}
     </div>
-    <div className="flex flex-wrap gap-x-4 gap-y-1 border-b border-border px-4 py-2 text-xs">
+    <div className="flex shrink-0 flex-wrap gap-x-4 gap-y-1 border-b border-border px-4 py-2 text-xs">
       <label className="flex items-center gap-1.5"><input type="checkbox" className="accent-primary" checked={autoSpell} onChange={e => { setAutoSpell(e.target.checked); saveAuto(e.target.checked, autoFeedback); }} />Auto spelling fixes</label>
       <label className="flex items-center gap-1.5"><input type="checkbox" className="accent-primary" checked={autoFeedback} onChange={e => { setAutoFeedback(e.target.checked); saveAuto(autoSpell, e.target.checked); }} />Auto feedback on my notes</label>
     </div>
