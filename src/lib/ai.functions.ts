@@ -81,6 +81,7 @@ export const generateFlashcards = createServerFn({ method: "POST" })
       .object({
         classId: z.string().uuid(),
         documentId: z.string().uuid().nullable().optional(),
+        videoNoteId: z.string().uuid().nullable().optional(),
         count: z.number().int().min(5).max(50),
         difficulty: z.string().default("medium"),
         topic: z.string().max(200).nullable().optional(),
@@ -107,6 +108,7 @@ export const generateQuiz = createServerFn({ method: "POST" })
         lectureIds: z.array(z.string().uuid()).max(12).nullable().optional(),
 
         noteIds: z.array(z.string().uuid()).max(12).nullable().optional(),
+        videoNoteId: z.string().uuid().nullable().optional(),
         count: z.number().int().min(5).max(50),
         difficulty: z.string().default("medium"),
         types: z.array(z.string()).min(1),
