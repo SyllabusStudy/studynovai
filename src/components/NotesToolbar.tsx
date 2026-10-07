@@ -16,12 +16,24 @@ function Tool({ label, icon: Icon, active, disabled, onClick }: { label: string;
 }
 
 const SWATCHES = [
+  { name: "Black", token: "note-ink-black", className: "bg-note-ink-black" },
   { name: "Default", token: "foreground", className: "bg-foreground" },
   { name: "Blue", token: "info", className: "bg-info" },
   { name: "Teal", token: "success", className: "bg-success" },
   { name: "Amber", token: "warning", className: "bg-warning" },
   { name: "Rose", token: "destructive", className: "bg-destructive" },
   { name: "Violet", token: "primary", className: "bg-primary" },
+];
+
+const FONTS = [
+  { name: "Default", value: "" },
+  { name: "Arial", value: "Arial, Helvetica, sans-serif" },
+  { name: "Verdana", value: "Verdana, Geneva, sans-serif" },
+  { name: "Trebuchet", value: "'Trebuchet MS', sans-serif" },
+  { name: "Georgia", value: "Georgia, serif" },
+  { name: "Times New Roman", value: "'Times New Roman', Times, serif" },
+  { name: "Palatino", value: "Palatino, 'Palatino Linotype', 'Book Antiqua', serif" },
+  { name: "Courier New", value: "'Courier New', Courier, monospace" },
 ];
 
 export function NotesToolbar({ editor }: { editor: Editor }) {
@@ -72,6 +84,7 @@ export function NotesToolbar({ editor }: { editor: Editor }) {
         <DropdownMenuItem onSelect={() => editor.chain().focus().setParagraph().run()}>Paragraph</DropdownMenuItem>
         {([1, 2, 3] as const).map(level => <DropdownMenuItem key={level} onSelect={() => editor.chain().focus().toggleHeading({ level }).run()}>Heading {level}</DropdownMenuItem>)}
       </DropdownMenuContent></DropdownMenu>
+      <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="sm" className="max-w-40" aria-label="Font family"><span className="truncate">{FONTS.find(font => font.value === editor.getAttributes("textStyle")['fontFamily'])?.name || "Default"}</span></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuRadioGroup value={editor.getAttributes("textStyle")['fontFamily'] || ""} onValueChange={value => value ? editor.chain().focus().setFontFamily(value).run() : editor.chain().focus().unsetFontFamily().run()}>{FONTS.map(font => <DropdownMenuRadioItem key={font.name} value={font.value}>{font.name}</DropdownMenuRadioItem>)}</DropdownMenuRadioGroup></DropdownMenuContent></DropdownMenu>
       <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="sm" aria-label="Text size">{editor.getAttributes("textStyle")['fontSize']?.replace("px", "") || "16"}</Button></DropdownMenuTrigger><DropdownMenuContent>{[12, 14, 16, 18, 20, 24, 32].map(size => <DropdownMenuItem key={size} onSelect={() => editor.chain().focus().setFontSize(`${size}px`).run()}>{size}</DropdownMenuItem>)}</DropdownMenuContent></DropdownMenu>
       <Tool label="Bold" icon={Bold} active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()} />
       <Tool label="Italic" icon={Italic} active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()} />

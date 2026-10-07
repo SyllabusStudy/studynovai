@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { EditorContent, useEditor, useEditorState, type JSONContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { NoteLineSpacing } from "@/lib/note-line-spacing";
-import { TextStyle, FontSize } from "@tiptap/extension-text-style";
+import { TextStyle, FontSize, FontFamily } from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
 import TextAlign from "@tiptap/extension-text-align";
@@ -122,7 +122,7 @@ export function PersonalNoteEditor({ note, initialAction }: { note: Note; initia
 
   const editor = useEditor({
     immediatelyRender: false,
-    extensions: [NoteLineSpacing, StarterKit.configure({ link: { openOnClick: false, protocols: ["http", "https", "mailto"] } }), TextStyle, FontSize, Color, Highlight.configure({ multicolor: true }), TextAlign.configure({ types: ["heading", "paragraph"] }), Image.configure({ allowBase64: true }), TableKit, TaskList, TaskItem.configure({ nested: true })],
+    extensions: [NoteLineSpacing, StarterKit.configure({ link: { openOnClick: false, protocols: ["http", "https", "mailto"] } }), TextStyle, FontSize, FontFamily, Color, Highlight.configure({ multicolor: true }), TextAlign.configure({ types: ["heading", "paragraph"] }), Image.configure({ allowBase64: true }), TableKit, TaskList, TaskItem.configure({ nested: true })],
     content: note.content as JSONContent,
     editorProps: {
       attributes: { spellcheck: "true", class: "notes-document", "data-no-voice": "true", "aria-label": "Note document", role: "textbox", "aria-multiline": "true" },

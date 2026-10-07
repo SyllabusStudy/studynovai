@@ -511,6 +511,7 @@ html.app-theme h1 { letter-spacing: -0.01em; }
 /* Notes paper: the note page is always a white sheet with dark ink, in every theme.
    Tokens live once in :root so light and dark both get the same paper. */
 :root {
+  --note-ink-black: oklch(0 0 0);
   --note-paper: oklch(1 0 0);
   --note-paper-foreground: oklch(0.216 0.020 276);
   --note-paper-muted: oklch(0.520 0.025 266);
