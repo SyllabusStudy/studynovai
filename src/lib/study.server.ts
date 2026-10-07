@@ -715,12 +715,34 @@ export async function runTutorChat(
 
 /* ------------------------------------------------------------------ flashcards */
 
+/** Text of one saved video note (QuickVideo), used as study material. */
+async function videoNoteText(supabase: DB, userId: string, videoNoteId: string): Promise<{ title: string; text: string }> {
+  const { data } = await supabase
+    .from("video_notes")
+    .select("title, summary, notes, transcript")
+    .eq("id", videoNoteId)
+    .eq("user_id", userId)
+    .single();
+  if (!data) throw new Error("Those video notes could not be found.");
+  const text = [
+    `VIDEO NOTES: ${data.title}`,
+    data.summary ? `Summary: ${data.summary}` : "",
+    data.notes ?? "",
+    data.transcript ? `Transcript:\n${data.transcript.slice(0, 12000)}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+  if (!text.trim()) throw new Error("Those video notes are empty — open them once so they finish processing, then try again.");
+  return { title: data.title, text };
+}
+
 export async function runFlashcardGeneration(
   supabase: DB,
   userId: string,
   input: {
     classId: string;
     documentId?: string | null | undefined;
+    videoNoteId?: string | null | undefined;
     count: number;
     difficulty: string;
     topic?: string | null | undefined;
@@ -729,7 +751,15 @@ export async function runFlashcardGeneration(
     deck?: string | null | undefined;
   },
 ) {
-  const source = await sourceText(supabase, userId, input.classId, input.documentId ?? null);
+  let source = "";
+  let videoTitle = "";
+  if (input.videoNoteId) {
+    const v = await videoNoteText(supabase, userId, input.videoNoteId);
+    source = v.text;
+    videoTitle = v.title;
+  } else {
+    source = await sourceText(supabase, userId, input.classId, input.documentId ?? null);
+  }
   if (!source) throw new Error("Upload notes, a study guide or an assignment for this class first — syllabi are not used as study material.");
 
   // Optionally aim the deck at the student's real homework / upcoming deadlines.
