@@ -140,7 +140,7 @@ function NoteView({ token, text, content }: { token: string; text: string; conte
         </div>
         {!user && <p className="text-xs text-muted-foreground">Make a free account and these notes are copied into your own Notes.</p>}
       </div>
-      <article className="surface-card p-5">
+      <article className="note-paper surface-card p-5">
         <FileText className="mb-3 size-5 text-primary" />
         {content ? (
           <EditorContent editor={editor} className="notes-editor overflow-x-auto" />
