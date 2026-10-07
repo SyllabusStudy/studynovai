@@ -137,7 +137,7 @@ function ClassDetail() {
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="h-auto w-full justify-start gap-1 rounded-none border-b border-border bg-transparent p-0">
-          {[["overview", "Overview"], ["deadlines", "Assignments"], ["notes", "Notes"], ["grades", "Grades"]].map(([v, l]) => (
+          {([["overview", "Overview"], ["deadlines", "Assignments"], ["notes", "Notes"], ["grades", "Grades"]] as const).map(([v, l]) => (
             <TabsTrigger key={v} value={v} className="rounded-none border-b-2 border-transparent px-4 py-2.5 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">{l}</TabsTrigger>
           ))}
         </TabsList>
