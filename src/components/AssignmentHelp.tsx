@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Msg = { role: "user" | "assistant"; content: string };
 const FOLLOW_UPS = [
@@ -8,17 +8,15 @@ const FOLLOW_UPS = [
 ];
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
-import { FileText, Loader2, Sparkles } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, FileText, GraduationCap, Loader2, Pencil, Search, ShieldCheck, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { assignmentHelp } from "@/lib/ai.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
@@ -30,13 +28,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Markdown } from "@/components/Markdown";
-import { Hint } from "@/components/Hint";
 import { DocumentUploader } from "@/components/DocumentUploader";
 import { DocumentList } from "@/components/DocumentList";
 import { DocumentSplitView } from "@/components/DocumentSplitView";
 import { ASSIGNMENT_CATEGORIES } from "@/lib/constants";
-import { useAssignmentDocuments, useDocuments, type DocumentRow } from "@/lib/data";
+import { useAssignmentDocuments, useClasses, useDocuments, type DocumentRow } from "@/lib/data";
 import { useAuth } from "@/lib/auth";
+import { cn } from "@/lib/utils";
+
+function StepBadge({ n }: { n: number }) {
+  return (
+    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">
+      {n}
+    </span>
+  );
+}
+
+function addedLabel(d: DocumentRow) {
+  return `Added ${new Date(d.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+}
 
 export function AssignmentHelp({
   assignmentId,
@@ -58,11 +68,21 @@ export function AssignmentHelp({
   const [messages, setMessages] = useState<Msg[]>([]);
   const endRef = useRef<HTMLDivElement>(null);
   const [selected, setSelected] = useState<DocumentRow | null>(null);
+  const { data: classes = [] } = useClasses(user?.id);
+  const className = classes.find((c) => c.id === classId)?.class_name ?? null;
   const { data: docs = [] } = useAssignmentDocuments(user?.id, open ? assignmentId : undefined);
   const { data: allDocs = [] } = useDocuments(open ? user?.id : undefined, classId ?? undefined);
   const pastDocs = allDocs.filter((d) => d.assignment_id !== assignmentId && (d.extracted_text ?? "").trim().length > 0);
   const [refIds, setRefIds] = useState<string[]>([]);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [noteQuery, setNoteQuery] = useState("");
   const runHelp = useServerFn(assignmentHelp);
+
+  const filteredNotes = useMemo(() => {
+    const q = noteQuery.trim().toLowerCase();
+    if (!q) return pastDocs;
+    return pastDocs.filter((d) => d.file_name.toLowerCase().includes(q));
+  }, [pastDocs, noteQuery]);
 
   useEffect(() => {
     try {
@@ -83,6 +103,13 @@ export function AssignmentHelp({
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, memKey]);
 
+  useEffect(() => {
+    if (!open) {
+      setNotesOpen(false);
+      setNoteQuery("");
+    }
+  }, [open]);
+
   async function setCategory(value: string) {
     const { error } = await supabase
       .from("assignments")
@@ -93,7 +120,6 @@ export function AssignmentHelp({
       return;
     }
     await qc.invalidateQueries({ queryKey: ["assignments"] });
-    toast.success("Category saved");
   }
 
   async function ask(text: string) {
@@ -123,6 +149,16 @@ export function AssignmentHelp({
     }
   }
 
+  const allShownOn = filteredNotes.length > 0 && filteredNotes.every((d) => refIds.includes(d.id));
+
+  function toggleNote(id: string) {
+    setRefIds((r) => (r.includes(id) ? r.filter((x) => x !== id) : [...r, id].slice(-12)));
+  }
+
+  function toggleSelectAll() {
+    setRefIds((r) => (allShownOn ? r.filter((id) => !filteredNotes.some((d) => d.id === id)) : [...r, ...filteredNotes.map((d) => d.id)].slice(-12)));
+  }
+
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>
@@ -131,20 +167,32 @@ export function AssignmentHelp({
             <Sparkles className="size-4" /> <span className="hidden sm:inline">Ask AI About This</span><span className="sm:hidden">Ask AI</span>
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="pr-6 text-left">{title}</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+          <div className="sr-only">
+            <DialogTitle>{title}</DialogTitle>
+          </div>
+          <div className="flex items-start gap-3 pr-6">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+              <Sparkles className="size-5" />
+            </div>
+            <div>
+              <p className="text-xl font-bold tracking-tight">AI Homework Helper</p>
+              <p className="text-sm text-muted-foreground">Upload your homework, choose your class notes, and get AI help.</p>
+            </div>
+          </div>
 
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>Category (keeps AI work organized)</Label>
-              <Hint id="assignment-category" point="down">
-                Pick a category so SyllabusStudy files its saved work under the right kind of task.
-              </Hint>
+          <div className="space-y-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex min-w-0 flex-1 items-center gap-2.5 rounded-full border border-border bg-card/60 py-2 pl-3 pr-4">
+                <GraduationCap className="size-4 shrink-0 text-primary" />
+                <span className="shrink-0 text-sm font-semibold">Class</span>
+                <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+                  {className ? `${className} / ${title}` : title}
+                </span>
+              </div>
               <Select value={category ?? ""} onValueChange={(v) => void setCategory(v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pick a category" />
+                <SelectTrigger className="h-10 w-auto gap-1.5 rounded-full border-border bg-card/60 text-sm" aria-label="Assignment type">
+                  <SelectValue placeholder="Type" />
                 </SelectTrigger>
                 <SelectContent>
                   {ASSIGNMENT_CATEGORIES.map((c) => (
@@ -156,41 +204,112 @@ export function AssignmentHelp({
               </Select>
             </div>
 
-            <DocumentUploader
-              assignmentId={assignmentId}
-              classId={classId}
-              title="Attach the assignment (PDF or screenshot)"
-              hint="SyllabusStudy reads it, then walks you through the questions — no extra clicks."
-            />
-            <Hint id="assignment-open-file" point="down">
-              Click a file name below to open it side by side — your PDF or image on the left, the
-              AI's explanation on the right.
-            </Hint>
-            <DocumentList documents={docs} onSelect={(d) => setSelected(d)} />
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <StepBadge n={1} />
+                <p className="text-base font-bold">Upload your homework</p>
+                <p className="ml-auto text-xs text-muted-foreground">Upload a PDF, photo, or worksheet from your teacher.</p>
+              </div>
+              <DocumentUploader
+                variant="homework"
+                assignmentId={assignmentId}
+                classId={classId}
+              />
+              {docs.length > 0 ? <DocumentList documents={docs} onSelect={(d) => setSelected(d)} /> : null}
+            </div>
 
             {pastDocs.length > 0 ? (
-              <div className="space-y-1.5">
-                <p className="text-sm font-medium">Reflect on my notes or slides</p>
-                <p className="text-xs text-muted-foreground">Tap files you already uploaded so the AI uses them in its answer.</p>
-                <div className="flex max-h-40 flex-wrap gap-2 overflow-y-auto">
-                  {pastDocs.map((d) => {
-                    const on = refIds.includes(d.id);
-                    return (
-                      <button
-                        key={d.id}
-                        type="button"
-                        aria-pressed={on}
-                        onClick={() => setRefIds((r) => (on ? r.filter((x) => x !== d.id) : [...r, d.id].slice(-12)))}
-                        className={`flex max-w-full items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${on ? "border-primary bg-primary text-primary-foreground" : "border-border hover:border-primary/60"}`}
-                      >
-                        <FileText className="size-3.5 shrink-0" />
-                        <span className="max-w-[14rem] truncate">{d.file_name}</span>
-                      </button>
-                    );
-                  })}
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <StepBadge n={2} />
+                  <div className="min-w-0">
+                    <p className="text-base font-bold">Reflect on your class notes</p>
+                    <p className="text-xs text-muted-foreground">Choose notes from this class that you want the AI to use.</p>
+                  </div>
+                  <button
+                    type="button"
+                    aria-expanded={notesOpen}
+                    onClick={() => setNotesOpen((o) => !o)}
+                    className="ml-auto flex shrink-0 items-center gap-1.5 rounded-full border border-primary/50 bg-primary/10 px-3.5 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/20"
+                  >
+                    {refIds.length > 0 ? `${refIds.length} note${refIds.length === 1 ? "" : "s"} selected` : "Select notes"}
+                    <ChevronDown className={cn("size-4 transition-transform", notesOpen && "rotate-180")} />
+                  </button>
                 </div>
+                {notesOpen ? (
+                  <div className="overflow-hidden rounded-xl border border-border bg-card/40">
+                    <div className="flex items-center gap-2 border-b border-border px-3 py-2.5">
+                      <div className="relative min-w-0 flex-1">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          value={noteQuery}
+                          onChange={(e) => setNoteQuery(e.target.value)}
+                          placeholder="Search notes..."
+                          className="h-9 rounded-lg bg-transparent pl-9"
+                          aria-label="Search notes"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={toggleSelectAll}
+                        aria-pressed={allShownOn}
+                        className="flex shrink-0 items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground"
+                      >
+                        <span className={cn("flex size-4 items-center justify-center rounded border", allShownOn ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/60")}>
+                          {allShownOn ? <Check className="size-3" /> : null}
+                        </span>
+                        Select all
+                      </button>
+                    </div>
+                    <ul className="max-h-64 divide-y divide-border/60 overflow-y-auto">
+                      {filteredNotes.map((d) => {
+                        const on = refIds.includes(d.id);
+                        return (
+                          <li key={d.id}>
+                            <button
+                              type="button"
+                              aria-pressed={on}
+                              onClick={() => toggleNote(d.id)}
+                              className={cn("flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-secondary/40", on && "bg-primary/5")}
+                            >
+                              <span className={cn("flex size-5 shrink-0 items-center justify-center rounded border transition-colors", on ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/60")}>
+                                {on ? <Check className="size-3.5" /> : null}
+                              </span>
+                              <FileText className={cn("size-4 shrink-0", on ? "text-primary" : "text-muted-foreground")} />
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-sm font-semibold">{d.file_name}</span>
+                                <span className="block text-xs text-muted-foreground">{addedLabel(d)}</span>
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                      {filteredNotes.length === 0 ? (
+                        <li className="px-3 py-4 text-sm text-muted-foreground">No notes match that search.</li>
+                      ) : null}
+                    </ul>
+                  </div>
+                ) : null}
               </div>
             ) : null}
+
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <StepBadge n={3} />
+                <p className="text-base font-bold">Anything specific you're stuck on?</p>
+                <p className="text-sm text-muted-foreground">(optional)</p>
+              </div>
+              <div className="relative">
+                <Pencil className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="e.g. Question 4 or explain this part..."
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  className="h-12 rounded-xl bg-card/60 pl-10 text-base"
+                  aria-label={messages.length ? "Ask a follow-up" : "What you're stuck on"}
+                />
+              </div>
+            </div>
 
             {messages.length > 0 ? (
               <div className="space-y-3">
@@ -220,24 +339,29 @@ export function AssignmentHelp({
             ) : null}
 
             <form
-              className="flex flex-col gap-2 sm:flex-row"
+              className="space-y-3"
               onSubmit={(e) => {
                 e.preventDefault();
                 void ask(question);
               }}
             >
-              <Input
-                placeholder={messages.length ? "Ask a follow-up…" : "Optional: which question are you stuck on?"}
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-              />
-              <Button type="submit" disabled={busy || (messages.length > 0 && !question.trim())} className="gap-1.5">
-                {busy ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-                {messages.length ? "Send" : "Help me with this"}
-              </Button>
+              <div className="flex items-center justify-between gap-3">
+                <Button type="button" variant="outline" className="rounded-xl" onClick={() => setOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={busy || (messages.length > 0 && !question.trim())} className="gap-2 rounded-xl">
+                  {busy ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+                  {messages.length ? "Send" : "Help Me With This"}
+                  {!busy ? <ArrowRight className="size-4" /> : null}
+                </Button>
+              </div>
+              <p className="flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
+                <ShieldCheck className="size-3.5 shrink-0" />
+                AI will use your uploaded work {refIds.length > 0 ? `+ ${refIds.length} selected note${refIds.length === 1 ? "" : "s"} ` : ""}together.
+              </p>
             </form>
-            {messages.length > 0 ? (
-              <button type="button" className="text-xs text-muted-foreground underline" onClick={() => setMessages([])}>
+            {messages.length > 0 && !busy ? (
+              <button type="button" className="block w-full text-center text-xs text-muted-foreground underline" onClick={() => setMessages([])}>
                 Start over
               </button>
             ) : null}
