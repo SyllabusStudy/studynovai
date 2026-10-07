@@ -43,6 +43,10 @@ export const Route = createFileRoute("/_authenticated/quizzes/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    class: typeof s.class === "string" ? s.class : undefined,
+    video: typeof s.video === "string" ? s.video : undefined,
+  }),
   component: QuizzesPage,
 });
 
@@ -63,8 +67,10 @@ const DIFFICULTY_HINTS: Record<string, string> = {
 function QuizzesPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const search = Route.useSearch();
+  const videoId = search.video ?? null;
   const { data: classes = [] } = useClasses(user?.id);
-  const [classId, setClassId] = useClassPicker("");
+  const [classId, setClassId] = useClassPicker("", search.class ?? null);
   const { data: documents = [] } = useDocuments(user?.id, classId || undefined);
   const { data: quizzes = [], isLoading } = useQuizzes(user?.id);
   const [documentIds, setDocumentIds] = useState<string[]>([]);
@@ -94,7 +100,7 @@ function QuizzesPage() {
         : documents.filter((d) => d.category !== "syllabus");
       const pages = await collectQuizPages(chosen).catch(() => []);
       const res = await run({
-        data: { classId, documentIds, lectureIds, noteIds, documentId: null, count, difficulty, types, pageImages: pages.map((p) => p.dataUrl) },
+        data: { classId, documentIds, lectureIds, noteIds, documentId: null, videoNoteId: videoId, count, difficulty, types, pageImages: pages.map((p) => p.dataUrl) },
       });
       if (pages.length && res?.quizId) {
         const { data: row } = await supabase.from("quizzes").select("questions").eq("id", res.quizId).single();
@@ -138,6 +144,11 @@ function QuizzesPage() {
       <PageHeader title="Quizzes" description="Test yourself with questions from your own notes." />
       <ClassActionBar hide={["quiz"]} />
       <AiKeySetupBanner />
+      {videoId ? (
+        <p className="mb-4 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm">
+          🎬 Your video notes are connected — hit <strong>Make quiz</strong> and the questions come from that video.
+        </p>
+      ) : null}
 
       <Hint id="quizzes-source" point="down" className="mb-4 hidden sm:flex">
         Pick a class, choose what to study, then hit Make quiz.

@@ -310,22 +310,32 @@ function QuickVideoPage() {
           <Button asChild size="sm" variant="outline" className="rounded-full"><Link to="/studio">View all tools <ArrowRight className="size-3.5" /></Link></Button>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
-          {([
-            { label: "Generate Flashcards", to: "/flashcards", icon: Layers, tone: "text-success" },
-            { label: "Quiz Me", to: "/quizzes", icon: FileQuestion, tone: "text-primary" },
-            { label: "Create Quiz", to: "/quizzes", icon: ClipboardList, tone: "text-destructive" },
-            { label: "Explain Notes", to: notes[0] ? "explain" : "/tutor", icon: Lightbulb, tone: "text-warning" },
-            { label: "SnapQuick", to: "/snapquick", icon: Camera, tone: "text-accent" },
-            { label: "AI Tutor", to: "/tutor", icon: Bot, tone: "text-primary" },
-          ] as const).map((t) => {
-            const cls = "flex items-center gap-3 rounded-xl border border-border bg-muted/40 px-3 py-3 text-sm font-semibold transition hover:-translate-y-0.5 hover:border-primary/50 hover:bg-muted";
-            const inner = <><t.icon className={`size-6 shrink-0 ${t.tone}`} /><span className="min-w-0 leading-tight">{t.label}</span></>;
-            return t.to === "explain" && notes[0] ? (
-              <Link key={t.label} to="/quickvideo/$noteId" params={{ noteId: notes[0].id }} className={cls}>{inner}</Link>
-            ) : (
-              <Link key={t.label} to={t.to === "explain" ? "/tutor" : t.to} className={cls}>{inner}</Link>
-            );
-          })}
+          {(() => {
+            const latest = notes[0];
+            const videoSearch = latest ? { class: latest.class_id ?? undefined, video: latest.id } : {};
+            const tools = [
+              { label: "Generate Flashcards", to: "/flashcards" as const, search: videoSearch, icon: Layers, tone: "text-success" },
+              { label: "Quiz Me", to: "/quizzes" as const, search: videoSearch, icon: FileQuestion, tone: "text-primary" },
+              { label: "Create Quiz", to: "/quizzes" as const, search: videoSearch, icon: ClipboardList, tone: "text-destructive" },
+              { label: "Explain Notes", to: "explain" as const, search: {}, icon: Lightbulb, tone: "text-warning" },
+              { label: "SnapQuick", to: "/snapquick" as const, search: {}, icon: Camera, tone: "text-accent" },
+              { label: "AI Tutor", to: "/tutor" as const, search: {}, icon: Bot, tone: "text-primary" },
+            ];
+            return tools.map((t) => {
+              const cls = "flex items-center gap-3 rounded-xl border border-border bg-muted/40 px-3 py-3 text-sm font-semibold transition hover:-translate-y-0.5 hover:border-primary/50 hover:bg-muted";
+              const inner = <><t.icon className={`size-6 shrink-0 ${t.tone}`} /><span className="min-w-0 leading-tight">{t.label}</span></>;
+              if (t.to === "explain") {
+                return latest ? (
+                  <Link key={t.label} to="/quickvideo/$noteId" params={{ noteId: latest.id }} className={cls}>{inner}</Link>
+                ) : (
+                  <Link key={t.label} to="/tutor" className={cls}>{inner}</Link>
+                );
+              }
+              return (
+                <Link key={t.label} to={t.to} search={t.search} className={cls}>{inner}</Link>
+              );
+            });
+          })()}
         </div>
       </section>
 

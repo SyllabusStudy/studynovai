@@ -715,12 +715,34 @@ export async function runTutorChat(
 
 /* ------------------------------------------------------------------ flashcards */
 
+/** Text of one saved video note (QuickVideo), used as study material. */
+async function videoNoteText(supabase: DB, userId: string, videoNoteId: string): Promise<{ title: string; text: string }> {
+  const { data } = await supabase
+    .from("video_notes")
+    .select("title, summary, notes, transcript")
+    .eq("id", videoNoteId)
+    .eq("user_id", userId)
+    .single();
+  if (!data) throw new Error("Those video notes could not be found.");
+  const text = [
+    `VIDEO NOTES: ${data.title}`,
+    data.summary ? `Summary: ${data.summary}` : "",
+    data.notes ?? "",
+    data.transcript ? `Transcript:\n${data.transcript.slice(0, 12000)}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+  if (!text.trim()) throw new Error("Those video notes are empty — open them once so they finish processing, then try again.");
+  return { title: data.title, text };
+}
+
 export async function runFlashcardGeneration(
   supabase: DB,
   userId: string,
   input: {
     classId: string;
     documentId?: string | null | undefined;
+    videoNoteId?: string | null | undefined;
     count: number;
     difficulty: string;
     topic?: string | null | undefined;
@@ -729,7 +751,15 @@ export async function runFlashcardGeneration(
     deck?: string | null | undefined;
   },
 ) {
-  const source = await sourceText(supabase, userId, input.classId, input.documentId ?? null);
+  let source = "";
+  let videoTitle = "";
+  if (input.videoNoteId) {
+    const v = await videoNoteText(supabase, userId, input.videoNoteId);
+    source = v.text;
+    videoTitle = v.title;
+  } else {
+    source = await sourceText(supabase, userId, input.classId, input.documentId ?? null);
+  }
   if (!source) throw new Error("Upload notes, a study guide or an assignment for this class first — syllabi are not used as study material.");
 
   // Optionally aim the deck at the student's real homework / upcoming deadlines.
@@ -803,7 +833,7 @@ ${source.slice(0, 20000)}`,
   });
   const deck =
     (input.deck ?? "").trim() ||
-    `${deckHint || input.topic || (homework ? "Homework focus" : "All materials")} · ${stamp}`;
+    `${deckHint || input.topic || (videoTitle ? videoTitle.slice(0, 60) : homework ? "Homework focus" : "All materials")} · ${stamp}`;
 
   const rows = (parsed.cards ?? [])
     .filter((c) => c?.front && c?.back)
@@ -849,6 +879,7 @@ export async function runQuizGeneration(
     documentIds?: string[] | null | undefined;
     lectureIds?: string[] | null | undefined;
     noteIds?: string[] | null | undefined;
+    videoNoteId?: string | null | undefined;
     count: number;
     difficulty: string;
     types: string[];
@@ -861,7 +892,8 @@ export async function runQuizGeneration(
   if (!picked.length && input.documentId) picked.push(input.documentId);
   const lecturePicked = (input.lectureIds ?? []).filter(Boolean);
   const notePicked = (input.noteIds ?? []).filter(Boolean);
-  const allMode = !picked.length && !lecturePicked.length && !notePicked.length;
+  const videoPicked = Boolean(input.videoNoteId);
+  const allMode = !picked.length && !lecturePicked.length && !notePicked.length && !videoPicked;
   const docPart = allMode || picked.length ? await sourceText(supabase, userId, input.classId, picked) : "";
   const lecturePart = allMode || lecturePicked.length ? await lectureText(supabase, userId, input.classId, lecturePicked) : "";
   if (lecturePicked.length && !lecturePart.trim())
@@ -869,7 +901,8 @@ export async function runQuizGeneration(
   const notePart = allMode || notePicked.length ? await personalNoteText(supabase, userId, input.classId, notePicked) : "";
   if (notePicked.length && !notePart.trim())
     throw new Error("Those notes are empty — write a bit more, then try again.");
-  const source = [docPart, lecturePart, notePart].filter((s) => s.trim()).join("\n\n");
+  const videoPart = videoPicked ? (await videoNoteText(supabase, userId, input.videoNoteId!)).text : "";
+  const source = [docPart, lecturePart, notePart, videoPart].filter((s) => s.trim()).join("\n\n");
   if (!source) throw new Error("Upload notes, a study guide or an assignment for this class first — syllabi are not used as study material.");
 
   // A short list of recent questions is enough to keep the next quiz fresh

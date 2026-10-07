@@ -50,6 +50,10 @@ export const Route = createFileRoute("/_authenticated/flashcards/")({
     ],
     links: [{ rel: "canonical", href: "https://syllabusstudy.com/flashcards" }],
   }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    class: typeof s.class === "string" ? s.class : undefined,
+    video: typeof s.video === "string" ? s.video : undefined,
+  }),
   component: FlashcardsPage,
 });
 
@@ -59,7 +63,9 @@ function FlashcardsPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data: classes = [] } = useClasses(user?.id);
-  const [classId, setClassId] = useClassPicker("");
+  const search = Route.useSearch();
+  const videoId = search.video ?? null;
+  const [classId, setClassId] = useClassPicker("", search.class ?? null);
   const { data: documents = [] } = useDocuments(user?.id, classId || undefined);
   const { data: cards = [], isLoading } = useFlashcards(user?.id, classId || undefined);
   const { data: assignments = [] } = useAssignments(user?.id, classId || undefined);
@@ -107,6 +113,7 @@ function FlashcardsPage() {
         data: {
           classId,
           documentId: documentId || null,
+          videoNoteId: videoId,
           count,
           difficulty,
           deck: deckName.trim() || null,
@@ -149,6 +156,11 @@ function FlashcardsPage() {
       <PageHeader title="Flashcards" description="Make a deck from your notes, then study it." />
       <ClassActionBar hide={["flashcards"]} />
       <AiKeySetupBanner />
+      {videoId ? (
+        <p className="mb-4 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm">
+          🎬 Your video notes are connected — hit <strong>Make flashcards</strong> and the deck comes from that video.
+        </p>
+      ) : null}
 
       <Hint id="flashcards-deck" point="down" className="mb-4 hidden sm:flex">
         Pick a class and hit Make flashcards. Extra settings are under More options.
