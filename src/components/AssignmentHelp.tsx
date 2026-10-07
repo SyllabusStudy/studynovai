@@ -8,7 +8,7 @@ const FOLLOW_UPS = [
 ];
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, Sparkles } from "lucide-react";
+import { FileText, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { assignmentHelp } from "@/lib/ai.functions";
@@ -35,7 +35,7 @@ import { DocumentUploader } from "@/components/DocumentUploader";
 import { DocumentList } from "@/components/DocumentList";
 import { DocumentSplitView } from "@/components/DocumentSplitView";
 import { ASSIGNMENT_CATEGORIES } from "@/lib/constants";
-import { useAssignmentDocuments, type DocumentRow } from "@/lib/data";
+import { useAssignmentDocuments, useDocuments, type DocumentRow } from "@/lib/data";
 import { useAuth } from "@/lib/auth";
 
 export function AssignmentHelp({
@@ -59,6 +59,9 @@ export function AssignmentHelp({
   const endRef = useRef<HTMLDivElement>(null);
   const [selected, setSelected] = useState<DocumentRow | null>(null);
   const { data: docs = [] } = useAssignmentDocuments(user?.id, open ? assignmentId : undefined);
+  const { data: allDocs = [] } = useDocuments(open ? user?.id : undefined, classId ?? undefined);
+  const pastDocs = allDocs.filter((d) => d.assignment_id !== assignmentId && (d.extracted_text ?? "").trim().length > 0);
+  const [refIds, setRefIds] = useState<string[]>([]);
   const runHelp = useServerFn(assignmentHelp);
 
   useEffect(() => {
@@ -101,7 +104,14 @@ export function AssignmentHelp({
     setQuestion("");
     setMessages([...history, { role: "user", content: q || "Walk me through the whole thing." }]);
     try {
-      const result = await runHelp({ data: { assignmentId, question: q || null, history } });
+      const result = await runHelp({
+        data: {
+          assignmentId,
+          question: q ? q.slice(0, 20000) : null,
+          history: history.slice(-30).map((m) => ({ ...m, content: m.content.slice(0, 60000) })),
+          referenceIds: refIds,
+        },
+      });
       setMessages((m) => [...m, { role: "assistant", content: result.reply }]);
       await qc.invalidateQueries({ queryKey: ["documents"] });
     } catch (e) {
@@ -157,6 +167,30 @@ export function AssignmentHelp({
               AI's explanation on the right.
             </Hint>
             <DocumentList documents={docs} onSelect={(d) => setSelected(d)} />
+
+            {pastDocs.length > 0 ? (
+              <div className="space-y-1.5">
+                <p className="text-sm font-medium">Reflect on my notes or slides</p>
+                <p className="text-xs text-muted-foreground">Tap files you already uploaded so the AI uses them in its answer.</p>
+                <div className="flex max-h-40 flex-wrap gap-2 overflow-y-auto">
+                  {pastDocs.map((d) => {
+                    const on = refIds.includes(d.id);
+                    return (
+                      <button
+                        key={d.id}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => setRefIds((r) => (on ? r.filter((x) => x !== d.id) : [...r, d.id].slice(-12)))}
+                        className={`flex max-w-full items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${on ? "border-primary bg-primary text-primary-foreground" : "border-border hover:border-primary/60"}`}
+                      >
+                        <FileText className="size-3.5 shrink-0" />
+                        <span className="max-w-[14rem] truncate">{d.file_name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
 
             {messages.length > 0 ? (
               <div className="space-y-3">

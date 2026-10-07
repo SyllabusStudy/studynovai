@@ -173,11 +173,12 @@ export const assignmentHelp = createServerFn({ method: "POST" })
     z
       .object({
         assignmentId: z.string().uuid(),
-        question: z.string().max(1000).nullable().optional(),
+        question: z.string().max(20000).nullable().optional(),
         history: z
-          .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(20000) }))
+          .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(60000) }))
           .max(30)
           .optional(),
+        referenceIds: z.array(z.string().uuid()).max(12).optional(),
       })
       .parse(d),
   )
