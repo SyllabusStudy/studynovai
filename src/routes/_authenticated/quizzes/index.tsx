@@ -144,6 +144,11 @@ function QuizzesPage() {
       <PageHeader title="Quizzes" description="Test yourself with questions from your own notes." />
       <ClassActionBar hide={["quiz"]} />
       <AiKeySetupBanner />
+      {videoId ? (
+        <p className="mb-4 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm">
+          🎬 Your video notes are connected — hit <strong>Make quiz</strong> and the questions come from that video.
+        </p>
+      ) : null}
 
       <Hint id="quizzes-source" point="down" className="mb-4 hidden sm:flex">
         Pick a class, choose what to study, then hit Make quiz.
