@@ -518,6 +518,10 @@ html.app-theme h1 { letter-spacing: -0.01em; }
   --note-paper-muted-bg: oklch(0.945 0.006 265);
   --note-paper-border: oklch(0.897 0.012 265);
 }
+@utility bg-note-ink-black {
+  background-color: var(--note-ink-black);
+}
+
 .note-paper {
   background-color: var(--note-paper);
   color: var(--note-paper-foreground);
