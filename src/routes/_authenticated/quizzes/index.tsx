@@ -67,8 +67,10 @@ const DIFFICULTY_HINTS: Record<string, string> = {
 function QuizzesPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const search = Route.useSearch();
+  const videoId = search.video ?? null;
   const { data: classes = [] } = useClasses(user?.id);
-  const [classId, setClassId] = useClassPicker("");
+  const [classId, setClassId] = useClassPicker("", search.class ?? null);
   const { data: documents = [] } = useDocuments(user?.id, classId || undefined);
   const { data: quizzes = [], isLoading } = useQuizzes(user?.id);
   const [documentIds, setDocumentIds] = useState<string[]>([]);

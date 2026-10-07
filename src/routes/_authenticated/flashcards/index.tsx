@@ -63,7 +63,9 @@ function FlashcardsPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data: classes = [] } = useClasses(user?.id);
-  const [classId, setClassId] = useClassPicker("");
+  const search = Route.useSearch();
+  const videoId = search.video ?? null;
+  const [classId, setClassId] = useClassPicker("", search.class ?? null);
   const { data: documents = [] } = useDocuments(user?.id, classId || undefined);
   const { data: cards = [], isLoading } = useFlashcards(user?.id, classId || undefined);
   const { data: assignments = [] } = useAssignments(user?.id, classId || undefined);
