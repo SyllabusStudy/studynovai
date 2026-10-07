@@ -16,7 +16,6 @@ import { ArrowRight, BookOpen, FileVideo, Bot, Camera, ClipboardList, FileQuesti
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { Hint } from "@/components/Hint";
-import { EmptyState } from "@/components/EmptyState";
 import { DeleteButton } from "@/components/DeleteButton";
 import { ClearAllButton } from "@/components/ClearAllButton";
 import { supabase } from "@/integrations/supabase/client";
