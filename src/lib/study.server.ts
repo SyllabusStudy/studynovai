@@ -1353,12 +1353,12 @@ ${refs.length ? `\nMY NOTES / SLIDES TO REFLECT ON (use these directly, quote an
     ...(followUp ? [{ role: "user" as const, content: input.question! }] : []),
   ], { search: true });
 
-  if (followUp) return { reply };
+  if (followUp || !attached[0]) return { reply };
 
   await supabase
     .from("documents")
     .update({ ai_help: reply })
-    .eq("id", attached[0]!.id)
+    .eq("id", attached[0].id)
     .eq("user_id", userId);
 
   return { reply };
