@@ -47,6 +47,16 @@ export function ToolsMascot({ pathname, onOpen }: { pathname: string; onOpen: ()
         onClick={() => { done(); onOpen(); }}
         className="pointer-events-auto relative flex size-12 animate-bounce items-center justify-center rounded-full bg-primary shadow-[0_0_24px_var(--primary)]"
       >
+        <MascotFace />
+      </button>
+    </div>
+  );
+}
+
+/** The buddy's face/antenna/arm — reused by the onboarding tour. */
+export function MascotFace() {
+  return (
+    <>
         <span className="absolute -top-2 left-1/2 h-2.5 w-0.5 -translate-x-1/2 bg-primary" />
         <span className="absolute -top-3 left-1/2 size-2 -translate-x-1/2 animate-pulse rounded-full bg-accent" />
         <span className="flex gap-2">
@@ -55,7 +65,14 @@ export function ToolsMascot({ pathname, onOpen }: { pathname: string; onOpen: ()
         </span>
         <span className="absolute bottom-3 h-1 w-3 rounded-b-full bg-primary-foreground" />
         <span className="absolute -right-1 top-5 h-1 w-3 origin-left animate-[mascot-wave_1s_ease-in-out_infinite] rounded-full bg-primary" />
-      </button>
-    </div>
+    </>
+  );
+}
+
+export function MascotBot({ className = "" }: { className?: string }) {
+  return (
+    <span className={`relative flex size-12 shrink-0 items-center justify-center rounded-full bg-primary shadow-[0_0_24px_var(--primary)] ${className}`}>
+      <MascotFace />
+    </span>
   );
 }
