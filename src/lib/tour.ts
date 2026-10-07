@@ -9,82 +9,40 @@ export type TourStep = {
   selectors: string[];
   title: string;
   body: string;
+  /** Short "this is that" chips shown instead of a paragraph. */
+  points?: string[];
   action?: string;
 };
 
 export const TOUR_STEPS: TourStep[] = [
-  {
-    id: "dashboard", kind: "next", route: "/dashboard",
-    selectors: ['[data-tour="dashboard"]'],
-    title: "Welcome to SyllabusStudy 👋",
-    body: "Your semester in one place. Home shows what's due today, your study streak, and quick buttons to start studying. Let's set you up in about a minute.",
-  },
-  {
-    id: "nav-classes", kind: "click", goto: "/classes",
-    selectors: ['a[href="/classes"]'],
-    title: "Step 1 · Add your classes 📚",
-    body: "Everything in the app is organized by class — notes, quizzes, the AI Tutor and due dates.",
-    action: "Click My Classes →",
-  },
-  {
-    id: "add-class", kind: "next", route: "/classes",
-    selectors: ['[data-tour="add-class"]', '[data-tour="page-header"]'],
-    title: "Upload a syllabus = instant planner ✨",
-    body: "Add a class, then drop in its syllabus. We pull out every exam and due date for you. Use Canvas or Blackboard? Paste your calendar link and it syncs by itself.",
-    action: "Try + Add class now, or press Next.",
-  },
-  {
-    id: "nav-assignments", kind: "click", goto: "/assignments",
-    selectors: ['a[href="/assignments"]'],
-    title: "Step 2 · Never miss a due date ✅",
-    body: "Your homework, sorted into Today, This week and Later — with reminders.",
-    action: "Click Assignments →",
-  },
-  {
-    id: "add-assignment", kind: "next", route: "/assignments",
-    selectors: ['[data-tour="add-assignment"]', '[data-tour="page-header"]'],
-    title: "Check it off, grow your streak 🔥",
-    body: "Add anything that's due. Stuck on one? Tap Ask AI on the card for step-by-step help. Your calendar and grades live in the menu too.",
-  },
-  {
-    id: "nav-notes", kind: "click", goto: "/notes",
-    selectors: ['a[href="/notes"]'],
-    title: "Step 3 · Take notes that work for you 📝",
-    body: "Type, handwrite with a pen or Apple Pencil, or just talk with 🎤 voice typing.",
-    action: "Click Notes →",
-  },
-  {
-    id: "notes", kind: "next", route: "/notes",
-    selectors: ['[data-tour="page-header"]'],
-    title: "Your notes have an AI buddy ✨",
-    body: "Spelling fixes and helpful feedback show up while you write. One tap turns a note into a quiz, flashcards or a study guide — and Share sends it to friends or Discord. Record a lecture right inside a note too.",
-  },
-  {
-    id: "nav-quizzes", kind: "click", goto: "/quizzes",
-    selectors: ['a[href="/quizzes"]'],
-    title: "Step 4 · Practice before the test 🧠",
-    body: "Quizzes and Flashcards turn your notes, files and lectures into practice.",
-    action: "Click Quizzes →",
-  },
-  {
-    id: "quizzes", kind: "next", route: "/quizzes",
-    selectors: ['[data-tour="page-header"]'],
-    title: "Pick exactly what to study",
-    body: "Choose a class, tap Choose what to study to pick specific notes, choose how many questions, and you're done. Lecture Notes, SnapQuick (photo help) and QuickVideo (video → notes) are in the Study and Tools menus.",
-  },
-  {
-    id: "nav-tutor", kind: "click", goto: "/tutor",
-    selectors: ['a[href="/tutor"]'],
-    title: "Step 5 · Your 24/7 AI Tutor 🤖",
-    body: "It reads your own class files, so its answers match your course.",
-    action: "Click AI Tutor →",
-  },
-  {
-    id: "tutor", kind: "next", route: "/tutor",
-    selectors: ['[data-tour="tutor-input"]', '[data-tour="page-header"]'],
-    title: "Ask it anything — try it now",
-    body: "Pick your class, then type or 🎤 speak a question like \"Explain chapter 3 like I'm new to it.\" You can attach files too. Lost later? Tap Stuck? anytime.",
-  },
+  { id: "dashboard", kind: "next", route: "/dashboard", selectors: ['[data-tour="dashboard"]'],
+    title: "Hey! I'm your study buddy 👋", body: "This is Home — your semester at a glance.",
+    points: ["📅 What's due today", "🔥 Your study streak", "⚡ Quick start buttons"] },
+  { id: "nav-classes", kind: "click", goto: "/classes", selectors: ['a[href="/classes"]'],
+    title: "Add your classes", body: "Everything lives inside a class.", action: "Tap My Classes" },
+  { id: "add-class", kind: "next", route: "/classes", selectors: ['[data-tour="add-class"]', '[data-tour="page-header"]'],
+    title: "This makes a class", body: "Then drop in your syllabus.",
+    points: ["📄 Syllabus → all due dates", "🔗 Canvas link → auto sync"] },
+  { id: "nav-assignments", kind: "click", goto: "/assignments", selectors: ['a[href="/assignments"]'],
+    title: "Never miss homework", body: "Your to-do list lives here.", action: "Tap Assignments" },
+  { id: "add-assignment", kind: "next", route: "/assignments", selectors: ['[data-tour="add-assignment"]', '[data-tour="page-header"]'],
+    title: "Add what's due", body: "Check it off when you're done.",
+    points: ["⏰ Reminders", "✨ Ask AI on any card", "✅ Grow your streak"] },
+  { id: "nav-notes", kind: "click", goto: "/notes", selectors: ['a[href="/notes"]'],
+    title: "Take notes", body: "Type, draw, or talk.", action: "Tap Notes" },
+  { id: "notes", kind: "next", route: "/notes", selectors: ['[data-tour="page-header"]'],
+    title: "Notes with superpowers", body: "Your AI buddy helps while you write.",
+    points: ["✍️ Handwrite / draw", "🎤 Voice typing", "✨ Auto spell + tips", "🔗 Share to friends"] },
+  { id: "nav-quizzes", kind: "click", goto: "/quizzes", selectors: ['a[href="/quizzes"]'],
+    title: "Practice for tests", body: "Turn notes into quizzes.", action: "Tap Quizzes" },
+  { id: "quizzes", kind: "next", route: "/quizzes", selectors: ['[data-tour="page-header"]'],
+    title: "Make a quiz in 3 taps", body: "Class → what to study → go.",
+    points: ["📚 Pick your notes", "🃏 Flashcards too", "🎙️ Lecture → notes"] },
+  { id: "nav-tutor", kind: "click", goto: "/tutor", selectors: ['a[href="/tutor"]'],
+    title: "Meet your AI Tutor", body: "It knows your class files.", action: "Tap AI Tutor" },
+  { id: "tutor", kind: "next", route: "/tutor", selectors: ['[data-tour="tutor-input"]', '[data-tour="page-header"]'],
+    title: "Ask it anything!", body: "Type or 🎤 talk right here.",
+    points: ["💬 \"Explain chapter 3\"", "📎 Attach files", "💡 Stuck? = help anytime"] },
 ];
 
 export const TOUR_EVENT = "studynova:tour";

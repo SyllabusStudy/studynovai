@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useProfile } from "@/lib/data";
+import { ArrowLeft } from "lucide-react";
+import { MascotBot } from "@/components/ToolsMascot";
 import { TOUR_EVENT, TOUR_STEPS, type TourEventDetail } from "@/lib/tour";
 
 // Steps 0..N-1 are real-app steps, N is the final "ready" screen.
@@ -160,6 +162,7 @@ export function OnboardingTour() {
     };
   }, [current, pathname]);
 
+  const [arrow, setArrow] = useState<{ x: number; y: number; deg: number } | null>(null);
   // Keep the card on-screen and off the highlighted element.
   useLayoutEffect(() => {
     const card = cardRef.current;
@@ -176,12 +179,22 @@ export function OnboardingTour() {
     const clampY = (y: number) => Math.min(Math.max(12, y), vh - ch - 12);
     const midX = clampX(rect.left + rect.width / 2 - cw / 2);
     const midY = clampY(rect.top + rect.height / 2 - ch / 2);
-    if (vw - rect.right - PAD >= cw + GAP + 12) setCardPos({ left: rect.right + PAD + GAP, top: midY });
-    else if (vh - rect.bottom - PAD >= ch + GAP + 12) setCardPos({ left: midX, top: rect.bottom + PAD + GAP });
-    else if (rect.top - PAD >= ch + GAP + 12) setCardPos({ left: midX, top: rect.top - PAD - GAP - ch });
-    else if (rect.left - PAD >= cw + GAP + 12) setCardPos({ left: rect.left - PAD - GAP - cw, top: midY });
-    else setCardPos({ left: clampX((vw - cw) / 2), top: vh - ch - 12 });
+    let pos: { left: number; top: number };
+    if (vw - rect.right - PAD >= cw + GAP + 12) pos = { left: rect.right + PAD + GAP, top: midY };
+    else if (vh - rect.bottom - PAD >= ch + GAP + 12) pos = { left: midX, top: rect.bottom + PAD + GAP };
+    else if (rect.top - PAD >= ch + GAP + 12) pos = { left: midX, top: rect.top - PAD - GAP - ch };
+    else if (rect.left - PAD >= cw + GAP + 12) pos = { left: rect.left - PAD - GAP - cw, top: midY };
+    else pos = { left: clampX((vw - cw) / 2), top: vh - ch - 12 };
+    setCardPos(pos);
+    // Arrow sits just outside the spotlight, pointing at it from the card's side.
+    const tx = rect.left + rect.width / 2, ty = rect.top + rect.height / 2;
+    const dx = tx - (pos.left + cw / 2), dy = ty - (pos.top + ch / 2);
+    const len = Math.hypot(dx, dy) || 1;
+    const rx = rect.width / 2 + PAD + 22, ry = rect.height / 2 + PAD + 22;
+    const k = Math.min(rx / Math.abs(dx / len || 1e-6), ry / Math.abs(dy / len || 1e-6));
+    setArrow({ x: tx - (dx / len) * k, y: ty - (dy / len) * k, deg: (Math.atan2(dy, dx) * 180) / Math.PI + 180 });
   }, [rect, step, mode]);
+  useEffect(() => { if (!rect) setArrow(null); }, [rect]);
 
   async function complete() {
     if (user && mandatory) {
@@ -221,6 +234,13 @@ export function OnboardingTour() {
               boxShadow: `0 0 0 9999px ${dim}, 0 0 24px 4px color-mix(in oklch, var(--primary) 45%, transparent)`,
             }}
           />
+          {arrow ? (
+            <div className="fixed -translate-x-1/2 -translate-y-1/2 transition-all duration-300" style={{ left: arrow.x, top: arrow.y }}>
+              <div style={{ transform: `rotate(${arrow.deg}deg)` }}>
+                <ArrowLeft className="size-9 animate-[tour-nudge_0.9s_ease-in-out_infinite] text-primary drop-shadow-[0_0_10px_var(--primary)]" strokeWidth={3} />
+              </div>
+            </div>
+          ) : null}
         </>
       ) : (
         <div className="pointer-events-auto absolute inset-0" style={{ background: dim }} />
@@ -237,14 +257,25 @@ export function OnboardingTour() {
       >
         {current ? (
           <>
-            {mode === "tour" ? (
-              <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-                Step {step + 1} of {total}
+            <div className="flex items-start gap-3">
+              <MascotBot className="animate-bounce" />
+              <div className="relative min-w-0 flex-1 rounded-2xl rounded-tl-sm border border-primary/30 bg-primary/10 px-3 py-2">
+                <h2 id="tour-title" className="text-base font-extrabold leading-tight tracking-tight">{current.title}</h2>
+                <p className="mt-0.5 text-sm text-muted-foreground">{current.body}</p>
+              </div>
+            </div>
+            {current.points?.length ? (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {current.points.map((pt, i) => (
+                  <span key={pt} style={{ animationDelay: `${i * 120}ms` }} className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both rounded-full border border-border bg-muted/60 px-2.5 py-1 text-xs font-semibold duration-500">{pt}</span>
+                ))}
+              </div>
+            ) : null}
+            {current.action ? (
+              <p className="mt-3 flex items-center gap-1.5 text-sm font-extrabold text-primary">
+                👉 {current.action} <span className="animate-pulse">— I'm pointing at it!</span>
               </p>
             ) : null}
-            <h2 id="tour-title" className="mt-1 text-lg font-extrabold tracking-tight">{current.title}</h2>
-            <p className="mt-2 text-sm text-muted-foreground">{current.body}</p>
-            {current.action ? <p className="mt-3 text-sm font-bold text-primary">{current.action}</p> : null}
             {isClick && !rect ? (
               <div className="mt-3 space-y-2">
                 <p className="text-xs text-muted-foreground">Can't see it? It's in the menu.</p>
@@ -253,7 +284,14 @@ export function OnboardingTour() {
                 </Button>
               </div>
             ) : null}
-            <div className="mt-4 flex items-center justify-between gap-2">
+            {mode === "tour" ? (
+              <div className="mt-4 flex gap-1" aria-label={`Step ${step + 1} of ${total}`}>
+                {TOUR_STEPS.map((t, i) => (
+                  <span key={t.id} className={`h-1.5 flex-1 rounded-full transition-colors ${i <= step ? "bg-primary" : "bg-muted"}`} />
+                ))}
+              </div>
+            ) : null}
+            <div className="mt-3 flex items-center justify-between gap-2">
               <Button variant="ghost" size="sm" disabled={step === 0 || mode === "focus"} onClick={() => {
                 let p = step - 1;
                 while (p > 0 && TOUR_STEPS[p]!.kind === "click") p--;
@@ -284,10 +322,13 @@ export function OnboardingTour() {
           </>
         ) : (
           <>
-            <h2 id="tour-title" className="text-xl font-extrabold tracking-tight">You're ready to use SyllabusStudy! 🎉</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              If you ever get stuck, click the 💡 Stuck? button in the corner for help or to take this tour again.
-            </p>
+            <div className="flex items-start gap-3">
+              <MascotBot className="animate-bounce" />
+              <div className="rounded-2xl rounded-tl-sm border border-primary/30 bg-primary/10 px-3 py-2">
+                <h2 id="tour-title" className="text-base font-extrabold tracking-tight">You're ready! 🎉</h2>
+                <p className="mt-0.5 text-sm text-muted-foreground">Lost? Tap 💡 Stuck? anytime.</p>
+              </div>
+            </div>
             <div className="mt-5 flex items-center justify-between gap-2">
               <Button variant="ghost" size="sm" onClick={() => setStep(step - 1)}>Back</Button>
               <Button onClick={() => void complete()}>Start Studying</Button>
