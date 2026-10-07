@@ -93,10 +93,24 @@ export function PersonalNoteEditor({ note, initialAction }: { note: Note; initia
         persisted.current = sentVersion;
       }
       setDirty(false); setStatus("Saved");
+      // Keep the cached copy in sync so reopening the note shows the latest text instantly.
+      const d = draft.current;
+      qc.setQueryData(["personal-note", note.user_id, note.id], (old: unknown) => old && typeof old === "object" ? { ...(old as object), title: d.title, content: JSON.parse(d.contentJson), plain_text: d.plainText, class_id: d.classId, title_is_auto: d.titleIsAuto, editor_mode: d.editorMode, ...(d.drawingJson ? { drawing: JSON.parse(d.drawingJson) } : {}), revision: revision.current } : old);
       void qc.invalidateQueries({ queryKey: ["personal-notes", note.user_id] });
     } catch (e) { setStatus("Not saved"); setError(e instanceof Error ? e.message : "Your changes couldn't be saved."); }
-    finally { saving.current = false; }
+    finally { saving.current = false; if (persisted.current !== version.current) void persistRef.current(); }
   }, [save, note.id, note.user_id, qc]);
+  const persistRef = useRef(persist);
+  persistRef.current = persist;
+
+  // Save right away when leaving the note, switching tabs, or closing the page.
+  useEffect(() => {
+    const flush = () => { if (timer.current) { clearTimeout(timer.current); timer.current = null; } void persistRef.current(); };
+    const onHide = () => { if (document.visibilityState === "hidden") flush(); };
+    document.addEventListener("visibilitychange", onHide);
+    window.addEventListener("pagehide", flush);
+    return () => { document.removeEventListener("visibilitychange", onHide); window.removeEventListener("pagehide", flush); flush(); };
+  }, []);
 
   const changed = useCallback(() => {
     version.current += 1; setDirty(true); setStatus("Saving…");
