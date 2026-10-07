@@ -23,7 +23,9 @@ export default defineConfig({
         outDir: "dist/client",
         devOptions: { enabled: false },
         includeAssets: ["favicon.png", "apple-touch-icon.png"],
-        manifest: {
+        // Served as a static file from public/manifest.webmanifest.
+        manifest: false,
+        _unusedManifest: {
           id: "/",
           name: "SyllabusStudy",
           short_name: "SyllabusStudy",

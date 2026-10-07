@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "SyllabusStudy",
+  "short_name": "SyllabusStudy",
+  "description": "Your semester, made simple. Classes, deadlines, flashcards, quizzes and an AI tutor in one app.",
+  "start_url": "/dashboard?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "lang": "en",
+  "categories": ["education", "productivity"],
+  "theme_color": "#0F1117",
+  "background_color": "#0F1117",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
