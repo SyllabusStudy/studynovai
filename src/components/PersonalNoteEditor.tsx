@@ -78,7 +78,7 @@ export function PersonalNoteEditor({ note, initialAction }: { note: Note; initia
 
   const persist = useCallback(async () => {
     if (saving.current || persisted.current === version.current) return;
-    saving.current = true;
+    saving.current = true; let failed = false;
     setStatus("Saving…"); setError("");
     try {
       while (persisted.current !== version.current) {
@@ -97,8 +97,8 @@ export function PersonalNoteEditor({ note, initialAction }: { note: Note; initia
       const d = draft.current;
       qc.setQueryData(["personal-note", note.user_id, note.id], (old: unknown) => old && typeof old === "object" ? { ...(old as object), title: d.title, content: JSON.parse(d.contentJson), plain_text: d.plainText, class_id: d.classId, title_is_auto: d.titleIsAuto, editor_mode: d.editorMode, ...(d.drawingJson ? { drawing: JSON.parse(d.drawingJson) } : {}), revision: revision.current } : old);
       void qc.invalidateQueries({ queryKey: ["personal-notes", note.user_id] });
-    } catch (e) { setStatus("Not saved"); setError(e instanceof Error ? e.message : "Your changes couldn't be saved."); }
-    finally { saving.current = false; if (persisted.current !== version.current) void persistRef.current(); }
+    } catch (e) { failed = true; setStatus("Not saved"); setError(e instanceof Error ? e.message : "Your changes couldn't be saved."); }
+    finally { saving.current = false; if (!timer.current && persisted.current !== version.current && !failed) void persistRef.current(); }
   }, [save, note.id, note.user_id, qc]);
   const persistRef = useRef(persist);
   persistRef.current = persist;
