@@ -892,7 +892,8 @@ export async function runQuizGeneration(
   if (!picked.length && input.documentId) picked.push(input.documentId);
   const lecturePicked = (input.lectureIds ?? []).filter(Boolean);
   const notePicked = (input.noteIds ?? []).filter(Boolean);
-  const allMode = !picked.length && !lecturePicked.length && !notePicked.length;
+  const videoPicked = Boolean(input.videoNoteId);
+  const allMode = !picked.length && !lecturePicked.length && !notePicked.length && !videoPicked;
   const docPart = allMode || picked.length ? await sourceText(supabase, userId, input.classId, picked) : "";
   const lecturePart = allMode || lecturePicked.length ? await lectureText(supabase, userId, input.classId, lecturePicked) : "";
   if (lecturePicked.length && !lecturePart.trim())
@@ -900,7 +901,8 @@ export async function runQuizGeneration(
   const notePart = allMode || notePicked.length ? await personalNoteText(supabase, userId, input.classId, notePicked) : "";
   if (notePicked.length && !notePart.trim())
     throw new Error("Those notes are empty — write a bit more, then try again.");
-  const source = [docPart, lecturePart, notePart].filter((s) => s.trim()).join("\n\n");
+  const videoPart = videoPicked ? (await videoNoteText(supabase, userId, input.videoNoteId!)).text : "";
+  const source = [docPart, lecturePart, notePart, videoPart].filter((s) => s.trim()).join("\n\n");
   if (!source) throw new Error("Upload notes, a study guide or an assignment for this class first — syllabi are not used as study material.");
 
   // A short list of recent questions is enough to keep the next quiz fresh
