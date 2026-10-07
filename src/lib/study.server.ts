@@ -833,7 +833,7 @@ ${source.slice(0, 20000)}`,
   });
   const deck =
     (input.deck ?? "").trim() ||
-    `${deckHint || input.topic || (homework ? "Homework focus" : "All materials")} · ${stamp}`;
+    `${deckHint || input.topic || (videoTitle ? videoTitle.slice(0, 60) : homework ? "Homework focus" : "All materials")} · ${stamp}`;
 
   const rows = (parsed.cards ?? [])
     .filter((c) => c?.front && c?.back)
@@ -879,6 +879,7 @@ export async function runQuizGeneration(
     documentIds?: string[] | null | undefined;
     lectureIds?: string[] | null | undefined;
     noteIds?: string[] | null | undefined;
+    videoNoteId?: string | null | undefined;
     count: number;
     difficulty: string;
     types: string[];
