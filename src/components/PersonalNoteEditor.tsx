@@ -61,7 +61,9 @@ export function PersonalNoteEditor({ note, initialAction }: { note: Note; initia
   const draft = useRef({ title: note.title, contentJson: JSON.stringify(note.content), plainText: note.plain_text, classId: note.class_id, titleIsAuto: note.title_is_auto, drawingJson: undefined as string | undefined, editorMode: (note.editor_mode === "draw" ? "draw" : "type") as "type" | "draw" });
   const [mode, setMode] = useState<"type" | "draw">(draft.current.editorMode);
   const [initialDrawing] = useState(() => normalizeDrawing(note.drawing));
-  const [aiOpen, setAiOpen] = useState(!!initialAction);
+  const aiOpenKey = `studynova-note-ai-open:${note.id}`;
+  const [aiOpen, setAiOpenState] = useState(() => { try { return !!initialAction || localStorage.getItem(aiOpenKey) === "1"; } catch { return !!initialAction; } });
+  const setAiOpen = (v: boolean | ((o: boolean) => boolean)) => setAiOpenState(o => { const next = typeof v === "function" ? v(o) : v; try { localStorage.setItem(aiOpenKey, next ? "1" : "0"); } catch { /* ignore */ } return next; });
   const [aiBadge, setAiBadge] = useState(0);
   const [quickAction, setQuickAction] = useState<{ id: number; action: "quiz" | "flashcards" | "guide" | "explain" } | null>(() => initialAction ? { id: 1, action: initialAction } : null);
   const [recLabel, setRecLabel] = useState<string | null>(null);
