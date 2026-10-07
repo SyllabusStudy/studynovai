@@ -3,7 +3,7 @@ import type { Editor } from "@tiptap/react";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { BookOpen, Brain, Check, Copy, ExternalLink, HelpCircle, Lightbulb, Loader2, Maximize2, Mic, Minimize2, Network, Pause, Play, Plus, Search, Send, Sparkles, Square, SpellCheck, Wand2, X } from "lucide-react";
+import { BookOpen, Brain, Check, Copy, ExternalLink, HelpCircle, Lightbulb, Loader2, Maximize2, Mic, Minimize2, Network, PanelBottom, PanelRight, Pause, Play, Plus, Search, Send, Sparkles, Square, SpellCheck, Wand2, X } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -36,10 +36,11 @@ function AiOutput({ text, onInsert, sources }: { text: string; onInsert: () => v
   </div>;
 }
 
-export function NotesAiPanel({ open, onClose, editor, title, classId, quickAction, onAddDiagram, onRecordingChange, onBadge }: {
+export function NotesAiPanel({ open, onClose, editor, title, classId, quickAction, onAddDiagram, onRecordingChange, onBadge, dock, onToggleDock }: {
   open: boolean; onClose: () => void; editor: Editor | null; title: string; classId: string | null;
   quickAction?: { id: number; action: "quiz" | "flashcards" | "guide" | "explain" } | null;
   onAddDiagram: (els: DrawEl[]) => void; onRecordingChange: (label: string | null) => void; onBadge: (count: number) => void;
+  dock: "side" | "bottom"; onToggleDock: () => void;
 }) {
   const ai = useServerFn(runNotesAi);
   const saveCards = useServerFn(saveNoteFlashcards);
