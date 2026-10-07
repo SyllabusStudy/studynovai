@@ -124,7 +124,7 @@ export function OnboardingTour() {
       let el = findTarget(current.selectors);
       let hint: string | null = null;
       if (!el && mobileClick) {
-        const group = current.goto === "/tutor" || current.goto === "/flashcards" || current.goto === "/quizzes" ? "study" : null;
+        const group = ["/tutor", "/flashcards", "/quizzes", "/lectures"].includes(current.goto) ? "study" : null;
         if (menuOpen && group) {
           el = findTarget([`[role="dialog"] [data-tour-group="${group}"]`]);
           if (el) hint = "Tap Study to show more options.";
