@@ -23,31 +23,8 @@ export default defineConfig({
         outDir: "dist/client",
         devOptions: { enabled: false },
         includeAssets: ["favicon.png", "apple-touch-icon.png"],
-        manifest: {
-          id: "/",
-          name: "SyllabusStudy",
-          short_name: "SyllabusStudy",
-          description: "Your semester, made simple. Classes, deadlines, flashcards, quizzes and an AI tutor in one app.",
-          start_url: "/dashboard?source=pwa",
-          categories: ["education", "productivity"],
-          lang: "en",
-          scope: "/",
-          display: "standalone",
-          orientation: "any",
-          theme_color: "#0F1117",
-          background_color: "#0F1117",
-          icons: [
-            { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
-            { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
-            { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
-          ],
-          shortcuts: [
-            { name: "My Classes", url: "/classes", icons: [{ src: "/icon-192.png", sizes: "192x192" }] },
-            { name: "Calendar", url: "/calendar", icons: [{ src: "/icon-192.png", sizes: "192x192" }] },
-            { name: "SnapQuick", url: "/snapquick", icons: [{ src: "/icon-192.png", sizes: "192x192" }] },
-            { name: "AI Tutor", url: "/tutor", icons: [{ src: "/icon-192.png", sizes: "192x192" }] },
-          ],
-        },
+        // Served as a static file from public/manifest.webmanifest.
+        manifest: false,
         workbox: {
           // adds the background push + notification click handlers to the generated worker
           importScripts: ["/push-sw.js"],
