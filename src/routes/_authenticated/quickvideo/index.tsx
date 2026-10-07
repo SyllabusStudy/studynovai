@@ -12,7 +12,7 @@ import { useClassPicker } from "@/lib/active-class";
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowRight, BookOpen, Bot, Camera, ClipboardList, FileQuestion, FileText, Layers, Lightbulb, Link2, Loader2, PlaySquare, Sparkles, Upload, Video, Youtube, Zap } from "lucide-react";
+import { ArrowRight, BookOpen, FileVideo, Bot, Camera, ClipboardList, FileQuestion, FileText, Layers, Lightbulb, Link2, Loader2, PlaySquare, Sparkles, Upload, Video, Youtube, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { Hint } from "@/components/Hint";
