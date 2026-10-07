@@ -271,7 +271,7 @@ export function NotesAiPanel({ open, onClose, editor, title, classId, quickActio
   }, [tab]);
 
   const dockClasses = dock === "bottom"
-    ? "lg:sticky lg:bottom-0 lg:top-auto lg:z-30 lg:mx-auto lg:w-full lg:max-w-5xl lg:max-h-none lg:transition-[height]"
+    ? "lg:static lg:w-full lg:max-w-5xl lg:max-h-none lg:transition-[height]"
     : "lg:sticky lg:top-[calc(7rem+env(safe-area-inset-top))] lg:z-40 lg:max-h-[calc(100dvh-8rem-env(safe-area-inset-top))] lg:shrink-0 lg:transition-[width]";
   const sizeClasses = dock === "bottom"
     ? (wide ? "lg:h-[calc(100dvh-13rem)]" : "lg:h-[min(58dvh,620px)]")
