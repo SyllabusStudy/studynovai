@@ -154,6 +154,25 @@ export function DocumentUploader({
         dragging && "border-primary bg-secondary/60",
       )}
     >
+      {variant === "homework" ? (
+        <div className="flex flex-col items-center gap-2.5 rounded-xl border border-dashed border-primary/40 bg-primary/[0.03] px-4 py-8 text-center transition-colors">
+          <div className="flex size-12 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary">
+            {busy ? <Loader2 className="size-6 animate-spin" /> : <FileUp className="size-6" />}
+          </div>
+          <p className="text-base font-semibold">Drag and drop your file here</p>
+          <p className="text-xs text-muted-foreground">PDF, images, or documents</p>
+          <Button size="sm" disabled={busy} onClick={() => inputRef.current?.click()}>
+            {busy ? <Loader2 className="size-4 animate-spin" /> : null}
+            Choose file
+          </Button>
+          {stage !== null ? (
+            <p className="flex items-center gap-2 text-sm font-semibold text-primary" aria-live="polite">
+              <Loader2 className="size-4 animate-spin" /> {STAGES[stage]}
+            </p>
+          ) : null}
+        </div>
+      ) : (
+        <>
       <FileUp className={cn("size-6 shrink-0 text-primary", compact ? "hidden sm:block" : "mx-auto")} />
       <div className={cn(compact && "min-w-0 flex-1")}>
       <p className={cn("text-sm font-semibold", !compact && "mt-3", compact && "text-base")}>
