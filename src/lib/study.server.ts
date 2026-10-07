@@ -1298,6 +1298,7 @@ export async function runAssignmentHelp(
     assignmentId: string;
     question?: string | null | undefined;
     history?: { role: "user" | "assistant"; content: string }[] | undefined;
+    referenceIds?: string[] | undefined;
   },
 ) {
   const { data: assignment } = await supabase
@@ -1315,11 +1316,20 @@ export async function runAssignmentHelp(
     .eq("assignment_id", assignment.id);
 
   const attached = (docs ?? []).filter((d) => (d.extracted_text ?? "").trim().length > 0);
-  if (!attached.length) {
+  const refIds = (input.referenceIds ?? []).filter((id) => !(docs ?? []).some((d) => d.id === id));
+  const { data: refDocs } = refIds.length
+    ? await supabase
+        .from("documents")
+        .select("id,file_name,extracted_text")
+        .eq("user_id", userId)
+        .in("id", refIds)
+    : { data: [] as { id: string; file_name: string; extracted_text: string | null }[] };
+  const refs = (refDocs ?? []).filter((d) => (d.extracted_text ?? "").trim().length > 0);
+  if (!attached.length && !refs.length) {
     throw new Error(
       (docs ?? []).length
         ? "Your attached file is still being read. Try again in a few seconds."
-        : "Attach a PDF or screenshot of this assignment first.",
+        : "Attach a PDF or screenshot of this assignment, or pick notes/slides to reflect on.",
     );
   }
 
@@ -1336,7 +1346,8 @@ ${assignment.description ? `Notes: ${assignment.description}` : ""}
 ${followUp ? "Here is my assignment. I'll ask follow-up questions next." : input.question ? `My specific question: ${input.question}` : "Walk me through the whole thing."}
 
 ATTACHED FILES:
-${attached.map((d) => `### ${d.file_name}\n${(d.extracted_text ?? "").slice(0, 12000)}`).join("\n\n")}`,
+${attached.map((d) => `### ${d.file_name}\n${(d.extracted_text ?? "").slice(0, 12000)}`).join("\n\n") || "(none)"}
+${refs.length ? `\nMY NOTES / SLIDES TO REFLECT ON (use these directly, quote and connect them to the assignment):\n${refs.map((d) => `### ${d.file_name}\n${(d.extracted_text ?? "").slice(0, 15000)}`).join("\n\n")}` : ""}`,
     },
     ...history.map((m) => ({ role: m.role, content: m.content.slice(0, 6000) })),
     ...(followUp ? [{ role: "user" as const, content: input.question! }] : []),
