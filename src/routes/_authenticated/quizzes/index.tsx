@@ -100,7 +100,7 @@ function QuizzesPage() {
         : documents.filter((d) => d.category !== "syllabus");
       const pages = await collectQuizPages(chosen).catch(() => []);
       const res = await run({
-        data: { classId, documentIds, lectureIds, noteIds, documentId: null, count, difficulty, types, pageImages: pages.map((p) => p.dataUrl) },
+        data: { classId, documentIds, lectureIds, noteIds, documentId: null, videoNoteId: videoId, count, difficulty, types, pageImages: pages.map((p) => p.dataUrl) },
       });
       if (pages.length && res?.quizId) {
         const { data: row } = await supabase.from("quizzes").select("questions").eq("id", res.quizId).single();

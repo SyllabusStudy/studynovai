@@ -113,6 +113,7 @@ function FlashcardsPage() {
         data: {
           classId,
           documentId: documentId || null,
+          videoNoteId: videoId,
           count,
           difficulty,
           deck: deckName.trim() || null,
