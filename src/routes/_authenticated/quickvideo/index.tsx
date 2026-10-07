@@ -292,7 +292,7 @@ function QuickVideoPage() {
           </div>
         </div>
         <div className="hidden flex-col justify-end rounded-2xl bg-muted/40 p-5 lg:flex">
-          <img src={quickvideoHero} alt="A video turning into clean study notes" width={992} height={672} loading="lazy" className="mb-4 w-full rounded-xl" />
+          <img src={quickvideoHero} alt="A video turning into clean study notes" width={992} height={672} loading="lazy" className="mx-auto mb-4 w-[78%] max-w-[280px] rounded-xl" />
           <p className="font-bold">Get study notes in seconds</p>
           <p className="mt-1 text-sm text-muted-foreground">Paste a YouTube link and SyllabusStudy will transcribe and organize it into clean, structured notes.</p>
         </div>
