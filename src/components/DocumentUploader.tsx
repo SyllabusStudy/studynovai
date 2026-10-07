@@ -22,6 +22,7 @@ export function DocumentUploader({
   category,
   title,
   hint,
+  compact = false,
 }: {
   classId?: string | null;
   syllabusOnly?: boolean;
@@ -29,6 +30,7 @@ export function DocumentUploader({
   category?: string | undefined;
   title?: string | undefined;
   hint?: string | undefined;
+  compact?: boolean;
 }) {
   const { user } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -145,12 +147,14 @@ export function DocumentUploader({
         void upload(e.dataTransfer.files);
       }}
       className={cn(
-        "rounded-xl border border-dashed border-border bg-card/60 p-6 text-center transition-colors",
+        "rounded-xl border border-dashed border-border bg-card/60 transition-colors",
+        compact ? "flex flex-col gap-3 p-4 sm:flex-row sm:items-center" : "p-6 text-center",
         dragging && "border-primary bg-secondary/60",
       )}
     >
-      <FileUp className="mx-auto size-6 text-primary" />
-      <p className="mt-3 text-sm font-semibold">
+      <FileUp className={cn("size-6 shrink-0 text-primary", compact ? "hidden sm:block" : "mx-auto")} />
+      <div className={cn(compact && "min-w-0 flex-1")}>
+      <p className={cn("text-sm font-semibold", !compact && "mt-3", compact && "text-base")}>
         {title ?? (syllabusOnly ? "Upload a syllabus" : "Upload your class materials")}
       </p>
       <p className="mt-1 text-xs text-muted-foreground">
@@ -159,15 +163,16 @@ export function DocumentUploader({
             ? "PDF, Word, slides or images. We fill in your exams, homework, dates and grade weights automatically."
             : "Add syllabi, notes, assignments, study guides, slides, and other files.")}
       </p>
+      </div>
       {stage !== null ? (
         <p className="mt-3 flex items-center justify-center gap-2 text-sm font-semibold text-primary" aria-live="polite">
           <Loader2 className="size-4 animate-spin" /> {STAGES[stage]}
         </p>
       ) : null}
-      <div className="mt-4 flex flex-wrap items-center justify-center gap-4">
-        <Button size="sm" disabled={busy} onClick={() => inputRef.current?.click()}>
+      <div className={cn("flex flex-wrap items-center gap-4", compact ? "sm:flex-row-reverse" : "mt-4 justify-center")}>
+        <Button size={compact ? "default" : "sm"} disabled={busy} onClick={() => inputRef.current?.click()}>
           {busy ? <Loader2 className="size-4 animate-spin" /> : null}
-          Choose files
+          {compact ? "Upload Files" : "Choose files"}
         </Button>
         <div className={cn("flex items-center gap-2", (syllabusOnly || assignmentId) && "hidden")}>
           <Switch id="is-syllabus" checked={isSyllabus} onCheckedChange={setIsSyllabus} />
