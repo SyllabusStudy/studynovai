@@ -50,6 +50,10 @@ export const Route = createFileRoute("/_authenticated/flashcards/")({
     ],
     links: [{ rel: "canonical", href: "https://syllabusstudy.com/flashcards" }],
   }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    class: typeof s.class === "string" ? s.class : undefined,
+    video: typeof s.video === "string" ? s.video : undefined,
+  }),
   component: FlashcardsPage,
 });
 

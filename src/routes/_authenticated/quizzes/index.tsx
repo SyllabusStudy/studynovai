@@ -43,6 +43,10 @@ export const Route = createFileRoute("/_authenticated/quizzes/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    class: typeof s.class === "string" ? s.class : undefined,
+    video: typeof s.video === "string" ? s.video : undefined,
+  }),
   component: QuizzesPage,
 });
 
