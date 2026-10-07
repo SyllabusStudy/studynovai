@@ -170,7 +170,7 @@ export function PersonalNoteEditor({ note, initialAction }: { note: Note; initia
   }, [blocker, persist]);
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
-  return <div className={aiDock === "bottom" ? "flex w-full flex-col gap-4" : "flex w-full items-start gap-4"}>
+  return <div className={aiDock === "bottom" ? "flex w-full flex-col gap-4 [&>*]:shrink-0" : "flex w-full items-start gap-4"}>
   <div className="mx-auto w-full min-w-0 max-w-5xl">
     <div className="mb-4 flex flex-wrap items-center gap-3">
       <Button asChild variant="ghost" size="icon"><Link to="/notes" search={{}} aria-label="Back to Notes"><ArrowLeft className="size-5" /></Link></Button>
