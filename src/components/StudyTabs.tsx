@@ -177,7 +177,7 @@ export function StudyTabs() {
   const visible = useMemo(() => tabs.filter((t) => describe(t.path)), [tabs]);
   if (visible.length < 1 && !lecture.recording) return null;
   // Class workspaces have their own Quick Tools — skip the duplicate tab bar there.
-  if (pathname.startsWith("/classes/") && !lecture.recording) return null;
+  if ((pathname.startsWith("/classes/") || pathname.startsWith("/quickvideo")) && !lecture.recording) return null;
 
   return (
     <div className="sticky top-16 z-30 border-b border-border bg-card/85 backdrop-blur">
