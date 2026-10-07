@@ -214,7 +214,10 @@ export function urgencyDot(days: number | null): string {
 
 export function formatDate(date: string | null): string {
   if (!date) return "—";
-  return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
+  // Accept both plain dates and full timestamps; never show "Invalid Date".
+  const d = new Date(/^\d{4}-\d{2}-\d{2}$/.test(date) ? `${date}T00:00:00` : date);
+  if (Number.isNaN(d.getTime())) return "Recently added";
+  return d.toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
     year: "numeric",
