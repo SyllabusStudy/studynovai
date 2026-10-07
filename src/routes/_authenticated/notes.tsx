@@ -70,7 +70,7 @@ function NotesPage() {
     setBusy(true);
     try {
       if (dialog.mode === "rename") await rename({ data: { id: dialog.id, title: newTitle.trim() } });
-      else await remove({ data: { id: dialog.id } });
+      else { await remove({ data: { id: dialog.id } }); try { if (localStorage.getItem(lastOpenKey) === dialog.id) localStorage.removeItem(lastOpenKey); } catch { /* ignore */ } }
       await qc.invalidateQueries({ queryKey: ["personal-notes", user?.id] });
       qc.removeQueries({ queryKey: ["personal-note", user?.id, dialog.id] });
       setDialog(null);
