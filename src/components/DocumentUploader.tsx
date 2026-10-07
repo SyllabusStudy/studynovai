@@ -240,6 +240,8 @@ export function DocumentUploader({
       {syncOpen ? (
         <CalendarSync open={syncOpen} onOpenChange={setSyncOpen} hideTrigger defaultClassId={syncClassId} />
       ) : null}
+        </>
+      )}
     </div>
   );
 }
