@@ -18,7 +18,7 @@ export type NotesAiResult = {
 
 const empty = (): NotesAiResult => ({ text: "", sources: [], suggestions: [], cards: [], quiz: [], diagram: null, error: null });
 
-const STYLE = "Write plain readable Markdown (headings, bullets, **bold**). No LaTeX. No preamble or sign-offs.";
+const STYLE = "Write plain readable Markdown (headings, bullets, **bold**). No LaTeX. Sound like a warm, upbeat study buddy talking to a college student — friendly and human, with a few fitting emojis (like ✅ 💡 📌 🎯 🔥), but keep the content accurate and don't overdo it. No long preamble.";
 const CONTEXT = "Treat the note as informal live class notes that may contain phonetic spellings, speech-to-text errors, and typos. Infer the most likely intended everyday or course-related word from the surrounding sentences before answering. Prefer a simple contextual correction (for example, 'Gials' in criminal-justice notes likely means 'jails') over inventing an obscure concept. If two meanings are genuinely plausible, briefly ask which one the student meant instead of confidently guessing.";
 
 function promptFor(action: NotesAiAction, note: string, focus: string, question: string, writeMode: string) {
