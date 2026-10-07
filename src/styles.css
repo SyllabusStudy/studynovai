@@ -475,6 +475,7 @@ html.app-theme h1 { letter-spacing: -0.01em; }
 
 @keyframes mascot-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
 @keyframes mascot-wave { 0%, 100% { transform: rotate(-20deg); } 50% { transform: rotate(-60deg); } }
+@keyframes tour-nudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-8px); } }
 
 /* Private document workspace: all styling remains scoped to Notes. */
 .notes-document { min-height: 60dvh; padding: 2rem 3rem; outline: none; font-size: 16px; line-height: 1.5; overflow-wrap: anywhere; letter-spacing: 0; }
