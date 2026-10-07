@@ -270,13 +270,20 @@ export function NotesAiPanel({ open, onClose, editor, title, classId, quickActio
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
   }, [tab]);
 
-  return <aside aria-label="AI Assistant" className={cn(open ? "flex" : "hidden", "fixed inset-0 z-50 min-h-0 flex-col overflow-hidden bg-background lg:sticky lg:top-[calc(7rem+env(safe-area-inset-top))] lg:z-40 lg:max-h-[calc(100dvh-8rem-env(safe-area-inset-top))] lg:shrink-0 lg:rounded-xl lg:border lg:border-border lg:bg-card lg:shadow-card lg:transition-[width]", wide ? "lg:w-[min(50vw,760px)]" : "lg:w-[380px]")}>
+  const dockClasses = dock === "bottom"
+    ? "lg:sticky lg:bottom-0 lg:top-auto lg:z-30 lg:mx-auto lg:w-full lg:max-w-5xl lg:max-h-none lg:transition-[height]"
+    : "lg:sticky lg:top-[calc(7rem+env(safe-area-inset-top))] lg:z-40 lg:max-h-[calc(100dvh-8rem-env(safe-area-inset-top))] lg:shrink-0 lg:transition-[width]";
+  const sizeClasses = dock === "bottom"
+    ? (wide ? "lg:h-[calc(100dvh-13rem)]" : "lg:h-[min(58dvh,620px)]")
+    : (wide ? "lg:w-[min(50vw,760px)]" : "lg:w-[380px]");
+  return <aside aria-label="AI Assistant" className={cn(open ? "flex" : "hidden", "fixed inset-0 z-50 min-h-0 flex-col overflow-hidden bg-background lg:rounded-xl lg:border lg:border-border lg:bg-card lg:shadow-card", dockClasses, sizeClasses)}>
     <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-4 py-3">
       <div className="min-w-0">
         <p className="flex items-center gap-2 font-display font-bold"><Sparkles className="size-4 text-primary" />AI Assistant</p>
         <p className="truncate text-xs text-muted-foreground">Hey {firstName} 👋 I'm reading along — ask me anything!</p>
       </div>
       <div className="flex shrink-0 items-center">
+        <Button size="icon" variant="ghost" className="hidden lg:inline-flex" aria-label={dock === "bottom" ? "Move AI Assistant beside the note" : "Move AI Assistant below the note"} title={dock === "bottom" ? "Move beside the note" : "Move below the note"} onClick={onToggleDock}>{dock === "bottom" ? <PanelRight className="size-4" /> : <PanelBottom className="size-4" />}</Button>
         <Button size="icon" variant="ghost" className="hidden lg:inline-flex" aria-label={wide ? "Make AI Assistant smaller" : "Make AI Assistant bigger"} title={wide ? "Smaller panel" : "Bigger panel"} onClick={toggleWide}>{wide ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}</Button>
         <Button size="icon" variant="ghost" aria-label="Close AI Assistant" onClick={onClose}><X className="size-5" /></Button>
       </div>
