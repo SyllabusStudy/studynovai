@@ -3,7 +3,8 @@ import type { Editor } from "@tiptap/react";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { BookOpen, Brain, Check, Copy, ExternalLink, HelpCircle, Lightbulb, Loader2, Mic, Network, Pause, Play, Plus, Search, Send, Sparkles, Square, SpellCheck, Wand2, X } from "lucide-react";
+import { BookOpen, Brain, Check, Copy, ExternalLink, HelpCircle, Lightbulb, Loader2, Maximize2, Mic, Minimize2, Network, Pause, Play, Plus, Search, Send, Sparkles, Square, SpellCheck, Wand2, X } from "lucide-react";
+import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { VoiceTypeButton } from "@/components/VoiceTypeButton";
@@ -253,6 +254,12 @@ export function NotesAiPanel({ open, onClose, editor, title, classId, quickActio
   const thread = tab === "research" ? research : chat;
   const working = !!busy;
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const { user: me } = useAuth();
+  const meta = (me?.user_metadata ?? {}) as Record<string, unknown>;
+  const firstName = String(meta["full_name"] ?? meta["name"] ?? me?.email?.split("@")[0] ?? "there").trim().split(/\s+/)[0] || "there";
+  const [wide, setWide] = useState(false);
+  useEffect(() => { try { setWide(localStorage.getItem("studynova-notes-ai-wide") === "1"); } catch { /* ignore */ } }, []);
+  const toggleWide = () => setWide(w => { try { localStorage.setItem("studynova-notes-ai-wide", w ? "0" : "1"); } catch { /* ignore */ } return !w; });
   // New messages stay visible, but changing tools starts at their controls.
   useEffect(() => {
     const el = scrollRef.current;
@@ -262,10 +269,16 @@ export function NotesAiPanel({ open, onClose, editor, title, classId, quickActio
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
   }, [tab]);
 
-  return <aside aria-label="AI Assistant" className={cn(open ? "flex" : "hidden", "fixed inset-0 z-50 min-h-0 flex-col overflow-hidden bg-background lg:sticky lg:top-[calc(7rem+env(safe-area-inset-top))] lg:z-40 lg:max-h-[calc(100dvh-8rem-env(safe-area-inset-top))] lg:w-[380px] lg:shrink-0 lg:rounded-xl lg:border lg:border-border lg:bg-card lg:shadow-card")}>
-    <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
-      <p className="flex items-center gap-2 font-display font-bold"><Sparkles className="size-4 text-primary" />AI Assistant</p>
-      <Button size="icon" variant="ghost" aria-label="Close AI Assistant" onClick={onClose}><X className="size-5" /></Button>
+  return <aside aria-label="AI Assistant" className={cn(open ? "flex" : "hidden", "fixed inset-0 z-50 min-h-0 flex-col overflow-hidden bg-background lg:sticky lg:top-[calc(7rem+env(safe-area-inset-top))] lg:z-40 lg:max-h-[calc(100dvh-8rem-env(safe-area-inset-top))] lg:shrink-0 lg:rounded-xl lg:border lg:border-border lg:bg-card lg:shadow-card lg:transition-[width]", wide ? "lg:w-[min(50vw,760px)]" : "lg:w-[380px]")}>
+    <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-4 py-3">
+      <div className="min-w-0">
+        <p className="flex items-center gap-2 font-display font-bold"><Sparkles className="size-4 text-primary" />AI Assistant</p>
+        <p className="truncate text-xs text-muted-foreground">Hey {firstName} 👋 I'm reading along — ask me anything!</p>
+      </div>
+      <div className="flex shrink-0 items-center">
+        <Button size="icon" variant="ghost" className="hidden lg:inline-flex" aria-label={wide ? "Make AI Assistant smaller" : "Make AI Assistant bigger"} title={wide ? "Smaller panel" : "Bigger panel"} onClick={toggleWide}>{wide ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}</Button>
+        <Button size="icon" variant="ghost" aria-label="Close AI Assistant" onClick={onClose}><X className="size-5" /></Button>
+      </div>
     </div>
     <div className="grid shrink-0 grid-cols-2 gap-2 border-b border-border p-3" aria-label="Quick AI tools">
       <Button size="sm" variant="secondary" onClick={() => { setTab("study"); if (!working) void runStudy("quiz"); }}><HelpCircle className="size-4" />Quiz me</Button>
