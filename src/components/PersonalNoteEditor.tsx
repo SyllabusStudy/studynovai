@@ -64,6 +64,8 @@ export function PersonalNoteEditor({ note, initialAction }: { note: Note; initia
   const aiOpenKey = `studynova-note-ai-open:${note.id}`;
   const [aiOpen, setAiOpenState] = useState(() => { try { return !!initialAction || localStorage.getItem(aiOpenKey) === "1"; } catch { return !!initialAction; } });
   const setAiOpen = (v: boolean | ((o: boolean) => boolean)) => setAiOpenState(o => { const next = typeof v === "function" ? v(o) : v; try { localStorage.setItem(aiOpenKey, next ? "1" : "0"); } catch { /* ignore */ } return next; });
+  const [aiDock, setAiDockState] = useState<"side" | "bottom">(() => { try { return localStorage.getItem("studynova-note-ai-dock") === "bottom" ? "bottom" : "side"; } catch { return "side"; } });
+  const setAiDock = (d: "side" | "bottom") => { setAiDockState(d); try { localStorage.setItem("studynova-note-ai-dock", d); } catch { /* ignore */ } };
   const [aiBadge, setAiBadge] = useState(0);
   const [quickAction, setQuickAction] = useState<{ id: number; action: "quiz" | "flashcards" | "guide" | "explain" } | null>(() => initialAction ? { id: 1, action: initialAction } : null);
   const [recLabel, setRecLabel] = useState<string | null>(null);
@@ -168,7 +170,7 @@ export function PersonalNoteEditor({ note, initialAction }: { note: Note; initia
   }, [blocker, persist]);
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
-  return <div className="flex w-full items-start gap-4">
+  return <div className={aiDock === "bottom" ? "flex w-full flex-col gap-4" : "flex w-full items-start gap-4"}>
   <div className="mx-auto w-full min-w-0 max-w-5xl">
     <div className="mb-4 flex flex-wrap items-center gap-3">
       <Button asChild variant="ghost" size="icon"><Link to="/notes" search={{}} aria-label="Back to Notes"><ArrowLeft className="size-5" /></Link></Button>
@@ -208,6 +210,6 @@ export function PersonalNoteEditor({ note, initialAction }: { note: Note; initia
       <div className="border-t border-border px-5 py-2 text-right text-xs text-muted-foreground">{editor?.getText().trim().split(/\s+/).filter(Boolean).length ?? 0} words</div>
     </div>
   </div>
-  <NotesAiPanel open={aiOpen} onClose={() => setAiOpen(false)} editor={editor} title={title} classId={classId} quickAction={quickAction} onRecordingChange={setRecLabel} onBadge={setAiBadge} onAddDiagram={els => { setIncoming({ key: Date.now(), elements: els }); setMode("draw"); draft.current.editorMode = "draw"; }} />
+  <NotesAiPanel open={aiOpen} onClose={() => setAiOpen(false)} editor={editor} title={title} classId={classId} quickAction={quickAction} onRecordingChange={setRecLabel} onBadge={setAiBadge} dock={aiDock} onToggleDock={() => setAiDock(aiDock === "bottom" ? "side" : "bottom")} onAddDiagram={els => { setIncoming({ key: Date.now(), elements: els }); setMode("draw"); draft.current.editorMode = "draw"; }} />
   </div>;
 }
