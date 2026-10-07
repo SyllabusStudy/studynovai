@@ -23,6 +23,7 @@ export function DocumentUploader({
   title,
   hint,
   compact = false,
+  variant = "default",
 }: {
   classId?: string | null;
   syllabusOnly?: boolean;
@@ -31,6 +32,7 @@ export function DocumentUploader({
   title?: string | undefined;
   hint?: string | undefined;
   compact?: boolean;
+  variant?: "default" | "homework";
 }) {
   const { user } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
