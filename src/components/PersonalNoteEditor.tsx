@@ -101,7 +101,7 @@ export function PersonalNoteEditor({ note, initialAction }: { note: Note; initia
   const changed = useCallback(() => {
     version.current += 1; setDirty(true); setStatus("Saving…");
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => void persist(), 900);
+    timer.current = setTimeout(() => void persist(), 350);
   }, [persist]);
 
   const editor = useEditor({
