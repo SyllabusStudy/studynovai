@@ -138,7 +138,7 @@ function SetupAiPage() {
       <div className="pointer-events-none absolute -right-40 -top-40 size-[28rem] rounded-full bg-primary/25 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-48 -left-40 size-[30rem] rounded-full bg-accent/20 blur-3xl" />
 
-      <div className="relative mx-auto w-full max-w-7xl px-4 py-6 sm:px-8 sm:py-8">
+      <div className="relative mx-auto w-full max-w-[96rem] px-4 py-6 sm:px-8 sm:py-8">
         <div className="flex items-center gap-2.5">
           <BrandLogo />
           <span className="font-display text-base font-bold tracking-tight">SyllabusStudy</span>
@@ -163,7 +163,7 @@ function SetupAiPage() {
           </div>
         ) : null}
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)] lg:items-start">
+        <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,2.15fr)_minmax(0,1fr)] lg:items-start">
           <div className="dash-glass rounded-3xl p-2 sm:p-3 lg:sticky lg:top-6">
             <div className="overflow-hidden rounded-2xl border border-border">
               <video
