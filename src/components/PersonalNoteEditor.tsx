@@ -201,12 +201,12 @@ export function PersonalNoteEditor({ note, initialAction }: { note: Note; initia
         ["explain", "Explain notes", Lightbulb],
       ] as const).map(([action, label, Icon]) => <Button key={action} size="sm" variant="outline" onClick={() => { setQuickAction({ id: Date.now(), action }); setAiOpen(true); }}><Icon className="size-4" />{label}</Button>)}
     </div>
-    <div className={mode === "draw" ? "rounded-xl border border-border bg-card shadow-card" : "hidden"}>
+    <div className={mode === "draw" ? "note-paper rounded-xl border border-border shadow-card" : "hidden"}>
       <NoteDrawingCanvas value={initialDrawing} incoming={incoming} onChange={(d: Drawing) => { draft.current.drawingJson = JSON.stringify(d); changed(); }} />
     </div>
-    <div className={mode === "type" ? "overflow-clip rounded-xl border border-border bg-card shadow-card" : "hidden"}>
+    <div className={mode === "type" ? "note-paper overflow-clip rounded-xl border border-border shadow-card" : "hidden"}>
       {editor && <div className="sticky top-[calc(7rem+env(safe-area-inset-top))] z-20 bg-card shadow-card"><NotesToolbar editor={editor} /></div>}
-      <EditorContent editor={editor} className="notes-editor min-h-[60dvh] overflow-x-auto bg-background/50" />
+      <EditorContent editor={editor} className="notes-editor min-h-[60dvh] overflow-x-auto bg-transparent" />
       <div className="border-t border-border px-5 py-2 text-right text-xs text-muted-foreground">{editor?.getText().trim().split(/\s+/).filter(Boolean).length ?? 0} words</div>
     </div>
   </div>

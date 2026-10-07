@@ -507,3 +507,30 @@ html.app-theme h1 { letter-spacing: -0.01em; }
 .notes-document blockquote { border-left: 3px solid var(--primary); padding-left: 1rem; }
 .notes-document pre { background: var(--muted); padding: 1rem; overflow-x: auto; border-radius: var(--radius-sm); }
 @media (max-width: 640px) { .notes-document { padding: 1.25rem; } }
+
+/* Notes paper: the note page is always a white sheet with dark ink, in every theme.
+   Tokens live once in :root so light and dark both get the same paper. */
+:root {
+  --note-paper: oklch(1 0 0);
+  --note-paper-foreground: oklch(0.216 0.020 276);
+  --note-paper-muted: oklch(0.520 0.025 266);
+  --note-paper-muted-bg: oklch(0.945 0.006 265);
+  --note-paper-border: oklch(0.897 0.012 265);
+}
+.note-paper {
+  background-color: var(--note-paper);
+  color: var(--note-paper-foreground);
+  --foreground: var(--note-paper-foreground);
+  --card: var(--note-paper);
+  --card-foreground: var(--note-paper-foreground);
+  --popover: var(--note-paper);
+  --popover-foreground: var(--note-paper-foreground);
+  --secondary: var(--note-paper-muted-bg);
+  --secondary-foreground: var(--note-paper-foreground);
+  --muted: var(--note-paper-muted-bg);
+  --muted-foreground: var(--note-paper-muted);
+  --accent: var(--note-paper-muted-bg);
+  --accent-foreground: var(--note-paper-foreground);
+  --border: var(--note-paper-border);
+  --input: var(--note-paper-border);
+}
