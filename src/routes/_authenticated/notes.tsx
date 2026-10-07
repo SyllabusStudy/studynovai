@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FileText, Loader2, MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -47,6 +47,16 @@ function NotesPage() {
   const [dialog, setDialog] = useState<{ id: string; title: string; mode: "rename" | "delete" } | null>(null);
   const [newTitle, setNewTitle] = useState("");
   const notes = useQuery({ queryKey: ["personal-notes", user?.id], enabled: !!user && !noteId, queryFn: () => list() });
+  const lastOpenKey = `studynova-notes-last-open:${user?.id ?? "anon"}`;
+  // Remember the last open note and reopen it when returning to Notes.
+  useEffect(() => {
+    if (noteId) { try { localStorage.setItem(lastOpenKey, noteId); } catch { /* ignore */ } return; }
+    try {
+      const saved = localStorage.getItem(lastOpenKey);
+      if (saved) void navigate({ search: { note: saved }, replace: true });
+    } catch { /* ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [noteId, lastOpenKey]);
   const opened = useQuery({ queryKey: ["personal-note", user?.id, noteId], enabled: !!user && !!noteId, queryFn: () => noteId ? get({ data: { id: noteId } }) : null, staleTime: 0 });
 
   async function newNote() {
@@ -60,7 +70,7 @@ function NotesPage() {
     setBusy(true);
     try {
       if (dialog.mode === "rename") await rename({ data: { id: dialog.id, title: newTitle.trim() } });
-      else await remove({ data: { id: dialog.id } });
+      else { await remove({ data: { id: dialog.id } }); try { if (localStorage.getItem(lastOpenKey) === dialog.id) localStorage.removeItem(lastOpenKey); } catch { /* ignore */ } }
       await qc.invalidateQueries({ queryKey: ["personal-notes", user?.id] });
       qc.removeQueries({ queryKey: ["personal-note", user?.id, dialog.id] });
       setDialog(null);
