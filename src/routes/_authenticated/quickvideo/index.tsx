@@ -1,6 +1,7 @@
 import { recordStudyActivity } from "@/lib/activity";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import helpImage from "@/assets/how-to-copy-youtube-link.png.asset.json";
+import quickvideoHero from "@/assets/quickvideo-hero.png";
 import {
   Dialog,
   DialogContent,
@@ -291,12 +292,7 @@ function QuickVideoPage() {
           </div>
         </div>
         <div className="hidden flex-col justify-end rounded-2xl bg-muted/40 p-5 lg:flex">
-          <div className="mb-5 flex items-center justify-center gap-4" aria-hidden="true">
-            <div className="grid h-20 w-28 place-items-center rounded-lg border border-border bg-background"><Youtube className="size-8 text-destructive" /></div>
-            <ArrowRight className="size-8 text-primary" />
-            <div className="grid h-24 w-20 place-items-center rounded-lg border border-border bg-card"><FileText className="size-8 text-primary" /></div>
-            <Sparkles className="size-6 text-warning" />
-          </div>
+          <img src={quickvideoHero} alt="A video turning into clean study notes" width={992} height={672} loading="lazy" className="mb-4 w-full rounded-xl" />
           <p className="font-bold">Get study notes in seconds</p>
           <p className="mt-1 text-sm text-muted-foreground">Paste a YouTube link and SyllabusStudy will transcribe and organize it into clean, structured notes.</p>
         </div>
