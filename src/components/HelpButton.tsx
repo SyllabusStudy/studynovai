@@ -7,13 +7,22 @@ import { startTour } from "@/lib/tour";
 import { useDraggable } from "@/lib/use-draggable";
 
 const TOPICS: { q: string; steps: string[]; focus?: string }[] = [
-  { q: "How do I add a class?", focus: "add-class", steps: ["Go to your dashboard.", "Click + Add Class.", "Type the class name and details, then save."] },
-  { q: "How do I upload a syllabus?", focus: "add-class", steps: ["Click Upload Syllabus on the dashboard.", "Open a class and add your syllabus PDF or photo.", "SyllabusStudy finds the dates and puts them on your calendar."] },
-  { q: "How do I use the calendar?", focus: "nav-calendar", steps: ["Click Calendar in the menu.", "Use the filters to show only exams, assignments and more.", "Click a day to add an event."] },
-  { q: "How do I use the AI Tutor?", focus: "nav-tutor", steps: ["Click Ask AI Tutor.", "Pick your class at the top.", "Ask a question — answers use your own class files."] },
-  { q: "How do I create/use flashcards?", focus: "nav-flashcards", steps: ["Open Flashcards in the Study menu.", "Pick a class and click Make flashcards.", "Tap a card to flip it and mark if you knew it."] },
-  { q: "How do I track my grades?", focus: "nav-grades", steps: ["Open Grades in the menu.", "Add grade categories and their weights.", "Enter scores to see your current grade and what you need."] },
-  { q: "How do I use the study tools?", focus: "nav-flashcards", steps: ["Quizzes: make a practice test from your notes.", "SnapQuick: snap a photo of homework for help.", "QuickVideo: turn a lecture video into study notes."] },
+  { q: "How do I add a class?", focus: "nav-classes", steps: ["Open My Classes.", "Click + Add class.", "Type the class name and details, then save."] },
+  { q: "How do I upload a syllabus?", focus: "add-class", steps: ["Open a class or click Upload Syllabus on Home.", "Add your syllabus PDF or a photo of it.", "We find every exam and due date and add them to your calendar."] },
+  { q: "How do I sync Canvas or Blackboard?", steps: ["In Canvas, open Calendar → Calendar Feed and copy the link.", "In SyllabusStudy, open Calendar and paste it into calendar sync.", "Your due dates stay updated by themselves."] },
+  { q: "How do I track assignments?", focus: "nav-assignments", steps: ["Open Assignments and click + Add Assignment.", "Filter by Due Soon, Overdue or Completed.", "Tap Ask AI on any card for help, and check it off when done."] },
+  { q: "How do I take notes?", focus: "nav-notes", steps: ["Open Notes and start a new note.", "Pick its class at the top — it shows in that class's Notes tab.", "The title names itself from what you write, and it saves automatically."] },
+  { q: "How do I handwrite or draw in notes?", focus: "nav-notes", steps: ["Open a note and switch from Type to Draw.", "Use the pen, highlighter, shapes or eraser — stylus, finger or mouse.", "Draw a rough circle or arrow, then tap clean up to make it neat."] },
+  { q: "How does the Notes AI Assistant work?", focus: "nav-notes", steps: ["Tap ✨ AI Assistant in a note.", "Spelling fixes and feedback appear by themselves — Accept, Reject or Accept All.", "Use Quiz Me, Flashcards, Study Guide or Ask, then Insert into Notes if you want it."] },
+  { q: "How do I use voice typing?", steps: ["Tap into any text box.", "Tap the 🎤 button and talk.", "Tap it again to stop. Works in Chrome, Edge and Safari."] },
+  { q: "How do I share my notes?", steps: ["Open a note and tap Share note.", "The link is copied — send it to friends or Discord.", "They can read it and save a copy, or make a quiz or flashcards from it."] },
+  { q: "How do I record a lecture?", steps: ["Open Lecture Notes (or the Lecture tab in a note's AI Assistant).", "Tap record, and stop when class ends.", "You get a transcript, notes, key points and flashcards. If it fails, tap Try again or save the audio."] },
+  { q: "How do I make a quiz from my notes?", focus: "nav-quizzes", steps: ["Open Quizzes and pick a class.", "Tap Choose what to study and tick the notes or files you want, then tap X.", "Pick the number of questions and tap Make quiz."] },
+  { q: "How do I create/use flashcards?", steps: ["Open Flashcards in the Study menu.", "Pick a class and click Make flashcards.", "Tap a card to flip it and mark if you knew it."] },
+  { q: "How do I use the AI Tutor?", focus: "nav-tutor", steps: ["Open AI Tutor and pick your class.", "Type or 🎤 speak your question — you can attach files too.", "Answers use your class files and go in depth. Old chats are saved on the left."] },
+  { q: "How do I track my grades?", steps: ["Open Grades in the menu.", "Add grade categories and their weights.", "Enter scores to see your current grade and what you need."] },
+  { q: "What are SnapQuick, QuickVideo and AI Checker?", steps: ["SnapQuick: snap a photo of homework for step-by-step help.", "QuickVideo: paste a YouTube link to get notes and a quiz.", "AI Checker: see if writing sounds AI-made, and Humanize it (Pro)."] },
+  { q: "How do I add my free AI key?", steps: ["Open Settings → AI key (or follow the setup screen).", "Tap Get my free key and copy it from Google.", "Paste it back in — AI tools then work for free."] },
 ];
 
 export function HelpButton() {
