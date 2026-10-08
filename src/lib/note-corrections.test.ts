@@ -4,7 +4,7 @@ import { EditorState } from "@tiptap/pm/state";
 import { correctionKind, createCorrectionPlugin, findCorrectionRanges, noteCorrectionsKey } from "./note-corrections";
 const schema = new Schema({ nodes: { doc: { content: "paragraph+" }, paragraph: { content: "text*", group: "block" }, text: { group: "inline" } }, marks: { bold: {} } });
 const doc = schema.node("doc", null, [schema.node("paragraph", null, [schema.text("The "), schema.text("wrng", [schema.mark("bold")]), schema.text(" words make cloudy sense.")])]);
-const suggestions = [{ original: "wrng", suggestion: "wrong", reason: "spelling: typo", kind: "spelling" as const }, { original: "make cloudy sense", suggestion: "are unclear", reason: "wording: unclear", kind: "wording" as const }];
+const suggestions = [{ original: "wrng", suggestion: "wrong", reason: "spelling: typo", kind: "spelling" as const }, { original: "make cloudy sense", suggestion: "are unclear", reason: "wording: unclear", kind: "wording" as const }] as const;
 describe("Notes corrections", () => {
   it("separates spelling from unclear wording", () => {
     expect(correctionKind(suggestions[0])).toBe("spelling");

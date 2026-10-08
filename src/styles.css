@@ -523,6 +523,9 @@ html.app-theme h1 { letter-spacing: -0.01em; }
 .notes-document img { max-width: 100%; height: auto; border-radius: var(--radius-sm); }
 .notes-document img.ProseMirror-selectednode { outline: 3px solid var(--primary); outline-offset: 2px; }
 .notes-document img { cursor: pointer; }
+.note-correction { text-decoration-line: underline; text-decoration-style: wavy; text-decoration-thickness: 1.5px; text-underline-offset: 3px; cursor: pointer; }
+.note-correction-spelling { text-decoration-color: var(--note-spelling); }
+.note-correction-wording { text-decoration-color: var(--note-wording); }
 .notes-document .tableWrapper { overflow-x: auto; margin: 1rem 0; }
 .notes-document table { border-collapse: collapse; table-layout: fixed; width: 100%; min-width: 320px; }
 .notes-document td, .notes-document th { min-width: 70px; border: 1px solid var(--border); padding: 0.5rem; position: relative; vertical-align: top; }
@@ -537,6 +540,8 @@ html.app-theme h1 { letter-spacing: -0.01em; }
    Tokens live once in :root so light and dark both get the same paper. */
 :root {
   --note-ink-black: oklch(0 0 0);
+  --note-spelling: oklch(0.553 0.186 22);
+  --note-wording: oklch(0.546 0.215 263);
   --note-paper: oklch(1 0 0);
   --note-paper-foreground: oklch(0.216 0.020 276);
   --note-paper-muted: oklch(0.520 0.025 266);

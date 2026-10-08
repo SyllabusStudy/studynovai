@@ -35,7 +35,7 @@ export function createCorrectionPlugin() {
             if (s.state) return;
             findCorrectionRanges(tr.doc, s.original).forEach(({ from, to }) => {
               if (decorations.some(d => d.from < to && from < d.to)) return;
-              decorations.push(Decoration.inline(from, to, { class: `note-correction note-correction-${correctionKind(s)}`, "data-note-correction": String(index), title: `${correctionKind(s) === "spelling" ? "Spelling" : "Unclear wording"}: ${s.suggestion}` }, { original: s.original }));
+              decorations.push(Decoration.inline(from, to, { class: `note-correction note-correction-${correctionKind(s)}`, "data-note-correction": String(index), title: `${correctionKind(s) === "spelling" ? "Spelling" : "Unclear wording"}: ${s.suggestion}` }, { original: s.original, index }));
             });
           });
           return DecorationSet.create(tr.doc, decorations);
