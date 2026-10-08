@@ -40,7 +40,7 @@ function AdminPage() {
   const { user } = useAuth();
   const load = useServerFn(getAdminStats);
   const check = useServerFn(checkAdmin);
-  const [managing, setManaging] = useState<{ id: string; name: string | null; email: string | null } | null>(null);
+  const [managing, setManaging] = useState<{ id: string; name: string | null; email: string | null; status?: string; hasAiKey?: boolean; aiProvider?: string | null } | null>(null);
   const { data: gate, isLoading: gating } = useQuery({
     queryKey: ["is-admin", user?.id],
     enabled: !!user,
@@ -58,6 +58,7 @@ function AdminPage() {
     { icon: Crown, label: "Pro upgrades", value: t?.pro ?? 0, note: `${t?.promo ?? 0} via promo code` },
     { icon: Camera, label: "SnapQuick scans", value: t?.snaps ?? 0, note: "all time" },
     { icon: Sparkles, label: "AI assignment helps", value: t?.helps ?? 0, note: "all time" },
+    { icon: KeyRound, label: "AI keys connected", value: t?.aiKeys ?? 0, note: "students with their own key" },
   ];
 
   return (
@@ -133,7 +134,7 @@ function ManageStudentDialog({
   student,
   onClose,
 }: {
-  student: { id: string; name: string | null; email: string | null; status?: string } | null;
+  student: { id: string; name: string | null; email: string | null; status?: string; hasAiKey?: boolean; aiProvider?: string | null } | null;
   onClose: () => void;
 }) {
   const qc = useQueryClient();
@@ -228,7 +229,10 @@ function ManageStudentDialog({
               Remove Pro (promo code)
             </Button>
           ) : null}
-          <Button variant="outline" size="sm" disabled={busy !== null} onClick={handleRemoveKey}>
+          <p className="text-xs text-muted-foreground">
+            AI key: {student?.hasAiKey ? `connected (${student.aiProvider})` : "not connected"}
+          </p>
+          <Button variant="outline" size="sm" disabled={busy !== null || !student?.hasAiKey} onClick={handleRemoveKey}>
             {busy === "key" ? <Loader2 className="size-4 animate-spin" /> : <KeyRound className="size-4" />}
             Remove their AI key
           </Button>

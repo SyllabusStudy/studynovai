@@ -20,6 +20,7 @@ export type AdminStats = {
     helps: number;
     classes: number;
     signupsLast7Days: number;
+    aiKeys: number;
   };
   students: Array<{
     id: string;
@@ -32,6 +33,8 @@ export type AdminStats = {
     snaps: number;
     helps: number;
     classes: number;
+    hasAiKey: boolean;
+    aiProvider: string | null;
   }>;
   activity: Activity[];
 };
@@ -72,7 +75,7 @@ async function all<T>(q: (from: number, to: number) => PromiseLike<{ data: T[] |
 export async function loadAdminStats(): Promise<AdminStats> {
   const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
 
-  const [profiles, subs, usage, classes, quizzes, cards, assignments, docs, convos] = await Promise.all([
+  const [profiles, subs, usage, classes, quizzes, cards, assignments, docs, convos, aiKeys] = await Promise.all([
     all((a, b) => db.from("profiles").select("id, name, email, school, created_at").order("created_at", { ascending: false }).range(a, b)),
     all((a, b) => db.from("subscriptions").select("user_id, plan, status").range(a, b)),
     all((a, b) => db.from("usage_events").select("user_id, kind, created_at").range(a, b)),
@@ -82,6 +85,7 @@ export async function loadAdminStats(): Promise<AdminStats> {
     all((a, b) => db.from("assignments").select("user_id, title, created_at").range(a, b)),
     all((a, b) => db.from("documents").select("user_id, file_name, created_at").eq("is_syllabus", true).range(a, b)),
     all((a, b) => db.from("ai_conversations").select("user_id, title, study_mode, created_at").range(a, b)),
+    all((a, b) => db.from("user_ai_keys").select("user_id, provider").range(a, b)),
   ]);
 
   const activity: Activity[] = [];
@@ -105,6 +109,7 @@ export async function loadAdminStats(): Promise<AdminStats> {
   activity.sort((a, b) => (a.at < b.at ? 1 : -1));
 
   const subByUser = new Map(subs.map((s) => [s.user_id, s]));
+  const aiKeyByUser = new Map(aiKeys.map((k) => [k.user_id, k.provider]));
   const count = (list: Array<{ u: string }>) => {
     const m = new Map<string, number>();
     for (const r of list) m.set(r.u, (m.get(r.u) ?? 0) + 1);
@@ -129,6 +134,8 @@ export async function loadAdminStats(): Promise<AdminStats> {
       snaps: snapMap.get(p.id) ?? 0,
       helps: helpMap.get(p.id) ?? 0,
       classes: classMap.get(p.id) ?? 0,
+      hasAiKey: aiKeyByUser.has(p.id),
+      aiProvider: aiKeyByUser.get(p.id) ?? null,
     };
   });
 
@@ -141,6 +148,7 @@ export async function loadAdminStats(): Promise<AdminStats> {
       helps: students.reduce((n, s) => n + s.helps, 0),
       classes: students.reduce((n, s) => n + s.classes, 0),
       signupsLast7Days: students.filter((s) => new Date(s.joined).getTime() >= weekAgo).length,
+      aiKeys: students.filter((s) => s.hasAiKey).length,
     },
     students,
     activity,

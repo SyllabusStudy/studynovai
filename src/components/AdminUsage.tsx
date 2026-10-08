@@ -104,6 +104,7 @@ export function AdminUsers({ data, onManage }: { data: AdminStats; onManage: (s:
             <tr>
               <th className="p-3 font-semibold">Student</th>
               <th className="p-3 font-semibold">Plan</th>
+              <th className="p-3 font-semibold">AI Key</th>
               {COLS.map((c) => <th key={c} className="p-3 text-right font-semibold">{TOOL_LABELS[c]}</th>)}
               <th className="p-3 text-right font-semibold">Classes</th>
               <th className="p-3 font-semibold">Last active</th>
@@ -124,6 +125,13 @@ export function AdminUsers({ data, onManage }: { data: AdminStats; onManage: (s:
                   </td>
                   <td className="p-3">
                     {s.plan === "pro" ? <span className="font-semibold text-primary">Pro · {s.status}</span> : <span className="text-muted-foreground">Free</span>}
+                  </td>
+                  <td className="p-3">
+                    {s.hasAiKey ? (
+                      <span className="font-semibold text-primary">Connected · {s.aiProvider}</span>
+                    ) : (
+                      <span className="text-muted-foreground">None</span>
+                    )}
                   </td>
                   {COLS.map((c) => <td key={c} className="p-3 text-right"><Num s={s} t={c} n={n(c)} /></td>)}
                   <td className="p-3 text-right">{s.classes}</td>
