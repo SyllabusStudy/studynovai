@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as GloRouteImport } from './routes/glo'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SetupAiRouteImport } from './routes/setup-ai'
@@ -61,6 +62,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GloRoute = GloRouteImport.update({
+  id: '/glo',
+  path: '/glo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -258,6 +264,7 @@ const ApiPublicPushRunRoute = ApiPublicPushRunRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/glo': typeof GloRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup-ai': typeof SetupAiRoute
@@ -298,6 +305,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/glo': typeof GloRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup-ai': typeof SetupAiRoute
@@ -340,6 +348,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/glo': typeof GloRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup-ai': typeof SetupAiRoute
@@ -382,6 +391,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/glo'
     | '/privacy'
     | '/reset-password'
     | '/setup-ai'
@@ -422,6 +432,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/glo'
     | '/privacy'
     | '/reset-password'
     | '/setup-ai'
@@ -463,6 +474,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/glo'
     | '/privacy'
     | '/reset-password'
     | '/setup-ai'
@@ -505,6 +517,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  GloRoute: typeof GloRoute
   PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SetupAiRoute: typeof SetupAiRoute
@@ -540,6 +553,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/glo': {
+      id: '/glo'
+      path: '/glo'
+      fullPath: '/glo'
+      preLoaderRoute: typeof GloRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -858,6 +878,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  GloRoute: GloRoute,
   PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SetupAiRoute: SetupAiRoute,
