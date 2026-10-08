@@ -141,7 +141,7 @@ export function NotesAiPanel({ open, onOpen, onClose, editor, title, classId, qu
       const ends: number[] = []; const texts: string[] = [];
       editor.state.doc.forEach((node, offset) => { texts.push(node.textContent); ends.push(offset + node.nodeSize); });
       const i = bestTopicBlock(texts, topic);
-      if (i >= 0) { editor.chain().focus().insertContentAt(ends[i], html).run(); toast.success("Added under the matching topic"); return; }
+      if (i >= 0) { editor.chain().focus().insertContentAt(ends[i]!, html).run(); toast.success("Added under the matching topic"); return; }
     }
     editor.chain().focus("end").insertContent(html).run();
     toast.success(topic ? "Topic not found — added to the bottom" : "Added to your note");
