@@ -1,5 +1,7 @@
 # Current work
 
+- [ ] Make remaining interface colors readable when switching light/dark modes; verify targeted theme checks.
+
 - [x] Add private class selection and content-based automatic titles to Personal Notes.
 - [x] Verify class saving, automatic naming, and custom title preservation on computers.
 
