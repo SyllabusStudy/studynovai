@@ -57,14 +57,14 @@ export function ToolsMascot({ pathname, onOpen }: { pathname: string; onOpen: ()
 export function MascotFace() {
   return (
     <>
-        <span className="absolute -top-2 left-1/2 h-2.5 w-0.5 -translate-x-1/2 bg-primary" />
-        <span className="absolute -top-3 left-1/2 size-2 -translate-x-1/2 animate-pulse rounded-full bg-accent" />
-        <span className="flex gap-2">
-          <span className="size-2 animate-[mascot-blink_3s_infinite] rounded-full bg-primary-foreground" />
-          <span className="size-2 animate-[mascot-blink_3s_infinite] rounded-full bg-primary-foreground" />
-        </span>
-        <span className="absolute bottom-3 h-1 w-3 rounded-b-full bg-primary-foreground" />
-        <span className="absolute -right-1 top-5 h-1 w-3 origin-left animate-[mascot-wave_1s_ease-in-out_infinite] rounded-full bg-primary" />
+      <span className="absolute -top-2 left-1/2 h-2.5 w-0.5 -translate-x-1/2 bg-primary" />
+      <span className="absolute -top-3 left-1/2 size-2 -translate-x-1/2 animate-pulse rounded-full bg-accent" />
+      {/* Upright face: eyes on top, smile curving up underneath. */}
+      <svg viewBox="0 0 24 24" aria-hidden="true" className="size-7 text-primary-foreground">
+        <circle cx="8" cy="9.5" r="2" fill="currentColor" />
+        <circle cx="16" cy="9.5" r="2" fill="currentColor" />
+        <path d="M7.5 14.5 Q12 19 16.5 14.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      </svg>
     </>
   );
 }
