@@ -212,7 +212,8 @@ export function OnboardingTour() {
 
   if (mode === "off" || paused) return null;
 
-  const dim = "color-mix(in oklch, var(--background) 65%, transparent)";
+  // Darker backdrop so the spotlighted button stands out clearly.
+  const dim = "color-mix(in oklch, var(--background) 88%, transparent)";
   const total = TOUR_STEPS.length;
   const hole = rect
     ? { l: rect.left - PAD, t: rect.top - PAD, r: rect.right + PAD, b: rect.bottom + PAD }
