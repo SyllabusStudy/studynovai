@@ -57,3 +57,9 @@ export function createCorrectionPlugin() {
   });
 }
 export const NoteCorrections = Extension.create({ name: "noteCorrections", addProseMirrorPlugins: () => [createCorrectionPlugin()] });
+
+/** Normalized key so a rejected fix stays rejected even if the AI rewords its reason. */
+export const rejectKey = (original: string) => original.trim().replace(/\s+/g, " ").toLowerCase();
+export function dropRejected<T extends { original: string }>(items: T[], rejected: Set<string>): T[] {
+  return items.filter((s) => !rejected.has(rejectKey(s.original)));
+}

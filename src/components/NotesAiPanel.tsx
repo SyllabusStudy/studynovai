@@ -9,7 +9,7 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { VoiceTypeButton } from "@/components/VoiceTypeButton";
-import { correctionKind, findCorrectionRanges, noteCorrectionsKey } from "@/lib/note-corrections";
+import { correctionKind, findCorrectionRanges, noteCorrectionsKey, dropRejected, rejectKey } from "@/lib/note-corrections";
 import { cn } from "@/lib/utils";
 import { runNotesAi, saveNoteFlashcards, type NotesAiAction, type NotesAiResult, type NotesAiSuggestion } from "@/lib/notes-ai.functions";
 import { createLectureNotes, transcribeLecturePiece } from "@/lib/lecture.functions";
@@ -39,11 +39,11 @@ function AiOutput({ text, onInsert, onBottom, sources }: { text: string; onInser
   </div>;
 }
 
-export function NotesAiPanel({ open, onOpen, onClose, editor, title, classId, quickAction, onAddDiagram, onRecordingChange, onBadge, dock, onToggleDock }: {
+export function NotesAiPanel({ noteId, open, onOpen, onClose, editor, title, classId, quickAction, onAddDiagram, onRecordingChange, onBadge, dock, onToggleDock }: {
   open: boolean; onOpen: () => void; onClose: () => void; editor: Editor | null; title: string; classId: string | null;
   quickAction?: { id: number; action: "quiz" | "flashcards" | "guide" | "explain" } | null;
   onAddDiagram: (els: DrawEl[]) => void; onRecordingChange: (label: string | null) => void; onBadge: (count: number) => void;
-  dock: "side" | "bottom"; onToggleDock: () => void;
+  dock: "side" | "bottom"; onToggleDock: () => void; noteId?: string | undefined;
 }) {
   const ai = useServerFn(runNotesAi);
   const saveCards = useServerFn(saveNoteFlashcards);
@@ -65,6 +65,10 @@ export function NotesAiPanel({ open, onOpen, onClose, editor, title, classId, qu
   const noteText = () => editor?.getText() ?? "";
   // ---- Always-on helpers (on by default, each can be switched off; choice remembered on this device) ----
   const [autoSpell, setAutoSpell] = useState(true);
+  const rejectStore = `studynova-note-rejected:${noteId ?? "draft"}`;
+  const rejected = useRef<Set<string>>(new Set());
+  useEffect(() => { try { rejected.current = new Set(JSON.parse(localStorage.getItem(rejectStore) ?? "[]") as string[]); } catch { rejected.current = new Set(); } }, [rejectStore]);
+  const rememberReject = (original: string) => { rejected.current.add(rejectKey(original)); try { localStorage.setItem(rejectStore, JSON.stringify([...rejected.current].slice(-500))); } catch { /* ignore */ } };
   const [autoFeedback, setAutoFeedback] = useState(true);
   const [feedback, setFeedback] = useState("");
   const [feedbackNew, setFeedbackNew] = useState(false);
@@ -88,7 +92,7 @@ export function NotesAiPanel({ open, onOpen, onClose, editor, title, classId, qu
         if (r.error) { quiet(new Error(r.error)); return; }
         if (editor.getText() !== text) { st.spellText = ""; spellTimer = setTimeout(() => void runSpell(), 2500); return; }
         const current = editor.getText();
-        setSuggestions(prev => [...prev.filter(s => s.state), ...r.suggestions.filter(s => current.includes(s.original))]);
+        setSuggestions(prev => [...prev.filter(s => s.state), ...dropRejected(r.suggestions, rejected.current).filter(s => current.includes(s.original))]);
       } catch (e) { quiet(e); } finally { st.spellBusy = false; }
     };
     const runFeedback = async () => {
@@ -349,7 +353,7 @@ export function NotesAiPanel({ open, onOpen, onClose, editor, title, classId, qu
       {tab === "writing" && <>
         <p className="text-xs text-muted-foreground">Spelling and grammar are checked automatically as you write. Nothing in your note changes until you tap Accept. Select text and use the buttons to improve just that part.</p>
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="secondary" disabled={working} onClick={async () => { const r = await call("spelling"); if (r) { setSuggestions(r.suggestions); if (!r.suggestions.length) toast.success("No spelling or grammar mistakes found"); } }}><SpellCheck className="size-4" />Spelling & grammar</Button>
+          <Button size="sm" variant="secondary" disabled={working} onClick={async () => { const r = await call("spelling"); if (r) { const list = dropRejected(r.suggestions, rejected.current); setSuggestions(list); if (!list.length) toast.success("No spelling or grammar mistakes found"); } }}><SpellCheck className="size-4" />Spelling & grammar</Button>
           {["better wording", "make clearer", "make shorter", "expand", "rewrite", "academic tone"].map(m => <Button key={m} size="sm" variant={writeMode === m ? "secondary" : "outline"} disabled={working} onClick={async () => { setWriteMode(m); setBusy("improve"); try { const r = await ai({ data: { action: "improve", noteText: noteText(), selection: selection(), question: "", writeMode: m, history: [] } }); if (r.error) toast.error(r.error); else { setSuggestions(r.suggestions); if (!r.suggestions.length) toast.message("No changes suggested"); } } finally { setBusy(null); } }} className="capitalize">{m}</Button>)}
         </div>
         {openSpell > 0 && <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-sm text-muted-foreground">{openSpell} suggestion{openSpell === 1 ? "" : "s"}</span><Button size="sm" disabled={working || !editor} onClick={acceptAll}><Check className="size-4" />Accept All</Button></div>}
@@ -359,7 +363,7 @@ export function NotesAiPanel({ open, onOpen, onClose, editor, title, classId, qu
           {s.reason && <p className="mt-1 text-xs text-muted-foreground">{s.reason}</p>}
           {s.state ? <p className="mt-2 text-xs">{s.state === "accepted" ? "Accepted" : "Ignored"}</p> : <div className="mt-2 flex gap-2">
             <Button size="sm" onClick={() => { if (replaceInDoc(s)) setSuggestions(x => x.map((y, j) => j === i ? { ...y, state: "accepted" } : y)); else toast.error("That text changed or spans formatting — copy the suggestion instead."); }}><Check className="size-4" />Accept</Button>
-            <Button size="sm" variant="ghost" onClick={() => setSuggestions(x => x.map((y, j) => j === i ? { ...y, state: "rejected" } : y))}>Reject</Button>
+            <Button size="sm" variant="ghost" onClick={() => { rememberReject(s.original); setSuggestions(x => x.map((y, j) => j === i ? { ...y, state: "rejected" } : y)); }}>Reject</Button>
           </div>}
         </div>)}
       </>}

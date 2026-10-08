@@ -236,6 +236,6 @@ export function PersonalNoteEditor({ note, initialAction }: { note: Note; initia
       <div className="border-t border-border px-5 py-2 text-right text-xs text-muted-foreground" role="status">{state?.wordCount ?? 0} words{state?.selected ? " selected" : ""}</div>
     </div>
   </div>
-  <NotesAiPanel open={aiOpen} onOpen={() => setAiOpen(true)} onClose={() => setAiOpen(false)} editor={editor} title={title} classId={classId} quickAction={quickAction} onRecordingChange={setRecLabel} onBadge={setAiBadge} dock={aiDock} onToggleDock={() => setAiDock(aiDock === "bottom" ? "side" : "bottom")} onAddDiagram={els => { setIncoming({ key: Date.now(), elements: els }); setMode("draw"); draft.current.editorMode = "draw"; }} />
+  <NotesAiPanel noteId={note.id} open={aiOpen} onOpen={() => setAiOpen(true)} onClose={() => setAiOpen(false)} editor={editor} title={title} classId={classId} quickAction={quickAction} onRecordingChange={setRecLabel} onBadge={setAiBadge} dock={aiDock} onToggleDock={() => setAiDock(aiDock === "bottom" ? "side" : "bottom")} onAddDiagram={els => { setIncoming({ key: Date.now(), elements: els }); setMode("draw"); draft.current.editorMode = "draw"; }} />
   </div>;
 }
