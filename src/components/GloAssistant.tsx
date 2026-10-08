@@ -156,6 +156,7 @@ export function GloAssistant() {
       <button
         type="button"
         aria-label="Open Glo"
+        data-tour="glo"
         onClick={() => (open ? wake() : setOpen(true))}
         className={cn(
           "pointer-events-auto relative mr-1 flex size-10 items-center justify-center rounded-full bg-primary shadow-[0_0_18px_var(--primary)] transition-transform",

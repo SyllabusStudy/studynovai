@@ -43,6 +43,9 @@ export const TOUR_STEPS: TourStep[] = [
   { id: "tutor", kind: "next", route: "/tutor", selectors: ['[data-tour="tutor-input"]', '[data-tour="page-header"]'],
     title: "Ask it anything!", body: "Type or 🎤 talk right here.",
     points: ["💬 \"Explain chapter 3\"", "📎 Attach files", "💡 Stuck? = help anytime"] },
+  { id: "glo", kind: "next", route: "/dashboard", selectors: ['[data-tour="glo"]'],
+    title: "Last thing — say “Hey Glo” 🎙️", body: "I'm always listening on the side of your screen. Ask me what's due, to make a quiz, or to take a note — hands free!",
+    points: ["🗣️ “Hey Glo, what's due?”", "🃏 “Make flashcards for bio”", "🔕 Turn me off anytime in my panel"] },
 ];
 
 export const TOUR_EVENT = "studynova:tour";
