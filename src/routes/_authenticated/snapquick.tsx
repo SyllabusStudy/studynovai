@@ -335,6 +335,7 @@ function SnapQuickPage() {
     }
   }
 
+  const [dragging, setDragging] = useState(false);
   async function pick(files: FileList | null) {
     const file = files?.[0];
     if (!file) return;
@@ -369,8 +370,28 @@ function SnapQuickPage() {
 
   const started = messages.length > 0;
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const files = e.clipboardData?.files;
+      if (files && files.length) { e.preventDefault(); void pick(files); }
+    };
+    document.addEventListener("paste", onPaste);
+    return () => document.removeEventListener("paste", onPaste);
+  });
+
   return (
-    <div className="w-full min-w-0">
+    <div
+      className="relative w-full min-w-0"
+      onDragOver={(e) => { if (e.dataTransfer.types.includes("Files")) { e.preventDefault(); setDragging(true); } }}
+      onDragLeave={(e) => { if (e.currentTarget === e.target) setDragging(false); }}
+      onDrop={(e) => { e.preventDefault(); setDragging(false); if (e.dataTransfer.files.length) void pick(e.dataTransfer.files); }}
+    >
+      {dragging ? (
+        <div className="pointer-events-none fixed inset-0 z-50 grid place-items-center bg-overlay">
+          <div className="rounded-2xl border-2 border-dashed border-primary bg-card px-8 py-6 text-lg font-bold">Drop your image or PDF here</div>
+        </div>
+      ) : null}
       {guest.dialog}
       <PageHeader title="Stuck on a problem?" description="Snap it or type it. Learn every step." />
       <AiKeySetupBanner />
