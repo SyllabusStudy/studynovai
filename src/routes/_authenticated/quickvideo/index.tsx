@@ -113,7 +113,7 @@ function QuickVideoPage() {
 
   async function submit(payload: { url?: string; dataUrl?: string; fileName?: string }) {
     if (guest.requireAccount({ text: payload.url ?? "" })) return;
-    if (keyStatus?.hasKey === false) {
+    if (keyStatus?.hasKey === false && (keyStatus.trial?.tools ?? 0) <= 0) {
       sendToKeySetup();
       return;
     }
