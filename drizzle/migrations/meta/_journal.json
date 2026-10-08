@@ -197,6 +197,13 @@
       "when": 1791427368059,
       "tag": "0027_ai_trial_uses",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1791450547831,
+      "tag": "0028_promo_code_duration",
+      "breakpoints": true
     }
   ]
 }

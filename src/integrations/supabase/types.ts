@@ -850,6 +850,7 @@ export type Database = {
           code: string
           created_at: string
           created_by: string | null
+          duration_days: number | null
           expires_at: string | null
           id: string
           kind: string
@@ -864,6 +865,7 @@ export type Database = {
           code: string
           created_at?: string
           created_by?: string | null
+          duration_days?: number | null
           expires_at?: string | null
           id?: string
           kind?: string
@@ -878,6 +880,7 @@ export type Database = {
           code?: string
           created_at?: string
           created_by?: string | null
+          duration_days?: number | null
           expires_at?: string | null
           id?: string
           kind?: string
