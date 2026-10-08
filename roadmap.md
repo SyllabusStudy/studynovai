@@ -1,5 +1,7 @@
 # Current work
 
+- [x] Make Notes AI synthesize original explanations in plain student language, honoring explicitly requested styles and preserving facts.
+
 - [x] Add blue unclear-wording and red spelling underlines with accept/reject corrections in Notes.
 - [x] Verify correction classification, editor mapping, and explicit acceptance with five focused tests; live AI check remains unverified.
 
