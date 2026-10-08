@@ -9,7 +9,7 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { VoiceTypeButton } from "@/components/VoiceTypeButton";
-import { correctionKind, findCorrectionRanges, noteCorrectionsKey } from "@/lib/note-corrections";
+import { correctionKind, findCorrectionRanges, noteCorrectionsKey, dropRejected, rejectKey } from "@/lib/note-corrections";
 import { cn } from "@/lib/utils";
 import { runNotesAi, saveNoteFlashcards, type NotesAiAction, type NotesAiResult, type NotesAiSuggestion } from "@/lib/notes-ai.functions";
 import { createLectureNotes, transcribeLecturePiece } from "@/lib/lecture.functions";
@@ -43,7 +43,7 @@ export function NotesAiPanel({ noteId, open, onOpen, onClose, editor, title, cla
   open: boolean; onOpen: () => void; onClose: () => void; editor: Editor | null; title: string; classId: string | null;
   quickAction?: { id: number; action: "quiz" | "flashcards" | "guide" | "explain" } | null;
   onAddDiagram: (els: DrawEl[]) => void; onRecordingChange: (label: string | null) => void; onBadge: (count: number) => void;
-  dock: "side" | "bottom"; onToggleDock: () => void;
+  dock: "side" | "bottom"; onToggleDock: () => void; noteId?: string | undefined;
 }) {
   const ai = useServerFn(runNotesAi);
   const saveCards = useServerFn(saveNoteFlashcards);

@@ -43,3 +43,11 @@ describe("Notes corrections", () => {
     expect(noteCorrectionsKey.getState(state)?.find()).toHaveLength(1);
   });
 });
+
+import { dropRejected, rejectKey } from "./note-corrections";
+describe("rejected corrections", () => {
+  it("never re-suggests a rejected fix, even with different spacing or case", () => {
+    const rejected = new Set([rejectKey("Solid  bonds")]);
+    expect(dropRejected([{ original: "solid bonds" }, { original: "teh" }], rejected)).toEqual([{ original: "teh" }]);
+  });
+});
