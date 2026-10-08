@@ -1,7 +1,7 @@
 # Current work
 
-- [ ] Add blue unclear-wording and red spelling underlines with accept/reject corrections in Notes.
-- [ ] Verify correction classification, editor mapping, and acceptance behavior.
+- [x] Add blue unclear-wording and red spelling underlines with accept/reject corrections in Notes.
+- [x] Verify correction classification, editor mapping, and explicit acceptance with five focused tests; live AI check remains unverified.
 
 - [x] Make shared dashboard accents, gradient labels, and inspiration surfaces theme-aware; verify light → dark → light computed colors and compilation.
 
