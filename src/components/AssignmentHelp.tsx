@@ -293,23 +293,31 @@ export function AssignmentHelp({
               </div>
             ) : null}
 
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <StepBadge n={3} />
-                <p className="text-base font-bold">Anything specific you're stuck on?</p>
-                <p className="text-sm text-muted-foreground">(optional)</p>
+            {messages.length === 0 ? (
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <StepBadge n={3} />
+                  <p className="text-base font-bold">Anything specific you're stuck on?</p>
+                  <p className="text-sm text-muted-foreground">(optional)</p>
+                </div>
+                <div className="relative">
+                  <Pencil className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="e.g. Question 4 or explain this part..."
+                    value={question}
+                    onChange={(e) => setQuestion(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void ask(question);
+                      }
+                    }}
+                    className="h-12 rounded-xl bg-card/60 pl-10 text-base"
+                    aria-label="What you're stuck on"
+                  />
+                </div>
               </div>
-              <div className="relative">
-                <Pencil className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="e.g. Question 4 or explain this part..."
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                  className="h-12 rounded-xl bg-card/60 pl-10 text-base"
-                  aria-label={messages.length ? "Ask a follow-up" : "What you're stuck on"}
-                />
-              </div>
-            </div>
+            ) : null}
 
             {messages.length > 0 ? (
               <div className="space-y-3">
