@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { withTrialOrUserAiKey } from "./ai-key.server";
 import { callAI } from "./ai.server";
+import { runQuizGeneration, runFlashcardGeneration } from "./study.server";
 
 export type GloAction =
   | { type: "none" }
@@ -52,6 +53,29 @@ export const gloCommand = createServerFn({ method: "POST" })
     try { parsed = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1)); } catch { parsed = { say: raw.slice(0, 400) }; }
     let action: GloAction = parsed.action ?? { type: "none" };
     if (action.type === "navigate" && !PAGES.includes(action.to)) action = { type: "none" };
+    if (action.type === "quiz" || action.type === "flashcards") {
+      const kind = action.type;
+      const count = Math.min(20, Math.max(5, Math.round(Number(action.count) || 10)));
+      const { data: classes } = await context.supabase.from("classes").select("id,class_name").eq("user_id", context.userId);
+      const want = String(action.className ?? "").toLowerCase();
+      const cls = (classes ?? []).find((c) => c.class_name.toLowerCase().includes(want) || want.includes(c.class_name.toLowerCase())) ?? classes?.[0];
+      if (!cls) return { say: "You don't have any classes yet — add one first, then I can make those for you.", action: { type: "navigate", to: "/classes" } as GloAction };
+      try {
+        const topic = action.topic ? String(action.topic).slice(0, 200) : null;
+        if (kind === "quiz") {
+          await withTrialOrUserAiKey(context.supabase, context.userId, "tools", () =>
+            runQuizGeneration(context.supabase, context.userId, { classId: cls.id, count, difficulty: "medium", types: ["multiple_choice"], title: topic ? `Glo: ${topic}` : null, topic }),
+          );
+          return { say: parsed.say ?? `Done — your ${cls.class_name} quiz is ready.`, action: { type: "navigate", to: "/quizzes" } as GloAction };
+        }
+        await withTrialOrUserAiKey(context.supabase, context.userId, "tools", () =>
+          runFlashcardGeneration(context.supabase, context.userId, { classId: cls.id, count, difficulty: "medium", topic }),
+        );
+        return { say: parsed.say ?? `Done — your ${cls.class_name} flashcards are ready.`, action: { type: "navigate", to: "/flashcards" } as GloAction };
+      } catch {
+        return { say: "Sorry, I couldn't build that right now — try again in a moment.", action: { type: "none" } as GloAction };
+      }
+    }
     if (action.type === "note") {
       const text = String(action.text ?? "").slice(0, 20000);
       const content = { type: "doc", content: text.split(/\n+/).filter(Boolean).map((p) => ({ type: "paragraph", content: [{ type: "text", text: p }] })) };
