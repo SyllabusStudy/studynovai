@@ -1,5 +1,7 @@
 # Current work
 
+- [x] Make shared dashboard accents, gradient labels, and inspiration surfaces theme-aware; verify light → dark → light computed colors and compilation.
+
 - [x] Add private class selection and content-based automatic titles to Personal Notes.
 - [x] Verify class saving, automatic naming, and custom title preservation on computers.
 
