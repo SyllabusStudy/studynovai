@@ -1,4 +1,5 @@
 import { bestTopicBlock } from "@/lib/note-insert";
+import { NoteCorrectionPopover } from "@/components/NoteCorrectionPopover";
 import { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import { useServerFn } from "@tanstack/react-start";
@@ -58,6 +59,7 @@ export function NotesAiPanel({ noteId, open, onOpen, onClose, editor, title, cla
   const [writeMode, setWriteMode] = useState("better wording");
   const [suggestions, setSuggestions] = useState<(NotesAiSuggestion & { state?: "accepted" | "rejected" })[]>([]);
   const [selectedCorrection, setSelectedCorrection] = useState<number | null>(null);
+  const [correctionAnchor, setCorrectionAnchor] = useState<HTMLElement | null>(null);
   const clickedRange = useRef<{ index: number; from: number; to: number } | null>(null);
   const [study, setStudy] = useState<NotesAiResult | null>(null);
   const [quizPick, setQuizPick] = useState<Record<number, number>>({});
@@ -122,21 +124,22 @@ export function NotesAiPanel({ noteId, open, onOpen, onClose, editor, title, cla
   useEffect(() => {
     if (!editor) return;
     const choose = (event: Event) => {
-      const index = (event as CustomEvent<number>).detail;
+      const { index, from, to, anchor } = (event as CustomEvent<{ index: number; from: number; to: number; anchor: HTMLElement }>).detail;
       const s = suggestions[index];
       if (!s || s.state) return;
-      const range = noteCorrectionsKey.getState(editor.state)?.find().find(d => d.spec.index === index);
-      clickedRange.current = range ? { index, from: range.from, to: range.to } : null;
-      setSelectedCorrection(index); setTab("writing"); onOpen();
+      clickedRange.current = { index, from, to };
+      setSelectedCorrection(index); setCorrectionAnchor(anchor);
     };
     editor.view.dom.addEventListener("note-correction-select", choose);
     return () => editor.view.dom.removeEventListener("note-correction-select", choose);
-  }, [editor, suggestions, onOpen]);
+  }, [editor, suggestions]);
   useEffect(() => {
-    if (open && tab === "writing" && selectedCorrection !== null) {
-      scrollRef.current?.querySelector(`[data-correction-card="${selectedCorrection}"]`)?.scrollIntoView({ block: "nearest" });
-    }
-  }, [open, tab, selectedCorrection]);
+    if (!editor) return;
+    const close = () => { setSelectedCorrection(null); setCorrectionAnchor(null); clickedRange.current = null; };
+    editor.on("update", close);
+    return () => { editor.off("update", close); };
+  }, [editor]);
+  useEffect(() => { setSelectedCorrection(null); setCorrectionAnchor(null); clickedRange.current = null; }, [suggestions, autoSpell]);
   const selection = () => { if (!editor) return ""; const { from, to } = editor.state.selection; return from === to ? "" : editor.state.doc.textBetween(from, to, "\n"); };
   const insert = (md: string, label = "From AI Assistant", topic?: string) => {
     if (!editor) return;
@@ -145,7 +148,8 @@ export function NotesAiPanel({ noteId, open, onOpen, onClose, editor, title, cla
       const ends: number[] = []; const texts: string[] = [];
       editor.state.doc.forEach((node, offset) => { texts.push(node.textContent); ends.push(offset + node.nodeSize); });
       const i = bestTopicBlock(texts, topic);
-      if (i >= 0) { editor.chain().focus().insertContentAt(ends[i]!, html).run(); toast.success("Added under the matching topic"); return; }
+      const end = ends[i];
+      if (i >= 0 && end !== undefined) { editor.chain().focus().insertContentAt(end, html).run(); toast.success("Added under the matching topic"); return; }
     }
     editor.chain().focus("end").insertContent(html).run();
     toast.success(topic ? "Topic not found — added to the bottom" : "Added to your note");
@@ -312,7 +316,22 @@ export function NotesAiPanel({ noteId, open, onOpen, onClose, editor, title, cla
   const sizeClasses = dock === "bottom"
     ? (wide ? "lg:h-[calc(100dvh-13rem)]" : "lg:h-[min(58dvh,620px)]")
     : (wide ? "lg:w-[min(50vw,760px)]" : "lg:w-[380px]");
-  return <aside aria-label="AI Assistant" className={cn(open ? "flex" : "hidden", "fixed inset-0 z-50 min-h-0 flex-col overflow-hidden bg-background lg:rounded-xl lg:border lg:border-border lg:bg-card lg:shadow-card", dockClasses, sizeClasses)}>
+  const closeCorrection = () => { setSelectedCorrection(null); setCorrectionAnchor(null); clickedRange.current = null; };
+  const currentCorrection = selectedCorrection === null ? undefined : suggestions[selectedCorrection];
+  return <>
+    <NoteCorrectionPopover suggestion={currentCorrection?.state ? undefined : currentCorrection} anchor={correctionAnchor} onClose={closeCorrection} onAccept={() => {
+      if (!currentCorrection || selectedCorrection === null) return;
+      const index = selectedCorrection;
+      if (replaceInDoc(currentCorrection)) setSuggestions(list => list.map((s, i) => i === index ? { ...s, state: "accepted" } : s));
+      else toast.error("That text has changed. Please check it again.");
+      closeCorrection();
+    }} onReject={() => {
+      if (!currentCorrection) return;
+      rememberReject(currentCorrection.original);
+      setSuggestions(list => list.filter(s => rejectKey(s.original) !== rejectKey(currentCorrection.original)));
+      closeCorrection();
+    }} />
+    <aside aria-label="AI Assistant" className={cn(open ? "flex" : "hidden", "fixed inset-0 z-50 min-h-0 flex-col overflow-hidden bg-background lg:rounded-xl lg:border lg:border-border lg:bg-card lg:shadow-card", dockClasses, sizeClasses)}>
     <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-4 py-3">
       <div className="min-w-0">
         <p className="flex items-center gap-2 font-display font-bold"><Sparkles className="size-4 text-primary" />AI Assistant</p>
@@ -339,7 +358,6 @@ export function NotesAiPanel({ noteId, open, onOpen, onClose, editor, title, cla
     </div>
     <div ref={scrollRef} className="min-h-0 shrink space-y-3 overflow-y-auto p-4">
       {tab === "ask" && autoFeedback && feedback && <div><p className="mb-1 text-xs font-semibold text-muted-foreground">Feedback on your notes (updates as you write)</p><AiOutput text={feedback} onInsert={() => insert(feedback, "AI feedback")} /></div>}
-      {tab !== "writing" && openSpell > 0 && <button type="button" onClick={() => setTab("writing")} className="w-full rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-left text-sm"><SpellCheck className="mr-1 inline size-4" />{openSpell} spelling/wording fix{openSpell > 1 ? "es" : ""} ready — review</button>}
       {(tab === "ask" || tab === "research") && <>
         <p className="text-xs text-muted-foreground">{tab === "ask" ? "Ask anything while you take notes. Answers stay here until you choose to add them." : "Look up outside information with sources. It stays separate from your notes."}</p>
         {!thread.length && <div className="flex flex-wrap gap-2">{(tab === "ask" ? ["Explain this in simple terms", "Can you give me an example?", "What should I know for the exam?"] : ["Latest research on this topic", "History and key people", "Real-world applications"]).map(q => <Button key={q} size="sm" variant="outline" onClick={() => setInput(q)}>{q}</Button>)}</div>}
@@ -357,15 +375,6 @@ export function NotesAiPanel({ noteId, open, onOpen, onClose, editor, title, cla
           {["better wording", "make clearer", "make shorter", "expand", "rewrite", "academic tone"].map(m => <Button key={m} size="sm" variant={writeMode === m ? "secondary" : "outline"} disabled={working} onClick={async () => { setWriteMode(m); setBusy("improve"); try { const r = await ai({ data: { action: "improve", noteText: noteText(), selection: selection(), question: "", writeMode: m, history: [] } }); if (r.error) toast.error(r.error); else { setSuggestions(r.suggestions); if (!r.suggestions.length) toast.message("No changes suggested"); } } finally { setBusy(null); } }} className="capitalize">{m}</Button>)}
         </div>
         {openSpell > 0 && <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-sm text-muted-foreground">{openSpell} suggestion{openSpell === 1 ? "" : "s"}</span><Button size="sm" disabled={working || !editor} onClick={acceptAll}><Check className="size-4" />Accept All</Button></div>}
-        {suggestions.map((s, i) => <div key={i} data-correction-card={i} className={cn("rounded-lg border border-border p-3 text-sm", s.state && "opacity-60", selectedCorrection === i && "ring-2 ring-primary")}>
-          <p className={cn("note-correction", correctionKind(s) === "spelling" ? "note-correction-spelling" : "note-correction-wording")}>{s.original}</p>
-          <p className="mt-1 font-medium">{s.suggestion}</p>
-          {s.reason && <p className="mt-1 text-xs text-muted-foreground">{s.reason}</p>}
-          {s.state ? <p className="mt-2 text-xs">{s.state === "accepted" ? "Accepted" : "Ignored"}</p> : <div className="mt-2 flex gap-2">
-            <Button size="sm" onClick={() => { if (replaceInDoc(s)) setSuggestions(x => x.map((y, j) => j === i ? { ...y, state: "accepted" } : y)); else toast.error("That text changed or spans formatting — copy the suggestion instead."); }}><Check className="size-4" />Accept</Button>
-            <Button size="sm" variant="ghost" onClick={() => { rememberReject(s.original); setSuggestions(x => x.map((y, j) => j === i ? { ...y, state: "rejected" } : y)); }}>Reject</Button>
-          </div>}
-        </div>)}
       </>}
       {tab === "study" && <>
         <p className="text-xs text-muted-foreground">Make study tools from this note (or your selected part).</p>
@@ -428,5 +437,5 @@ export function NotesAiPanel({ noteId, open, onOpen, onClose, editor, title, cla
       <VoiceTypeButton label="Speak your question" onText={t => setInput(v => (v.trim() ? v.trimEnd() + " " : "") + t)} />
       {(tab === "ask" || tab === "research") && <Button type="submit" size="icon" disabled={working || !input.trim()} aria-label="Send"><Send className="size-4" /></Button>}
     </form>}
-  </aside>;
+  </aside></>;
 }

@@ -1,11 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { Schema } from "@tiptap/pm/model";
 import { EditorState } from "@tiptap/pm/state";
-import { correctionKind, createCorrectionPlugin, findCorrectionRanges, noteCorrectionsKey } from "./note-corrections";
+import { correctionAtPosition, correctionKind, createCorrectionPlugin, findCorrectionRanges, noteCorrectionsKey } from "./note-corrections";
 const schema = new Schema({ nodes: { doc: { content: "paragraph+" }, paragraph: { content: "text*", group: "block" }, text: { group: "inline" } }, marks: { bold: {} } });
 const doc = schema.node("doc", null, [schema.node("paragraph", null, [schema.text("The "), schema.text("wrng", [schema.mark("bold")]), schema.text(" words make cloudy sense.")])]);
 const suggestions = [{ original: "wrng", suggestion: "wrong", reason: "spelling: typo", kind: "spelling" as const }, { original: "make cloudy sense", suggestion: "are unclear", reason: "wording: unclear", kind: "wording" as const }] as const;
 describe("Notes corrections", () => {
+  it("targets the clicked occurrence rather than the first matching word", () => {
+    const repeated = schema.node("doc", null, [schema.node("paragraph", null, schema.text("wrng then wrng"))]);
+    let state = EditorState.create({ schema, doc: repeated, plugins: [createCorrectionPlugin()] });
+    state = state.apply(state.tr.setMeta(noteCorrectionsKey, [suggestions[0]]));
+    const range = correctionAtPosition(state, 12);
+    expect(range && { from: range.from, to: range.to }).toEqual({ from: 11, to: 15 });
+    if (!range) throw new Error("Expected clicked occurrence");
+    state = state.apply(state.tr.insertText("wrong", range.from, range.to));
+    expect(state.doc.textContent).toBe("wrng then wrong");
+  });
   it("separates spelling from unclear wording", () => {
     expect(correctionKind(suggestions[0])).toBe("spelling");
     expect(correctionKind(suggestions[1])).toBe("wording");
