@@ -151,6 +151,9 @@ export function GloAssistant() {
               {wakeOn ? <Mic className="size-3.5" /> : <MicOff className="size-3.5" />} “Hey Glo” {wakeOn ? "on" : "off"}
             </button>
           </div>
+          <Link to="/glo" className="mt-1.5 block text-center text-[11px] font-semibold text-muted-foreground underline-offset-2 hover:text-primary hover:underline">
+            What can Glo do? →
+          </Link>
         </div>
       ) : null}
       <button
