@@ -46,11 +46,12 @@ export function GlobalVoiceTyping() {
   useEffect(() => {
     const onIn = (e: FocusEvent) => { const t = voiceTarget(e.target); if (t) { if (target.current && t !== target.current) stop(); target.current = t; setField(t); setRect(t.getBoundingClientRect()); } };
     const onOut = () => setTimeout(() => { const t = voiceTarget(document.activeElement); if (!t) { stop(); setField(null); target.current = null; } }, 150);
-    const reflow = () => { if (target.current) setRect(target.current.getBoundingClientRect()); };
+    let raf = 0;
+    const reflow = () => { if (raf || !target.current) return; raf = requestAnimationFrame(() => { raf = 0; if (target.current) setRect(target.current.getBoundingClientRect()); }); };
     document.addEventListener("focusin", onIn); document.addEventListener("focusout", onOut);
-    window.addEventListener("scroll", reflow, true); window.addEventListener("resize", reflow);
-    const iv = setInterval(reflow, 500);
-    return () => { document.removeEventListener("focusin", onIn); document.removeEventListener("focusout", onOut); window.removeEventListener("scroll", reflow, true); window.removeEventListener("resize", reflow); clearInterval(iv); stop(); };
+    window.addEventListener("scroll", reflow, { capture: true, passive: true }); window.addEventListener("resize", reflow, { passive: true });
+    const iv = setInterval(reflow, 1000);
+    return () => { document.removeEventListener("focusin", onIn); document.removeEventListener("focusout", onOut); window.removeEventListener("scroll", reflow, true); window.removeEventListener("resize", reflow); clearInterval(iv); cancelAnimationFrame(raf); stop(); };
   }, []);
 
   const start = () => {
