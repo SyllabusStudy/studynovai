@@ -37,7 +37,7 @@ describe("Notes corrections", () => {
     state = state.apply(state.tr.setMeta(noteCorrectionsKey, suggestions));
     const range = findCorrectionRanges(state.doc, "wrng")[0];
     if (!range) throw new Error("Expected spelling range");
-    state = state.apply(state.tr.replaceWith(range.from, range.to, schema.text("wrong", state.doc.resolve(range.from).marks())));
+    state = state.apply(state.tr.replaceWith(range.from, range.to, schema.text("wrong", state.doc.nodeAt(range.from)?.marks ?? state.doc.resolve(range.from).marks())));
     expect(state.doc.textContent).toBe("The wrong words make cloudy sense.");
     expect(state.doc.nodeAt(5)?.marks.map(m => m.type.name)).toEqual(["bold"]);
     expect(noteCorrectionsKey.getState(state)?.find()).toHaveLength(1);

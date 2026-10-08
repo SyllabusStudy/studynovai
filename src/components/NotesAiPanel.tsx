@@ -169,7 +169,7 @@ export function NotesAiPanel({ open, onOpen, onClose, editor, title, classId, qu
     const range = validClicked ? clicked : findCorrectionRanges(editor.state.doc, s.original)[0];
     if (!range) return false;
     editor.commands.command(({ tr }) => {
-      const marks = tr.doc.resolve(range.from).marks();
+      const marks = tr.doc.nodeAt(range.from)?.marks ?? tr.doc.resolve(range.from).marks();
       tr.replaceWith(range.from, range.to, s.suggestion ? editor.schema.text(s.suggestion, marks) : []);
       return true;
     });
@@ -185,7 +185,7 @@ export function NotesAiPanel({ open, onOpen, onClose, editor, title, classId, qu
         if (s.state || !s.original || s.original === s.suggestion) return;
         const ranges = findCorrectionRanges(tr.doc, s.original);
         ranges.reverse().forEach(({ from, to }) => {
-          const marks = tr.doc.resolve(from).marks();
+          const marks = tr.doc.nodeAt(from)?.marks ?? tr.doc.resolve(from).marks();
           tr.replaceWith(from, to, s.suggestion ? editor.schema.text(s.suggestion, marks) : []);
           accepted.add(index);
         });
