@@ -353,6 +353,19 @@ export function AssignmentHelp({
                 void ask(question);
               }}
             >
+              {messages.length > 0 ? (
+                <div className="relative">
+                  <Pencil className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Ask a follow-up question..."
+                    value={question}
+                    onChange={(e) => setQuestion(e.target.value)}
+                    className="h-12 rounded-xl bg-card/60 pl-10 text-base"
+                    aria-label="Ask a follow-up"
+                    autoFocus
+                  />
+                </div>
+              ) : null}
               <div className="flex items-center justify-between gap-3">
                 <Button type="button" variant="outline" className="rounded-xl" onClick={() => setOpen(false)}>
                   Cancel
