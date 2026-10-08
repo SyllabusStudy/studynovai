@@ -12,12 +12,24 @@ const PRO_STATUSES = new Set(["active", "trialing", "promo"]);
 /** Built-in lifetime access codes (owner/creator use). Compared loosely. */
 const PROMO_CODES = new Set(["davidlovescallie"]);
 
+/** Built-in timed Pro codes: days of Pro, one use per student (tracked in usage_events). */
+const TIMED_CODES: Record<string, number> = { studentfriendly: 7 };
+
 const normalizeCode = (raw: string) => raw.toLowerCase().replace(/[^a-z0-9]/g, "");
 
 /** Grants unlimited access for a built-in or owner-created code. Server-side only. */
 export async function redeemPromoCode(userId: string, code: string) {
   let durationDays: number | null = null;
-  if (!PROMO_CODES.has(normalizeCode(code))) {
+  const timed = TIMED_CODES[normalizeCode(code)];
+  if (timed) {
+    const kind = `promo:${normalizeCode(code)}`;
+    const { count } = await supabaseAdmin
+      .from("usage_events").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("kind", kind);
+    if (count) throw new Error("You've already used this promo code.");
+    const { error: claim } = await supabaseAdmin.from("usage_events").insert({ user_id: userId, kind });
+    if (claim) throw new Error(claim.message);
+    durationDays = timed;
+  } else if (!PROMO_CODES.has(normalizeCode(code))) {
     const { consumeFreeProCode } = await import("./pricing.server");
     const match = await consumeFreeProCode(userId, code);
     if (!match) throw new Error("That promo code isn't valid.");
