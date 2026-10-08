@@ -32,4 +32,14 @@ describe("Notes corrections", () => {
     const first = remaining[0];
     expect(first && state.doc.textBetween(first.from, first.to)).toBe("make cloudy sense");
   });
+  it("explicitly accepting a correction changes only its words and retains bold", () => {
+    let state = EditorState.create({ schema, doc, plugins: [createCorrectionPlugin()] });
+    state = state.apply(state.tr.setMeta(noteCorrectionsKey, suggestions));
+    const range = findCorrectionRanges(state.doc, "wrng")[0];
+    if (!range) throw new Error("Expected spelling range");
+    state = state.apply(state.tr.replaceWith(range.from, range.to, schema.text("wrong", state.doc.resolve(range.from).marks())));
+    expect(state.doc.textContent).toBe("The wrong words make cloudy sense.");
+    expect(state.doc.nodeAt(5)?.marks.map(m => m.type.name)).toEqual(["bold"]);
+    expect(noteCorrectionsKey.getState(state)?.find()).toHaveLength(1);
+  });
 });
