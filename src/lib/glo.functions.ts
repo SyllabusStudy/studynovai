@@ -64,7 +64,7 @@ export const gloCommand = createServerFn({ method: "POST" })
         const topic = action.topic ? String(action.topic).slice(0, 200) : null;
         if (kind === "quiz") {
           await withTrialOrUserAiKey(context.supabase, context.userId, "tools", () =>
-            runQuizGeneration(context.supabase, context.userId, { classId: cls.id, count, difficulty: "medium", types: ["multiple_choice"], title: topic ? `Glo: ${topic}` : null, topic }),
+            runQuizGeneration(context.supabase, context.userId, { classId: cls.id, count, difficulty: "medium", types: ["multiple_choice"], title: topic ? `Glo: ${topic}` : null }),
           );
           return { say: parsed.say ?? `Done — your ${cls.class_name} quiz is ready.`, action: { type: "navigate", to: "/quizzes" } as GloAction };
         }
