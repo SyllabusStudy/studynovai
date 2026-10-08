@@ -9,7 +9,7 @@ import { getAiKeyStatus } from "@/lib/ai-keys.functions";
 import { supabase } from "@/integrations/supabase/client";
 
 /** Deep link that scrolls to and highlights the AI key card in Settings. */
-export const AI_KEY_SETTINGS_LINK = "/settings?setup=ai-key#ai-key";
+export const AI_KEY_SETTINGS_LINK = "/setup-ai";
 
 /** True when a failure is really "this student has no usable AI key yet". */
 export function isAiKeyIssue(message: string | null | undefined): boolean {
@@ -42,8 +42,8 @@ export function useSendToAiKeySetup() {
   const navigate = useNavigate();
   return useCallback(
     (message?: string) => {
-      toast.error(message ?? "No AI key yet — taking you to Settings to add one.");
-      void navigate({ to: "/settings", search: { setup: "ai-key" }, hash: "ai-key" });
+      toast.error(message ?? "No AI key yet — taking you to the free AI setup page.");
+      void navigate({ to: "/setup-ai" });
     },
     [navigate],
   );
@@ -85,14 +85,14 @@ export function AiKeySetupBanner({ className }: { className?: string }) {
           </p>
           <p className="text-xs text-muted-foreground">
             {left > 0
-              ? "Try SnapQuick, QuickVideo, Syllabus or Humanizer free. Then turn on your own free AI to keep going."
+              ? "Try SnapQuick, QuickVideo, Syllabus, Humanizer or AI Tutor free. Then turn on your own free AI to keep going."
               : "Add a free Google Gemini key (or OpenAI / Anthropic) to start using this tool."}
           </p>
         </div>
       </div>
       <Button asChild size="sm" className="shrink-0">
-        <Link to="/settings" search={{ setup: "ai-key" }} hash="ai-key">
-          Set up key in Settings
+        <Link to="/setup-ai">
+          Set up free AI
         </Link>
       </Button>
     </section>
