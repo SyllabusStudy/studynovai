@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { AI_KEY_HELP, hasUserAiKey, withUserAiKey } from "./ai-key.server";
+import { AI_KEY_HELP, canUseAi, hasUserAiKey, withTrialOrUserAiKey, withUserAiKey } from "./ai-key.server";
 import { AI_CONNECTION_MESSAGE } from "./ai-request.server";
 import {
   runAiTextCheck,
@@ -32,16 +32,16 @@ export const processDocument = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ documentId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) =>
-    withUserAiKey(context.supabase, context.userId, () =>
+    withTrialOrUserAiKey(context.supabase, context.userId, "tools", () =>
       runDocumentExtraction(context.supabase, context.userId, data.documentId),
-    ),
+    false),
   );
 
 export const analyzeSyllabus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ documentId: z.string().uuid(), skipDates: z.boolean().optional() }).parse(d))
   .handler(async ({ data, context }) =>
-    withUserAiKey(context.supabase, context.userId, () =>
+    withTrialOrUserAiKey(context.supabase, context.userId, "tools", () =>
       runSyllabusAnalysis(context.supabase, context.userId, data.documentId, data.skipDates ?? false),
     ),
   );
@@ -61,7 +61,7 @@ export const tutorChat = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     try {
-      const result = await withUserAiKey(context.supabase, context.userId, () =>
+      const result = await withTrialOrUserAiKey(context.supabase, context.userId, "tutor", () =>
         runTutorChat(context.supabase, context.userId, data),
       );
       return { ...result, error: null };
@@ -207,12 +207,12 @@ export const snapHelp = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    if (!(await hasUserAiKey(context.supabase, context.userId))) {
+    if (!(await canUseAi(context.supabase, context.userId, "tools"))) {
       return { reply: AI_KEY_HELP };
     }
     const { assertQuota, recordUsage } = await import("./billing.server");
     await assertQuota(context.supabase, context.userId, "snap");
-    const result = await withUserAiKey(context.supabase, context.userId, () =>
+    const result = await withTrialOrUserAiKey(context.supabase, context.userId, "tools", () =>
       runSnapHelp(context.supabase, context.userId, data),
     );
     await recordUsage(context.supabase, context.userId, "snap");
@@ -236,15 +236,16 @@ export const snapTutor = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    if (!(await hasUserAiKey(context.supabase, context.userId))) {
+    const ownKey = await hasUserAiKey(context.supabase, context.userId);
+    if (!ownKey && !(await canUseAi(context.supabase, context.userId, "tools")) && !data.history.length) {
       return { reply: null, error: AI_KEY_HELP };
     }
     try {
       const { assertQuota, recordUsage } = await import("./billing.server");
       if (!data.history.length) await assertQuota(context.supabase, context.userId, "snap");
-      const result = await withUserAiKey(context.supabase, context.userId, () =>
+      const result = await withTrialOrUserAiKey(context.supabase, context.userId, "tools", () =>
         runSnapTutor(context.supabase, context.userId, data),
-      );
+      !data.history.length);
       if (!data.history.length) await recordUsage(context.supabase, context.userId, "snap");
       return { reply: result.reply, error: null };
     } catch (e) {
@@ -301,11 +302,13 @@ export const humanizeAiText = createServerFn({ method: "POST" })
     if (!(await isPro(context.supabase, context.userId))) {
       return { text: null, similarity: null, error: "Humanize is a Pro feature. Upgrade to use it.", needsPro: true };
     }
-    if (!(await hasUserAiKey(context.supabase, context.userId))) {
+    if (!(await canUseAi(context.supabase, context.userId, "tools"))) {
       return { text: null, similarity: null, error: AI_KEY_HELP, needsPro: false };
     }
     try {
-      const rewrite = await withUserAiKey(context.supabase, context.userId, () => runHumanize(data).then(track(context, "humanize")));
+      const rewrite = await withTrialOrUserAiKey(context.supabase, context.userId, "tools", () => runHumanize(data).then(track(context, "humanize")));
+      void withUserAiKey;
+      if (false) await withUserAiKey(context.supabase, context.userId, () => runHumanize(data).then(track(context, "humanize")));
       if (!rewrite.text) {
         return { text: null, similarity: null, error: "I couldn't produce a meaningful rewrite yet. Please try again.", needsPro: false };
       }
