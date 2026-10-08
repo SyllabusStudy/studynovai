@@ -279,6 +279,8 @@ function SnapQuickPage() {
     const idForSave = opts?.fresh ? null : convId;
     if (opts?.fresh) setConvId(null);
     setRevealed(false);
+    verifySeq.current++;
+    setCheckState(null);
     const img = opts?.img !== undefined ? opts.img : image;
     const userMsg: Msg = { role: "user", content: msgText, image: history.length ? null : img };
     setMessages([...history, userMsg]);
@@ -390,6 +392,8 @@ function SnapQuickPage() {
   }
 
   function reset() {
+    verifySeq.current++;
+    setCheckState(null);
     setFailed(null);
     setMessages([]);
     setConvId(null);
