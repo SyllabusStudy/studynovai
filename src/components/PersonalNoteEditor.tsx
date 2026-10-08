@@ -6,7 +6,9 @@ import { TextStyle, FontSize, FontFamily } from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
 import TextAlign from "@tiptap/extension-text-align";
-import Image from "@tiptap/extension-image";
+import { NoteImage, readNoteImage } from "@/lib/note-image";
+import { NoteImageMenu } from "@/components/NoteImageMenu";
+import { toast } from "sonner";
 import { liftListItem, sinkListItem } from "prosemirror-schema-list";
 import { TableKit } from "@tiptap/extension-table";
 import TaskList from "@tiptap/extension-task-list";
@@ -120,12 +122,30 @@ export function PersonalNoteEditor({ note, initialAction }: { note: Note; initia
     timer.current = setTimeout(() => void persist(), 350);
   }, [persist]);
 
+  // Pasted or dropped pictures go straight into the note as resizable images.
+  function insertFiles(view: import("@tiptap/pm/view").EditorView, files: FileList | undefined | null, drop?: DragEvent) {
+    const imgs = Array.from(files ?? []).filter((f) => f.type.startsWith("image/"));
+    if (!imgs.length) return false;
+    const at = drop ? view.posAtCoords({ left: drop.clientX, top: drop.clientY })?.pos : undefined;
+    for (const file of imgs) {
+      readNoteImage(file).then((src) => {
+        const node = view.state.schema.nodes["image"]?.create({ src, alt: file.name });
+        if (!node) return;
+        const tr = at !== undefined ? view.state.tr.insert(at, node) : view.state.tr.replaceSelectionWith(node);
+        view.dispatch(tr);
+      }).catch((e: Error) => toast.error(e.message));
+    }
+    return true;
+  }
+
   const editor = useEditor({
     immediatelyRender: false,
-    extensions: [NoteLineSpacing, StarterKit.configure({ link: { openOnClick: false, protocols: ["http", "https", "mailto"] } }), TextStyle, FontSize, FontFamily, Color, Highlight.configure({ multicolor: true }), TextAlign.configure({ types: ["heading", "paragraph"] }), Image.configure({ allowBase64: true }), TableKit, TaskList, TaskItem.configure({ nested: true })],
+    extensions: [NoteLineSpacing, StarterKit.configure({ link: { openOnClick: false, protocols: ["http", "https", "mailto"] } }), TextStyle, FontSize, FontFamily, Color, Highlight.configure({ multicolor: true }), TextAlign.configure({ types: ["heading", "paragraph"] }), NoteImage, TableKit, TaskList, TaskItem.configure({ nested: true })],
     content: note.content as JSONContent,
     editorProps: {
       attributes: { spellcheck: "true", class: "notes-document", "data-no-voice": "true", "aria-label": "Note document", role: "textbox", "aria-multiline": "true" },
+      handlePaste: (view, event) => insertFiles(view, event.clipboardData?.files),
+      handleDrop: (view, event) => insertFiles(view, (event as DragEvent).dataTransfer?.files, event as DragEvent),
       handleKeyDown: (view, event) => {
         if (event.key !== "Tab") return false;
         const { state, dispatch } = view;
@@ -206,6 +226,7 @@ export function PersonalNoteEditor({ note, initialAction }: { note: Note; initia
     </div>
     <div className={mode === "type" ? "note-paper overflow-clip rounded-xl border border-border shadow-card" : "hidden"}>
       {editor && <div className="sticky top-[calc(7rem+env(safe-area-inset-top))] z-20 bg-card shadow-card"><NotesToolbar editor={editor} /></div>}
+      {editor ? <NoteImageMenu editor={editor} /> : null}
       <EditorContent editor={editor} className="notes-editor min-h-[60dvh] overflow-x-auto bg-transparent" />
       <div className="border-t border-border px-5 py-2 text-right text-xs text-muted-foreground">{editor?.getText().trim().split(/\s+/).filter(Boolean).length ?? 0} words</div>
     </div>
