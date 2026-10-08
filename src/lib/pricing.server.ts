@@ -175,7 +175,7 @@ export async function consumeFreeProCode(userId: string, raw: string) {
   const db = await admin();
   const { data } = await db
     .from("promo_codes")
-    .select("id, kind, active, max_redemptions, redemptions, expires_at")
+    .select("id, kind, active, max_redemptions, redemptions, expires_at, duration_days")
     .eq("code", code)
     .maybeSingle();
 
@@ -187,12 +187,13 @@ export async function consumeFreeProCode(userId: string, raw: string) {
   const { error: claimError } = await db
     .from("promo_redemptions")
     .insert({ promo_code_id: data.id, user_id: userId });
-  // A repeat redemption by the same student is fine; it just doesn't count twice.
+  // Timed codes (e.g. one week of Pro) work only once per student.
+  if (claimError && data.duration_days) throw new Error("You've already used this promo code.");
   if (!claimError) {
     await db
       .from("promo_codes")
       .update({ redemptions: data.redemptions + 1 })
       .eq("id", data.id);
   }
-  return { id: data.id };
+  return { id: data.id, durationDays: data.duration_days as number | null };
 }

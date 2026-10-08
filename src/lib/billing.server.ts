@@ -16,10 +16,24 @@ const normalizeCode = (raw: string) => raw.toLowerCase().replace(/[^a-z0-9]/g, "
 
 /** Grants unlimited access for a built-in or owner-created code. Server-side only. */
 export async function redeemPromoCode(userId: string, code: string) {
+  let durationDays: number | null = null;
   if (!PROMO_CODES.has(normalizeCode(code))) {
     const { consumeFreeProCode } = await import("./pricing.server");
     const match = await consumeFreeProCode(userId, code);
     if (!match) throw new Error("That promo code isn't valid.");
+    durationDays = match.durationDays;
+  }
+  if (durationDays) {
+    const { data: current } = await supabaseAdmin
+      .from("subscriptions").select("plan, status, current_period_end").eq("user_id", userId).maybeSingle();
+    // Already on paid/lifetime Pro: nothing to add.
+    if (current && rowIsPro(current) && current.status !== "trial") return { plan: "pro" as const, status: current.status };
+    const base = current?.status === "trial" && current.current_period_end && new Date(current.current_period_end).getTime() > Date.now()
+      ? new Date(current.current_period_end).getTime() : Date.now();
+    const end = new Date(base + durationDays * 86_400_000).toISOString();
+    const { error } = await supabaseAdmin.from("subscriptions").upsert({ user_id: userId, plan: "pro", status: "trial", current_period_end: end });
+    if (error) throw new Error(error.message);
+    return { plan: "pro" as const, status: "trial" as const };
   }
   const { error } = await supabaseAdmin.from("subscriptions").upsert({
     user_id: userId,
