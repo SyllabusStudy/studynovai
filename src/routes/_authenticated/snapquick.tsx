@@ -11,7 +11,7 @@ import { Camera, History, ImageUp, Loader2, Plus, Send, Sigma, Trash2 } from "lu
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { snapTutor } from "@/lib/ai.functions";
+import { snapTutor, snapVerify } from "@/lib/ai.functions";
 import { AI_KEY_HELP } from "@/lib/ai-messages";
 import { AiKeySetupBanner, useAiKeyRedirect } from "@/lib/ai-key-gate";
 type SnapMode = "learn" | "quick" | "tutor" | "practice" | "check" | "method";
@@ -158,6 +158,9 @@ function SnapQuickPage() {
   } | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const run = useServerFn(snapTutor);
+  const verify = useServerFn(snapVerify);
+  const [checkState, setCheckState] = useState<{ index: number; status: "checking" | "verified" | "corrected" } | null>(null);
+  const verifySeq = useRef(0);
   const redirectForKey = useAiKeyRedirect();
   const qc = useQueryClient();
   const [convId, setConvId] = useState<string | null>(null);
@@ -321,12 +324,38 @@ function SnapQuickPage() {
       }
       const all: Msg[] = [...pending.history, pending.userMsg, { role: "assistant", content: result.reply }];
       setMessages(all);
+      let newId: string | null = pending.id;
       try {
-        const newId = await saveConversation(all, pending.image, pending.id, pending.request.mode, pending.request.classId);
+        newId = await saveConversation(all, pending.image, pending.id, pending.request.mode, pending.request.classId);
         setConvId(newId);
       } catch {
         toast.error("The answer is ready, but this conversation could not be saved yet.");
       }
+      // Answer is shown now; look things up online + run the full second check underneath.
+      const idx = all.length - 1;
+      const seq = ++verifySeq.current;
+      setCheckState({ index: idx, status: "checking" });
+      void verify({
+        data: {
+          imageDataUrl: pending.history.length ? null : pending.image,
+          message: pending.request.message,
+          draft: result.reply,
+          calcFailures: result.calcFailures ?? [],
+        },
+      })
+        .then(async (v) => {
+          if (seq !== verifySeq.current) return;
+          if (v.status === "corrected" && v.reply) {
+            const fixed = all.map((m, i) => (i === idx ? { ...m, content: v.reply! } : m));
+            setRevealed(true);
+            setMessages(fixed);
+            setCheckState({ index: idx, status: "corrected" });
+            if (newId) await saveConversation(fixed, pending.image, newId, pending.request.mode, pending.request.classId).catch(() => {});
+          } else if (v.status === "verified") {
+            setCheckState({ index: idx, status: "verified" });
+          } else setCheckState(null);
+        })
+        .catch(() => { if (seq === verifySeq.current) setCheckState(null); });
     } catch (e) {
       setFailed(pending);
     } finally {
@@ -543,6 +572,17 @@ function SnapQuickPage() {
               ) : (
                 <div key={i} className="min-w-0">
                   <MathAnswer content={m.content} animate={!revealed && i === messages.length - 1} />
+                  {checkState?.index === i ? (
+                    <div className="mt-2 flex items-center gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                      {checkState.status === "checking" ? (
+                        <><Loader2 className="size-3.5 animate-spin text-primary" /> Double-checking every step and looking it up online…</>
+                      ) : checkState.status === "verified" ? (
+                        <span className="font-semibold text-success">✓ Double-checked — steps and facts verified</span>
+                      ) : (
+                        <span className="font-semibold text-warning">✎ Fixed after double-checking — the answer above is updated</span>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
               ),
             )}
