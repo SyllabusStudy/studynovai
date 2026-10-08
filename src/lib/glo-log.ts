@@ -24,9 +24,9 @@ export function clearGloLog() {
 
 export function describeGloAction(a: { type: string; [k: string]: unknown }): string {
   switch (a.type) {
-    case "navigate": return `Opened ${String(a.to)}`;
-    case "theme": return `Switched to ${String(a.mode)} mode`;
-    case "email": return `Drafted an email to ${String(a.to)}`;
+    case "navigate": return `Opened ${String(a["to"])}`;
+    case "theme": return `Switched to ${String(a["mode"])} mode`;
+    case "email": return `Drafted an email to ${String(a["to"])}`;
     case "note": return "Saved a new note";
     case "quiz": return "Made a quiz";
     case "flashcards": return "Made flashcards";
