@@ -658,7 +658,7 @@ export async function runTutorChat(
 
   const reply = await callAI(
     [
-      { role: "system", content: tutorSystemPrompt(input.mode, contextText) },
+      { role: "system", content: `${tutorSystemPrompt(input.mode, contextText)}\n\n${REFINE_RULE}` },
       ...history.slice(-8).map((m) => ({ role: m.role, content: m.content })),
       { role: "user", content: userContent },
     ],
@@ -1338,7 +1338,7 @@ export async function runAssignmentHelp(
   const history = (input.history ?? []).slice(-12);
   const followUp = history.length > 0 && !!input.question;
   const reply = await callAI([
-    { role: "system", content: `${HELP_RULES}\n\nSTUDENT COURSE CONTEXT:\n${contextText.slice(0, 8000)}` },
+    { role: "system", content: `${HELP_RULES}\n\n${REFINE_RULE}\n\nSTUDENT COURSE CONTEXT:\n${contextText.slice(0, 8000)}` },
     {
       role: "user",
       content: `Assignment: ${assignment.title}${assignment.due_date ? ` (due ${assignment.due_date})` : ""}
@@ -1396,6 +1396,8 @@ export async function runSnapHelp(
 /* ------------------------------------------------------------------ SnapQuick math tutor */
 
 export type SnapMode = "learn" | "quick" | "tutor" | "practice" | "check" | "method";
+
+const REFINE_RULE = "FOLLOW-UPS: If the student sends a short revision command (e.g. \"make shorter\", \"simpler\", \"bullet points\", \"more detail\", \"expand step 2\", \"say it differently\"), it refers to YOUR most recent answer. Rewrite that previous answer as asked, keeping the same topic and facts. Do not restart, do not re-summarize the reference material, and do not switch topics.";
 
 const SNAP_TUTOR_RULES = `You are the SyllabusStudy SnapQuick tutor, a universal tutor for college students in ALL subjects (math, chemistry, organic chemistry, biology, anatomy & physiology, physics, statistics, psychology, sociology, history, English/writing, economics, computer science, languages, nursing, business, and more). It should feel like sitting with a tutor who is working the problem out WITH the student.
 
@@ -1484,7 +1486,7 @@ export async function runSnapTutor(
   const messages: ChatMessage[] = [
     {
       role: "system",
-      content: `${SNAP_TUTOR_RULES}\n\n${SNAP_MODE_RULES[input.mode]}\n\nSTUDENT COURSE CONTEXT (use only if relevant):\n${contextText.slice(0, 3000)}`,
+      content: `${SNAP_TUTOR_RULES}\n\n${REFINE_RULE}\n\n${SNAP_MODE_RULES[input.mode]}\n\nSTUDENT COURSE CONTEXT (use only if relevant):\n${contextText.slice(0, 3000)}`,
     },
   ];
 

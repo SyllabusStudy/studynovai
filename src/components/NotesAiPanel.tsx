@@ -1,3 +1,4 @@
+import { bestTopicBlock } from "@/lib/note-insert";
 import { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import { useServerFn } from "@tanstack/react-start";
@@ -24,14 +25,15 @@ const TABS: { id: Tab; label: string; Icon: typeof Sparkles }[] = [
 type Msg = { role: "user" | "assistant"; content: string; sources?: NotesAiResult["sources"] | undefined };
 const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
-function AiOutput({ text, onInsert, sources }: { text: string; onInsert: () => void; sources?: NotesAiResult["sources"] | undefined }) {
+function AiOutput({ text, onInsert, onBottom, sources }: { text: string; onInsert: () => void; onBottom?: (() => void) | undefined; sources?: NotesAiResult["sources"] | undefined }) {
   return <div className="rounded-lg border border-primary/25 bg-primary/5 p-3 text-sm">
     <div className="mb-1.5 flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-primary"><Sparkles className="size-3" />AI — not part of your notes</div>
     <div className="notes-ai-output prose-sm max-w-none [&_h1]:text-base [&_h2]:text-sm [&_h2]:font-bold [&_h3]:font-semibold [&_li]:ml-4 [&_li]:list-disc [&_p]:my-1.5" dangerouslySetInnerHTML={{ __html: markdownToHtml(text) }} />
     {!!sources?.length && <div className="mt-3 border-t border-border pt-2"><p className="mb-1 text-xs font-semibold text-muted-foreground">Sources</p>
       <ul className="space-y-1">{sources.map(s => <li key={s.url}><a href={s.url} target="_blank" rel="noreferrer" className="inline-flex items-start gap-1 text-xs text-primary hover:underline"><ExternalLink className="mt-0.5 size-3 shrink-0" />{s.title}</a></li>)}</ul></div>}
     <div className="mt-3 flex flex-wrap gap-2">
-      <Button size="sm" variant="secondary" onClick={onInsert}><Plus className="size-4" />Insert into Notes</Button>
+      <Button size="sm" variant="secondary" onClick={onInsert}><Plus className="size-4" />{onBottom ? "Insert under topic" : "Insert into Notes"}</Button>
+      {onBottom && <Button size="sm" variant="outline" onClick={onBottom}>Add to bottom</Button>}
       <Button size="sm" variant="ghost" onClick={() => { void navigator.clipboard.writeText(text); toast.success("Copied"); }}><Copy className="size-4" />Copy</Button>
     </div>
   </div>;
@@ -132,10 +134,17 @@ export function NotesAiPanel({ open, onOpen, onClose, editor, title, classId, qu
     }
   }, [open, tab, selectedCorrection]);
   const selection = () => { if (!editor) return ""; const { from, to } = editor.state.selection; return from === to ? "" : editor.state.doc.textBetween(from, to, "\n"); };
-  const insert = (md: string, label = "From AI Assistant") => {
+  const insert = (md: string, label = "From AI Assistant", topic?: string) => {
     if (!editor) return;
-    editor.chain().focus("end").insertContent(`<p><em>✨ ${label}</em></p>${markdownToHtml(md)}`).run();
-    toast.success("Added to your note");
+    const html = `<p><em>✨ ${label}</em></p>${markdownToHtml(md)}`;
+    if (topic) {
+      const ends: number[] = []; const texts: string[] = [];
+      editor.state.doc.forEach((node, offset) => { texts.push(node.textContent); ends.push(offset + node.nodeSize); });
+      const i = bestTopicBlock(texts, topic);
+      if (i >= 0) { editor.chain().focus().insertContentAt(ends[i]!, html).run(); toast.success("Added under the matching topic"); return; }
+    }
+    editor.chain().focus("end").insertContent(html).run();
+    toast.success(topic ? "Topic not found — added to the bottom" : "Added to your note");
   };
 
   const call = async (action: NotesAiAction, extra: { question?: string; history?: Msg[]; noteText?: string | undefined } = {}) => {
@@ -153,7 +162,7 @@ export function NotesAiPanel({ open, onOpen, onClose, editor, title, classId, qu
     setInput("");
     if (tab === "research") {
       const next = [...research, { role: "user" as const, content: q }]; setResearch(next);
-      const r = await call("research", { question: q });
+      const r = await call("research", { question: q, history: research.map(({ role, content }) => ({ role, content })) });
       if (r) setResearch([...next, { role: "assistant", content: r.text, sources: r.sources }]);
     } else {
       const next = [...chat, { role: "user" as const, content: q }]; setChat(next);
@@ -330,7 +339,7 @@ export function NotesAiPanel({ open, onOpen, onClose, editor, title, classId, qu
       {(tab === "ask" || tab === "research") && <>
         <p className="text-xs text-muted-foreground">{tab === "ask" ? "Ask anything while you take notes. Answers stay here until you choose to add them." : "Look up outside information with sources. It stays separate from your notes."}</p>
         {!thread.length && <div className="flex flex-wrap gap-2">{(tab === "ask" ? ["Explain this in simple terms", "Can you give me an example?", "What should I know for the exam?"] : ["Latest research on this topic", "History and key people", "Real-world applications"]).map(q => <Button key={q} size="sm" variant="outline" onClick={() => setInput(q)}>{q}</Button>)}</div>}
-        {thread.map((m, i) => m.role === "user" ? <div key={i} className="ml-8 rounded-lg bg-secondary px-3 py-2 text-sm">{m.content}</div> : <AiOutput key={i} text={m.content} sources={m.sources} onInsert={() => insert(m.content, tab === "research" ? "Research (outside sources)" : "From AI Assistant")} />)}
+        {thread.map((m, i) => m.role === "user" ? <div key={i} className="ml-8 rounded-lg bg-secondary px-3 py-2 text-sm">{m.content}</div> : <AiOutput key={i} text={m.content} sources={m.sources} onInsert={() => insert(m.content, tab === "research" ? "Research (outside sources)" : "From AI Assistant", thread.slice(0, i).filter(x => x.role === "user").map(x => x.content).join(" ") || m.content.slice(0, 200))} onBottom={() => insert(m.content, tab === "research" ? "Research (outside sources)" : "From AI Assistant")} />)}
       </>}
       {tab === "explain" && <>
         <p className="text-xs text-muted-foreground">Highlight part of your note, then tap Explain. With nothing selected, it explains the main idea.</p>
