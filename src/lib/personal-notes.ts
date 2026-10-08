@@ -6,6 +6,10 @@ export type PersonalNote = Database["public"]["Tables"]["personal_notes"]["Row"]
 };
 export type PersonalNoteSummary = Pick<PersonalNote, "id" | "title" | "plain_text" | "updated_at" | "class_id" | "title_is_auto">;
 
+export function noteWordCount(text: string, selectedText: string | null = null): number {
+  return (selectedText ?? text).trim().split(/\s+/).filter(Boolean).length;
+}
+
 export function titleFromNotes(text: string): string {
   const firstLine = text.split(/\r?\n/).map(line => line.trim()).find(Boolean);
   if (!firstLine) return "Untitled note";
