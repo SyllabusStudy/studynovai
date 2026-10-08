@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { EditorContent, useEditor, useEditorState, type JSONContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import { NoteCorrections } from "@/lib/note-corrections";
 import { NoteLineSpacing } from "@/lib/note-line-spacing";
 import { TextStyle, FontSize, FontFamily } from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
@@ -140,7 +141,7 @@ export function PersonalNoteEditor({ note, initialAction }: { note: Note; initia
 
   const editor = useEditor({
     immediatelyRender: false,
-    extensions: [NoteLineSpacing, StarterKit.configure({ link: { openOnClick: false, protocols: ["http", "https", "mailto"] } }), TextStyle, FontSize, FontFamily, Color, Highlight.configure({ multicolor: true }), TextAlign.configure({ types: ["heading", "paragraph"] }), NoteImage, TableKit, TaskList, TaskItem.configure({ nested: true })],
+    extensions: [NoteCorrections, NoteLineSpacing, StarterKit.configure({ link: { openOnClick: false, protocols: ["http", "https", "mailto"] } }), TextStyle, FontSize, FontFamily, Color, Highlight.configure({ multicolor: true }), TextAlign.configure({ types: ["heading", "paragraph"] }), NoteImage, TableKit, TaskList, TaskItem.configure({ nested: true })],
     content: note.content as JSONContent,
     editorProps: {
       attributes: { spellcheck: "true", class: "notes-document", "data-no-voice": "true", "aria-label": "Note document", role: "textbox", "aria-multiline": "true" },
@@ -231,6 +232,6 @@ export function PersonalNoteEditor({ note, initialAction }: { note: Note; initia
       <div className="border-t border-border px-5 py-2 text-right text-xs text-muted-foreground">{editor?.getText().trim().split(/\s+/).filter(Boolean).length ?? 0} words</div>
     </div>
   </div>
-  <NotesAiPanel open={aiOpen} onClose={() => setAiOpen(false)} editor={editor} title={title} classId={classId} quickAction={quickAction} onRecordingChange={setRecLabel} onBadge={setAiBadge} dock={aiDock} onToggleDock={() => setAiDock(aiDock === "bottom" ? "side" : "bottom")} onAddDiagram={els => { setIncoming({ key: Date.now(), elements: els }); setMode("draw"); draft.current.editorMode = "draw"; }} />
+  <NotesAiPanel open={aiOpen} onOpen={() => setAiOpen(true)} onClose={() => setAiOpen(false)} editor={editor} title={title} classId={classId} quickAction={quickAction} onRecordingChange={setRecLabel} onBadge={setAiBadge} dock={aiDock} onToggleDock={() => setAiDock(aiDock === "bottom" ? "side" : "bottom")} onAddDiagram={els => { setIncoming({ key: Date.now(), elements: els }); setMode("draw"); draft.current.editorMode = "draw"; }} />
   </div>;
 }

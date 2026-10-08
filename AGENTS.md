@@ -23,3 +23,5 @@
 - Personal Notes drawings live in `personal_notes.drawing` (versioned JSON pages of strokes/shapes with an optional `source` field) rendered as SVG in NoteDrawingCanvas; shape cleanup runs only on explicit user action so future AI diagram tools can append elements without schema changes.
 - The Notes AI Assistant (NotesAiPanel + notes-ai.functions.ts) uses the student's own AI key via withUserAiKey/callAI and never writes into a note on its own; output is inserted only on explicit user action, labeled as AI. In-note lecture recording reuses the storage-first Lecture Notes pipeline with the note passed as extra context.
 - New students without their own AI key get server-tracked free trial uses (ai_trial_uses + consume_ai_trial RPC) on a shared TRIAL_GEMINI_API_KEY via withTrialOrUserAiKey; the app gate locks only after the tools trial is spent, so the trial can't be reset client-side.
+
+- Notes correction underlines use transient ProseMirror decorations, never saved marks; review must not alter authored formatting or shared snapshots.
