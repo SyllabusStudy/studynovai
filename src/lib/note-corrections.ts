@@ -22,6 +22,9 @@ export function findCorrectionRanges(doc: PMNode, original: string) {
   return ranges;
 }
 export const noteCorrectionsKey = new PluginKey<DecorationSet>("noteCorrections");
+export function correctionAtPosition(state: import("@tiptap/pm/state").EditorState, pos: number) {
+  return noteCorrectionsKey.getState(state)?.find().find(d => d.from <= pos && pos <= d.to);
+}
 export function createCorrectionPlugin() {
   return new Plugin<DecorationSet>({
     key: noteCorrectionsKey,
@@ -47,10 +50,12 @@ export function createCorrectionPlugin() {
     },
     props: {
       decorations: state => noteCorrectionsKey.getState(state),
-      handleClick(view, _pos, event) {
+      handleClick(view, pos, event) {
         const target = event.target instanceof Element ? event.target.closest("[data-note-correction]") : null;
         if (!target) return false;
-        view.dom.dispatchEvent(new CustomEvent("note-correction-select", { detail: Number(target.getAttribute("data-note-correction")) }));
+        const range = correctionAtPosition(view.state, pos);
+        if (!range) return false;
+        view.dom.dispatchEvent(new CustomEvent("note-correction-select", { detail: { index: range.spec.index, from: range.from, to: range.to, anchor: target } }));
         return true;
       },
     },

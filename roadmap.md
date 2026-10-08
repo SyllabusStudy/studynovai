@@ -1,5 +1,6 @@
 # Current work
 
+- [x] Move Notes spelling and wording review above the clicked text, preserving AI tabs and remembered rejections.
 - [x] Make Notes AI synthesize original explanations in plain student language, honoring explicitly requested styles and preserving facts.
 
 - [x] Add blue unclear-wording and red spelling underlines with accept/reject corrections in Notes.
