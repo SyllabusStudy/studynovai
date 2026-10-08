@@ -161,6 +161,16 @@ function SetupAiPage() {
             <CheckCircle2 className="size-5 text-primary" />
             <p className="text-sm font-semibold">AI is already on for your account. Taking you in…</p>
           </div>
+        ) : data && !data.hasKey && (data.trial?.tools ?? 0) > 0 ? (
+          <div className="mx-auto mt-6 flex max-w-md justify-center">
+            <button
+              type="button"
+              onClick={() => navigate({ to: nextPath() })}
+              className="rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-sm"
+            >
+              ✨ Try {data.trial?.tools} free AI {data.trial?.tools === 1 ? "action" : "actions"} first
+            </button>
+          </div>
         ) : null}
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,2.15fr)_minmax(0,1fr)] lg:items-start">

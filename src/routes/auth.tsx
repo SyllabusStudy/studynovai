@@ -87,7 +87,7 @@ function AuthPage() {
         if (typeof window !== "undefined" && "gtag_report_conversion" in window) {
           (window as any).gtag_report_conversion();
         }
-        navigate({ to: "/setup-ai" });
+        navigate({ to: "/dashboard" });
 
       } else if (mode === "login") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
