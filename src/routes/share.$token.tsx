@@ -13,7 +13,7 @@ import { TextStyle, FontSize, FontFamily } from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
 import TextAlign from "@tiptap/extension-text-align";
-import Image from "@tiptap/extension-image";
+import { NoteImage } from "@/lib/note-image";
 import { TableKit } from "@tiptap/extension-table";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
@@ -115,7 +115,7 @@ function NoteView({ token, text, content }: { token: string; text: string; conte
   // Read-only editor so shared notes look exactly like the owner's note:
   // bullets, checklists, underline, highlights, tables, images — but no editing.
   const editor = useEditor({
-    extensions: [NoteLineSpacing, StarterKit.configure({ link: { openOnClick: true, protocols: ["http", "https", "mailto"] } }), TextStyle, FontSize, FontFamily, Color, Highlight.configure({ multicolor: true }), TextAlign.configure({ types: ["heading", "paragraph"] }), Image.configure({ allowBase64: true }), TableKit, TaskList, TaskItem.configure({ nested: true })],
+    extensions: [NoteLineSpacing, StarterKit.configure({ link: { openOnClick: true, protocols: ["http", "https", "mailto"] } }), TextStyle, FontSize, FontFamily, Color, Highlight.configure({ multicolor: true }), TextAlign.configure({ types: ["heading", "paragraph"] }), NoteImage, TableKit, TaskList, TaskItem.configure({ nested: true })],
     ...(content ? { content } : {}),
     editable: false,
     immediatelyRender: false,

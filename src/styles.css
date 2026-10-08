@@ -521,6 +521,8 @@ html.app-theme h1 { letter-spacing: -0.01em; }
 .notes-document a { color: var(--info); text-decoration: underline; }
 .notes-document hr { border: 0; border-top: 1px solid var(--border); margin: 1.5rem 0; }
 .notes-document img { max-width: 100%; height: auto; border-radius: var(--radius-sm); }
+.notes-document img.ProseMirror-selectednode { outline: 3px solid var(--primary); outline-offset: 2px; }
+.notes-document img { cursor: pointer; }
 .notes-document .tableWrapper { overflow-x: auto; margin: 1rem 0; }
 .notes-document table { border-collapse: collapse; table-layout: fixed; width: 100%; min-width: 320px; }
 .notes-document td, .notes-document th { min-width: 70px; border: 1px solid var(--border); padding: 0.5rem; position: relative; vertical-align: top; }
