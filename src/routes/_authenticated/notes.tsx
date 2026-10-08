@@ -48,9 +48,13 @@ function NotesPage() {
   const [newTitle, setNewTitle] = useState("");
   const notes = useQuery({ queryKey: ["personal-notes", user?.id], enabled: !!user && !noteId, queryFn: () => list() });
   const lastOpenKey = `studynova-notes-last-open:${user?.id ?? "anon"}`;
-  // Remember the last open note and reopen it when returning to Notes.
+  // Remember the last open note; auto-reopen it only on the first visit to
+  // /notes, never after the user explicitly backs out to the list.
+  const triedReopen = useRef(false);
   useEffect(() => {
-    if (noteId) { try { localStorage.setItem(lastOpenKey, noteId); } catch { /* ignore */ } return; }
+    if (noteId) { triedReopen.current = true; try { localStorage.setItem(lastOpenKey, noteId); } catch { /* ignore */ } return; }
+    if (triedReopen.current) return;
+    triedReopen.current = true;
     try {
       const saved = localStorage.getItem(lastOpenKey);
       if (saved) void navigate({ search: { note: saved }, replace: true });
