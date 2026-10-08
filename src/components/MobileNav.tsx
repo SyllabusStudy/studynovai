@@ -28,6 +28,7 @@ const SECTIONS: { label: string; items: Tool[] }[] = [
       { to: "/lectures", label: "Lecture Notes", desc: "Record a class", icon: Mic, tint: "text-primary bg-primary/15" },
       { to: "/studio", label: "AI Images", desc: "Make study visuals", icon: ImageIcon, tint: "text-primary bg-primary/15" },
       { to: "/ai-checker", label: "AI Checker", desc: "Check & humanize", icon: ScanSearch, tint: "text-primary bg-primary/15" },
+      { to: "/glo", label: "Meet Glo", desc: "Voice assistant & guide", icon: Bot, tint: "text-feature-ai bg-feature-ai/15" },
     ],
   },
   {
