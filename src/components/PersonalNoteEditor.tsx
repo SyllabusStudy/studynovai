@@ -22,7 +22,7 @@ import { savePersonalNote } from "@/lib/notes.functions";
 import { NotesToolbar } from "@/components/NotesToolbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { type PersonalNote as Note, titleFromNotes } from "@/lib/personal-notes";
+import { type PersonalNote as Note, titleFromNotes, noteWordCount } from "@/lib/personal-notes";
 import { useClasses } from "@/lib/data";
 import { NoteDrawingCanvas } from "@/components/NoteDrawingCanvas";
 import { normalizeDrawing, type Drawing } from "@/lib/note-drawing";
@@ -181,8 +181,12 @@ export function PersonalNoteEditor({ note, initialAction }: { note: Note; initia
     },
   });
   // Subscribe to selection/transaction changes so toolbar states stay accurate.
-  const state = useEditorState({ editor, selector: ({ editor: current }) => ({ contentSize: current?.state.doc.content.size, selection: current?.state.selection.from, transaction: current?.state }) });
-  void state;
+  const state = useEditorState({ editor, selector: ({ editor: current }) => {
+    if (!current) return { wordCount: 0, selected: false };
+    const { from, to, empty } = current.state.selection;
+    const selectedText = empty ? null : current.state.doc.textBetween(from, to, "\n", " ");
+    return { wordCount: noteWordCount(current.getText(), selectedText), selected: !empty, transaction: current.state };
+  } });
 
   const blocker = useBlocker({ shouldBlockFn: () => dirty, enableBeforeUnload: dirty, withResolver: true });
   useEffect(() => {
@@ -229,7 +233,7 @@ export function PersonalNoteEditor({ note, initialAction }: { note: Note; initia
       {editor && <div className="sticky top-[calc(7rem+env(safe-area-inset-top))] z-20 bg-card shadow-card"><NotesToolbar editor={editor} /></div>}
       {editor ? <NoteImageMenu editor={editor} /> : null}
       <EditorContent editor={editor} className="notes-editor min-h-[60dvh] overflow-x-auto bg-transparent" />
-      <div className="border-t border-border px-5 py-2 text-right text-xs text-muted-foreground">{editor?.getText().trim().split(/\s+/).filter(Boolean).length ?? 0} words</div>
+      <div className="border-t border-border px-5 py-2 text-right text-xs text-muted-foreground" role="status">{state?.wordCount ?? 0} words{state?.selected ? " selected" : ""}</div>
     </div>
   </div>
   <NotesAiPanel open={aiOpen} onOpen={() => setAiOpen(true)} onClose={() => setAiOpen(false)} editor={editor} title={title} classId={classId} quickAction={quickAction} onRecordingChange={setRecLabel} onBadge={setAiBadge} dock={aiDock} onToggleDock={() => setAiDock(aiDock === "bottom" ? "side" : "bottom")} onAddDiagram={els => { setIncoming({ key: Date.now(), elements: els }); setMode("draw"); draft.current.editorMode = "draw"; }} />
