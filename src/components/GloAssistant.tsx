@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Mic, MicOff, X, Check } from "lucide-react";
 import { MascotFace } from "@/components/ToolsMascot";
@@ -151,11 +151,15 @@ export function GloAssistant() {
               {wakeOn ? <Mic className="size-3.5" /> : <MicOff className="size-3.5" />} “Hey Glo” {wakeOn ? "on" : "off"}
             </button>
           </div>
+          <Link to="/glo" className="mt-1.5 block text-center text-[11px] font-semibold text-muted-foreground underline-offset-2 hover:text-primary hover:underline">
+            What can Glo do? →
+          </Link>
         </div>
       ) : null}
       <button
         type="button"
         aria-label="Open Glo"
+        data-tour="glo"
         onClick={() => (open ? wake() : setOpen(true))}
         className={cn(
           "pointer-events-auto relative mr-1 flex size-10 items-center justify-center rounded-full bg-primary shadow-[0_0_18px_var(--primary)] transition-transform",
