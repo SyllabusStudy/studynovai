@@ -307,8 +307,6 @@ export const humanizeAiText = createServerFn({ method: "POST" })
     }
     try {
       const rewrite = await withTrialOrUserAiKey(context.supabase, context.userId, "tools", () => runHumanize(data).then(track(context, "humanize")));
-      void withUserAiKey;
-      if (false) await withUserAiKey(context.supabase, context.userId, () => runHumanize(data).then(track(context, "humanize")));
       if (!rewrite.text) {
         return { text: null, similarity: null, error: "I couldn't produce a meaningful rewrite yet. Please try again.", needsPro: false };
       }
