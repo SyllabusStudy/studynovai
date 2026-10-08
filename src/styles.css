@@ -406,7 +406,7 @@
   min-height: calc(100dvh - 4rem);
   overflow-x: clip;
 }
-.dash-main { background: oklch(0.15 0.035 268); }
+.dash-main { background: transparent; }
 .dash-glass {
   background: var(--card);
   border: 1px solid var(--border);
