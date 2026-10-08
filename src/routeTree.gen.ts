@@ -26,6 +26,7 @@ import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedEmailRouteImport } from './routes/_authenticated/email'
 import { Route as AuthenticatedFeedbackRouteImport } from './routes/_authenticated/feedback'
+import { Route as AuthenticatedGloActiveRouteImport } from './routes/_authenticated/glo-active'
 import { Route as AuthenticatedGradesRouteImport } from './routes/_authenticated/grades'
 import { Route as AuthenticatedLecturesRouteImport } from './routes/_authenticated/lectures'
 import { Route as AuthenticatedNotesRouteImport } from './routes/_authenticated/notes'
@@ -133,6 +134,11 @@ const AuthenticatedEmailRoute = AuthenticatedEmailRouteImport.update({
 const AuthenticatedFeedbackRoute = AuthenticatedFeedbackRouteImport.update({
   id: '/feedback',
   path: '/feedback',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedGloActiveRoute = AuthenticatedGloActiveRouteImport.update({
+  id: '/glo-active',
+  path: '/glo-active',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedGradesRoute = AuthenticatedGradesRouteImport.update({
@@ -278,6 +284,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/email': typeof AuthenticatedEmailRoute
   '/feedback': typeof AuthenticatedFeedbackRoute
+  '/glo-active': typeof AuthenticatedGloActiveRoute
   '/grades': typeof AuthenticatedGradesRoute
   '/lectures': typeof AuthenticatedLecturesRoute
   '/notes': typeof AuthenticatedNotesRoute
@@ -319,6 +326,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/email': typeof AuthenticatedEmailRoute
   '/feedback': typeof AuthenticatedFeedbackRoute
+  '/glo-active': typeof AuthenticatedGloActiveRoute
   '/grades': typeof AuthenticatedGradesRoute
   '/lectures': typeof AuthenticatedLecturesRoute
   '/notes': typeof AuthenticatedNotesRoute
@@ -362,6 +370,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/email': typeof AuthenticatedEmailRoute
   '/_authenticated/feedback': typeof AuthenticatedFeedbackRoute
+  '/_authenticated/glo-active': typeof AuthenticatedGloActiveRoute
   '/_authenticated/grades': typeof AuthenticatedGradesRoute
   '/_authenticated/lectures': typeof AuthenticatedLecturesRoute
   '/_authenticated/notes': typeof AuthenticatedNotesRoute
@@ -405,6 +414,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/email'
     | '/feedback'
+    | '/glo-active'
     | '/grades'
     | '/lectures'
     | '/notes'
@@ -446,6 +456,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/email'
     | '/feedback'
+    | '/glo-active'
     | '/grades'
     | '/lectures'
     | '/notes'
@@ -488,6 +499,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/email'
     | '/_authenticated/feedback'
+    | '/_authenticated/glo-active'
     | '/_authenticated/grades'
     | '/_authenticated/lectures'
     | '/_authenticated/notes'
@@ -651,6 +663,13 @@ declare module '@tanstack/react-router' {
       path: '/feedback'
       fullPath: '/feedback'
       preLoaderRoute: typeof AuthenticatedFeedbackRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/glo-active': {
+      id: '/_authenticated/glo-active'
+      path: '/glo-active'
+      fullPath: '/glo-active'
+      preLoaderRoute: typeof AuthenticatedGloActiveRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/grades': {
@@ -825,6 +844,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEmailRoute: typeof AuthenticatedEmailRoute
   AuthenticatedFeedbackRoute: typeof AuthenticatedFeedbackRoute
+  AuthenticatedGloActiveRoute: typeof AuthenticatedGloActiveRoute
   AuthenticatedGradesRoute: typeof AuthenticatedGradesRoute
   AuthenticatedLecturesRoute: typeof AuthenticatedLecturesRoute
   AuthenticatedNotesRoute: typeof AuthenticatedNotesRoute
@@ -852,6 +872,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEmailRoute: AuthenticatedEmailRoute,
   AuthenticatedFeedbackRoute: AuthenticatedFeedbackRoute,
+  AuthenticatedGloActiveRoute: AuthenticatedGloActiveRoute,
   AuthenticatedGradesRoute: AuthenticatedGradesRoute,
   AuthenticatedLecturesRoute: AuthenticatedLecturesRoute,
   AuthenticatedNotesRoute: AuthenticatedNotesRoute,

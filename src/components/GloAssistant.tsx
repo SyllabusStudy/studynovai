@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Mic, MicOff, X, Check } from "lucide-react";
 import { MascotFace } from "@/components/ToolsMascot";
 import { gloCommand, type GloAction } from "@/lib/glo.functions";
+import { addGloLog, describeGloAction } from "@/lib/glo-log";
 import { useAuth } from "@/lib/auth";
 import { useProfile } from "@/lib/data";
 import { useTheme } from "@/lib/theme";
@@ -152,9 +153,10 @@ export function GloAssistant() {
               {wakeOn ? <Mic className="size-3.5" /> : <MicOff className="size-3.5" />} “Hey Glo” {wakeOn ? "on" : "off"}
             </button>
           </div>
-          <Link to="/glo" className="mt-1.5 block text-center text-[11px] font-semibold text-muted-foreground underline-offset-2 hover:text-primary hover:underline">
-            What can Glo do? →
-          </Link>
+          <div className="mt-1.5 flex justify-center gap-3 text-[11px] font-semibold text-muted-foreground">
+            <Link to="/glo-active" className="hover:text-primary hover:underline">Glo Active</Link>
+            <Link to="/glo" className="hover:text-primary hover:underline">What can Glo do? →</Link>
+          </div>
         </div>
       ) : null}
       <button
