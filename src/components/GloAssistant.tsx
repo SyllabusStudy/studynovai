@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Mic, MicOff, X, Check } from "lucide-react";
 import { MascotFace } from "@/components/ToolsMascot";
 import { gloCommand, type GloAction } from "@/lib/glo.functions";
+import { addGloLog, describeGloAction } from "@/lib/glo-log";
 import { useAuth } from "@/lib/auth";
 import { useProfile } from "@/lib/data";
 import { useTheme } from "@/lib/theme";
@@ -77,6 +78,7 @@ export function GloAssistant() {
     try {
       const r = await ask({ data: { text, path: ctx.current.path, history: history.current.slice(-6) } });
       history.current.push({ role: "user", content: text }, { role: "assistant", content: r.say });
+      addGloLog({ at: Date.now(), asked: text, said: r.say, action: describeGloAction(r.action as { type: string }) });
       runAction(r.action);
       if (r.action.type === "email") awake.current = true; // listen for "yes"
       say(r.say);
@@ -127,7 +129,7 @@ export function GloAssistant() {
   };
 
   return (
-    <div className="pointer-events-none fixed right-0 top-1/2 z-40 flex -translate-y-1/2 items-center gap-2 in-data-[help=open]:hidden">
+    <div className={cn("pointer-events-none fixed right-0 top-1/2 z-40 flex -translate-y-1/2 items-center gap-2 in-data-[help=open]:hidden", path !== "/dashboard" && !open && "max-md:hidden")}>
       {open ? (
         <div className="pointer-events-auto w-64 rounded-l-2xl border border-r-0 border-primary/40 bg-card/95 p-3 text-sm shadow-[var(--shadow-float)] backdrop-blur animate-in slide-in-from-right-4">
           <div className="mb-1 flex items-center justify-between">
@@ -151,9 +153,10 @@ export function GloAssistant() {
               {wakeOn ? <Mic className="size-3.5" /> : <MicOff className="size-3.5" />} “Hey Glo” {wakeOn ? "on" : "off"}
             </button>
           </div>
-          <Link to="/glo" className="mt-1.5 block text-center text-[11px] font-semibold text-muted-foreground underline-offset-2 hover:text-primary hover:underline">
-            What can Glo do? →
-          </Link>
+          <div className="mt-1.5 flex justify-center gap-3 text-[11px] font-semibold text-muted-foreground">
+            <Link to="/glo-active" className="hover:text-primary hover:underline">Glo Active</Link>
+            <Link to="/glo" className="hover:text-primary hover:underline">What can Glo do? →</Link>
+          </div>
         </div>
       ) : null}
       <button
@@ -167,7 +170,7 @@ export function GloAssistant() {
           !open && "opacity-80 hover:opacity-100",
         )}
       >
-        <span className="scale-75"><MascotFace /></span>
+        <span className="relative flex size-12 shrink-0 scale-[0.8] items-center justify-center"><MascotFace /></span>
       </button>
     </div>
   );
