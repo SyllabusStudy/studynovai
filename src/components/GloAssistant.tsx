@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Mic, MicOff, X, Check } from "lucide-react";
+import { Mic, MicOff, X, Check, MonitorUp, MonitorX } from "lucide-react";
 import { MascotFace } from "@/components/ToolsMascot";
 import { gloCommand, type GloAction } from "@/lib/glo.functions";
 import { addGloLog, describeGloAction } from "@/lib/glo-log";
@@ -15,6 +15,8 @@ type Mode = "idle" | "listening" | "thinking" | "speaking";
 const KEY = "studynova:glo-wake";
 const WAKE = /\b(hey|hi|okay|ok)[,\s]+(glo|glow|glo's|flo|blow|clo)\b[,.!?\s]*/i;
 const YES = /^(yes|yeah|yep|sure|send( it)?|do it|ok(ay)?)\b/i;
+const LOOK = /\b(look at|see|watch|share|view)\b.*\bscreen\b/i;
+const STOP_WATCH = /\bstop (watching|looking|seeing)|stop (the )?screen\b/i;
 const NO = /^(no|nope|cancel|stop|don'?t)\b/i;
 
 /** Glo: always-on "Hey Glo" voice assistant that sits on the right edge. */
@@ -32,6 +34,9 @@ export function GloAssistant() {
   const [caption, setCaption] = useState("");
   const [pending, setPending] = useState<Extract<GloAction, { type: "email" }> | null>(null);
 
+  const [watching, setWatching] = useState(false);
+  const stream = useRef<MediaStream | null>(null);
+  const video = useRef<HTMLVideoElement | null>(null);
   const rec = useRef<Rec | null>(null);
   const awake = useRef(false);
   const speaking = useRef(false);
@@ -54,6 +59,43 @@ export function GloAssistant() {
     synth.speak(u);
   }, []);
 
+  const stopWatching = useCallback(() => {
+    stream.current?.getTracks().forEach((t) => t.stop());
+    stream.current = null;
+    if (video.current) video.current.srcObject = null;
+    setWatching(false);
+  }, []);
+
+  const startWatching = useCallback(async () => {
+    if (stream.current) return true;
+    if (!navigator.mediaDevices?.getDisplayMedia) { say("Sorry, this browser can't share your screen with me."); return false; }
+    try {
+      const s = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+      stream.current = s;
+      if (!video.current) { video.current = document.createElement("video"); video.current.muted = true; video.current.playsInline = true; }
+      video.current.srcObject = s;
+      await video.current.play();
+      s.getVideoTracks()[0]?.addEventListener("ended", () => stopWatching());
+      setWatching(true); setOpen(true);
+      return true;
+    } catch {
+      say("Okay, I won't look at your screen.");
+      return false;
+    }
+  }, [say, stopWatching]);
+
+  const snapshot = useCallback((): string | undefined => {
+    const v = video.current;
+    if (!stream.current || !v || !v.videoWidth) return undefined;
+    const scale = Math.min(1, 1600 / v.videoWidth);
+    const c = document.createElement("canvas");
+    c.width = Math.round(v.videoWidth * scale); c.height = Math.round(v.videoHeight * scale);
+    c.getContext("2d")?.drawImage(v, 0, 0, c.width, c.height);
+    return c.toDataURL("image/jpeg", 0.75);
+  }, []);
+
+  useEffect(() => () => stream.current?.getTracks().forEach((t) => t.stop()), []);
+
   const runAction = useCallback((a: GloAction) => {
     const c = ctx.current;
     if (a.type === "navigate" && a.to !== c.path) c.navigate({ to: a.to });
@@ -73,10 +115,17 @@ export function GloAssistant() {
       if (YES.test(text)) return sendEmail(p);
       if (NO.test(text)) { setPending(null); return say("Okay, I won't send it."); }
     }
+    if (STOP_WATCH.test(text)) { awake.current = false; stopWatching(); return say("Okay, I stopped watching your screen."); }
+    if (LOOK.test(text) && !stream.current) {
+      const ok = await startWatching();
+      if (!ok) return;
+      if (text.replace(LOOK, "").trim().length < 4) { awake.current = true; return say("I can see your screen now. What would you like to know?"); }
+    }
     awake.current = false;
     setMode("thinking"); setCaption(`“${text}”`);
     try {
-      const r = await ask({ data: { text, path: ctx.current.path, history: history.current.slice(-6) } });
+      const screen = snapshot();
+      const r = await ask({ data: { text, path: ctx.current.path, history: history.current.slice(-6), screen } });
       history.current.push({ role: "user", content: text }, { role: "assistant", content: r.say });
       addGloLog({ at: Date.now(), asked: text, said: r.say, action: describeGloAction(r.action as { type: string }) });
       runAction(r.action);
@@ -85,7 +134,7 @@ export function GloAssistant() {
     } catch (e) {
       say(e instanceof Error ? e.message.slice(0, 200) : "Sorry, something went wrong.");
     }
-  }, [ask, runAction, say, sendEmail]);
+  }, [ask, runAction, say, sendEmail, startWatching, stopWatching, snapshot]);
 
   const wake = useCallback((rest = "") => {
     setOpen(true);
@@ -149,6 +198,12 @@ export function GloAssistant() {
               <X className="size-4" />
             </button>
           </div>
+          {watching ? (
+            <div className="mb-2 flex items-center justify-between gap-2 rounded-lg border border-primary/50 bg-primary/15 px-2 py-1 text-xs font-bold text-primary shadow-[0_0_12px_var(--primary)]">
+              <span className="flex items-center gap-1.5"><span className="size-2 animate-pulse rounded-full bg-primary" /> Glo can see your screen</span>
+              <button type="button" onClick={() => { stopWatching(); say("Okay, I stopped watching."); }} className="rounded-md bg-primary px-2 py-0.5 text-primary-foreground">Stop</button>
+            </div>
+          ) : null}
           <p className="max-h-40 overflow-y-auto text-foreground scroll-slim">{caption || "Ask me what's due, to make a note, open quizzes, draft an email…"}</p>
           {pending ? (
             <div className="mt-2 flex gap-2">
@@ -158,6 +213,9 @@ export function GloAssistant() {
           ) : null}
           <div className="mt-2 flex items-center justify-between border-t border-border pt-2">
             <button type="button" onClick={() => wake()} className="flex items-center gap-1 text-xs font-bold text-primary"><Mic className="size-3.5" /> Talk</button>
+            <button type="button" onClick={() => (watching ? stopWatching() : void startWatching().then((ok) => { if (ok) { awake.current = true; say("I can see your screen now. What would you like to know?"); } }))} className="flex items-center gap-1 text-xs font-bold text-primary">
+              {watching ? <MonitorX className="size-3.5" /> : <MonitorUp className="size-3.5" />} {watching ? "Stop" : "See screen"}
+            </button>
             <button type="button" onClick={toggleWake} aria-pressed={wakeOn} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
               {wakeOn ? <Mic className="size-3.5" /> : <MicOff className="size-3.5" />} “Hey Glo” {wakeOn ? "on" : "off"}
             </button>
@@ -179,6 +237,7 @@ export function GloAssistant() {
           !open && "opacity-80 hover:opacity-100",
         )}
       >
+        {watching ? <span className="absolute -inset-1 animate-ping rounded-full border-2 border-primary" aria-label="Glo can see your screen" /> : null}
         <span className="relative flex size-12 shrink-0 scale-[0.8] items-center justify-center"><MascotFace /></span>
       </button>
     </div>

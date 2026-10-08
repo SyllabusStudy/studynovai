@@ -25,7 +25,8 @@ Reply ONLY with JSON: {"say": string, "action": {...}}. Actions:
 - {"type":"quiz","className": string,"topic": string,"count": number} — actually CREATE a quiz from that class's materials. Use this whenever the student asks you to make a quiz, not "navigate".
 - {"type":"flashcards","className": string,"topic": string,"count": number} — actually CREATE flashcards from that class's materials. Use this whenever the student asks for flashcards, not "navigate".
 - {"type":"theme","mode":"light"|"dark"}.
-Use the student's assignments below to answer what's due. Short follow-ups ("shorter", "yes", "the second one") refer to the previous turn. Never invent assignments.`;
+Use the student's assignments below to answer what's due. Short follow-ups ("shorter", "yes", "the second one") refer to the previous turn. Never invent assignments.
+When a screenshot of the student's screen is attached, look at it carefully and answer about what is on it (graphs, steps, slides, text). If they ask you to take notes on it, use the "note" action with a well-structured study note (headings on their own lines, short bullet lines starting with "- ", key terms and definitions) built from the screen content, and "say" just a short confirmation.`;
 
 export const gloCommand = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -34,6 +35,7 @@ export const gloCommand = createServerFn({ method: "POST" })
       text: z.string().min(1).max(2000),
       path: z.string().max(200),
       history: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(2000) })).max(8),
+      screen: z.string().startsWith("data:image/").max(6_000_000).optional(),
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -46,8 +48,10 @@ export const gloCommand = createServerFn({ method: "POST" })
       callAI([
         { role: "system", content: `${SYSTEM}\nToday: ${today}. Current page: ${data.path}.\nOpen assignments:\n${list}` },
         ...data.history,
-        { role: "user", content: data.text },
-      ], { temperature: 0.3, maxTokens: 1200, reasoningEffort: "low", search: /look up|search|news|latest|who is|what is/i.test(data.text) }),
+        data.screen
+          ? { role: "user", content: [{ type: "text", text: `[Screenshot of my screen attached]\n${data.text}` }, { type: "image_url", image_url: { url: data.screen } }] }
+          : { role: "user", content: data.text },
+      ], { temperature: 0.3, maxTokens: data.screen ? 2500 : 1200, reasoningEffort: "low", search: /look up|search|news|latest|who is|what is/i.test(data.text) }),
     );
     let parsed: { say?: string; action?: GloAction } = {};
     try { parsed = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1)); } catch { parsed = { say: raw.slice(0, 400) }; }

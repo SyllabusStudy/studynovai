@@ -90,6 +90,7 @@ const GROUPS: { key: string; label: string; collapsible: boolean; items: NavItem
       { to: "/lectures", label: "Lecture Notes", icon: Mic },
       { to: "/studio", label: "AI Images", icon: ImageIcon },
       { to: "/ai-checker", label: "AI Checker", icon: ScanSearch },
+      { tint: "text-feature-ai", to: "/glo", label: "Glo", icon: Bot },
     ],
   },
   {
