@@ -50,10 +50,10 @@ export const Route = createFileRoute("/setup-ai")({
 });
 
 const STEPS = [
-  { icon: KeyRound, title: "Get your free key", text: "Open Google AI Studio in a new tab." },
-  { icon: UserRound, title: "Sign in", text: "Sign in with your Google account." },
-  { icon: Clipboard, title: "Copy your key", text: "Copy your API key and come back here." },
-  { icon: Plug, title: "Paste your key", text: "Paste it below and turn on AI." },
+  { icon: KeyRound, title: "Tap “Get my free key” below", text: "Sign in with Google if it asks." },
+  { icon: UserRound, title: "Tap “Create API key”", text: "The blue button at the top of Google's page." },
+  { icon: Plug, title: "Tap “Create key in new project”", text: "100% free — no credit card needed." },
+  { icon: Clipboard, title: "Tap “Copy” and come right back", text: "Then paste it below and turn on AI." },
 ];
 
 const BENEFITS = [
@@ -236,6 +236,9 @@ function SetupAiPage() {
                 <ExternalLink className="size-4" />
               </a>
             </Button>
+            <p className="mt-2 text-center text-xs font-semibold text-muted-foreground">
+              Google never asks for a card or payment. Takes about 30 seconds.
+            </p>
 
             <div className="mt-4 space-y-3 rounded-2xl border border-border/70 bg-background/40 p-4">
               <Label htmlFor="setup-ai-key" className="text-sm font-bold">
