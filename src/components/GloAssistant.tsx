@@ -77,6 +77,7 @@ export function GloAssistant() {
     try {
       const r = await ask({ data: { text, path: ctx.current.path, history: history.current.slice(-6) } });
       history.current.push({ role: "user", content: text }, { role: "assistant", content: r.say });
+      addGloLog({ at: Date.now(), asked: text, said: r.say, action: describeGloAction(r.action as { type: string }) });
       runAction(r.action);
       if (r.action.type === "email") awake.current = true; // listen for "yes"
       say(r.say);
@@ -127,7 +128,7 @@ export function GloAssistant() {
   };
 
   return (
-    <div className="pointer-events-none fixed right-0 top-1/2 z-40 flex -translate-y-1/2 items-center gap-2 in-data-[help=open]:hidden">
+    <div className={cn("pointer-events-none fixed right-0 top-1/2 z-40 flex -translate-y-1/2 items-center gap-2 in-data-[help=open]:hidden", path !== "/dashboard" && !open && "max-md:hidden")}>
       {open ? (
         <div className="pointer-events-auto w-64 rounded-l-2xl border border-r-0 border-primary/40 bg-card/95 p-3 text-sm shadow-[var(--shadow-float)] backdrop-blur animate-in slide-in-from-right-4">
           <div className="mb-1 flex items-center justify-between">
@@ -167,7 +168,7 @@ export function GloAssistant() {
           !open && "opacity-80 hover:opacity-100",
         )}
       >
-        <span className="scale-75"><MascotFace /></span>
+        <span className="relative flex size-12 shrink-0 scale-[0.8] items-center justify-center"><MascotFace /></span>
       </button>
     </div>
   );
