@@ -116,10 +116,19 @@ export function GloAssistant() {
     r.onerror = (e) => { if (e.error === "not-allowed" || e.error === "service-not-allowed") alive = false; };
     r.onend = () => { if (alive) setTimeout(() => { try { r.start(); } catch { /* already running */ } }, 300); };
     rec.current = r;
-    try { r.start(); } catch { /* needs a tap first */ }
-    const retry = () => { try { r.start(); } catch { /* running */ } };
-    window.addEventListener("pointerdown", retry, { once: true });
-    return () => { alive = false; window.removeEventListener("pointerdown", retry); r.abort(); };
+    const start = () => { try { r.start(); } catch { /* running */ } };
+    // Only auto-start if the mic was already allowed; otherwise wait for a tap
+    // so the browser asks once and remembers "Allow while visiting".
+    const begin = (granted: boolean) => {
+      if (!alive) return;
+      if (granted) start();
+      else window.addEventListener("pointerdown", start, { once: true });
+    };
+    const perms = (navigator as Navigator & { permissions?: { query: (d: { name: string }) => Promise<{ state: string }> } }).permissions;
+    if (perms) {
+      perms.query({ name: "microphone" }).then((p) => begin(p.state === "granted")).catch(() => begin(false));
+    } else begin(false);
+    return () => { alive = false; window.removeEventListener("pointerdown", start); r.abort(); };
   }, [wakeOn, wake, handle]);
 
   const toggleWake = () => {
