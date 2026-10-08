@@ -1,5 +1,8 @@
 # Current work
 
+- [ ] Add blue unclear-wording and red spelling underlines with accept/reject corrections in Notes.
+- [ ] Verify correction classification, editor mapping, and acceptance behavior.
+
 - [x] Make shared dashboard accents, gradient labels, and inspiration surfaces theme-aware; verify light → dark → light computed colors and compilation.
 
 - [x] Add private class selection and content-based automatic titles to Personal Notes.
