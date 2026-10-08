@@ -76,6 +76,62 @@ export async function withUserAiKey<T>(
   return store.run(cfg, fn);
 }
 
+export type TrialBucket = "tools" | "tutor";
+export const TRIAL_LIMITS: Record<TrialBucket, number> = { tools: 3, tutor: 2 };
+
+/** Remaining free trial uses per bucket (never exposes the shared key). */
+export async function getTrialRemaining(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+): Promise<Record<TrialBucket, number>> {
+  const { data } = await supabase.from("ai_trial_uses").select("bucket,used").eq("user_id", userId);
+  const used = (b: TrialBucket) => data?.find((r) => r.bucket === b)?.used ?? 0;
+  return {
+    tools: Math.max(0, TRIAL_LIMITS.tools - used("tools")),
+    tutor: Math.max(0, TRIAL_LIMITS.tutor - used("tutor")),
+  };
+}
+
+function trialKey(): AiKeyConfig | null {
+  const key = process.env["TRIAL_GEMINI_API_KEY"];
+  return key ? { provider: "google", key } : null;
+}
+
+/** True when the student has their own key or a free trial use left in this bucket. */
+export async function canUseAi(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  bucket: TrialBucket,
+): Promise<boolean> {
+  if (await hasUserAiKey(supabase, userId)) return true;
+  if (!trialKey()) return false;
+  return (await getTrialRemaining(supabase, userId))[bucket] > 0;
+}
+
+/**
+ * Uses the student's own key when saved; otherwise spends one free trial use
+ * (tracked server-side) on the shared trial key. `consume=false` lets helper
+ * steps of an already-counted action run without spending another use.
+ */
+export async function withTrialOrUserAiKey<T>(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  bucket: TrialBucket,
+  fn: () => Promise<T>,
+  consume = true,
+): Promise<T> {
+  if (await hasUserAiKey(supabase, userId)) return withUserAiKey(supabase, userId, fn);
+  const cfg = trialKey();
+  if (!cfg) throw new Error(AI_KEY_HELP);
+  if (consume) {
+    const { data: ok } = await supabase.rpc("consume_ai_trial", { _bucket: bucket });
+    if (!ok) throw new Error(AI_KEY_HELP);
+  } else if ((await getTrialRemaining(supabase, userId))[bucket] <= 0) {
+    throw new Error(AI_KEY_HELP);
+  }
+  return store.run(cfg, fn);
+}
+
 /** Runs a one-off provider check without persisting or exposing the credential. */
 export async function withAiKeyConfig<T>(
   config: AiKeyConfig,

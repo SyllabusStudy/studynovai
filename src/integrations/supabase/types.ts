@@ -93,6 +93,27 @@ export type Database = {
           },
         ]
       }
+      ai_trial_uses: {
+        Row: {
+          bucket: string
+          updated_at: string
+          used: number
+          user_id: string
+        }
+        Insert: {
+          bucket: string
+          updated_at?: string
+          used?: number
+          user_id: string
+        }
+        Update: {
+          bucket?: string
+          updated_at?: string
+          used?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           body_html: string
@@ -1379,6 +1400,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      consume_ai_trial: { Args: { _bucket: string }; Returns: boolean }
       get_shared_item: {
         Args: { _token: string }
         Returns: {

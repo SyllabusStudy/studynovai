@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { runVideoChat, runVideoImport, runVideoWork, runVideoWorkSave } from "./video.server";
-import { withUserAiKey } from "./ai-key.server";
+import { withTrialOrUserAiKey, withUserAiKey } from "./ai-key.server";
 
 export const importVideo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -20,7 +20,7 @@ export const importVideo = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { assertQuota, recordUsage } = await import("./billing.server");
     await assertQuota(context.supabase, context.userId, "video");
-    const result = await withUserAiKey(context.supabase, context.userId, () =>
+    const result = await withTrialOrUserAiKey(context.supabase, context.userId, "tools", () =>
       runVideoImport(context.supabase, context.userId, data),
     );
     await recordUsage(context.supabase, context.userId, "video");

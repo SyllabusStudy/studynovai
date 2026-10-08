@@ -24,8 +24,15 @@ export const getAiKeyStatus = createServerFn({ method: "POST" })
       .select("provider,api_key,updated_at")
       .eq("user_id", context.userId)
       .maybeSingle();
-    if (!data?.api_key) return { hasKey: false as const, provider: null, hint: null, updatedAt: null };
+    if (!data?.api_key) {
+      const { getTrialRemaining } = await import("./ai-key.server");
+      const trial = process.env["TRIAL_GEMINI_API_KEY"]
+        ? await getTrialRemaining(context.supabase, context.userId)
+        : { tools: 0, tutor: 0 };
+      return { hasKey: false as const, provider: null, hint: null, updatedAt: null, trial };
+    }
     return {
+      trial: null,
       hasKey: true as const,
       provider: data.provider,
       hint: `${data.api_key.slice(0, 6)}…${data.api_key.slice(-4)}`,
