@@ -20,6 +20,7 @@ export type AdminStats = {
     helps: number;
     classes: number;
     signupsLast7Days: number;
+    aiKeys: number;
   };
   students: Array<{
     id: string;
@@ -32,6 +33,8 @@ export type AdminStats = {
     snaps: number;
     helps: number;
     classes: number;
+    hasAiKey: boolean;
+    aiProvider: string | null;
   }>;
   activity: Activity[];
 };
@@ -82,6 +85,7 @@ export async function loadAdminStats(): Promise<AdminStats> {
     all((a, b) => db.from("assignments").select("user_id, title, created_at").range(a, b)),
     all((a, b) => db.from("documents").select("user_id, file_name, created_at").eq("is_syllabus", true).range(a, b)),
     all((a, b) => db.from("ai_conversations").select("user_id, title, study_mode, created_at").range(a, b)),
+    all((a, b) => db.from("user_ai_keys").select("user_id, provider").range(a, b)),
   ]);
 
   const activity: Activity[] = [];
