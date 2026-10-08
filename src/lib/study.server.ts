@@ -1515,40 +1515,36 @@ export async function runSnapTutor(
     messages.push({ role: "user", content: input.message });
   }
 
-  // Speed: no web search, light reasoning — students shouldn't wait.
+  // Speed: answer first (light reasoning); the online lookup + full check runs right after via runSnapVerify.
   const rawDraft = await callAI(messages, { temperature: 0.2, maxTokens: 3500, reasoningEffort: "low" });
   const { text: draft, failures } = await runCalcChecks(rawDraft);
+  return { reply: draft, calcFailures: failures };
+}
 
-  // Independent check: a separate pass re-solves the problem and corrects the draft if needed.
-  // Only run the slow second check when the calculator caught a likely mistake.
-  if (!failures.length) return { reply: draft };
+/** Second pass shown under the answer: looks things up online and independently re-checks the draft. */
+export async function runSnapVerify(
+  input: { imageDataUrl?: string | null | undefined; message: string; draft: string; calcFailures?: string[] | undefined },
+): Promise<{ status: "verified" | "corrected"; reply: string | null }> {
+  const failures = input.calcFailures ?? [];
   const calcNote = failures.length
     ? `\n\nCALCULATOR RESULTS — these checks from the draft FAILED when evaluated by an independent calculator, so the draft very likely contains an error. Re-solve carefully and return CORRECTED:\n${failures.join("\n")}`
     : "\n\nCALCULATOR RESULTS: all numeric checks passed.";
-  try {
-    const verdict = await callAI(
-      [
-        { role: "system", content: SNAP_VERIFY_RULES },
-        {
-          role: "user",
-          content: input.imageDataUrl && !history.length
-            ? [
-                { type: "text", text: `STUDENT QUESTION:\n${input.message}\n\nTUTOR DRAFT:\n${draft}` },
-                { type: "image_url", image_url: { url: input.imageDataUrl } },
-              ]
-            : `STUDENT QUESTION:\n${input.message}\n\nTUTOR DRAFT:\n${draft}`,
-        },
-      ],
-      { temperature: 0, maxTokens: 3500, reasoningEffort: "low" },
-    );
-    const v = verdict.trim();
-    if (/^VERIFIED\b/i.test(v) || v.length < 40) return { reply: draft };
-    return { reply: v.replace(/^CORRECTED\s*/i, "").trim() };
-  } catch (error) {
-    // A failed independent check is not a verified answer.
-    if (error instanceof Error && error.message.includes("having trouble connecting")) throw error;
-    return { reply: draft };
-  }
+  const text = `STUDENT QUESTION:\n${input.message}\n\nTUTOR DRAFT:\n${input.draft}${calcNote}\n\nUse web search to confirm any facts, formulas or definitions you are unsure of.`;
+  const verdict = await callAI(
+    [
+      { role: "system", content: SNAP_VERIFY_RULES },
+      {
+        role: "user",
+        content: input.imageDataUrl
+          ? [{ type: "text", text }, { type: "image_url", image_url: { url: input.imageDataUrl } }]
+          : text,
+      },
+    ],
+    { temperature: 0, maxTokens: 3500, search: true },
+  );
+  const v = (await runCalcChecks(verdict)).text.trim();
+  if (/^VERIFIED\b/i.test(v) || v.length < 40) return { status: "verified", reply: null };
+  return { status: "corrected", reply: v.replace(/^CORRECTED\s*/i, "").trim() };
 }
 
 /** Evaluate the tutor's hidden ```calc block with math.js and strip it from the reply. */

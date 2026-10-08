@@ -247,9 +247,31 @@ export const snapTutor = createServerFn({ method: "POST" })
         runSnapTutor(context.supabase, context.userId, data),
       !data.history.length);
       if (!data.history.length) await recordUsage(context.supabase, context.userId, "snap");
-      return { reply: result.reply, error: null };
+      return { reply: result.reply, calcFailures: result.calcFailures, error: null };
     } catch (e) {
-      return { reply: null, error: e instanceof Error ? e.message : AI_CONNECTION_MESSAGE };
+      return { reply: null, calcFailures: [] as string[], error: e instanceof Error ? e.message : AI_CONNECTION_MESSAGE };
+    }
+  });
+
+/** Runs after the answer is shown: online lookup + full second check. Free (no trial use consumed). */
+export const snapVerify = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        imageDataUrl: z.string().startsWith("data:image/").max(12_000_000).nullable().optional(),
+        message: z.string().min(1).max(4000),
+        draft: z.string().min(1).max(30000),
+        calcFailures: z.array(z.string().max(500)).max(12).optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    try {
+      const { runSnapVerify } = await import("./study.server");
+      return await withTrialOrUserAiKey(context.supabase, context.userId, "tools", () => runSnapVerify(data), false);
+    } catch {
+      return { status: "skipped" as const, reply: null };
     }
   });
 
