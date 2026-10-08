@@ -1515,11 +1515,13 @@ export async function runSnapTutor(
     messages.push({ role: "user", content: input.message });
   }
 
-  const rawDraft = await callAI(messages, { temperature: 0.2, maxTokens: 6000, search: true });
+  // Speed: no web search, light reasoning — students shouldn't wait.
+  const rawDraft = await callAI(messages, { temperature: 0.2, maxTokens: 3500, reasoningEffort: "low" });
   const { text: draft, failures } = await runCalcChecks(rawDraft);
 
   // Independent check: a separate pass re-solves the problem and corrects the draft if needed.
-  if ((input.mode === "tutor" || input.mode === "practice") && !failures.length) return { reply: draft };
+  // Only run the slow second check when the calculator caught a likely mistake.
+  if (!failures.length) return { reply: draft };
   const calcNote = failures.length
     ? `\n\nCALCULATOR RESULTS — these checks from the draft FAILED when evaluated by an independent calculator, so the draft very likely contains an error. Re-solve carefully and return CORRECTED:\n${failures.join("\n")}`
     : "\n\nCALCULATOR RESULTS: all numeric checks passed.";
@@ -1537,7 +1539,7 @@ export async function runSnapTutor(
             : `STUDENT QUESTION:\n${input.message}\n\nTUTOR DRAFT:\n${draft}`,
         },
       ],
-      { temperature: 0, maxTokens: 6000 },
+      { temperature: 0, maxTokens: 3500, reasoningEffort: "low" },
     );
     const v = verdict.trim();
     if (/^VERIFIED\b/i.test(v) || v.length < 40) return { reply: draft };
