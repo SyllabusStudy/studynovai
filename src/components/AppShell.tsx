@@ -48,6 +48,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { ChevronDown, GraduationCap, Image as ImageIcon, ScanSearch, ShieldCheck, Video } from "lucide-react";
 import { checkAdmin } from "@/lib/admin.functions";
 import { AskAiDock } from "@/components/AskAiDock";
+import { GloAssistant } from "@/components/GloAssistant";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { StudyTabs } from "@/components/StudyTabs";
 import { SeasonalDecorations } from "@/components/SeasonalDecorations";
@@ -163,6 +164,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <MobileNav />
 
       <AskAiDock />
+      <GloAssistant />
       <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
     </div>
   );
