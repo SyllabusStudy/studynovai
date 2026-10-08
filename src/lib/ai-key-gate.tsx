@@ -28,7 +28,9 @@ export function useAiKeyStatus() {
       if (!data.session) return null;
       return status({ data: undefined });
     },
-    staleTime: 60_000,
+    staleTime: 15_000,
+    // While on the free trial, re-check so the app locks right after the last free use.
+    refetchInterval: (q) => (q.state.data && q.state.data.hasKey === false ? 20_000 : false),
   });
 }
 
@@ -67,6 +69,7 @@ export function useAiKeyRedirect() {
 export function AiKeySetupBanner({ className }: { className?: string }) {
   const { data, isLoading } = useAiKeyStatus();
   if (isLoading || data?.hasKey !== false) return null;
+  const left = data.trial?.tools ?? 0;
 
   return (
     <section
@@ -77,9 +80,13 @@ export function AiKeySetupBanner({ className }: { className?: string }) {
           <KeyRound className="size-4" />
         </span>
         <div className="min-w-0">
-          <p className="text-sm font-semibold">AI key needed to get started</p>
+          <p className="text-sm font-semibold">
+            {left > 0 ? `✨ ${left} free AI ${left === 1 ? "action" : "actions"} left` : "AI key needed to get started"}
+          </p>
           <p className="text-xs text-muted-foreground">
-            Add a free Google Gemini key (or OpenAI / Anthropic) to start using this tool.
+            {left > 0
+              ? "Try SnapQuick, QuickVideo, Syllabus or Humanizer free. Then turn on your own free AI to keep going."
+              : "Add a free Google Gemini key (or OpenAI / Anthropic) to start using this tool."}
           </p>
         </div>
       </div>
