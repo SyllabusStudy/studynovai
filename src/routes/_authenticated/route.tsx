@@ -27,7 +27,8 @@ function AuthenticatedLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const guestAllowed = isGuestToolPath(pathname);
   const { data: keyStatus, isLoading: keyLoading } = useAiKeyStatus();
-  const needsKey = !!user && keyStatus?.hasKey === false;
+  // New students get free trial uses first; the app locks once the 3 tool uses are spent.
+  const needsKey = !!user && keyStatus?.hasKey === false && (keyStatus.trial?.tools ?? 0) <= 0;
 
   useEffect(() => {
     if (!loading && !user && !guestAllowed) navigate({ to: "/auth" });
