@@ -97,12 +97,8 @@ function Dashboard() {
   const streak = streakData?.streak ?? 0;
   const { data: keyStatus } = useAiKeyStatus();
 
-  useEffect(() => {
-    if (keyStatus?.hasKey !== false) return;
-    let skipped = false;
-    try { skipped = sessionStorage.getItem("studynova.setupAiSkipped") === "1"; } catch { /* ignore */ }
-    if (!skipped) void navigate({ to: "/setup-ai" });
-  }, [keyStatus?.hasKey, navigate]);
+  // Free-trial students stay on the dashboard; the app gate sends them to setup once uses run out.
+  void keyStatus;
 
   // Real days studied in the last 7 days.
   const { data: weekDays = 0 } = useQuery({
