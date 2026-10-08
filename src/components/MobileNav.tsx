@@ -133,6 +133,7 @@ export function MobileNav() {
             <button
               type="button"
               onClick={() => setMore(true)}
+              data-tour="mobile-more"
               className={cn("flex w-full flex-col items-center gap-1 py-2.5 text-[11px] font-semibold", more ? "text-primary" : "text-muted-foreground")}
             >
               <MoreHorizontal className="size-5" />
@@ -152,7 +153,7 @@ export function MobileNav() {
       </Sheet>
 
       <Sheet open={more} onOpenChange={setMore}>
-        <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto rounded-t-3xl pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
+        <SheetContent data-tour-menu side="bottom" className="max-h-[90dvh] overflow-y-auto rounded-t-3xl pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
           <SheetHeader><SheetTitle>Everything in SyllabusStudy</SheetTitle></SheetHeader>
           <div className="space-y-5 px-4">
             <Link

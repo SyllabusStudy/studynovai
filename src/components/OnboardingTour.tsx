@@ -119,7 +119,7 @@ export function OnboardingTour() {
     let lastKey = "";
     const tick = () => {
       const mobile = window.innerWidth < 1024;
-      const menuOpen = !!document.querySelector('[role="dialog"][data-state="open"] nav');
+      const menuOpen = !!document.querySelector('[role="dialog"][data-state="open"] nav, [data-tour-menu][data-state="open"]');
       // Mobile: while teaching a menu tap, the open menu is part of the tour — don't step aside.
       const mobileClick = mobile && current.kind === "click";
       setPaused(mobileClick && menuOpen ? false : otherDialogOpen());
@@ -130,6 +130,10 @@ export function OnboardingTour() {
         if (menuOpen && group) {
           el = findTarget([`[role="dialog"] [data-tour-group="${group}"]`]);
           if (el) hint = "Tap Study to show more options.";
+        }
+        if (!el && !menuOpen) {
+          el = findTarget(['[data-tour="mobile-more"]']);
+          if (el) hint = "Tap More — it's in there!";
         }
         if (!el) {
           el = findTarget(['[aria-label="Open menu"]']);
@@ -273,7 +277,7 @@ export function OnboardingTour() {
             ) : null}
             {current.action ? (
               <p className="mt-3 flex items-center gap-1.5 text-sm font-extrabold text-primary">
-                👉 {current.action} <span className="animate-pulse">— I'm pointing at it!</span>
+                👉 {mobileHint ?? current.action} <span className="animate-pulse">— I'm pointing at it!</span>
               </p>
             ) : null}
             {isClick && !rect ? (
