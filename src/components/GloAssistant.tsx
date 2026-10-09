@@ -125,7 +125,7 @@ export function GloAssistant() {
   const snapshot = useCallback((): string | undefined => {
     const v = video.current;
     if (!stream.current || !v || !v.videoWidth) return undefined;
-    const scale = Math.min(1, 1600 / v.videoWidth);
+    const scale = Math.min(1, 1024 / v.videoWidth);
     const c = document.createElement("canvas");
     c.width = Math.round(v.videoWidth * scale); c.height = Math.round(v.videoHeight * scale);
     c.getContext("2d")?.drawImage(v, 0, 0, c.width, c.height);
@@ -189,17 +189,25 @@ export function GloAssistant() {
     if (!C || !wakeOn) return;
     let alive = true;
     const r = new C();
-    r.continuous = true; r.interimResults = false; r.lang = navigator.language || "en-US";
+    r.continuous = true; r.interimResults = true; r.lang = navigator.language || "en-US";
+    // Act after a short pause instead of waiting for the browser's slow "final" result.
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let lastSent = "";
+    const fire = (t: string) => {
+      if (timer) { clearTimeout(timer); timer = null; }
+      if (!t || t === lastSent) return;
+      lastSent = t;
+      const m = t.match(WAKE);
+      if (m) wake(t.slice((m.index ?? 0) + m[0].length));
+      else if (awake.current) void handle(t);
+    };
     r.onresult = (e) => {
       if (speaking.current) return;
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const res = e.results[i]!;
-        if (!res.isFinal) continue;
-        const t = res[0].transcript.trim();
-        const m = t.match(WAKE);
-        if (m) wake(t.slice((m.index ?? 0) + m[0].length));
-        else if (awake.current && t) void handle(t);
-      }
+      const res = e.results[e.results.length - 1]!;
+      const t = res[0].transcript.trim();
+      if (res.isFinal) { fire(t); lastSent = ""; return; }
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => fire(t), 500);
     };
     r.onerror = (e) => { if (e.error === "not-allowed" || e.error === "service-not-allowed") alive = false; };
     r.onend = () => { if (alive) setTimeout(() => { try { r.start(); } catch { /* already running */ } }, 300); };
