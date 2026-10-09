@@ -104,13 +104,25 @@ export const gloCommand = createServerFn({ method: "POST" })
       const { isPro } = await import("./billing.server");
       const pro = await isPro(context.supabase, context.userId);
       if (!pro) {
-        const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-        const { count } = await context.supabase.from("usage_events").select("id", { count: "exact", head: true })
-          .eq("user_id", context.userId).eq("kind", GLO_TASK_KIND).gte("created_at", since);
-        if (gloTasksLeft(count ?? 0, false) <= 0) {
-          return { say: `You've used your ${GLO_FREE_DAILY_TASKS} free Glo tasks for today. Upgrade to Pro for unlimited tasks, or try again tomorrow.`, action: { type: "none" } as GloAction };
+        const { hasUserAiKey } = await import("./ai-key.server");
+        const hasKey = await hasUserAiKey(context.supabase, context.userId);
+        if (!hasKey) {
+          // Brand-new accounts without their own key get exactly one free Glo task, ever.
+          const { count } = await context.supabase.from("usage_events").select("id", { count: "exact", head: true })
+            .eq("user_id", context.userId).eq("kind", GLO_TASK_KIND);
+          if ((count ?? 0) >= 1) {
+            return { say: "That was your one free Glo task! Add your free Google AI key in Settings and I can keep doing tasks for you — it takes a minute and costs nothing.", action: { type: "navigate", to: "/setup-ai" } as GloAction };
+          }
+          await context.supabase.from("usage_events").insert({ user_id: context.userId, kind: GLO_TASK_KIND });
+        } else {
+          const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+          const { count } = await context.supabase.from("usage_events").select("id", { count: "exact", head: true })
+            .eq("user_id", context.userId).eq("kind", GLO_TASK_KIND).gte("created_at", since);
+          if (gloTasksLeft(count ?? 0, false) <= 0) {
+            return { say: `You've used your ${GLO_FREE_DAILY_TASKS} free Glo tasks for today. Upgrade to Pro for unlimited tasks, or try again tomorrow.`, action: { type: "none" } as GloAction };
+          }
+          await context.supabase.from("usage_events").insert({ user_id: context.userId, kind: GLO_TASK_KIND });
         }
-        await context.supabase.from("usage_events").insert({ user_id: context.userId, kind: GLO_TASK_KIND });
       }
     }
 
