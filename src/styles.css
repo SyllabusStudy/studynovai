@@ -228,6 +228,9 @@
   --dash-teal: var(--success);
   --dash-amber: oklch(0.55 0.12 68);
   --dash-gradient-end: var(--info);
+  --glo-shell: linear-gradient(150deg, var(--card), var(--secondary));
+  --glo-face: linear-gradient(145deg, var(--info), var(--primary));
+  --glo-shadow: 0 6px 20px -5px color-mix(in oklab, var(--info) 35%, transparent), inset 0 1px 0 color-mix(in oklab, var(--foreground) 12%, transparent);
   color-scheme: light;
 }
 
@@ -387,6 +390,25 @@
 @utility scroll-slim {
   scrollbar-width: thin;
   scrollbar-color: var(--color-border) transparent;
+}
+
+.glo-launcher {
+  background: var(--glo-shell);
+  color: var(--foreground);
+  border: 1px solid color-mix(in oklab, var(--info) 50%, var(--border));
+  box-shadow: var(--glo-shadow);
+}
+.glo-launcher:hover { background: var(--glo-shell); }
+.glo-face { background: var(--glo-face); }
+.glo-face > span { display: none; }
+.glo-meter i { width: 2px; height: 3px; border-radius: 2px; background: var(--info); }
+.glo-meter i:nth-child(2), .glo-meter i:nth-child(4) { height: 5px; }
+.glo-meter i:nth-child(3) { height: 7px; }
+@keyframes glo-wave { 50% { transform: scaleY(0.4); } }
+@media (prefers-reduced-motion: no-preference) {
+  .glo-launcher:is([data-state="hearing"], [data-state="speaking"], [data-state="thinking"], [data-state="preparing"]) .glo-meter i { animation: glo-wave 0.85s ease-in-out infinite; }
+  .glo-meter i:nth-child(2), .glo-meter i:nth-child(4) { animation-delay: -0.25s; }
+  .glo-meter i:nth-child(3) { animation-delay: -0.5s; }
 }
 
 /* Dashboard: dark navy glass look, scoped to the main dashboard area only. */
