@@ -25,3 +25,4 @@
 - New students without their own AI key get server-tracked free trial uses (ai_trial_uses + consume_ai_trial RPC) on a shared TRIAL_GEMINI_API_KEY via withTrialOrUserAiKey; the app gate locks only after the tools trial is spent, so the trial can't be reset client-side.
 
 - Notes correction underlines use transient ProseMirror decorations with a range-anchored inline popover, never saved marks; review preserves authored formatting and the active AI tab.
+- Add-class tour guidance derives its target from dialog state and keeps that dialog non-modal only during guidance, so the tutorial card and real form controls remain interactive without altering other dialogs.

@@ -111,7 +111,7 @@ export const gloCommand = createServerFn({ method: "POST" })
           const { count } = await context.supabase.from("usage_events").select("id", { count: "exact", head: true })
             .eq("user_id", context.userId).eq("kind", GLO_TASK_KIND);
           if ((count ?? 0) >= 1) {
-            return { say: "That was your one free Glo task! Add your free Google AI key in Settings and I can keep doing tasks for you — it takes a minute and costs nothing.", action: { type: "navigate", to: "/setup-ai" } as GloAction };
+            return { say: "Add your own free A-P-I key or use the other tools until then! Goodbye!", action: { type: "none" } as GloAction, endSession: true };
           }
           await context.supabase.from("usage_events").insert({ user_id: context.userId, kind: GLO_TASK_KIND });
         } else {
