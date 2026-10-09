@@ -1,4 +1,5 @@
 import { bestTopicBlock } from "@/lib/note-insert";
+import { setMicBusy } from "@/lib/mic-busy";
 import { NoteCorrectionPopover } from "@/components/NoteCorrectionPopover";
 import { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
@@ -229,7 +230,8 @@ export function NotesAiPanel({ noteId, open, onOpen, onClose, editor, title, cla
     const t = setInterval(() => setSecs(s => s + 1), 1000); return () => clearInterval(t);
   }, [rec]);
   useEffect(() => { onRecordingChange(rec === "idle" ? null : `${rec === "paused" ? "Paused" : "Recording"} ${fmt(secs)}`); }, [rec, secs, onRecordingChange]);
-  useEffect(() => () => { stream.current?.getTracks().forEach(t => t.stop()); }, []);
+  useEffect(() => { setMicBusy("note-lecture", rec !== "idle"); }, [rec]);
+  useEffect(() => () => { setMicBusy("note-lecture", false); stream.current?.getTracks().forEach(t => t.stop()); }, []);
 
   const start = async () => {
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") { toast.error("This browser can't record audio. Try Chrome, Edge or Safari."); return; }

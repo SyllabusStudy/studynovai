@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth";
 import { useProfile } from "@/lib/data";
 import { useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
+import { useMicBusy } from "@/lib/mic-busy";
 
 type Rec = { continuous: boolean; interimResults: boolean; lang: string; start(): void; stop(): void; abort(): void; onresult: ((e: { resultIndex: number; results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> }) => void) | null; onend: (() => void) | null; onerror: ((e: { error: string }) => void) | null };
 type Mode = "idle" | "listening" | "thinking" | "speaking";
@@ -44,6 +45,8 @@ export function GloAssistant() {
   const ask = useServerFn(gloCommand);
 
   const [wakeOn, setWakeOn] = useState(true);
+  const micBusy = useMicBusy();
+  const listenOn = wakeOn && !micBusy;
   const [mode, setMode] = useState<Mode>("idle");
   const [open, setOpen] = useState(false);
   const [caption, setCaption] = useState("");
@@ -186,7 +189,7 @@ export function GloAssistant() {
   useEffect(() => {
     const w = window as unknown as { SpeechRecognition?: new () => Rec; webkitSpeechRecognition?: new () => Rec };
     const C = w.SpeechRecognition ?? w.webkitSpeechRecognition;
-    if (!C || !wakeOn) return;
+    if (!C || !listenOn) return;
     let alive = true;
     const r = new C();
     r.continuous = true; r.interimResults = true; r.lang = navigator.language || "en-US";
@@ -206,6 +209,10 @@ export function GloAssistant() {
       if (speaking.current) return;
       const res = e.results[e.results.length - 1]!;
       const t = res[0].transcript.trim();
+      const conf = (res[0] as { confidence?: number }).confidence ?? 1;
+      // Background noise filter: drop faint/unclear speech and stray one-word fragments.
+      if (res.isFinal && conf > 0 && conf < 0.55) return;
+      if (!WAKE.test(t) && t.split(/\s+/).length < 2 && !YES.test(t) && !NO.test(t)) { if (res.isFinal) lastSent = ""; return; }
       if (res.isFinal) { fire(t); lastSent = ""; return; }
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => fire(t), 500);
@@ -226,7 +233,15 @@ export function GloAssistant() {
       perms.query({ name: "microphone" }).then((p) => begin(p.state === "granted")).catch(() => begin(false));
     } else begin(false);
     return () => { alive = false; window.removeEventListener("pointerdown", start); r.abort(); };
-  }, [wakeOn, wake, handle]);
+  }, [listenOn, wake, handle]);
+
+  // Quiet mode while a lecture is recording: stop talking and forget the open conversation.
+  useEffect(() => {
+    if (!micBusy) return;
+    window.speechSynthesis?.cancel(); speaking.current = false; awake.current = false;
+    if (idle.current) clearTimeout(idle.current);
+    setMode("idle");
+  }, [micBusy]);
 
   const toggleWake = () => {
     const next = !wakeOn;
@@ -240,7 +255,7 @@ export function GloAssistant() {
         <div className="pointer-events-auto w-64 rounded-l-2xl border border-r-0 border-primary/40 bg-card/95 p-3 text-sm shadow-[var(--shadow-float)] backdrop-blur animate-in slide-in-from-right-4">
           <div className="mb-1 flex items-center justify-between">
             <span className="font-display text-xs font-extrabold uppercase tracking-wider text-primary">
-              Glo · {mode === "thinking" ? "thinking…" : mode === "speaking" ? "talking" : mode === "listening" ? "listening" : wakeOn ? "say “Hey Glo”" : "wake word off"}
+              Glo · {mode === "thinking" ? "thinking…" : mode === "speaking" ? "talking" : mode === "listening" ? "listening" : micBusy ? "quiet — recording lecture" : wakeOn ? "say “Hey Glo”" : "wake word off"}
             </span>
             <button type="button" aria-label="Close Glo" onClick={() => { setOpen(false); awake.current = false; window.speechSynthesis?.cancel(); }} className="text-muted-foreground hover:text-foreground">
               <X className="size-4" />

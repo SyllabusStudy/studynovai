@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { setMicBusy } from "@/lib/mic-busy";
 
 /**
  * App-wide lecture recorder. Lives outside any page so recording keeps going
@@ -52,6 +53,7 @@ export async function startLectureRecording() {
   };
   mr.start(1000);
   rec = mr;
+  setMicBusy("lecture", true);
   set({ recording: true, seconds: 0, pending: null });
   timer = window.setInterval(() => {
     const s = state.seconds + 1;
@@ -65,6 +67,7 @@ export function stopLectureRecording() {
   rec = null;
   if (timer) window.clearInterval(timer);
   timer = null;
+  setMicBusy("lecture", false);
   set({ recording: false });
 }
 
