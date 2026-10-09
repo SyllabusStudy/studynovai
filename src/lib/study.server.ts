@@ -662,7 +662,8 @@ export async function runTutorChat(
       ...history.slice(-8).map((m) => ({ role: m.role, content: m.content })),
       { role: "user", content: userContent },
     ],
-    { maxTokens: files.length ? 2000 : 1200, search: true },
+    // Web lookup only when the student asks for outside/current info; greetings and course questions answer instantly.
+    { maxTokens: files.length ? 2000 : 1200, search: /\b(look (it )?up|search|google|online|on the web|internet|latest|news|current(ly)?|today'?s|this week'?s|recent)\b/i.test(input.message) },
   );
 
   const now = new Date().toISOString();

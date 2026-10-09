@@ -105,7 +105,10 @@ async function callGeminiNative(
   // Both are free-tier models on the student's own key, each with its own free quota.
   // Media tries the fuller Flash model first; text tries Lite first. If one model's quota
   // is used up or busy, the other model on the same key takes over.
-  const models = hasVideo ? ["gemini-flash-latest", "gemini-flash-lite-latest"] : [CHAT_MODEL, "gemini-flash-latest"];
+  // Text uses fast lite models only: the full Flash model can take 20-50s on free keys.
+  const models = hasVideo
+    ? ["gemini-flash-latest", "gemini-flash-lite-latest"]
+    : [CHAT_MODEL, "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"];
   let res: Response | null = null;
   for (let i = 0; i < models.length; i++) {
     const last = i === models.length - 1;
