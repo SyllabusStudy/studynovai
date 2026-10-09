@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from "react";
+
 export type TourStep = {
   id: string;
   /** "next": user reads and clicks Next. "click": user clicks the real link, which goes to `goto`. */
@@ -49,6 +51,38 @@ export const TOUR_STEPS: TourStep[] = [
 ];
 
 export const TOUR_EVENT = "studynova:tour";
+export const TOUR_CLASS_SAVED_EVENT = "studynova:tour-class-saved";
+const TOUR_CLASS_ACTIVITY_EVENT = "studynova:tour-class-active";
+let classGuidanceActive = false;
+
+export function setClassGuidanceActive(active: boolean) {
+  classGuidanceActive = active;
+  window.dispatchEvent(new Event(TOUR_CLASS_ACTIVITY_EVENT));
+}
+
+export function useClassGuidanceActive() {
+  return useSyncExternalStore(
+    (listener) => {
+      window.addEventListener(TOUR_CLASS_ACTIVITY_EVENT, listener);
+      return () => window.removeEventListener(TOUR_CLASS_ACTIVITY_EVENT, listener);
+    },
+    () => classGuidanceActive,
+    () => false,
+  );
+}
+
+export const CLASS_DIALOG_GUIDANCE: Record<"quick" | "save", TourStep> = {
+  quick: {
+    id: "class-quick", kind: "next", selectors: ['[data-tour="quick-classes"]'],
+    title: "Pick a quick class",
+    body: "Tap a quick class like Intro to Psychology to test it in one tap, or drop in your syllabus PDF.",
+  },
+  save: {
+    id: "class-save", kind: "next", selectors: ['[data-tour="save-class"]'],
+    title: "Finish adding your class",
+    body: "Now hit Save class to finish!",
+  },
+};
 export type TourEventDetail = { focus?: string | undefined };
 
 export function startTour(focus?: string) {

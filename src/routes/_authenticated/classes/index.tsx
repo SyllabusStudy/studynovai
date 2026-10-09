@@ -30,6 +30,7 @@ import { MoreVertical } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ClassCoverBg, ChangeCoverMenu } from "@/components/ClassCover";
 import { coverFor, useCoverOverrides } from "@/lib/class-covers";
+import { TOUR_CLASS_SAVED_EVENT, useClassGuidanceActive } from "@/lib/tour";
 
 export const Route = createFileRoute("/_authenticated/classes/")({
   head: () => ({
@@ -197,6 +198,7 @@ const QUICK_CLASSES = [
 ];
 
 function NewClassDialog() {
+  const classGuidanceActive = useClassGuidanceActive();
   const { user } = useAuth();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -230,17 +232,20 @@ function NewClassDialog() {
     await qc.invalidateQueries({ queryKey: ["classes"] });
     toast.success("Class added");
     setOpen(false);
+    window.dispatchEvent(new Event(TOUR_CLASS_SAVED_EVENT));
     setForm({ class_name: "", course_code: "", professor: "", semester: "", color: CLASS_COLORS[0].key });
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={setOpen} modal={!classGuidanceActive}>
       <DialogTrigger asChild>
         <Button size="sm" className="gap-1.5" data-tour="add-class">
           <Plus className="size-4" /> Add class
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] overflow-y-auto" data-tour="class-dialog" data-tour-class-ready={Boolean(form.class_name.trim())} data-tour-syllabus={showSyllabus} onInteractOutside={(e) => {
+        if (classGuidanceActive) e.preventDefault();
+      }}>
         <DialogHeader>
           <DialogTitle>Add a class</DialogTitle>
         </DialogHeader>
@@ -256,39 +261,42 @@ function NewClassDialog() {
           </div>
         ) : (
         <form onSubmit={submit} className="space-y-4">
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => setShowSyllabus(true)}
-            className="flex w-full items-center gap-3 rounded-xl border border-dashed border-primary/50 bg-primary/5 p-3 text-left transition-colors hover:bg-primary/10"
+            className="flex h-auto w-full items-center gap-3 whitespace-normal rounded-xl border border-dashed border-primary/50 bg-primary/5 p-3 text-left transition-colors hover:bg-primary/10"
           >
             <Upload className="size-5 shrink-0 text-primary" />
             <span className="text-sm">
               <span className="font-semibold">Have your syllabus?</span>{" "}
               <span className="text-muted-foreground">Drop it in and we'll fill everything in for you.</span>
             </span>
-          </button>
-          <div className="space-y-2">
+          </Button>
+          <div className="space-y-2" data-tour="quick-classes">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Or tap a popular class</p>
             <div className="flex flex-wrap gap-2">
               {QUICK_CLASSES.map((q, i) => (
-                <button
+                <Button
                   key={q.code}
                   type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={() =>
                     setForm({
                       ...form,
                       class_name: q.name,
                       course_code: q.code,
-                      color: CLASS_COLORS[i % CLASS_COLORS.length]!.key,
+                      color: CLASS_COLORS[i % CLASS_COLORS.length]?.key ?? form.color,
                     })
                   }
                   className={cn(
-                    "rounded-full border px-3 py-1 text-xs font-medium transition-colors hover:border-primary hover:text-primary",
+                    "h-auto whitespace-normal rounded-full border px-3 py-1 text-xs font-medium transition-colors hover:border-primary hover:text-primary",
                     form.course_code === q.code && "border-primary bg-primary/10 text-primary",
                   )}
                 >
                   {q.code} · {q.name}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -350,7 +358,7 @@ function NewClassDialog() {
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={busy}>
+            <Button type="submit" disabled={busy} data-tour="save-class">
               {busy ? <Loader2 className="size-4 animate-spin" /> : null}
               Save class
             </Button>

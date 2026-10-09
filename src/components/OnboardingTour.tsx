@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth";
 import { useProfile } from "@/lib/data";
 import { ArrowLeft } from "lucide-react";
 import { MascotBot } from "@/components/ToolsMascot";
-import { TOUR_EVENT, TOUR_STEPS, type TourEventDetail } from "@/lib/tour";
+import { CLASS_DIALOG_GUIDANCE, setClassGuidanceActive, TOUR_CLASS_SAVED_EVENT, TOUR_EVENT, TOUR_STEPS, type TourEventDetail } from "@/lib/tour";
 
 // Steps 0..N-1 are real-app steps, N is the final "ready" screen.
 const FINAL = TOUR_STEPS.length;
@@ -43,6 +43,7 @@ export function OnboardingTour() {
   const [focusEnd, setFocusEnd] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [paused, setPaused] = useState(false);
+  const [classStage, setClassStage] = useState<"quick" | "save" | null>(null);
   const [mobileHint, setMobileHint] = useState<string | null>(null);
   const [cardPos, setCardPos] = useState<CSSProperties>({ left: -9999, top: 0 });
   const cardRef = useRef<HTMLDivElement>(null);
@@ -71,7 +72,7 @@ export function OnboardingTour() {
         const i = TOUR_STEPS.findIndex((s) => s.id === focus);
         if (i < 0) return;
         let end = i;
-        while (end < FINAL - 1 && TOUR_STEPS[end]!.kind === "click") end++;
+        while (end < FINAL - 1 && TOUR_STEPS[end]?.kind === "click") end++;
         setStepState(i);
         setFocusEnd(end);
         setMode("focus");
@@ -93,7 +94,24 @@ export function OnboardingTour() {
     [mode, focusEnd, key, mandatory],
   );
 
-  const current = mode !== "off" && step < FINAL ? TOUR_STEPS[step]! : null;
+  const baseStep = mode !== "off" && step < FINAL ? TOUR_STEPS[step] ?? null : null;
+  const current = baseStep?.id === "add-class" && classStage ? CLASS_DIALOG_GUIDANCE[classStage] : baseStep;
+
+  useEffect(() => {
+    setClassGuidanceActive(baseStep?.id === "add-class");
+    return () => setClassGuidanceActive(false);
+  }, [baseStep]);
+
+  useEffect(() => {
+    const saved = () => {
+      if (baseStep?.id === "add-class") {
+        setClassStage(null);
+        setStep(step + 1);
+      }
+    };
+    window.addEventListener(TOUR_CLASS_SAVED_EVENT, saved);
+    return () => window.removeEventListener(TOUR_CLASS_SAVED_EVENT, saved);
+  }, [baseStep, step, setStep]);
 
   // "click" steps advance when the user lands on the destination page.
   useEffect(() => {
@@ -122,8 +140,13 @@ export function OnboardingTour() {
       const menuOpen = !!document.querySelector('[role="dialog"][data-state="open"] nav, [data-tour-menu][data-state="open"]');
       // Mobile: while teaching a menu tap, the open menu is part of the tour — don't step aside.
       const mobileClick = mobile && current.kind === "click";
-      setPaused(mobileClick && menuOpen ? false : otherDialogOpen());
-      let el = findTarget(current.selectors);
+      const classDialog = baseStep?.id === "add-class"
+        ? document.querySelector<HTMLElement>('[data-tour="class-dialog"][data-state="open"]') : null;
+      const guidedClass = classDialog && classDialog.dataset.tourSyllabus !== "true";
+      const stage = guidedClass ? (classDialog.dataset.tourClassReady === "true" ? "save" : "quick") : null;
+      setClassStage(stage);
+      setPaused(guidedClass || (mobileClick && menuOpen) ? false : otherDialogOpen());
+      let el = findTarget(stage ? CLASS_DIALOG_GUIDANCE[stage].selectors : baseStep?.selectors ?? current.selectors);
       let hint: string | null = null;
       if (!el && mobileClick) {
         const group = ["/tutor", "/flashcards", "/quizzes", "/lectures"].includes(current.goto ?? "") ? "study" : null;
@@ -142,7 +165,7 @@ export function OnboardingTour() {
       }
       setMobileHint(hint);
       targetRef.current = el;
-      const k = el ? `${hint}` : "";
+      const k = el ? `${stage ?? ""}:${hint}` : "";
       if (el && (!scrolled || k !== lastKey)) {
         scrolled = true;
         lastKey = k;
@@ -164,7 +187,7 @@ export function OnboardingTour() {
       window.removeEventListener("resize", tick);
       window.removeEventListener("scroll", tick, true);
     };
-  }, [current, pathname]);
+  }, [current, baseStep, pathname]);
 
   const [arrow, setArrow] = useState<{ x: number; y: number; deg: number } | null>(null);
   // Keep the card on-screen and off the highlighted element.
@@ -197,7 +220,7 @@ export function OnboardingTour() {
     const rx = rect.width / 2 + PAD + 22, ry = rect.height / 2 + PAD + 22;
     const k = Math.min(rx / Math.abs(dx / len || 1e-6), ry / Math.abs(dy / len || 1e-6));
     setArrow({ x: tx - (dx / len) * k, y: ty - (dy / len) * k, deg: (Math.atan2(dy, dx) * 180) / Math.PI + 180 });
-  }, [rect, step, mode]);
+  }, [rect, step, mode, current, paused]);
   useEffect(() => { if (!rect) setArrow(null); }, [rect]);
 
   async function complete() {
@@ -225,10 +248,12 @@ export function OnboardingTour() {
       {/* Click blockers around the spotlight — the highlighted element stays clickable. */}
       {hole ? (
         <>
-          <div className="pointer-events-auto fixed left-0 right-0 top-0" style={{ height: Math.max(0, hole.t) }} />
-          <div className="pointer-events-auto fixed bottom-0 left-0 right-0" style={{ top: hole.b }} />
-          <div className="pointer-events-auto fixed left-0" style={{ top: hole.t, height: hole.b - hole.t, width: Math.max(0, hole.l) }} />
-          <div className="pointer-events-auto fixed right-0" style={{ top: hole.t, height: hole.b - hole.t, left: hole.r }} />
+          {!classStage ? <>
+            <div className="pointer-events-auto fixed left-0 right-0 top-0" style={{ height: Math.max(0, hole.t) }} />
+            <div className="pointer-events-auto fixed bottom-0 left-0 right-0" style={{ top: hole.b }} />
+            <div className="pointer-events-auto fixed left-0" style={{ top: hole.t, height: hole.b - hole.t, width: Math.max(0, hole.l) }} />
+            <div className="pointer-events-auto fixed right-0" style={{ top: hole.t, height: hole.b - hole.t, left: hole.r }} />
+          </> : null}
           <div
             className="fixed rounded-xl ring-2 ring-primary transition-all duration-300"
             style={{
@@ -299,24 +324,26 @@ export function OnboardingTour() {
             <div className="mt-3 flex items-center justify-between gap-2">
               <Button variant="ghost" size="sm" disabled={step === 0 || mode === "focus"} onClick={() => {
                 let p = step - 1;
-                while (p > 0 && TOUR_STEPS[p]!.kind === "click") p--;
+                while (p > 0 && TOUR_STEPS[p]?.kind === "click") p--;
                 setStep(Math.max(0, p));
               }}>
                 Back
               </Button>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   // Skipping a click step also skips the page it leads to.
                   let n = step + 1;
-                  if (isClick) while (n < FINAL && TOUR_STEPS[n]!.kind === "next" && TOUR_STEPS[n]!.route === current.goto) n++;
+                  if (isClick) while (n < FINAL && TOUR_STEPS[n]?.kind === "next" && TOUR_STEPS[n]?.route === current.goto) n++;
                   setStep(n);
                 }}
                 className="text-xs font-medium text-muted-foreground underline-offset-4 hover:underline"
               >
                 Skip this step
-              </button>
-              {isClick ? (
+              </Button>
+              {isClick || classStage ? (
                 <span className="w-14" />
               ) : (
                 <Button size="sm" onClick={() => setStep(step + 1)}>
