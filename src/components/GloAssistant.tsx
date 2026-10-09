@@ -18,6 +18,17 @@ const YES = /^(yes|yeah|yep|sure|send( it)?|do it|ok(ay)?)\b/i;
 const LOOK = /\b(look at|see|watch|share|view)\b.*\bscreen\b/i;
 const STOP_WATCH = /\bstop (watching|looking|seeing)|stop (the )?screen\b/i;
 const NO = /^(no|nope|cancel|stop|don'?t)\b/i;
+const BYE = /\b(thank(s| you)\b.*\b(glo|glow|help|helping)|(ok(ay)?|bye),?\s*(glo|glow)\b.*\b(thank|bye)|that'?s all|goodbye|bye (glo|glow)|stop listening)/i;
+const GO = /\b(take me|go to|open|show me|navigate|bring me|switch to)\b/i;
+const IDLE_MS = 25000;
+function pickVoice(): SpeechSynthesisVoice | undefined {
+  const vs = window.speechSynthesis?.getVoices() ?? [];
+  const lang = (navigator.language || "en-US").slice(0, 2);
+  const pool = vs.filter((v) => v.lang.toLowerCase().startsWith(lang));
+  const rank = [/natural/i, /neural/i, /premium|enhanced/i, /google us english/i, /\b(ava|samantha|aria|jenny|zoe|allison)\b/i, /google/i];
+  for (const r of rank) { const v = pool.find((x) => r.test(x.name)); if (v) return v; }
+  return pool.find((v) => v.localService) ?? pool[0];
+}
 
 /** Glo: always-on "Hey Glo" voice assistant that sits on the right edge. */
 export function GloAssistant() {
@@ -39,6 +50,12 @@ export function GloAssistant() {
   const video = useRef<HTMLVideoElement | null>(null);
   const rec = useRef<Rec | null>(null);
   const awake = useRef(false);
+  const idle = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const keepAwake = () => {
+    awake.current = true;
+    if (idle.current) clearTimeout(idle.current);
+    idle.current = setTimeout(() => { if (!speaking.current) { awake.current = false; setMode("idle"); } }, IDLE_MS);
+  };
   const speaking = useRef(false);
   const history = useRef<{ role: "user" | "assistant"; content: string }[]>([]);
   const pendingRef = useRef(pending); pendingRef.current = pending;
@@ -53,7 +70,8 @@ export function GloAssistant() {
     if (!synth) { then?.(); return; }
     synth.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.rate = 1.05;
+    const v = pickVoice(); if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = 1; u.pitch = 1.03;
     speaking.current = true; setMode("speaking");
     u.onend = u.onerror = () => { speaking.current = false; setMode(awake.current ? "listening" : "idle"); then?.(); };
     synth.speak(u);
@@ -110,6 +128,7 @@ export function GloAssistant() {
   }, [say]);
 
   const handle = useCallback(async (text: string) => {
+    if (BYE.test(text)) { awake.current = false; if (idle.current) clearTimeout(idle.current); return say(`You're welcome, ${name}! Just say "Hey Glo" when you need me.`); }
     const p = pendingRef.current;
     if (p) {
       if (YES.test(text)) return sendEmail(p);
@@ -121,26 +140,26 @@ export function GloAssistant() {
       if (!ok) return;
       if (text.replace(LOOK, "").trim().length < 4) { awake.current = true; return say("I can see your screen now. What would you like to know?"); }
     }
-    awake.current = false;
+    keepAwake();
     setMode("thinking"); setCaption(`“${text}”`);
     try {
       const screen = snapshot();
       const r = await ask({ data: { text, path: ctx.current.path, history: history.current.slice(-6), screen } });
       history.current.push({ role: "user", content: text }, { role: "assistant", content: r.say });
       addGloLog({ at: Date.now(), asked: text, said: r.say, action: describeGloAction(r.action as { type: string }) });
-      runAction(r.action);
-      if (r.action.type === "email") awake.current = true; // listen for "yes"
-      say(r.say);
+      // Work happens in the background; only change pages when explicitly asked.
+      if (r.action.type !== "navigate" || GO.test(text)) runAction(r.action);
+      say(r.say, keepAwake);
     } catch (e) {
       say(e instanceof Error ? e.message.slice(0, 200) : "Sorry, something went wrong.");
     }
-  }, [ask, runAction, say, sendEmail, startWatching, stopWatching, snapshot]);
+  }, [ask, runAction, say, sendEmail, startWatching, stopWatching, snapshot, name]);
 
   const wake = useCallback((rest = "") => {
     setOpen(true);
     if (rest.trim().length > 3) { void handle(rest.trim()); return; }
-    awake.current = true;
-    say(`Hey ${name}, how can I help you?`);
+    keepAwake();
+    say(`Hey ${name}, how can I help you?`, keepAwake);
   }, [handle, name, say]);
 
   // Always-on recognizer (paused while Glo is talking so he doesn't hear himself).

@@ -19,7 +19,7 @@ const PAGES = ["/dashboard", "/classes", "/calendar", "/assignments", "/notes", 
 const SYSTEM = `You are Glo, the friendly blue voice assistant inside the SyllabusStudy study app. You hear the student by voice and your reply is spoken aloud, so keep "say" to 1-3 short natural sentences, no Markdown, no emoji.
 Reply ONLY with JSON: {"say": string, "action": {...}}. Actions:
 - {"type":"none"} — just answer (study questions, what's due, outside facts).
-- {"type":"navigate","to": one of ${PAGES.join(", ")}} — open a page/tool (QuickVideo, lecture notes, etc.). Say what to do there.
+- {"type":"navigate","to": one of ${PAGES.join(", ")}} — open a page ONLY if the student explicitly asks to go/open/take them there. Otherwise do the task yourself in the background and never tell them to go somewhere; say it's done and they can review it later.
 - {"type":"note","title": string,"text": string} — create a note with the given content.
 - {"type":"email","to": string,"subject": string,"body": string} — draft an email. "say" must be only a short question like "Can I send this email?" — never read the email.
 - {"type":"quiz","className": string,"topic": string,"count": number} — actually CREATE a quiz from that class's materials. Use this whenever the student asks you to make a quiz, not "navigate".
@@ -70,12 +70,12 @@ export const gloCommand = createServerFn({ method: "POST" })
           await withTrialOrUserAiKey(context.supabase, context.userId, "tools", () =>
             runQuizGeneration(context.supabase, context.userId, { classId: cls.id, count, difficulty: "medium", types: ["multiple_choice"], title: topic ? `Glo: ${topic}` : null }),
           );
-          return { say: parsed.say ?? `Done — your ${cls.class_name} quiz is ready.`, action: { type: "navigate", to: "/quizzes" } as GloAction };
+          return { say: parsed.say ?? `Done — your ${cls.class_name} quiz is ready.`, action: { type: "none" } as GloAction };
         }
         await withTrialOrUserAiKey(context.supabase, context.userId, "tools", () =>
           runFlashcardGeneration(context.supabase, context.userId, { classId: cls.id, count, difficulty: "medium", topic }),
         );
-        return { say: parsed.say ?? `Done — your ${cls.class_name} flashcards are ready.`, action: { type: "navigate", to: "/flashcards" } as GloAction };
+        return { say: parsed.say ?? `Done — your ${cls.class_name} flashcards are ready.`, action: { type: "none" } as GloAction };
       } catch {
         return { say: "Sorry, I couldn't build that right now — try again in a moment.", action: { type: "none" } as GloAction };
       }
@@ -88,7 +88,7 @@ export const gloCommand = createServerFn({ method: "POST" })
         content, plain_text: text,
       }).select("id").single();
       if (!note) return { say: "Sorry, I couldn't save that note.", action: { type: "none" } as GloAction };
-      return { say: parsed.say ?? "Saved it to your notes.", action: { type: "navigate", to: "/notes" } as GloAction };
+      return { say: parsed.say ?? "Saved it to your notes.", action: { type: "none" } as GloAction };
     }
     return { say: String(parsed.say ?? "Okay."), action };
   });
