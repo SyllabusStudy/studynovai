@@ -10,6 +10,7 @@ import { useProfile } from "@/lib/data";
 import { useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { useMicBusy } from "@/lib/mic-busy";
+import { AI_CONNECTION_MESSAGE } from "@/lib/ai-messages";
 
 type Rec = { continuous: boolean; interimResults: boolean; lang: string; start(): void; stop(): void; abort(): void; onresult: ((e: { resultIndex: number; results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> }) => void) | null; onend: (() => void) | null; onerror: ((e: { error: string }) => void) | null };
 type Mode = "idle" | "listening" | "thinking" | "speaking";
@@ -22,6 +23,7 @@ const NO = /^(no|nope|cancel|stop|don'?t)\b/i;
 const BYE = /\b(thank(s| you)\b.*\b(glo|glow|help|helping)|(ok(ay)?|bye),?\s*(glo|glow)\b.*\b(thank|bye)|that'?s all|goodbye|bye (glo|glow)|stop listening)/i;
 const GO = /\b(take me|go to|open|show me|navigate|bring me|switch to)\b/i;
 const IDLE_MS = 25000;
+const PAUSE_MS = 2000;
 const VOICE_KEY = "studynova:glo-voice";
 function pickVoice(): SpeechSynthesisVoice | undefined {
   const vs = window.speechSynthesis?.getVoices() ?? [];
@@ -64,6 +66,7 @@ export function GloAssistant() {
     idle.current = setTimeout(() => { if (!speaking.current) { awake.current = false; setMode("idle"); } }, IDLE_MS);
   };
   const speaking = useRef(false);
+  const thinking = useRef(false);
   const history = useRef<{ role: "user" | "assistant"; content: string }[]>([]);
   const pendingRef = useRef(pending); pendingRef.current = pending;
   const ctx = useRef({ path, theme, toggle, navigate }); ctx.current = { path, theme, toggle, navigate };
@@ -151,6 +154,8 @@ export function GloAssistant() {
   }, [say]);
 
   const handle = useCallback(async (text: string) => {
+    // One request at a time: overlapping requests cut each other off and hit free-key rate limits.
+    if (thinking.current) return;
     if (BYE.test(text)) { awake.current = false; if (idle.current) clearTimeout(idle.current); return say(`You're welcome, ${name}! Just say "Hey Glo" when you need me.`); }
     const p = pendingRef.current;
     if (p) {
@@ -164,16 +169,29 @@ export function GloAssistant() {
       if (text.replace(LOOK, "").trim().length < 4) { awake.current = true; return say("I can see your screen now. What would you like to know?"); }
     }
     keepAwake();
+    thinking.current = true;
     setMode("thinking"); setCaption(`“${text}”`);
     try {
       const screen = snapshot();
-      const r = await ask({ data: { text, path: ctx.current.path, history: history.current.slice(-6), screen } });
+      const payload = { data: { text, path: ctx.current.path, history: history.current.slice(-6), screen } };
+      let r: Awaited<ReturnType<typeof ask>>;
+      try {
+        r = await ask(payload);
+      } catch (e) {
+        // One quiet retry for a dropped connection before telling the student.
+        const msg = e instanceof Error ? e.message : "";
+        if (!(msg === AI_CONNECTION_MESSAGE || /fetch|network|load failed|aborted/i.test(msg))) throw e;
+        await new Promise((res) => setTimeout(res, 2000));
+        r = await ask(payload);
+      }
       history.current.push({ role: "user", content: text }, { role: "assistant", content: r.say });
       addGloLog({ at: Date.now(), asked: text, said: r.say, action: describeGloAction(r.action as { type: string }) });
       // Work happens in the background; only change pages when explicitly asked.
       if (r.action.type !== "navigate" || GO.test(text)) runAction(r.action);
+      thinking.current = false;
       say(r.say, keepAwake);
     } catch (e) {
+      thinking.current = false;
       say(e instanceof Error ? e.message.slice(0, 200) : "Sorry, something went wrong.");
     }
   }, [ask, runAction, say, sendEmail, startWatching, stopWatching, snapshot, name]);
@@ -193,32 +211,43 @@ export function GloAssistant() {
     let alive = true;
     const r = new C();
     r.continuous = true; r.interimResults = true; r.lang = navigator.language || "en-US";
-    // Act after a short pause instead of waiting for the browser's slow "final" result.
+    // Wait for a real 2-second pause so Glo never cuts the student off mid-sentence.
+    // Everything heard since the last send is joined into one sentence and sent once.
     let timer: ReturnType<typeof setTimeout> | null = null;
+    let base = 0;
     let lastSent = "";
-    const fire = (t: string) => {
+    let heard = "";
+    const fire = () => {
       if (timer) { clearTimeout(timer); timer = null; }
+      const t = heard.trim();
+      heard = "";
       const n = t.toLowerCase().replace(/[^a-z0-9 ]/g, "").trim();
-      if (!n || n === lastSent) return;
+      if (!n || n === lastSent || thinking.current || speaking.current) return;
+      if (!WAKE.test(t) && n.split(/\s+/).length < 2 && !YES.test(t) && !NO.test(t)) return;
       lastSent = n;
       const m = t.match(WAKE);
       if (m) wake(t.slice((m.index ?? 0) + m[0].length));
       else if (awake.current) void handle(t);
     };
     r.onresult = (e) => {
-      if (speaking.current) return;
-      const res = e.results[e.results.length - 1]!;
-      const t = res[0].transcript.trim();
-      const conf = (res[0] as { confidence?: number }).confidence ?? 1;
-      // Background noise filter: drop faint/unclear speech and stray one-word fragments.
-      if (res.isFinal && conf > 0 && conf < 0.55) return;
-      if (!WAKE.test(t) && t.split(/\s+/).length < 2 && !YES.test(t) && !NO.test(t)) { if (res.isFinal) lastSent = ""; return; }
-      if (res.isFinal) { fire(t); lastSent = ""; return; }
+      // Ignore anything heard while Glo is thinking or talking, and don't carry it over.
+      if (speaking.current || thinking.current) { base = e.results.length; heard = ""; if (timer) { clearTimeout(timer); timer = null; } return; }
+      if (base > e.results.length) base = 0;
+      const parts: string[] = [];
+      for (let i = base; i < e.results.length; i++) {
+        const res = e.results[i]!;
+        const conf = (res[0] as { confidence?: number }).confidence ?? 1;
+        // Background noise filter: drop faint/unclear finished phrases.
+        if (res.isFinal && conf > 0 && conf < 0.55) continue;
+        parts.push(res[0].transcript.trim());
+      }
+      heard = parts.filter(Boolean).join(" ");
+      if (!heard) return;
       if (timer) clearTimeout(timer);
-      timer = setTimeout(() => fire(t), 500);
+      timer = setTimeout(() => { base = e.results.length; fire(); }, PAUSE_MS);
     };
     r.onerror = (e) => { if (e.error === "not-allowed" || e.error === "service-not-allowed") alive = false; };
-    r.onend = () => { if (alive) setTimeout(() => { try { r.start(); } catch { /* already running */ } }, 300); };
+    r.onend = () => { base = 0; if (alive) setTimeout(() => { try { r.start(); } catch { /* already running */ } }, 300); };
     rec.current = r;
     const start = () => { try { r.start(); } catch { /* running */ } };
     // Only auto-start if the mic was already allowed; otherwise wait for a tap
