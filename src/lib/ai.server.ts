@@ -102,8 +102,10 @@ async function callGeminiNative(
     },
   });
 
-  // Media tries the fuller Flash model first; if its free quota is busy, the lite model (which also hears audio) takes over.
-  const models = hasVideo ? ["gemini-flash-latest", "gemini-flash-lite-latest"] : [CHAT_MODEL];
+  // Both are free-tier models on the student's own key, each with its own free quota.
+  // Media tries the fuller Flash model first; text tries Lite first. If one model's quota
+  // is used up or busy, the other model on the same key takes over.
+  const models = hasVideo ? ["gemini-flash-latest", "gemini-flash-lite-latest"] : [CHAT_MODEL, "gemini-flash-latest"];
   let res: Response | null = null;
   for (let i = 0; i < models.length; i++) {
     const last = i === models.length - 1;
@@ -112,8 +114,9 @@ async function callGeminiNative(
         "google",
         `https://generativelanguage.googleapis.com/v1beta/models/${models[i]}:generateContent`,
         { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body },
-        // A grounded attempt gives up after one try so the plain answer can take over quickly.
-        useSearch ? 1 : !last ? 2 : undefined,
+        // A grounded attempt gives up after one try so the plain answer can take over quickly;
+        // the first model gets one try so a used-up quota switches models without waiting.
+        useSearch || !last ? 1 : undefined,
       );
     } catch (e) {
       if (last) throw e;
