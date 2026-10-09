@@ -195,8 +195,9 @@ export function GloAssistant() {
     let lastSent = "";
     const fire = (t: string) => {
       if (timer) { clearTimeout(timer); timer = null; }
-      if (!t || t === lastSent) return;
-      lastSent = t;
+      const n = t.toLowerCase().replace(/[^a-z0-9 ]/g, "").trim();
+      if (!n || n === lastSent) return;
+      lastSent = n;
       const m = t.match(WAKE);
       if (m) wake(t.slice((m.index ?? 0) + m[0].length));
       else if (awake.current) void handle(t);
