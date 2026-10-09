@@ -21,8 +21,12 @@ const NO = /^(no|nope|cancel|stop|don'?t)\b/i;
 const BYE = /\b(thank(s| you)\b.*\b(glo|glow|help|helping)|(ok(ay)?|bye),?\s*(glo|glow)\b.*\b(thank|bye)|that'?s all|goodbye|bye (glo|glow)|stop listening)/i;
 const GO = /\b(take me|go to|open|show me|navigate|bring me|switch to)\b/i;
 const IDLE_MS = 25000;
+const VOICE_KEY = "studynova:glo-voice";
 function pickVoice(): SpeechSynthesisVoice | undefined {
   const vs = window.speechSynthesis?.getVoices() ?? [];
+  const saved = localStorage.getItem(VOICE_KEY);
+  const chosen = saved && vs.find((v) => v.name === saved);
+  if (chosen) return chosen;
   const lang = (navigator.language || "en-US").slice(0, 2);
   const pool = vs.filter((v) => v.lang.toLowerCase().startsWith(lang));
   const rank = [/natural/i, /neural/i, /premium|enhanced/i, /google us english/i, /\b(ava|samantha|aria|jenny|zoe|allison)\b/i, /google/i];
@@ -63,6 +67,22 @@ export function GloAssistant() {
   const name = (profile?.name ?? "").split(" ")[0] || "there";
 
   useEffect(() => { setWakeOn(localStorage.getItem(KEY) !== "0"); }, []);
+
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [voiceName, setVoiceName] = useState("");
+  useEffect(() => {
+    const synth = window.speechSynthesis;
+    if (!synth) return;
+    const load = () => {
+      const lang = (navigator.language || "en-US").slice(0, 2);
+      const list = synth.getVoices().filter((v) => v.lang.toLowerCase().startsWith(lang));
+      setVoices(list);
+      setVoiceName(pickVoice()?.name ?? "");
+    };
+    load();
+    synth.addEventListener("voiceschanged", load);
+    return () => synth.removeEventListener("voiceschanged", load);
+  }, []);
 
   const say = useCallback((text: string, then?: () => void) => {
     setCaption(text);
@@ -239,6 +259,14 @@ export function GloAssistant() {
               {wakeOn ? <Mic className="size-3.5" /> : <MicOff className="size-3.5" />} “Hey Glo” {wakeOn ? "on" : "off"}
             </button>
           </div>
+          {voices.length ? (
+            <div className="mt-2 flex items-center gap-1.5">
+              <select aria-label="Glo's voice" value={voiceName} onChange={(e) => { localStorage.setItem(VOICE_KEY, e.target.value); setVoiceName(e.target.value); say(`Hi ${name}, this is how I sound now.`); }} className="min-w-0 flex-1 rounded-md border border-border bg-background px-1.5 py-1 text-xs text-foreground">
+                {voices.map((v) => <option key={v.name} value={v.name}>{v.name.replace(/^(Microsoft|Google)\s*/, "")}</option>)}
+              </select>
+              <button type="button" onClick={() => say(`Hi ${name}, this is how I sound.`)} className="rounded-md bg-muted px-2 py-1 text-xs font-bold text-muted-foreground hover:text-foreground">Test</button>
+            </div>
+          ) : null}
           <div className="mt-1.5 flex justify-center gap-3 text-[11px] font-semibold text-muted-foreground">
             <Link to="/glo-active" className="hover:text-primary hover:underline">Glo Active</Link>
             <Link to="/glo" className="hover:text-primary hover:underline">What can Glo do? →</Link>
