@@ -225,6 +225,7 @@ export function GloAssistant() {
       if (!n || n === lastSent || thinking.current || speaking.current) return;
       if (!WAKE.test(t) && n.split(/\s+/).length < 2 && !YES.test(t) && !NO.test(t)) return;
       lastSent = n;
+      setTimeout(() => { if (lastSent === n) lastSent = ""; }, 5000);
       const m = t.match(WAKE);
       if (m) wake(t.slice((m.index ?? 0) + m[0].length));
       else if (awake.current) void handle(t);
