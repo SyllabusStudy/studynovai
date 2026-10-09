@@ -1,7 +1,7 @@
 # Current work
 
-- [ ] Show Glo’s live transcript and clear preparing-answer feedback without duplicate requests.
-- [ ] Refresh Glo’s dock button and verify its states.
+- [x] Show Glo’s live transcript and clear preparing-answer feedback; simulated repeated speech produced only one request and all seven focused tests passed.
+- [x] Refresh Glo’s dock button and verify light/dark appearance and disabled Talk while processing; real microphone behavior remains untested.
 
 - [x] Keep Glo visible in the Add class tutorial, pointing to quick classes then Save class.
 - [x] Update the new-account Glo free-task farewell without taking students away from their page.
