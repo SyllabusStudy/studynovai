@@ -170,6 +170,14 @@ export function DocumentUploader({
               <Loader2 className="size-4 animate-spin" /> {STAGES[stage]}
             </p>
           ) : null}
+          <input
+            ref={inputRef}
+            type="file"
+            multiple
+            accept={ACCEPTED_UPLOAD_TYPES}
+            className="hidden"
+            onChange={(e) => upload(e.target.files)}
+          />
         </div>
       ) : (
         <>
