@@ -189,7 +189,13 @@ export function GloAssistant() {
       // Work happens in the background; only change pages when explicitly asked.
       if (r.action.type !== "navigate" || GO.test(text)) runAction(r.action);
       thinking.current = false;
-      say(r.say, keepAwake);
+      if ("endSession" in r && r.endSession) {
+        awake.current = false;
+        if (idle.current) clearTimeout(idle.current);
+        say(r.say);
+      } else {
+        say(r.say, keepAwake);
+      }
     } catch (e) {
       thinking.current = false;
       say(e instanceof Error ? e.message.slice(0, 200) : "Sorry, something went wrong.");

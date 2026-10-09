@@ -142,8 +142,8 @@ export function OnboardingTour() {
       const mobileClick = mobile && current.kind === "click";
       const classDialog = baseStep?.id === "add-class"
         ? document.querySelector<HTMLElement>('[data-tour="class-dialog"][data-state="open"]') : null;
-      const guidedClass = classDialog && classDialog.dataset.tourSyllabus !== "true";
-      const stage = guidedClass ? (classDialog.dataset.tourClassReady === "true" ? "save" : "quick") : null;
+      const guidedClass = classDialog && classDialog.dataset["tourSyllabus"] !== "true";
+      const stage = guidedClass ? (classDialog.dataset["tourClassReady"] === "true" ? "save" : "quick") : null;
       setClassStage(stage);
       setPaused(guidedClass || (mobileClick && menuOpen) ? false : otherDialogOpen());
       let el = findTarget(stage ? CLASS_DIALOG_GUIDANCE[stage].selectors : baseStep?.selectors ?? current.selectors);
