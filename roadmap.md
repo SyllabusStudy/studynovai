@@ -1,5 +1,8 @@
 # Current work
 
+- [ ] Show Glo’s live transcript and clear preparing-answer feedback without duplicate requests.
+- [ ] Refresh Glo’s dock button and verify its states.
+
 - [x] Keep Glo visible in the Add class tutorial, pointing to quick classes then Save class.
 - [x] Update the new-account Glo free-task farewell without taking students away from their page.
 - [x] Verify both tutorial pointers, quick-class autofill, popup closing, existing Glo limit tests, and compilation; spoken farewell not tested live.
