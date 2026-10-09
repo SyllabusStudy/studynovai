@@ -9,7 +9,8 @@ import { GLO_FREE_DAILY_TASKS, GLO_TASK_KIND, gloTasksLeft, isGloTask } from "./
 export type GloAction =
   | { type: "none" }
   | { type: "navigate"; to: string }
-  | { type: "note"; title: string; text: string }
+  | { type: "note"; title: string; text: string; className?: string }
+  | { type: "link_note"; noteTitle: string; className: string }
   | { type: "email"; to: string; subject: string; body: string }
   | { type: "theme"; mode: "light" | "dark" }
   | { type: "quiz"; className?: string; topic?: string; noteTitle?: string; count?: number }
@@ -21,7 +22,10 @@ const SYSTEM = `You are Glo, the friendly blue voice assistant inside the Syllab
 Reply ONLY with JSON: {"say": string, "action": {...}}. Actions:
 - {"type":"none"} — just answer (study questions, what's due, outside facts). Always give a real, correct answer from your knowledge; never say "I don't know" for normal study questions.
 - {"type":"navigate","to": one of PAGES} — open a page ONLY if the student explicitly asks to go/open/take them there. Otherwise do the task yourself in the background and say it's done so they can review it later.
-- {"type":"note","title": string,"text": string} — create an ADVANCED college-level study note. "text" is Markdown: "# Title"-free; use "## " section headings (Overview, Key Terms, How It Works / Step by Step, Examples, Common Mistakes & Exam Tips, Quick Summary), "- " bullets, "1. " numbered steps, and **bold** key terms with precise definitions. Be thorough (300-900 words), accurate and specific — real formulas, dates, mechanisms, examples. "say" is only a short confirmation.
+- {"type":"note","title": string,"text": string,"className": string} — create an ADVANCED college-level study note. "className" = the student's class it belongs to (from Classes below) when they name one or the topic clearly matches one, else "". "text" is Markdown: "# Title"-free; use "## " section headings (Overview, Key Terms, How It Works / Step by Step, Examples, Common Mistakes & Exam Tips, Quick Summary), "- " bullets, "1. " numbered steps, and **bold** key terms with precise definitions. Be thorough (300-900 words), accurate and specific — real formulas, dates, mechanisms, examples. "say" is only a short confirmation.
+- {"type":"link_note","noteTitle": string,"className": string} — file an EXISTING note into a class (e.g. "put that note in my History class"). noteTitle = exact title from Note titles below ("that note"/"the notes you just made" = the note from the previous turn).
+For quiz/flashcards on "the notes you just made"/"that note", set noteTitle to that note's exact title.
+Never claim something was saved, linked or created unless you are returning the matching action.
 - {"type":"email","to": string,"subject": string,"body": string} — draft an email. "say" must be only a short question like "Can I send this email?" — never read the email.
 - {"type":"quiz","className": string,"topic": string,"noteTitle": string,"count": number} — actually CREATE a quiz. "topic" = the EXACT topic the student named, word for word (empty only if none). "noteTitle" = the note/document name if they mention a specific note ("my photosynthesis note"), else "". className = the class they named, else "".
 - {"type":"flashcards", same fields} — actually CREATE flashcards the same way.
@@ -172,15 +176,33 @@ export const gloCommand = createServerFn({ method: "POST" })
         return { say: e instanceof Error ? e.message.slice(0, 160) : "Sorry, I couldn't build that right now.", action: { type: "none" } as GloAction };
       }
     }
+    const lcs = (s: string) => s.toLowerCase().trim();
+    const findClass = (name?: string) => {
+      const want = lcs(String(name ?? ""));
+      if (!want) return undefined;
+      return (classes ?? []).find((c) => lcs(c.class_name) === want)
+        || (classes ?? []).find((c) => lcs(c.class_name).includes(want) || want.includes(lcs(c.class_name)));
+    };
     if (action.type === "note") {
       const text = String(action.text ?? "").slice(0, 30000);
       const plain = text.replace(/\*\*/g, "").replace(/^#{1,3}\s+/gm, "");
+      const cls = findClass(action.className);
       const { data: note } = await context.supabase.from("personal_notes").insert({
         user_id: context.userId, title: String(action.title || "Glo note").slice(0, 120), title_is_auto: false,
-        content: mdToDoc(text) as never, plain_text: plain,
+        content: mdToDoc(text) as never, plain_text: plain, class_id: cls?.id ?? null,
       }).select("id").single();
       if (!note) return { say: "Sorry, I couldn't save that note.", action: { type: "none" } as GloAction };
-      return { say: parsed.say ?? "Saved it to your notes.", action: { type: "none" } as GloAction };
+      return { say: cls ? `Saved it to your notes in ${cls.class_name}.` : "Saved it to your notes.", action: { type: "none" } as GloAction };
+    }
+    if (action.type === "link_note") {
+      const want = lcs(String(action.noteTitle ?? ""));
+      const note = want ? (notes ?? []).find((n) => n.title && (lcs(n.title) === want || lcs(n.title).includes(want) || want.includes(lcs(n.title)))) : (notes ?? [])[0];
+      const cls = findClass(action.className);
+      if (!note) return { say: `I couldn't find a note called "${action.noteTitle}". Which note did you mean?`, action: { type: "none" } as GloAction };
+      if (!cls) return { say: `I couldn't find a class called "${action.className}". Which class should it go in?`, action: { type: "none" } as GloAction };
+      const { error } = await context.supabase.from("personal_notes").update({ class_id: cls.id }).eq("id", note.id).eq("user_id", context.userId);
+      if (error) return { say: "Sorry, I couldn't move that note right now.", action: { type: "none" } as GloAction };
+      return { say: `Done — "${note.title}" is now in your ${cls.class_name} class.`, action: { type: "none" } as GloAction };
     }
     return { say: String(parsed.say ?? "Okay."), action };
   });

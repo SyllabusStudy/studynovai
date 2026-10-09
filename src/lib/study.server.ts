@@ -1237,8 +1237,9 @@ ${contextText}`,
 
 /** The student's own Notes for this class, used as quiz material. */
 async function personalNoteText(supabase: DB, userId: string, classId: string, ids: string[]): Promise<string> {
-  let q = supabase.from("personal_notes").select("title,plain_text").eq("user_id", userId).eq("class_id", classId);
-  if (ids.length) q = q.in("id", ids);
+  let q = supabase.from("personal_notes").select("title,plain_text").eq("user_id", userId);
+  // Explicitly picked notes are used even if they aren't filed under this class.
+  q = ids.length ? q.in("id", ids) : q.eq("class_id", classId);
   const { data } = await q.order("updated_at", { ascending: false }).limit(12);
   const rows = (data ?? []).filter((r) => (r.plain_text ?? "").trim().length > 20);
   const per = Math.max(2000, Math.floor(20000 / Math.max(1, rows.length)));
