@@ -890,6 +890,8 @@ export async function runQuizGeneration(
     types: string[];
     title?: string | null | undefined;
     pageImages?: string[] | null | undefined;
+    topic?: string | null | undefined;
+    allowGeneral?: boolean | undefined;
   },
 ) {
   const pageImages = (input.pageImages ?? []).slice(0, 6);
@@ -907,7 +909,8 @@ export async function runQuizGeneration(
   if (notePicked.length && !notePart.trim())
     throw new Error("Those notes are empty — write a bit more, then try again.");
   const videoPart = videoPicked ? (await videoNoteText(supabase, userId, input.videoNoteId!)).text : "";
-  const source = [docPart, lecturePart, notePart, videoPart].filter((s) => s.trim()).join("\n\n");
+  let source = [docPart, lecturePart, notePart, videoPart].filter((s) => s.trim()).join("\n\n");
+  if (!source && input.allowGeneral && input.topic) source = `(No class material — use general knowledge of: ${input.topic})`;
   if (!source) throw new Error("Upload notes, a study guide or an assignment for this class first — syllabi are not used as study material.");
 
   // A short list of recent questions is enough to keep the next quiz fresh
@@ -967,7 +970,7 @@ Quality rules:
 - Scenarios and problems must contain enough information to solve from the supplied material; never invent a required fact.
 - Prefer these angles for this quiz: ${focus}.
 STRUCTURE QUESTIONS: only if the material involves chemistry/molecules, make about a third of the questions (at least 1) "structure_choice". The app DRAWS each option from SMILES — never use pictures from the material. For structure_choice: options must be ["A","B","C","D"], answer is the correct letter, "option_smiles" has exactly 4 valid, distinct SMILES strings in letter order (no names or labels). All 4 must be the same kind of molecule so distractors are plausible (e.g. rings of different sizes, isomers, different functional groups). The prompt must describe properties the student reasons about (ring size, bonds, functional groups, atom counts, products) and must never name the answer molecule. Double-check the correct SMILES truly matches the prompt and the explanation says why. If the material has no chemistry, do not use structure_choice.
-${pageImages.length ? `${pageImages.length} page images of the material are attached for reading only.\n` : ""}${asked.length ? `Do not repeat these:\n${asked.map((p) => `- ${p}`).join("\n").slice(0, 1500)}` : ""}
+${input.topic ? `STRICT TOPIC: every single question must be about "${input.topic}". Ignore material unrelated to it.${input.allowGeneral ? " If the material doesn't cover it well, use accurate standard college-level knowledge of the topic." : ""}\n` : ""}${pageImages.length ? `${pageImages.length} page images of the material are attached for reading only.\n` : ""}${asked.length ? `Do not repeat these:\n${asked.map((p) => `- ${p}`).join("\n").slice(0, 1500)}` : ""}
 
 MATERIAL:
 ${source.slice(0, 14000)}`;
