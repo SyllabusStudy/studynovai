@@ -149,7 +149,7 @@ export const gloCommand = createServerFn({ method: "POST" })
       const plain = text.replace(/\*\*/g, "").replace(/^#{1,3}\s+/gm, "");
       const { data: note } = await context.supabase.from("personal_notes").insert({
         user_id: context.userId, title: String(action.title || "Glo note").slice(0, 120), title_is_auto: false,
-        content: mdToDoc(text), plain_text: plain,
+        content: mdToDoc(text) as never, plain_text: plain,
       }).select("id").single();
       if (!note) return { say: "Sorry, I couldn't save that note.", action: { type: "none" } as GloAction };
       return { say: parsed.say ?? "Saved it to your notes.", action: { type: "none" } as GloAction };
