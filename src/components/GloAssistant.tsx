@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Mic, MicOff, X, Check, MonitorUp, MonitorX } from "lucide-react";
+import { Mic, MicOff, X, Check, MonitorUp, MonitorX, LoaderCircle, AudioLines } from "lucide-react";
 import { MascotFace } from "@/components/ToolsMascot";
+import { Button } from "@/components/ui/button";
+import { createGloSpeechGate, GLO_SILENCE_MS } from "@/lib/glo-speech";
 import { gloCommand, type GloAction } from "@/lib/glo.functions";
 import { addGloLog, describeGloAction } from "@/lib/glo-log";
 import { useAuth } from "@/lib/auth";
@@ -13,7 +15,7 @@ import { useMicBusy } from "@/lib/mic-busy";
 import { AI_CONNECTION_MESSAGE } from "@/lib/ai-messages";
 
 type Rec = { continuous: boolean; interimResults: boolean; lang: string; start(): void; stop(): void; abort(): void; onresult: ((e: { resultIndex: number; results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> }) => void) | null; onend: (() => void) | null; onerror: ((e: { error: string }) => void) | null };
-type Mode = "idle" | "listening" | "thinking" | "speaking";
+type Mode = "idle" | "listening" | "hearing" | "preparing" | "thinking" | "speaking";
 const KEY = "studynova:glo-wake";
 const WAKE = /\b(hey|hi|okay|ok)[,\s]+(glo|glow|glo's|flo|blow|clo)\b[,.!?\s]*/i;
 const YES = /^(yes|yeah|yep|sure|send( it)?|do it|ok(ay)?)\b/i;
@@ -23,7 +25,6 @@ const NO = /^(no|nope|cancel|stop|don'?t)\b/i;
 const BYE = /\b(thank(s| you)\b.*\b(glo|glow|help|helping)|(ok(ay)?|bye),?\s*(glo|glow)\b.*\b(thank|bye)|that'?s all|goodbye|bye (glo|glow)|stop listening)/i;
 const GO = /\b(take me|go to|open|show me|navigate|bring me|switch to)\b/i;
 const IDLE_MS = 25000;
-const PAUSE_MS = 2000;
 const VOICE_KEY = "studynova:glo-voice";
 function pickVoice(): SpeechSynthesisVoice | undefined {
   const vs = window.speechSynthesis?.getVoices() ?? [];
@@ -52,6 +53,8 @@ export function GloAssistant() {
   const [mode, setMode] = useState<Mode>("idle");
   const [open, setOpen] = useState(false);
   const [caption, setCaption] = useState("");
+  const [transcript, setTranscript] = useState("");
+  const acceptSpeech = useRef(createGloSpeechGate());
   const [pending, setPending] = useState<Extract<GloAction, { type: "email" }> | null>(null);
 
   const [watching, setWatching] = useState(false);
@@ -155,7 +158,7 @@ export function GloAssistant() {
 
   const handle = useCallback(async (text: string) => {
     // One request at a time: overlapping requests cut each other off and hit free-key rate limits.
-    if (thinking.current) return;
+    if (thinking.current || speaking.current || micBusy) return;
     if (BYE.test(text)) { awake.current = false; if (idle.current) clearTimeout(idle.current); return say(`You're welcome, ${name}! Just say "Hey Glo" when you need me.`); }
     const p = pendingRef.current;
     if (p) {
@@ -170,7 +173,7 @@ export function GloAssistant() {
     }
     keepAwake();
     thinking.current = true;
-    setMode("thinking"); setCaption(`“${text}”`);
+    setMode("thinking"); setTranscript(text); setOpen(true);
     try {
       const screen = snapshot();
       const payload = { data: { text, path: ctx.current.path, history: history.current.slice(-6), screen } };
@@ -200,14 +203,15 @@ export function GloAssistant() {
       thinking.current = false;
       say(e instanceof Error ? e.message.slice(0, 200) : "Sorry, something went wrong.");
     }
-  }, [ask, runAction, say, sendEmail, startWatching, stopWatching, snapshot, name]);
+  }, [ask, runAction, say, sendEmail, startWatching, stopWatching, snapshot, name, micBusy]);
 
   const wake = useCallback((rest = "") => {
+    if (thinking.current || speaking.current || micBusy) return;
     setOpen(true);
     if (rest.trim().length > 3) { void handle(rest.trim()); return; }
     keepAwake();
     say(`Hey ${name}, how can I help you?`, keepAwake);
-  }, [handle, name, say]);
+  }, [handle, name, say, micBusy]);
 
   // Always-on recognizer (paused while Glo is talking so he doesn't hear himself).
   useEffect(() => {
@@ -220,19 +224,23 @@ export function GloAssistant() {
     // Wait for a real 2-second pause so Glo never cuts the student off mid-sentence.
     // Everything heard since the last send is joined into one sentence and sent once.
     let timer: ReturnType<typeof setTimeout> | null = null;
+    let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
     let base = 0;
-    let lastSent = "";
     let heard = "";
     const fire = () => {
       if (timer) { clearTimeout(timer); timer = null; }
+      if (feedbackTimer) { clearTimeout(feedbackTimer); feedbackTimer = null; }
       const t = heard.trim();
       heard = "";
       const n = t.toLowerCase().replace(/[^a-z0-9 ]/g, "").trim();
-      if (!n || n === lastSent || thinking.current || speaking.current) return;
+      if (!n || thinking.current || speaking.current) return;
       if (!WAKE.test(t) && n.split(/\s+/).length < 2 && !YES.test(t) && !NO.test(t)) return;
-      lastSent = n;
-      setTimeout(() => { if (lastSent === n) lastSent = ""; }, 5000);
       const m = t.match(WAKE);
+      if (!m && !awake.current) return;
+      if (!acceptSpeech.current(t, thinking.current || speaking.current, Date.now())) {
+        setMode(awake.current ? "listening" : "idle");
+        return;
+      }
       if (m) wake(t.slice((m.index ?? 0) + m[0].length));
       else if (awake.current) void handle(t);
     };
@@ -242,7 +250,8 @@ export function GloAssistant() {
       if (base > e.results.length) base = 0;
       const parts: string[] = [];
       for (let i = base; i < e.results.length; i++) {
-        const res = e.results[i]!;
+        const res = e.results[i];
+        if (!res) continue;
         const conf = (res[0] as { confidence?: number }).confidence ?? 1;
         // Background noise filter: drop faint/unclear finished phrases.
         if (res.isFinal && conf > 0 && conf < 0.55) continue;
@@ -250,8 +259,16 @@ export function GloAssistant() {
       }
       heard = parts.filter(Boolean).join(" ");
       if (!heard) return;
+      if (feedbackTimer) clearTimeout(feedbackTimer);
+      if (awake.current || WAKE.test(heard)) {
+        if (idle.current) clearTimeout(idle.current);
+        setTranscript(heard); setMode("hearing"); setOpen(true);
+        feedbackTimer = setTimeout(() => {
+          if (!thinking.current && !speaking.current) setMode("preparing");
+        }, 400);
+      }
       if (timer) clearTimeout(timer);
-      timer = setTimeout(() => { base = e.results.length; fire(); }, PAUSE_MS);
+      timer = setTimeout(() => { base = e.results.length; fire(); }, GLO_SILENCE_MS);
     };
     r.onerror = (e) => { if (e.error === "not-allowed" || e.error === "service-not-allowed") alive = false; };
     r.onend = () => { base = 0; if (alive) setTimeout(() => { try { r.start(); } catch { /* already running */ } }, 300); };
@@ -268,7 +285,7 @@ export function GloAssistant() {
     if (perms) {
       perms.query({ name: "microphone" }).then((p) => begin(p.state === "granted")).catch(() => begin(false));
     } else begin(false);
-    return () => { alive = false; window.removeEventListener("pointerdown", start); r.abort(); };
+    return () => { alive = false; if (timer) clearTimeout(timer); if (feedbackTimer) clearTimeout(feedbackTimer); window.removeEventListener("pointerdown", start); r.abort(); };
   }, [listenOn, wake, handle]);
 
   // Quiet mode while a lecture is recording: stop talking and forget the open conversation.
@@ -285,17 +302,25 @@ export function GloAssistant() {
     setWakeOn(next);
   };
 
+  const processing = mode === "thinking";
+  const showingTranscript = mode === "hearing" || mode === "preparing" || processing;
+  const status = micBusy ? "Quiet · recording lecture" : processing ? "Got it · preparing your answer" : mode === "preparing" ? "Heard you · finishing up…" : mode === "hearing" ? "Hearing you…" : mode === "speaking" ? "Speaking" : mode === "listening" ? "Ready for your next question" : wakeOn ? "Say “Hey Glo”" : "Wake word off";
+
   return (
     <div className={cn("pointer-events-none fixed right-0 top-1/2 z-40 flex -translate-y-1/2 items-center gap-2 in-data-[help=open]:hidden", path !== "/dashboard" && !open && "max-md:hidden")}>
       {open ? (
         <div className="pointer-events-auto w-64 rounded-l-2xl border border-r-0 border-primary/40 bg-card/95 p-3 text-sm shadow-[var(--shadow-float)] backdrop-blur animate-in slide-in-from-right-4">
           <div className="mb-1 flex items-center justify-between">
-            <span className="font-display text-xs font-extrabold uppercase tracking-wider text-primary">
-              Glo · {mode === "thinking" ? "thinking…" : mode === "speaking" ? "talking" : mode === "listening" ? "listening" : micBusy ? "quiet — recording lecture" : wakeOn ? "say “Hey Glo”" : "wake word off"}
+            <span className="font-display text-sm font-bold text-foreground">
+              Glo
             </span>
             <button type="button" aria-label="Close Glo" onClick={() => { setOpen(false); awake.current = false; window.speechSynthesis?.cancel(); }} className="text-muted-foreground hover:text-foreground">
               <X className="size-4" />
             </button>
+          </div>
+          <div role="status" aria-live="polite" className="mb-2 flex min-h-8 items-center gap-2 text-xs font-semibold text-info">
+            {processing ? <LoaderCircle className="size-4 shrink-0 motion-safe:animate-spin" /> : showingTranscript || mode === "speaking" ? <AudioLines className="size-4 shrink-0" /> : <span className="size-1.5 shrink-0 rounded-full bg-success" />}
+            <span>{status}</span>
           </div>
           {watching ? (
             <div className="mb-2 flex items-center justify-between gap-2 rounded-lg border border-primary/50 bg-primary/15 px-2 py-1 text-xs font-bold text-primary shadow-[0_0_12px_var(--primary)]">
@@ -303,7 +328,7 @@ export function GloAssistant() {
               <button type="button" onClick={() => { stopWatching(); say("Okay, I stopped watching."); }} className="rounded-md bg-primary px-2 py-0.5 text-primary-foreground">Stop</button>
             </div>
           ) : null}
-          <p className="max-h-40 overflow-y-auto text-foreground scroll-slim">{caption || "Ask me what's due, to make a note, open quizzes, draft an email…"}</p>
+          <p className="min-h-12 max-h-40 overflow-y-auto break-words text-foreground scroll-slim">{showingTranscript ? `“${transcript}”` : caption || "Hey! What’s on your mind?"}</p>
           {pending ? (
             <div className="mt-2 flex gap-2">
               <button type="button" onClick={() => sendEmail(pending)} className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-primary px-2 py-1.5 text-xs font-bold text-primary-foreground"><Check className="size-3.5" /> Send</button>
@@ -311,7 +336,7 @@ export function GloAssistant() {
             </div>
           ) : null}
           <div className="mt-2 flex items-center justify-between border-t border-border pt-2">
-            <button type="button" onClick={() => wake()} className="flex items-center gap-1 text-xs font-bold text-primary"><Mic className="size-3.5" /> Talk</button>
+            <Button type="button" variant="ghost" size="sm" disabled={processing || mode === "speaking" || micBusy} onClick={() => wake()} className="h-7 gap-1 px-1 text-xs font-bold text-primary"><Mic className="size-3.5" /> Talk</Button>
             <button type="button" onClick={() => (watching ? stopWatching() : void startWatching().then((ok) => { if (ok) { awake.current = true; say("I can see your screen now. What would you like to know?"); } }))} className="flex items-center gap-1 text-xs font-bold text-primary">
               {watching ? <MonitorX className="size-3.5" /> : <MonitorUp className="size-3.5" />} {watching ? "Stop" : "See screen"}
             </button>
@@ -333,20 +358,24 @@ export function GloAssistant() {
           </div>
         </div>
       ) : null}
-      <button
+      <Button
         type="button"
+        variant="ghost"
         aria-label="Open Glo"
+        aria-expanded={open}
+        title={processing ? "Glo heard you · preparing your answer" : "Talk to Glo"}
         data-tour="glo"
-        onClick={() => (open ? wake() : setOpen(true))}
-        className={cn(
-          "pointer-events-auto relative mr-1 flex size-10 items-center justify-center rounded-full bg-primary shadow-[0_0_18px_var(--primary)] transition-transform",
-          mode !== "idle" && "scale-110 animate-pulse",
-          !open && "opacity-80 hover:opacity-100",
-        )}
+        data-state={mode}
+        onClick={() => setOpen((value) => !value)}
+        className="glo-launcher pointer-events-auto relative mr-2 flex h-[72px] w-14 shrink-0 flex-col gap-0 rounded-2xl p-0 transition-transform hover:-translate-x-1"
       >
-        {watching ? <span className="absolute -inset-1 animate-ping rounded-full border-2 border-primary" aria-label="Glo can see your screen" /> : null}
-        <span className="relative flex size-12 shrink-0 scale-[0.8] items-center justify-center"><MascotFace /></span>
-      </button>
+        <span className="glo-face relative flex size-9 shrink-0 items-center justify-center rounded-xl [&_svg]:size-7"><MascotFace /></span>
+        <span className="mt-1 font-display text-[10px] font-bold">GLO</span>
+        <span aria-hidden="true" className="glo-meter absolute -bottom-1 flex h-3 items-center gap-0.5 rounded-full border border-border bg-card px-1.5">
+          <i /><i /><i /><i /><i />
+        </span>
+        {watching ? <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-success" aria-label="Glo can see your screen" /> : null}
+      </Button>
     </div>
   );
 }
