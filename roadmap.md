@@ -1,8 +1,8 @@
 # Current work
 
-- [ ] Keep Glo visible in the Add class tutorial, pointing to quick classes then Save class.
-- [ ] Update the new-account Glo free-task farewell without taking students away from their page.
-- [ ] Verify tutorial interactions and current app errors.
+- [x] Keep Glo visible in the Add class tutorial, pointing to quick classes then Save class.
+- [x] Update the new-account Glo free-task farewell without taking students away from their page.
+- [x] Verify both tutorial pointers, quick-class autofill, popup closing, existing Glo limit tests, and compilation; spoken farewell not tested live.
 
 - [x] Move Notes spelling and wording review above the clicked text, preserving AI tabs and remembered rejections.
 - [x] Make Notes AI synthesize original explanations in plain student language, honoring explicitly requested styles and preserving facts.
