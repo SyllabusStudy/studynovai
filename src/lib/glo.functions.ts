@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { withTrialOrUserAiKey } from "./ai-key.server";
 import { callAI } from "./ai.server";
 import { runQuizGeneration, runFlashcardGeneration } from "./study.server";
+import { GLO_FREE_DAILY_TASKS, GLO_TASK_KIND, gloTasksLeft, isGloTask } from "./glo-limit";
 
 export type GloAction =
   | { type: "none" }
@@ -98,6 +99,21 @@ export const gloCommand = createServerFn({ method: "POST" })
     try { parsed = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1)); } catch { parsed = { say: raw.slice(0, 400) }; }
     let action: GloAction = parsed.action ?? { type: "none" };
     if (action.type === "navigate" && !PAGES.includes(action.to)) action = { type: "none" };
+
+    if (isGloTask(action.type)) {
+      const { isPro } = await import("./billing.server");
+      const pro = await isPro(context.supabase, context.userId);
+      if (!pro) {
+        const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const { count } = await context.supabase.from("usage_events").select("id", { count: "exact", head: true })
+          .eq("user_id", context.userId).eq("kind", GLO_TASK_KIND).gte("created_at", since);
+        if (gloTasksLeft(count ?? 0, false) <= 0) {
+          return { say: `You've used your ${GLO_FREE_DAILY_TASKS} free Glo tasks for today. Upgrade to Pro for unlimited tasks, or try again tomorrow.`, action: { type: "none" } as GloAction };
+        }
+        await context.supabase.from("usage_events").insert({ user_id: context.userId, kind: GLO_TASK_KIND });
+      }
+    }
+
 
     if (action.type === "quiz" || action.type === "flashcards") {
       const kind = action.type;
