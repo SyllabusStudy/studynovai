@@ -749,17 +749,22 @@ export async function runFlashcardGeneration(
     assignmentId?: string | null | undefined;
     matchHomework?: boolean | undefined;
     deck?: string | null | undefined;
+    sourceOverride?: string | null | undefined;
+    allowGeneral?: boolean | undefined;
   },
 ) {
   let source = "";
   let videoTitle = "";
-  if (input.videoNoteId) {
+  if (input.sourceOverride?.trim()) {
+    source = input.sourceOverride;
+  } else if (input.videoNoteId) {
     const v = await videoNoteText(supabase, userId, input.videoNoteId);
     source = v.text;
     videoTitle = v.title;
   } else {
     source = await sourceText(supabase, userId, input.classId, input.documentId ?? null);
   }
+  if (!source && input.allowGeneral && input.topic) source = `(No class material — use general knowledge of: ${input.topic})`;
   if (!source) throw new Error("Upload notes, a study guide or an assignment for this class first — syllabi are not used as study material.");
 
   // Optionally aim the deck at the student's real homework / upcoming deadlines.
@@ -810,8 +815,8 @@ export async function runFlashcardGeneration(
       },
       {
         role: "user",
-        content: `Create exactly ${input.count} ${input.difficulty} flashcards${input.topic ? ` focused on: ${input.topic}` : ""} from the material below. Fronts are short prompts/questions, backs are precise answers (1-2 sentences). Only use facts present in the material.
-${
+        content: `Create exactly ${input.count} ${input.difficulty} flashcards${input.topic ? ` focused on: ${input.topic}` : ""} from the material below. Fronts are short prompts/questions, backs are precise answers (1-2 sentences). ${input.allowGeneral ? "Use the material when it covers the topic; otherwise use accurate, standard college-level knowledge of the topic." : "Only use facts present in the material."}
+${input.topic ? `STRICT TOPIC: every single card must be about "${input.topic}". Skip any material not related to it.\n` : ""}${
   homework
     ? `Prioritise the concepts, skills and problem types the student needs for this homework and these upcoming deadlines. Set each card's "topic" to the homework or deadline it supports:\n${homework}\n`
     : ""
