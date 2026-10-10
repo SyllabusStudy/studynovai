@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Check, Crown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
+import { WatchAdCard } from "@/components/WatchAdCard";
 import { Button } from "@/components/ui/button";
 import { FREE_LIMITS, FREE_WINDOW_HOURS } from "@/lib/plan";
 import { usePricing } from "@/lib/use-pricing";
@@ -169,6 +170,9 @@ function UpgradePage() {
               <p className="text-xs text-muted-foreground">You're on the Free plan.</p>
             )}
           </div>
+
+          {billing && !pro ? <WatchAdCard /> : null}
+
 
 
           <div className="surface-card space-y-4 border-primary/40 p-5 ring-1 ring-primary/20">
