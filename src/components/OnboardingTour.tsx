@@ -156,7 +156,7 @@ export function OnboardingTour() {
         ]);
         el = findTarget(sels);
         if (el) {
-          const label = el.textContent?.trim().split(/\s{2,}|\n/)[0]?.slice(0, 30) || "this";
+          const label = (el.querySelector(".font-bold")?.textContent ?? el.textContent)?.trim().slice(0, 30) || "this";
           hint = `Now tap ${label} right here in More!`;
         }
       }
