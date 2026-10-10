@@ -1,0 +1,30 @@
+name: Build iOS app
+
+on:
+  workflow_dispatch:
+
+jobs:
+  ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
+      - name: Create iOS project
+        run: |
+          [ -d ios ] || bunx cap add ios
+          bunx cap sync ios
+      - name: Add permission descriptions
+        run: |
+          PLIST=ios/App/App/Info.plist
+          for k in $(jq -r 'keys[]' ios-permissions.json); do
+            v=$(jq -r --arg k "$k" '.[$k]' ios-permissions.json)
+            /usr/libexec/PlistBuddy -c "Delete :$k" "$PLIST" 2>/dev/null || true
+            /usr/libexec/PlistBuddy -c "Add :$k string $v" "$PLIST"
+          done
+      - name: Build (unsigned, for checking)
+        run: |
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build
+      # After Apple Developer enrollment, add signing secrets and an upload step to App Store Connect.

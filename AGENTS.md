@@ -27,3 +27,5 @@
 - Notes correction underlines use transient ProseMirror decorations with a range-anchored inline popover, never saved marks; review preserves authored formatting and the active AI tab.
 - Add-class tour guidance derives its target from dialog state and keeps that dialog non-modal only during guidance, so the tutorial card and real form controls remain interactive without altering other dialogs.
 - Glo voice feedback uses local recognition states and a browser-safe speech submission gate; keep duplicate protection across recognizer restarts without adding AI calls for visual feedback.
+
+- The iOS app is a Capacitor shell that loads the live site (capacitor.config.ts); the native ios/ folder is generated in CI, so web publishes update the app without resubmission.
