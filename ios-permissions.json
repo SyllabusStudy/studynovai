@@ -2,5 +2,7 @@
   "NSMicrophoneUsageDescription": "SyllabusStudy needs microphone access so you can talk to Glo and record classroom lectures.",
   "NSSpeechRecognitionUsageDescription": "SyllabusStudy uses speech recognition to understand your questions for Glo and transcribe lecture notes.",
   "NSCameraUsageDescription": "SyllabusStudy uses the camera to scan syllabi, homework problems, and textbook diagrams.",
-  "NSPhotoLibraryUsageDescription": "SyllabusStudy needs photo library access to upload assignments and class materials."
+  "NSPhotoLibraryUsageDescription": "SyllabusStudy needs photo library access to upload assignments and class materials.",
+  "NSUserTrackingUsageDescription": "This lets us show you more relevant ads when you choose to watch a video for a free extra use.",
+  "GADApplicationIdentifier": "ca-app-pub-7682709846932870~8164608588"
 }
