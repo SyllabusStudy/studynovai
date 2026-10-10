@@ -75,7 +75,7 @@ function formatWait(ms: number) {
 /** Pro when paid/promo, or during an unexpired 2-day new-account trial. */
 function rowIsPro(row: { plan: string; status: string; current_period_end: string | null } | null) {
   if (!row || row.plan !== "pro") return false;
-  if (row.status === "trial") {
+  if (row.status === "trial" || row.status === "apple") {
     return !!row.current_period_end && new Date(row.current_period_end).getTime() > Date.now();
   }
   return PRO_STATUSES.has(row.status);
