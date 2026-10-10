@@ -28,7 +28,7 @@ export async function verifyAppleTransaction(jws: string): Promise<AppleTransact
   const header = JSON.parse(new TextDecoder().decode(b64urlToBytes(h))) as { alg: string; x5c?: string[] };
   if (header.alg !== "ES256" || !header.x5c || header.x5c.length < 3) throw new Error("Invalid Apple receipt.");
   const certs = header.x5c.map((c) => new x509.X509Certificate(c));
-  const [leaf, inter, root] = certs;
+  const [leaf, inter, root] = certs as [x509.X509Certificate, x509.X509Certificate, x509.X509Certificate];
   const fp = hex(await crypto.subtle.digest("SHA-256", root.rawData));
   if (fp !== APPLE_ROOT_G3_SHA256) throw new Error("Receipt not signed by Apple.");
   const now = new Date();
