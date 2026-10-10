@@ -32,13 +32,32 @@ jobs:
             /usr/libexec/PlistBuddy -c "Delete :$k" "$PLIST" 2>/dev/null || true
             /usr/libexec/PlistBuddy -c "Add :$k string $v" "$PLIST"
           done
+      - name: Check secrets are set
+        env:
+          ASC_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+          ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          missing=""
+          [ -z "$ASC_KEY" ] && missing="$missing APP_STORE_CONNECT_PRIVATE_KEY"
+          [ -z "$ASC_KEY_ID" ] && missing="$missing APP_STORE_CONNECT_KEY_ID"
+          [ -z "$ASC_ISSUER_ID" ] && missing="$missing APP_STORE_CONNECT_ISSUER_ID"
+          [ -z "$TEAM_ID" ] && missing="$missing APPLE_TEAM_ID"
+          if [ -n "$missing" ]; then
+            echo "Missing GitHub secrets:$missing"
+            echo "Add them under repo Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+          echo "All 4 App Store Connect secrets are set."
       - name: Save App Store Connect key
         env:
           ASC_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
           ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
         run: |
-          mkdir -p ~/private_keys
-          printf '%s\n' "$ASC_KEY" > ~/private_keys/AuthKey_${ASC_KEY_ID}.p8
+          mkdir -p "$HOME/private_keys"
+          printf '%s\n' "$ASC_KEY" > "$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          test -s "$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8"
       - name: Archive (signed for App Store)
         env:
           ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
@@ -51,9 +70,9 @@ jobs:
             TARGET="-project ios/App/App.xcodeproj"
           fi
           xcodebuild $TARGET -scheme App -configuration Release \
-            -destination 'generic/platform=iOS' -archivePath $RUNNER_TEMP/App.xcarchive \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" \
             -allowProvisioningUpdates \
-            -authenticationKeyPath ~/private_keys/AuthKey_${ASC_KEY_ID}.p8 \
+            -authenticationKeyPath "$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8" \
             -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic \
             PRODUCT_BUNDLE_IDENTIFIER=com.syllabusstudy.app \
