@@ -3,8 +3,8 @@ export const PRO_PRICE_USD = 5.99;
 /** Free-plan quotas reset on a rolling window instead of a full calendar day. */
 export const FREE_WINDOW_HOURS = 4;
 
-/** Max extra uses a Free student can earn from rewarded ads per rolling 24h. */
-export const AD_REWARDS_PER_DAY = 3;
+/** Max extra uses a Free student can earn from rewarded ads per rolling 24h. -1 = unlimited. */
+export const AD_REWARDS_PER_DAY = -1;
 
 /** Google AdMob iOS rewarded ad unit. */
 export const ADMOB_REWARDED_IOS = "ca-app-pub-7682709846932870/8767243813";
