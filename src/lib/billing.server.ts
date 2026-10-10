@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { FREE_LIMITS, FREE_WINDOW_HOURS, USAGE_LABELS, type BillingState, type UsageKind } from "./plan";
+import { AD_REWARDS_PER_DAY, FREE_LIMITS, FREE_WINDOW_HOURS, USAGE_LABELS, type BillingState, type UsageKind } from "./plan";
 import type Stripe from "stripe";
 import { createStripeClient, getStripeErrorMessage, type StripeEnv } from "./stripe.server";
 
@@ -107,17 +107,37 @@ async function windowUsage(supabase: DB, userId: string, kind: UsageKind) {
   };
 }
 
+/** Extra uses earned from rewarded ads inside the current window. */
+async function adBonus(userId: string, kind: UsageKind) {
+  const { count } = await (supabaseAdmin as any)
+    .from("ad_rewards").select("id", { count: "exact", head: true })
+    .eq("user_id", userId).eq("kind", kind).gte("created_at", windowStartIso());
+  return count ?? 0;
+}
+
 /** Throws a friendly error when a free student is out of daily uses. */
 export async function assertQuota(supabase: DB, userId: string, kind: UsageKind) {
   if (await isPro(supabase, userId)) return;
-  const { used, resetAt } = await windowUsage(supabase, userId, kind);
+  const [{ used, resetAt }, bonus] = await Promise.all([windowUsage(supabase, userId, kind), adBonus(userId, kind)]);
   const limit = FREE_LIMITS[kind];
-  if (used >= limit) {
+  if (used >= limit + bonus) {
     const wait = resetAt ? formatWait(new Date(resetAt).getTime() - Date.now()) : `${FREE_WINDOW_HOURS}h`;
     throw new Error(
       `You've hit your free limit of ${limit} ${USAGE_LABELS[kind]} every ${FREE_WINDOW_HOURS} hours. Try again in ${wait}, or upgrade to Pro for unlimited use.`,
     );
   }
+}
+
+/** Grants one extra use after a finished rewarded ad, capped per day. */
+export async function grantAdReward(userId: string, kind: UsageKind) {
+  const since = new Date(Date.now() - 86_400_000).toISOString();
+  const { count } = await (supabaseAdmin as any)
+    .from("ad_rewards").select("id", { count: "exact", head: true })
+    .eq("user_id", userId).gte("created_at", since);
+  if ((count ?? 0) >= AD_REWARDS_PER_DAY) throw new Error("You've used all your ad unlocks for today. Upgrade to Pro for unlimited use.");
+  const { error } = await (supabaseAdmin as any).from("ad_rewards").insert({ user_id: userId, kind });
+  if (error) throw new Error(error.message);
+  return { ok: true };
 }
 
 export async function recordUsage(supabase: DB, userId: string, kind: UsageKind) {
