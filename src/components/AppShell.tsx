@@ -53,6 +53,7 @@ import { GlobalSearch } from "@/components/GlobalSearch";
 import { StudyTabs } from "@/components/StudyTabs";
 import { SeasonalDecorations } from "@/components/SeasonalDecorations";
 import { MobileNav } from "@/components/MobileNav";
+import { AdBanner } from "@/components/AdBanner";
 
 
 type NavItem = { to: string; label: string; icon: typeof BookOpen; tint?: string };
@@ -257,6 +258,7 @@ function NavList({ pathname, onNavigate, compact }: { pathname: string; onNaviga
           );
         })}
       </div>
+      {!compact ? <AdBanner variant="sidebar" className="mt-5" /> : null}
       <div className="mt-5 border-t border-sidebar-border pt-4">
         {compact ? (
           <button
