@@ -17,6 +17,8 @@ jobs:
         run: |
           [ -d ios ] || npx cap add ios
           npx cap sync ios
+      - name: Generate app icon and splash screen
+        run: npx --yes @capacitor/assets generate --ios --iconBackgroundColor '#0F1117' --splashBackgroundColor '#0F1117'
       - name: Install CocoaPods (only if the project uses them)
         run: |
           if [ -f ios/App/Podfile ]; then
