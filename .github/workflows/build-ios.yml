@@ -39,8 +39,12 @@ jobs:
           ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
+          # Values pasted from Windows can smuggle in hidden carriage returns / newlines.
+          ASC_KEY_ID=$(printf '%s' "$ASC_KEY_ID" | tr -d '\r\n[:space:]')
+          ASC_ISSUER_ID=$(printf '%s' "$ASC_ISSUER_ID" | tr -d '\r\n[:space:]')
+          TEAM_ID=$(printf '%s' "$TEAM_ID" | tr -d '\r\n[:space:]')
           missing=""
-          [ -z "$ASC_KEY" ] && missing="$missing APP_STORE_CONNECT_PRIVATE_KEY"
+          [ -z "$(printf '%s' "$ASC_KEY" | tr -d '\r\n[:space:]')" ] && missing="$missing APP_STORE_CONNECT_PRIVATE_KEY"
           [ -z "$ASC_KEY_ID" ] && missing="$missing APP_STORE_CONNECT_KEY_ID"
           [ -z "$ASC_ISSUER_ID" ] && missing="$missing APP_STORE_CONNECT_ISSUER_ID"
           [ -z "$TEAM_ID" ] && missing="$missing APPLE_TEAM_ID"
