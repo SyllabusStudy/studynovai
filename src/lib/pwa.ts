@@ -51,8 +51,24 @@ export function registerServiceWorker() {
   });
 }
 
+/** True inside the native iPhone app (Capacitor shell). Remembered for the session. */
+export function isNativeApp(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    if ((window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.()) return true;
+    if (new URLSearchParams(window.location.search).get("source") === "ios") {
+      sessionStorage.setItem("studynova-native", "1");
+      return true;
+    }
+    return sessionStorage.getItem("studynova-native") === "1";
+  } catch {
+    return false;
+  }
+}
+
 export function isStandalone(): boolean {
   if (typeof window === "undefined") return false;
+  if (isNativeApp()) return true;
   const iosStandalone = (window.navigator as Navigator & { standalone?: boolean }).standalone;
   return window.matchMedia("(display-mode: standalone)").matches || iosStandalone === true;
 }
