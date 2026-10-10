@@ -59,15 +59,23 @@ jobs:
           ASC_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
           ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
         run: |
+          # Strip hidden carriage returns / newlines that sneak in when pasted on Windows.
+          ASC_KEY_ID=$(printf '%s' "$ASC_KEY_ID" | tr -d '\r\n[:space:]')
           mkdir -p "$HOME/private_keys"
-          printf '%s\n' "$ASC_KEY" > "$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          printf '%s\n' "$ASC_KEY" | tr -d '\r' > "$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8"
           test -s "$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          head -n 1 "$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8" | grep -q 'PRIVATE KEY' \
+            || echo "::warning::The key file has no PEM header — check the pasted private key."
       - name: Archive (signed for App Store)
         env:
           ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
+          ASC_KEY_ID=$(printf '%s' "$ASC_KEY_ID" | tr -d '\r\n[:space:]')
+          ASC_ISSUER_ID=$(printf '%s' "$ASC_ISSUER_ID" | tr -d '\r\n[:space:]')
+          TEAM_ID=$(printf '%s' "$TEAM_ID" | tr -d '\r\n[:space:]')
+          KEY_PATH="$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8"
           if [ -d ios/App/App.xcworkspace ]; then
             TARGET="-workspace ios/App/App.xcworkspace"
           else
@@ -76,7 +84,7 @@ jobs:
           xcodebuild $TARGET -scheme App -configuration Release \
             -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" \
             -allowProvisioningUpdates \
-            -authenticationKeyPath "$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8" \
+            -authenticationKeyPath "$KEY_PATH" \
             -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic \
             PRODUCT_BUNDLE_IDENTIFIER=com.syllabusstudy.app \
@@ -88,6 +96,10 @@ jobs:
           ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
+          ASC_KEY_ID=$(printf '%s' "$ASC_KEY_ID" | tr -d '\r\n[:space:]')
+          ASC_ISSUER_ID=$(printf '%s' "$ASC_ISSUER_ID" | tr -d '\r\n[:space:]')
+          TEAM_ID=$(printf '%s' "$TEAM_ID" | tr -d '\r\n[:space:]')
+          KEY_PATH="$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8"
           cat > "$RUNNER_TEMP/export.plist" <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -101,5 +113,5 @@ jobs:
           xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" \
             -exportOptionsPlist "$RUNNER_TEMP/export.plist" -exportPath "$RUNNER_TEMP/export" \
             -allowProvisioningUpdates \
-            -authenticationKeyPath "$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8" \
+            -authenticationKeyPath "$KEY_PATH" \
             -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"
