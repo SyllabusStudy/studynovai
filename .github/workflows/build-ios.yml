@@ -32,6 +32,11 @@ jobs:
             /usr/libexec/PlistBuddy -c "Delete :$k" "$PLIST" 2>/dev/null || true
             /usr/libexec/PlistBuddy -c "Add :$k string $v" "$PLIST"
           done
+          # Google AdMob SKAdNetwork id
+          /usr/libexec/PlistBuddy -c "Delete :SKAdNetworkItems" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :SKAdNetworkItems array" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :SKAdNetworkItems:0 dict" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :SKAdNetworkItems:0:SKAdNetworkIdentifier string cstr6suwn9.skadnetwork" "$PLIST"
       - name: Check secrets are set
         env:
           ASC_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
