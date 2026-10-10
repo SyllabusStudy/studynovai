@@ -146,8 +146,21 @@ export function OnboardingTour() {
       const stage = guidedClass ? (classDialog.dataset["tourClassReady"] === "true" ? "save" : "quick") : null;
       setClassStage(stage);
       setPaused(guidedClass || (mobileClick && menuOpen) ? false : otherDialogOpen());
-      let el = findTarget(stage ? CLASS_DIALOG_GUIDANCE[stage].selectors : baseStep?.selectors ?? current.selectors);
+      let el: HTMLElement | null = null;
       let hint: string | null = null;
+      // Inside the open More menu, Glo points at the exact tool to tap there.
+      if (mobileClick && menuOpen && !stage) {
+        const sels = (baseStep?.selectors ?? current.selectors).flatMap((s) => [
+          `[data-tour-menu][data-state="open"] ${s}`,
+          `[role="dialog"][data-state="open"]:not([data-tour-card]) ${s}`,
+        ]);
+        el = findTarget(sels);
+        if (el) {
+          const label = (el.querySelector(".font-bold")?.textContent ?? el.textContent)?.trim().slice(0, 30) || "this";
+          hint = `Now tap ${label} right here in More!`;
+        }
+      }
+      if (!el) el = findTarget(stage ? CLASS_DIALOG_GUIDANCE[stage].selectors : baseStep?.selectors ?? current.selectors);
       if (!el && mobileClick) {
         const group = ["/tutor", "/flashcards", "/quizzes", "/lectures"].includes(current.goto ?? "") ? "study" : null;
         if (menuOpen && group) {

@@ -11,7 +11,7 @@ const config: CapacitorConfig = {
     allowNavigation: ["syllabusstudy.com", "*.syllabusstudy.com", "accounts.google.com"],
   },
   ios: {
-    contentInset: "always",
+    contentInset: "never",
     backgroundColor: "#0F1117",
     limitsNavigationsToAppBoundDomains: false,
   },
