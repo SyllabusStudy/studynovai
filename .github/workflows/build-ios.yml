@@ -96,6 +96,17 @@ jobs:
             MARKETING_VERSION=1.0 CURRENT_PROJECT_VERSION=${{ github.run_number }} \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
             archive
+          # Third-party frameworks (Google Mobile Ads, UMP) keep their vendor
+          # signature in an unsigned archive, which Apple rejects (error 90035).
+          # Strip them so the export step re-signs everything with our distribution cert.
+          for fw in "$RUNNER_TEMP"/App.xcarchive/Products/Applications/App.app/Frameworks/*.framework; do
+            [ -d "$fw" ] || continue
+            echo "Stripping old signature: $fw"
+            rm -rf "$fw/_CodeSignature"
+            codesign --remove-signature "$fw" 2>/dev/null || true
+            bin="$fw/$(basename "$fw" .framework)"
+            [ -f "$bin" ] && codesign --remove-signature "$bin" 2>/dev/null || true
+          done
       - name: Export and upload to TestFlight
         env:
           ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
