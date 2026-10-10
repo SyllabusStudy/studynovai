@@ -8,12 +8,20 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
       - uses: oven-sh/setup-bun@v2
       - run: bun install
       - name: Create iOS project
         run: |
-          [ -d ios ] || bunx cap add ios
-          bunx cap sync ios
+          [ -d ios ] || npx cap add ios
+          npx cap sync ios
+      - name: Install CocoaPods (only if the project uses them)
+        run: |
+          if [ -f ios/App/Podfile ]; then
+            cd ios/App && pod install
+          fi
       - name: Add permission descriptions
         run: |
           PLIST=ios/App/App/Info.plist
@@ -24,7 +32,12 @@ jobs:
           done
       - name: Build (unsigned, for checking)
         run: |
-          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release \
+          if [ -d ios/App/App.xcworkspace ]; then
+            TARGET="-workspace ios/App/App.xcworkspace"
+          else
+            TARGET="-project ios/App/App.xcodeproj"
+          fi
+          xcodebuild $TARGET -scheme App -configuration Release \
             -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO build
       # After Apple Developer enrollment, add signing secrets and an upload step to App Store Connect.
