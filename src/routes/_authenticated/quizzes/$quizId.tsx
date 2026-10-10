@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
 import { ShareButton } from "@/components/ShareButton";
+import { AdBanner } from "@/components/AdBanner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -192,7 +193,7 @@ function QuizRunner() {
           {busy ? <Loader2 className="size-4 animate-spin" /> : null}
           Submit quiz
         </Button>
-      ) : null}
+      ) : <AdBanner className="mt-8" />}
     </div>
   );
 }
