@@ -16,6 +16,8 @@ import { useAuth } from "@/lib/auth";
 import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { getStripeEnvironment, PRO_PRICE_ID } from "@/lib/stripe";
+import { applePurchasesAvailable, applePriceString, buyProWithApple, latestAppleJws } from "@/lib/apple-iap";
+import { syncApplePurchase } from "@/lib/apple-iap.functions";
 
 export const Route = createFileRoute("/_authenticated/upgrade")({
   head: () => ({
@@ -48,6 +50,56 @@ function UpgradePage() {
   const [redeeming, setRedeeming] = useState(false);
   const pricing = usePricing();
   const savings = savingsPercent(pricing);
+  const syncApple = useServerFn(syncApplePurchase);
+  const [onIos, setOnIos] = useState(false);
+  const [applePrice, setApplePrice] = useState<string | null>(null);
+
+  async function sendAppleJws(jws: string | null, quiet = false) {
+    if (!jws) {
+      if (!quiet) toast.error("No SyllabusStudy Pro purchase found on this Apple ID.");
+      return;
+    }
+    const res = await syncApple({ data: { jws } });
+    if ("error" in res) throw new Error(res.error);
+    await qc.invalidateQueries({ queryKey: ["billing"] });
+    if (!quiet) {
+      if (res.plan === "pro") toast.success("You're on Pro — everything is unlimited now.");
+      else toast.error("That Apple subscription has ended.");
+    }
+  }
+
+  // Inside the iPhone app: use Apple purchases and quietly re-check renewals.
+  useEffect(() => {
+    if (!applePurchasesAvailable() || !user) return;
+    setOnIos(true);
+    void applePriceString().then(setApplePrice);
+    void latestAppleJws().then((jws) => sendAppleJws(jws, true)).catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  async function buyApple() {
+    if (!user) return;
+    setBusy(true);
+    try {
+      await sendAppleJws(await buyProWithApple(user.id));
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "";
+      if (!/cancel/i.test(msg)) toast.error(msg || "Purchase didn't go through.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function restoreApple() {
+    setBusy(true);
+    try {
+      await sendAppleJws(await latestAppleJws(true));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not restore purchases.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   const { data: billing, isLoading } = useQuery({
     queryKey: ["billing", user?.id],
@@ -108,6 +160,7 @@ function UpgradePage() {
 
   const pro = billing?.plan === "pro";
   const promoPlan = billing?.status === "promo";
+  const applePlan = billing?.status === "apple";
   const nextReset = (() => {
     const times = Object.values(billing?.resets ?? {})
       .filter((t): t is string => Boolean(t))
@@ -161,12 +214,12 @@ function UpgradePage() {
                 ) : null}
               </div>
             ) : null}
-            {pro ? (
+            {pro && !applePlan && !onIos ? (
               <Button variant="outline" className="w-full" disabled={busy} onClick={() => void stop()}>
                 {busy ? <Loader2 className="size-4 animate-spin" /> : null}
                 Go back to Free plan
               </Button>
-            ) : (
+            ) : pro ? null : (
               <p className="text-xs text-muted-foreground">You're on the Free plan.</p>
             )}
           </div>
@@ -192,7 +245,7 @@ function UpgradePage() {
                     {money(pricing.comparePriceUsd)}
                   </span>
                 ) : null}
-                <span className="text-2xl font-bold">{money(pricing.priceUsd)}</span>
+                <span className="text-2xl font-bold">{onIos && applePrice ? applePrice : money(pricing.priceUsd)}</span>
                 <span className="text-sm font-normal text-muted-foreground">/month</span>
               </p>
               {pricing.saleNote ? (
@@ -215,12 +268,30 @@ function UpgradePage() {
                     ? ` · renews ${new Date(billing.currentPeriodEnd).toLocaleDateString()}`
                     : ""}
                 </p>
-                {promoPlan ? null : (
+                {promoPlan ? null : applePlan || onIos ? (
+                  <Button variant="outline" size="sm" onClick={() => window.open("https://apps.apple.com/account/subscriptions", "_blank")}>
+                    Manage in Apple subscriptions
+                  </Button>
+                ) : (
                   <Button variant="outline" size="sm" disabled={busy} onClick={() => void stop()}>
                     {busy ? <Loader2 className="size-4 animate-spin" /> : null}
                     Cancel subscription
                   </Button>
                 )}
+              </div>
+            ) : onIos ? (
+              <div className="space-y-2">
+                <Button className="w-full" disabled={busy} onClick={() => void buyApple()}>
+                  {busy ? <Loader2 className="size-4 animate-spin" /> : null}
+                  Upgrade to Pro
+                </Button>
+                <Button variant="ghost" size="sm" className="w-full" disabled={busy} onClick={() => void restoreApple()}>
+                  Restore purchases
+                </Button>
+                <p className="text-[11px] leading-snug text-muted-foreground">
+                  Monthly subscription billed to your Apple ID. Renews automatically unless cancelled at least 24 hours before the period ends. Manage in your Apple ID settings.{" "}
+                  <a className="underline" href="/terms">Terms</a> · <a className="underline" href="/privacy">Privacy</a>
+                </p>
               </div>
             ) : (
               <Button
@@ -236,7 +307,7 @@ function UpgradePage() {
         </div>
       )}
 
-      {!pro && checkoutOpen ? (
+      {!pro && !onIos && checkoutOpen ? (
         <div className="surface-card mt-4 p-4">
           <PaymentTestModeBanner />
           <StripeEmbeddedCheckout
