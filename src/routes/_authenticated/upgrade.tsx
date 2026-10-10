@@ -325,7 +325,7 @@ function UpgradePage() {
         </div>
       ) : null}
 
-      {pro ? null : (
+      {pro || onIos ? null : (
         <div className="surface-card mt-4 space-y-3 p-5">
           <div>
             <p className="text-sm font-semibold">Enter promo code</p>
@@ -350,7 +350,7 @@ function UpgradePage() {
       )}
 
       <p className="mt-6 text-center text-xs text-muted-foreground">
-        Billing is secure and card-based. Cancel anytime — you keep Pro until the end of the paid month.{" "}
+        {onIos ? "Billing is handled securely by Apple." : "Billing is secure and card-based."} Cancel anytime — you keep Pro until the end of the paid month.{" "}
         <button className="underline" onClick={() => navigate({ to: "/settings" })}>
           Back to settings
         </button>
