@@ -36,3 +36,7 @@ export type BillingState = {
   resets: { assignment_help: string | null; snap: string | null; video: string | null };
   limits: { assignment_help: number; snap: number; video: number; classes: number };
 };
+
+/** Apple in-app purchase (iPhone app). Must match the subscription created in App Store Connect. */
+export const APPLE_BUNDLE_ID = "com.syllabusstudy.app";
+export const APPLE_PRO_PRODUCT_ID = "syllabusstudy_pro_monthly";
