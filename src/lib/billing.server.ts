@@ -128,13 +128,15 @@ export async function assertQuota(supabase: DB, userId: string, kind: UsageKind)
   }
 }
 
-/** Grants one extra use after a finished rewarded ad, capped per day. */
+/** Grants one extra use after a finished rewarded ad. Unlimited unless AD_REWARDS_PER_DAY is set. */
 export async function grantAdReward(userId: string, kind: UsageKind) {
-  const since = new Date(Date.now() - 86_400_000).toISOString();
-  const { count } = await (supabaseAdmin as any)
-    .from("ad_rewards").select("id", { count: "exact", head: true })
-    .eq("user_id", userId).gte("created_at", since);
-  if ((count ?? 0) >= AD_REWARDS_PER_DAY) throw new Error("You've used all your ad unlocks for today. Upgrade to Pro for unlimited use.");
+  if (AD_REWARDS_PER_DAY > 0) {
+    const since = new Date(Date.now() - 86_400_000).toISOString();
+    const { count } = await (supabaseAdmin as any)
+      .from("ad_rewards").select("id", { count: "exact", head: true })
+      .eq("user_id", userId).gte("created_at", since);
+    if ((count ?? 0) >= AD_REWARDS_PER_DAY) throw new Error("You've used all your ad unlocks for today. Upgrade to Pro for unlimited use.");
+  }
   const { error } = await (supabaseAdmin as any).from("ad_rewards").insert({ user_id: userId, kind });
   if (error) throw new Error(error.message);
   return { ok: true };
