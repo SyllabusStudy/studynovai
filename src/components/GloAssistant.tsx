@@ -26,14 +26,16 @@ const BYE = /\b(thank(s| you)\b.*\b(glo|glow|help|helping)|(ok(ay)?|bye),?\s*(gl
 const GO = /\b(take me|go to|open|show me|navigate|bring me|switch to)\b/i;
 const IDLE_MS = 25000;
 const VOICE_KEY = "studynova:glo-voice";
+// iOS ships joke/novelty voices (Bells, Bubbles, Zarvox…) that sound robotic or silly.
+const NOVELTY = /\b(albert|bad news|bahh|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|fred|junior|ralph|kathy|grandma|grandpa|rocko|shelley|flo|eddy|reed|sandy)\b/i;
 function pickVoice(): SpeechSynthesisVoice | undefined {
-  const vs = window.speechSynthesis?.getVoices() ?? [];
+  const vs = (window.speechSynthesis?.getVoices() ?? []).filter((v) => !NOVELTY.test(v.name));
   const saved = localStorage.getItem(VOICE_KEY);
   const chosen = saved && vs.find((v) => v.name === saved);
   if (chosen) return chosen;
   const lang = (navigator.language || "en-US").slice(0, 2);
   const pool = vs.filter((v) => v.lang.toLowerCase().startsWith(lang));
-  const rank = [/natural/i, /neural/i, /premium|enhanced/i, /google us english/i, /\b(ava|samantha|aria|jenny|zoe|allison)\b/i, /google/i];
+  const rank = [/natural/i, /neural/i, /premium/i, /enhanced/i, /siri/i, /\b(ava|samantha|nora|zoe|allison|aria|jenny|karen|daniel|moira)\b/i, /google us english/i, /google/i];
   for (const r of rank) { const v = pool.find((x) => r.test(x.name)); if (v) return v; }
   return pool.find((v) => v.localService) ?? pool[0];
 }
@@ -84,7 +86,7 @@ export function GloAssistant() {
     if (!synth) return;
     const load = () => {
       const lang = (navigator.language || "en-US").slice(0, 2);
-      const list = synth.getVoices().filter((v) => v.lang.toLowerCase().startsWith(lang));
+      const list = synth.getVoices().filter((v) => v.lang.toLowerCase().startsWith(lang) && !NOVELTY.test(v.name));
       setVoices(list);
       setVoiceName(pickVoice()?.name ?? "");
     };
@@ -100,7 +102,7 @@ export function GloAssistant() {
     synth.cancel();
     const u = new SpeechSynthesisUtterance(text);
     const v = pickVoice(); if (v) { u.voice = v; u.lang = v.lang; }
-    u.rate = 1; u.pitch = 1.03;
+    u.rate = 1; u.pitch = 1;
     speaking.current = true; setMode("speaking");
     u.onend = u.onerror = () => { speaking.current = false; setMode(awake.current ? "listening" : "idle"); then?.(); };
     synth.speak(u);
