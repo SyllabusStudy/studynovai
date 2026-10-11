@@ -145,6 +145,35 @@ export function GloAssistant() {
 
   useEffect(() => () => stream.current?.getTracks().forEach((t) => t.stop()), []);
 
+  // Ctrl+V anywhere (outside text boxes) hands a screenshot straight to Glo.
+  const [pasted, setPasted] = useState<string | null>(null);
+  const pastedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t?.closest("input, textarea, [contenteditable=''], [contenteditable='true']")) return;
+      const file = Array.from(e.clipboardData?.files ?? []).find((f) => f.type.startsWith("image/"));
+      if (!file) return;
+      e.preventDefault();
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, 1280 / img.width);
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+        c.getContext("2d")?.drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        const data = c.toDataURL("image/jpeg", 0.8);
+        pastedRef.current = data; setPasted(data); setOpen(true);
+        awake.current = true;
+        say("Got your screenshot! Ask me about it, or tap a button.", keepAwake);
+      };
+      img.src = url;
+    };
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  }, [say]);
+
   const runAction = useCallback((a: GloAction) => {
     const c = ctx.current;
     if (a.type === "navigate" && a.to !== c.path) c.navigate({ to: a.to });
@@ -177,7 +206,8 @@ export function GloAssistant() {
     thinking.current = true;
     setMode("thinking"); setTranscript(text); setOpen(true);
     try {
-      const screen = snapshot();
+      const screen = pastedRef.current ?? snapshot();
+      if (pastedRef.current) { pastedRef.current = null; setPasted(null); }
       const payload = { data: { text, path: ctx.current.path, history: history.current.slice(-6), screen } };
       let r: Awaited<ReturnType<typeof ask>>;
       try {
@@ -330,6 +360,18 @@ export function GloAssistant() {
               <button type="button" onClick={() => { stopWatching(); say("Okay, I stopped watching."); }} className="rounded-md bg-primary px-2 py-0.5 text-primary-foreground">Stop</button>
             </div>
           ) : null}
+          {pasted ? (
+            <div className="mb-2 rounded-lg border border-primary/40 bg-primary/10 p-1.5">
+              <div className="relative">
+                <img src={pasted} alt="Pasted screenshot" className="max-h-28 w-full rounded-md object-contain" />
+                <button type="button" aria-label="Remove screenshot" onClick={() => { pastedRef.current = null; setPasted(null); }} className="absolute right-1 top-1 rounded-full bg-card p-0.5 text-muted-foreground hover:text-foreground"><X className="size-3" /></button>
+              </div>
+              <div className="mt-1.5 flex gap-1.5">
+                <button type="button" disabled={processing} onClick={() => void handle("Explain what's in this screenshot step by step.")} className="flex-1 rounded-md bg-primary px-2 py-1 text-xs font-bold text-primary-foreground">Explain</button>
+                <button type="button" disabled={processing} onClick={() => void handle("Take notes on this screenshot.")} className="flex-1 rounded-md bg-muted px-2 py-1 text-xs font-bold text-foreground">Take notes</button>
+              </div>
+            </div>
+          ) : null}
           <p className="min-h-12 max-h-40 overflow-y-auto break-words text-foreground scroll-slim">{showingTranscript ? `“${transcript}”` : caption || "Hey! What’s on your mind?"}</p>
           {pending ? (
             <div className="mt-2 flex gap-2">
@@ -340,7 +382,7 @@ export function GloAssistant() {
           <div className="mt-2 flex items-center justify-between border-t border-border pt-2">
             <Button type="button" variant="ghost" size="sm" disabled={processing || mode === "speaking" || micBusy} onClick={() => wake()} className="h-7 gap-1 px-1 text-xs font-bold text-primary"><Mic className="size-3.5" /> Talk</Button>
             <button type="button" onClick={() => (watching ? stopWatching() : void startWatching().then((ok) => { if (ok) { awake.current = true; say("I can see your screen now. What would you like to know?"); } }))} className="flex items-center gap-1 text-xs font-bold text-primary">
-              {watching ? <MonitorX className="size-3.5" /> : <MonitorUp className="size-3.5" />} {watching ? "Stop" : "See screen"}
+              {watching ? <MonitorX className="size-3.5" /> : <MonitorUp className="size-3.5" />} {watching ? "Stop" : "Share screen"}
             </button>
             <button type="button" onClick={toggleWake} aria-pressed={wakeOn} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
               {wakeOn ? <Mic className="size-3.5" /> : <MicOff className="size-3.5" />} “Hey Glo” {wakeOn ? "on" : "off"}
