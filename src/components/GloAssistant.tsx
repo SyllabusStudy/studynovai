@@ -13,6 +13,7 @@ import { useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { useMicBusy } from "@/lib/mic-busy";
 import { AI_CONNECTION_MESSAGE } from "@/lib/ai-messages";
+import { GloDesktopButton } from "@/components/GloDesktopDialog";
 
 type Rec = { continuous: boolean; interimResults: boolean; lang: string; start(): void; stop(): void; abort(): void; onresult: ((e: { resultIndex: number; results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> }) => void) | null; onend: (() => void) | null; onerror: ((e: { error: string }) => void) | null };
 type Mode = "idle" | "listening" | "hearing" | "preparing" | "thinking" | "speaking";
@@ -400,6 +401,7 @@ export function GloAssistant() {
             <Link to="/glo-active" className="hover:text-primary hover:underline">Glo Active</Link>
             <Link to="/glo" className="hover:text-primary hover:underline">What can Glo do? →</Link>
           </div>
+          <div className="mt-1.5 flex justify-center"><GloDesktopButton /></div>
         </div>
       ) : null}
       <Button

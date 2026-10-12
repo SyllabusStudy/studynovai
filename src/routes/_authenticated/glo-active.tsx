@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { MascotBot } from "@/components/ToolsMascot";
 import { clearGloLog, readGloLog, type GloLogEntry } from "@/lib/glo-log";
+import { GloDesktopButton } from "@/components/GloDesktopDialog";
 
 export const Route = createFileRoute("/_authenticated/glo-active")({
   head: () => ({
@@ -38,6 +39,7 @@ function GloActive() {
           <button type="button" onClick={clearGloLog} className="shrink-0 text-xs font-semibold text-muted-foreground hover:text-foreground">Clear</button>
         )}
       </header>
+      <GloDesktopButton className="flex w-full items-center justify-center gap-2 rounded-2xl border border-primary/40 bg-primary/10 p-3 text-sm font-bold text-primary hover:bg-primary/15" />
       {log.length === 0 ? (
         <div className="rounded-2xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
           Nothing yet. Say “Hey Glo, what do I have due?” to get started. <Link to="/glo" className="text-primary underline">What can Glo do?</Link>
