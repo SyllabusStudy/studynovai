@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Mic, MicOff, X, Check, MonitorUp, MonitorX, LoaderCircle, AudioLines } from "lucide-react";
+import { Mic, MicOff, X, Check, MonitorUp, MonitorX, LoaderCircle, AudioLines, Send, Square } from "lucide-react";
 import { MascotFace } from "@/components/ToolsMascot";
 import { Button } from "@/components/ui/button";
 import { createGloSpeechGate, GLO_SILENCE_MS } from "@/lib/glo-speech";
-import { gloCommand, type GloAction } from "@/lib/glo.functions";
+import { gloCommand, transcribeGloVoice, type GloAction } from "@/lib/glo.functions";
 import { addGloLog, describeGloAction } from "@/lib/glo-log";
 import { useAuth } from "@/lib/auth";
 import { useProfile } from "@/lib/data";
@@ -59,6 +59,14 @@ export function GloAssistant() {
   const [transcript, setTranscript] = useState("");
   const acceptSpeech = useRef(createGloSpeechGate());
   const [pending, setPending] = useState<Extract<GloAction, { type: "email" }> | null>(null);
+  const transcribe = useServerFn(transcribeGloVoice);
+  const [noWakeWord, setNoWakeWord] = useState(false);
+  const [micState, setMicState] = useState<"unknown" | "granted" | "denied" | "prompt">("unknown");
+  const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const [typed, setTyped] = useState("");
+  const recorder = useRef<MediaRecorder | null>(null);
+  const recTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [watching, setWatching] = useState(false);
   const stream = useRef<MediaStream | null>(null);
@@ -250,7 +258,7 @@ export function GloAssistant() {
   useEffect(() => {
     const w = window as unknown as { SpeechRecognition?: new () => Rec; webkitSpeechRecognition?: new () => Rec };
     const C = w.SpeechRecognition ?? w.webkitSpeechRecognition;
-    if (!C || !listenOn) return;
+    if (!C || !listenOn || noWakeWord) return;
     let alive = true;
     const r = new C();
     r.continuous = true; r.interimResults = true; r.lang = navigator.language || "en-US";
@@ -303,7 +311,11 @@ export function GloAssistant() {
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => { base = e.results.length; fire(); }, GLO_SILENCE_MS);
     };
-    r.onerror = (e) => { if (e.error === "not-allowed" || e.error === "service-not-allowed") alive = false; };
+    r.onerror = (e) => {
+      if (e.error === "not-allowed") { alive = false; setMicState("denied"); }
+      // The desktop app (and some browsers) have no speech service: switch to tap-to-talk recording.
+      if (e.error === "network" || e.error === "service-not-allowed" || e.error === "language-not-supported") { alive = false; setNoWakeWord(true); }
+    };
     r.onend = () => { base = 0; if (alive) setTimeout(() => { try { r.start(); } catch { /* already running */ } }, 300); };
     rec.current = r;
     const start = () => { try { r.start(); } catch { /* running */ } };
@@ -319,7 +331,74 @@ export function GloAssistant() {
       perms.query({ name: "microphone" }).then((p) => begin(p.state === "granted")).catch(() => begin(false));
     } else begin(false);
     return () => { alive = false; if (timer) clearTimeout(timer); if (feedbackTimer) clearTimeout(feedbackTimer); window.removeEventListener("pointerdown", start); r.abort(); };
-  }, [listenOn, wake, handle]);
+  }, [listenOn, wake, handle, noWakeWord]);
+
+  // Watch the microphone permission so Glo can say clearly when it's blocked.
+  useEffect(() => {
+    const w = window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown };
+    if (!(w.SpeechRecognition ?? w.webkitSpeechRecognition) || /Electron/i.test(navigator.userAgent)) setNoWakeWord(true);
+    const perms = (navigator as Navigator & { permissions?: { query: (d: { name: string }) => Promise<{ state: string; onchange: (() => void) | null }> } }).permissions;
+    perms?.query({ name: "microphone" }).then((p) => {
+      const sync = () => setMicState(p.state === "granted" ? "granted" : p.state === "denied" ? "denied" : "prompt");
+      sync(); p.onchange = sync;
+    }).catch(() => {});
+  }, []);
+
+  /** Tap-to-talk: records with the real microphone and transcribes it (works in the desktop app). */
+  const startRecording = useCallback(async () => {
+    if (recorder.current || thinking.current || speaking.current || micBusy) return;
+    window.speechSynthesis?.cancel();
+    let media: MediaStream;
+    try {
+      media = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+      setMicState("granted");
+    } catch {
+      setMicState("denied"); setOpen(true);
+      setCaption("Your microphone is blocked. Allow it in your browser or computer settings (Windows: Settings → Privacy → Microphone), then tap Talk again. You can also type to me below.");
+      return;
+    }
+    const chunks: Blob[] = [];
+    let mr: MediaRecorder;
+    try { mr = new MediaRecorder(media, { audioBitsPerSecond: 32000 }); } catch { mr = new MediaRecorder(media); }
+    mr.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+    mr.onstop = async () => {
+      media.getTracks().forEach((t) => t.stop());
+      recorder.current = null; setRecording(false);
+      if (recTimer.current) clearTimeout(recTimer.current);
+      const blob = new Blob(chunks, { type: mr.mimeType || "audio/webm" });
+      if (blob.size < 2000) return;
+      setTranscribing(true);
+      try {
+        const buf = new Uint8Array(await blob.arrayBuffer());
+        let bin = ""; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+        const { text } = await transcribe({ data: { audio: btoa(bin), mimeType: blob.type } });
+        setTranscribing(false);
+        if (text) void handle(text);
+        else say("I didn't catch that. Tap Talk and try again, or type it below.");
+      } catch (e) {
+        setTranscribing(false);
+        say(e instanceof Error ? e.message.slice(0, 200) : "I couldn't hear that. Try typing it below.");
+      }
+    };
+    mr.start(500);
+    recorder.current = mr; setRecording(true); setOpen(true); setCaption("I'm listening… tap Stop when you're done.");
+    recTimer.current = setTimeout(() => recorder.current?.stop(), 30000);
+  }, [micBusy, transcribe, handle, say]);
+  const stopRecording = () => { if (recorder.current?.state === "recording") recorder.current.stop(); };
+
+  const talk = () => {
+    if (recording) return stopRecording();
+    if (noWakeWord || micState === "denied") return void startRecording();
+    wake();
+  };
+
+  const submitTyped = (e: React.FormEvent) => {
+    e.preventDefault();
+    const t = typed.trim();
+    if (!t || processing || recording || transcribing) return;
+    setTyped("");
+    if (BYE.test(t) || awake.current) void handle(t); else { keepAwake(); void handle(t); }
+  };
 
   // Quiet mode while a lecture is recording: stop talking and forget the open conversation.
   useEffect(() => {
@@ -337,7 +416,9 @@ export function GloAssistant() {
 
   const processing = mode === "thinking";
   const showingTranscript = mode === "hearing" || mode === "preparing" || processing;
-  const status = micBusy ? "Quiet · recording lecture" : processing ? "Got it · preparing your answer" : mode === "preparing" ? "Heard you · finishing up…" : mode === "hearing" ? "Hearing you…" : mode === "speaking" ? "Speaking" : mode === "listening" ? "Ready for your next question" : wakeOn ? "Say “Hey Glo”" : "Wake word off";
+  const recordingStatus = recording ? "Recording · tap Stop when done" : transcribing ? "Got it · reading your voice…" : "";
+  const micStatus = micState === "denied" ? "Microphone blocked — tap to enable" : micState === "prompt" && wakeOn && !noWakeWord ? "Tap Talk to allow the microphone" : "";
+  const status = micBusy ? "Quiet · recording lecture" : recordingStatus || (processing ? "Got it · preparing your answer" : mode === "preparing" ? "Heard you · finishing up…" : mode === "hearing" ? "Hearing you…" : mode === "speaking" ? "Speaking" : micStatus || (mode === "listening" ? "Ready for your next question" : noWakeWord ? "Tap Talk or type below" : wakeOn ? "Say “Hey Glo”" : "Wake word off"));
 
   return (
     <div className={cn("pointer-events-none fixed right-0 top-1/2 z-40 flex -translate-y-1/2 items-center gap-2 in-data-[help=open]:hidden", path !== "/dashboard" && !open && "max-md:hidden")}>
@@ -351,7 +432,7 @@ export function GloAssistant() {
               <X className="size-4" />
             </button>
           </div>
-          <div role="status" aria-live="polite" className="mb-2 flex min-h-8 items-center gap-2 text-xs font-semibold text-info">
+          <div role="status" aria-live="polite" onClick={micState === "denied" ? () => void startRecording() : undefined} className={cn("mb-2 flex min-h-8 items-center gap-2 text-xs font-semibold", micState === "denied" && !micBusy ? "cursor-pointer text-destructive" : "text-info")}>
             {processing ? <LoaderCircle className="size-4 shrink-0 motion-safe:animate-spin" /> : showingTranscript || mode === "speaking" ? <AudioLines className="size-4 shrink-0" /> : <span className="size-1.5 shrink-0 rounded-full bg-success" />}
             <span>{status}</span>
           </div>
@@ -374,6 +455,10 @@ export function GloAssistant() {
             </div>
           ) : null}
           <p className="min-h-12 max-h-40 overflow-y-auto break-words text-foreground scroll-slim">{showingTranscript ? `“${transcript}”` : caption || "Hey! What’s on your mind?"}</p>
+          <form onSubmit={submitTyped} data-no-voice className="mt-2 flex items-center gap-1.5">
+            <input data-no-voice value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="Type to Glo…" aria-label="Type a message to Glo" className="min-w-0 flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />
+            <button type="submit" aria-label="Send to Glo" disabled={!typed.trim() || processing || recording || transcribing} className="rounded-lg bg-primary p-1.5 text-primary-foreground disabled:opacity-50"><Send className="size-3.5" /></button>
+          </form>
           {pending ? (
             <div className="mt-2 flex gap-2">
               <button type="button" onClick={() => sendEmail(pending)} className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-primary px-2 py-1.5 text-xs font-bold text-primary-foreground"><Check className="size-3.5" /> Send</button>
@@ -381,7 +466,7 @@ export function GloAssistant() {
             </div>
           ) : null}
           <div className="mt-2 flex items-center justify-between border-t border-border pt-2">
-            <Button type="button" variant="ghost" size="sm" disabled={processing || mode === "speaking" || micBusy} onClick={() => wake()} className="h-7 gap-1 px-1 text-xs font-bold text-primary"><Mic className="size-3.5" /> Talk</Button>
+            <Button type="button" variant={recording ? "default" : "ghost"} size="sm" disabled={(!recording && (processing || transcribing || mode === "speaking")) || micBusy} onClick={talk} className={cn("h-7 gap-1 px-1.5 text-xs font-bold", recording ? "animate-pulse" : "text-primary")}>{recording ? <><Square className="size-3.5" /> Stop</> : <><Mic className="size-3.5" /> Talk</>}</Button>
             <button type="button" onClick={() => (watching ? stopWatching() : void startWatching().then((ok) => { if (ok) { awake.current = true; say("I can see your screen now. What would you like to know?"); } }))} className="flex items-center gap-1 text-xs font-bold text-primary">
               {watching ? <MonitorX className="size-3.5" /> : <MonitorUp className="size-3.5" />} {watching ? "Stop" : "Share screen"}
             </button>
