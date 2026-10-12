@@ -30,3 +30,4 @@
 
 - The iOS app is a Capacitor shell that loads the live site (capacitor.config.ts); the native ios/ folder is generated in CI, so web publishes update the app without resubmission.
 - iPhone Pro purchases use Apple StoreKit 2 (@capgo/native-purchases); the server verifies the signed transaction against Apple Root CA G3 and stores subscriptions.status='apple' with expiry, so Stripe and promo codes are hidden inside the iOS app per App Store rule 3.1.1.
+- Where browser speech recognition is missing or fails (desktop Electron app), Glo falls back to tap-to-talk MediaRecorder clips transcribed by transcribeGloVoice without spending trial uses; a typed box is always available, so Glo never depends on a cloud speech service.
