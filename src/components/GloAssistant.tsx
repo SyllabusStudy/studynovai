@@ -383,13 +383,29 @@ export function GloAssistant() {
     mr.start(500);
     recorder.current = mr; setRecording(true); setOpen(true); setCaption("I'm listening… tap Stop when you're done.");
     recTimer.current = setTimeout(() => recorder.current?.stop(), 30000);
+    // Auto-stop after ~2.5s of silence once the student has started speaking.
+    try {
+      const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const ctx = new AC(); const an = ctx.createAnalyser(); an.fftSize = 512;
+      ctx.createMediaStreamSource(media).connect(an);
+      const data = new Uint8Array(an.fftSize); let spoke = false; let quietSince = 0;
+      const tick = () => {
+        if (mr.state !== "recording") { void ctx.close(); return; }
+        an.getByteTimeDomainData(data);
+        let sum = 0; for (const v of data) sum += (v - 128) ** 2;
+        const loud = Math.sqrt(sum / data.length) > 6; const now = performance.now();
+        if (loud) { spoke = true; quietSince = 0; } else if (spoke) { quietSince ||= now; if (now - quietSince > 2500) { mr.stop(); void ctx.close(); return; } }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    } catch { /* manual Stop still works */ }
   }, [micBusy, transcribe, handle, say]);
   const stopRecording = () => { if (recorder.current?.state === "recording") recorder.current.stop(); };
 
   const talk = () => {
     if (recording) return stopRecording();
-    if (noWakeWord || micState === "denied") return void startRecording();
-    wake();
+    window.speechSynthesis?.cancel(); speaking.current = false;
+    void startRecording();
   };
 
   const submitTyped = (e: React.FormEvent) => {
