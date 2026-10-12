@@ -50,6 +50,17 @@ function toggleWindow() {
 }
 
 app.whenReady().then(() => {
+  // Grant microphone access so Glo's voice features work in the desktop app
+  // (Electron has no browser-style "allow mic" popup, so we approve it here).
+  const { session } = require("electron");
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    const allowed = ["media", "mediaKeySystem", "clipboard-read", "clipboard-sanitized-write"];
+    callback(allowed.includes(permission));
+  });
+  session.defaultSession.setPermissionCheckHandler((webContents, permission) => {
+    return ["media", "mediaKeySystem", "clipboard-read", "clipboard-sanitized-write"].includes(permission);
+  });
+
   createWindow();
   // Global shortcut: Ctrl+Shift+G shows/hides Glo from anywhere on the computer.
   globalShortcut.register("Control+Shift+G", toggleWindow);
