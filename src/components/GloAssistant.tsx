@@ -337,7 +337,9 @@ export function GloAssistant() {
 
   const processing = mode === "thinking";
   const showingTranscript = mode === "hearing" || mode === "preparing" || processing;
-  const status = micBusy ? "Quiet · recording lecture" : processing ? "Got it · preparing your answer" : mode === "preparing" ? "Heard you · finishing up…" : mode === "hearing" ? "Hearing you…" : mode === "speaking" ? "Speaking" : mode === "listening" ? "Ready for your next question" : wakeOn ? "Say “Hey Glo”" : "Wake word off";
+  const recordingStatus = recording ? "Recording · tap Stop when done" : transcribing ? "Got it · reading your voice…" : "";
+  const micStatus = micState === "denied" ? "Microphone blocked — tap to enable" : micState === "prompt" && wakeOn && !noWakeWord ? "Tap Talk to allow the microphone" : "";
+  const status = micBusy ? "Quiet · recording lecture" : recordingStatus || (processing ? "Got it · preparing your answer" : mode === "preparing" ? "Heard you · finishing up…" : mode === "hearing" ? "Hearing you…" : mode === "speaking" ? "Speaking" : micStatus || (mode === "listening" ? "Ready for your next question" : noWakeWord ? "Tap Talk or type below" : wakeOn ? "Say “Hey Glo”" : "Wake word off"));
 
   return (
     <div className={cn("pointer-events-none fixed right-0 top-1/2 z-40 flex -translate-y-1/2 items-center gap-2 in-data-[help=open]:hidden", path !== "/dashboard" && !open && "max-md:hidden")}>
