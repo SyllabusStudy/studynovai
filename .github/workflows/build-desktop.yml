@@ -20,7 +20,7 @@ jobs:
           cp electron/main.cjs /tmp/app/electron/
           cp public/icon-192.png /tmp/app/public/
           echo '{"name":"syllabusstudy","version":"1.0.0","main":"electron/main.cjs"}' > /tmp/app/package.json
-          npx --yes @electron/packager /tmp/app SyllabusStudy --platform=win32 --arch=x64 --out=out --overwrite
+          npx --yes @electron/packager /tmp/app SyllabusStudy --platform=win32 --arch=x64 --electron-version=34.3.0 --out=out --overwrite
           cd out && zip -qr ../SyllabusStudy-windows.zip SyllabusStudy-win32-x64
       - uses: softprops/action-gh-release@v2
         with:
