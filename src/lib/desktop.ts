@@ -1,6 +1,7 @@
 // Where the Windows desktop companion zip is hosted (GitHub Releases, built by
 // .github/workflows/build-desktop.yml). Empty until the release link is set.
-export const DESKTOP_DOWNLOAD_URL = "";
+export const DESKTOP_DOWNLOAD_URL =
+  "https://github.com/SyllabusStudy/studynovai/releases/download/desktop-latest/SyllabusStudy-windows.zip";
 
 /** True inside the Electron desktop app, iOS shell, or on phones — hide the offer there. */
 export function hideDesktopOffer(): boolean {
