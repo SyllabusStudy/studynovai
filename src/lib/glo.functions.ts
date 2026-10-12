@@ -206,3 +206,36 @@ export const gloCommand = createServerFn({ method: "POST" })
     }
     return { say: String(parsed.say ?? "Okay."), action };
   });
+
+/** Turns a short recorded voice clip into text (used where browser speech recognition isn't available, e.g. the desktop app). */
+export const transcribeGloVoice = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        audio: z.string().min(100).max(6_000_000),
+        mimeType: z
+          .string()
+          .max(120)
+          .transform((v) => (v || "").split(";")[0]!.trim().toLowerCase())
+          .transform((v) => (/^audio\/[\w.+-]+$/.test(v) ? v : "audio/webm")),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    // Transcription is a helper step for a Glo question, so it never spends a free trial use by itself.
+    const text = await withTrialOrUserAiKey(context.supabase, context.userId, "tutor", () =>
+      callAI([
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "Transcribe exactly what the speaker says in this short voice clip. Return ONLY the spoken words as plain text. If there is no clear speech, return exactly: [no speech]" },
+            { type: "file", file: { filename: "voice", file_data: `data:${data.mimeType};base64,${data.audio}` } },
+          ],
+        },
+      ], { maxTokens: 600, temperature: 0 }),
+      false,
+    );
+    const t = text.trim();
+    return { text: /^\[no speech\]$/i.test(t) ? "" : t };
+  });
