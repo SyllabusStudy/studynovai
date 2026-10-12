@@ -432,7 +432,7 @@ export function GloAssistant() {
               <X className="size-4" />
             </button>
           </div>
-          <div role="status" aria-live="polite" className="mb-2 flex min-h-8 items-center gap-2 text-xs font-semibold text-info">
+          <div role="status" aria-live="polite" onClick={micState === "denied" ? () => void startRecording() : undefined} className={cn("mb-2 flex min-h-8 items-center gap-2 text-xs font-semibold", micState === "denied" && !micBusy ? "cursor-pointer text-destructive" : "text-info")}>
             {processing ? <LoaderCircle className="size-4 shrink-0 motion-safe:animate-spin" /> : showingTranscript || mode === "speaking" ? <AudioLines className="size-4 shrink-0" /> : <span className="size-1.5 shrink-0 rounded-full bg-success" />}
             <span>{status}</span>
           </div>
@@ -455,6 +455,10 @@ export function GloAssistant() {
             </div>
           ) : null}
           <p className="min-h-12 max-h-40 overflow-y-auto break-words text-foreground scroll-slim">{showingTranscript ? `“${transcript}”` : caption || "Hey! What’s on your mind?"}</p>
+          <form onSubmit={submitTyped} data-no-voice className="mt-2 flex items-center gap-1.5">
+            <input data-no-voice value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="Type to Glo…" aria-label="Type a message to Glo" className="min-w-0 flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />
+            <button type="submit" aria-label="Send to Glo" disabled={!typed.trim() || processing || recording || transcribing} className="rounded-lg bg-primary p-1.5 text-primary-foreground disabled:opacity-50"><Send className="size-3.5" /></button>
+          </form>
           {pending ? (
             <div className="mt-2 flex gap-2">
               <button type="button" onClick={() => sendEmail(pending)} className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-primary px-2 py-1.5 text-xs font-bold text-primary-foreground"><Check className="size-3.5" /> Send</button>
@@ -462,7 +466,7 @@ export function GloAssistant() {
             </div>
           ) : null}
           <div className="mt-2 flex items-center justify-between border-t border-border pt-2">
-            <Button type="button" variant="ghost" size="sm" disabled={processing || mode === "speaking" || micBusy} onClick={() => wake()} className="h-7 gap-1 px-1 text-xs font-bold text-primary"><Mic className="size-3.5" /> Talk</Button>
+            <Button type="button" variant={recording ? "default" : "ghost"} size="sm" disabled={(!recording && (processing || transcribing || mode === "speaking")) || micBusy} onClick={talk} className={cn("h-7 gap-1 px-1.5 text-xs font-bold", recording ? "animate-pulse" : "text-primary")}>{recording ? <><Square className="size-3.5" /> Stop</> : <><Mic className="size-3.5" /> Talk</>}</Button>
             <button type="button" onClick={() => (watching ? stopWatching() : void startWatching().then((ok) => { if (ok) { awake.current = true; say("I can see your screen now. What would you like to know?"); } }))} className="flex items-center gap-1 text-xs font-bold text-primary">
               {watching ? <MonitorX className="size-3.5" /> : <MonitorUp className="size-3.5" />} {watching ? "Stop" : "Share screen"}
             </button>
