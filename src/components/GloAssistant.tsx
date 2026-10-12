@@ -250,7 +250,7 @@ export function GloAssistant() {
   useEffect(() => {
     const w = window as unknown as { SpeechRecognition?: new () => Rec; webkitSpeechRecognition?: new () => Rec };
     const C = w.SpeechRecognition ?? w.webkitSpeechRecognition;
-    if (!C || !listenOn) return;
+    if (!C || !listenOn || noWakeWord) return;
     let alive = true;
     const r = new C();
     r.continuous = true; r.interimResults = true; r.lang = navigator.language || "en-US";
@@ -303,7 +303,11 @@ export function GloAssistant() {
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => { base = e.results.length; fire(); }, GLO_SILENCE_MS);
     };
-    r.onerror = (e) => { if (e.error === "not-allowed" || e.error === "service-not-allowed") alive = false; };
+    r.onerror = (e) => {
+      if (e.error === "not-allowed") { alive = false; setMicState("denied"); }
+      // The desktop app (and some browsers) have no speech service: switch to tap-to-talk recording.
+      if (e.error === "network" || e.error === "service-not-allowed" || e.error === "language-not-supported") { alive = false; setNoWakeWord(true); }
+    };
     r.onend = () => { base = 0; if (alive) setTimeout(() => { try { r.start(); } catch { /* already running */ } }, 300); };
     rec.current = r;
     const start = () => { try { r.start(); } catch { /* running */ } };
@@ -319,7 +323,74 @@ export function GloAssistant() {
       perms.query({ name: "microphone" }).then((p) => begin(p.state === "granted")).catch(() => begin(false));
     } else begin(false);
     return () => { alive = false; if (timer) clearTimeout(timer); if (feedbackTimer) clearTimeout(feedbackTimer); window.removeEventListener("pointerdown", start); r.abort(); };
-  }, [listenOn, wake, handle]);
+  }, [listenOn, wake, handle, noWakeWord]);
+
+  // Watch the microphone permission so Glo can say clearly when it's blocked.
+  useEffect(() => {
+    const w = window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown };
+    if (!(w.SpeechRecognition ?? w.webkitSpeechRecognition) || /Electron/i.test(navigator.userAgent)) setNoWakeWord(true);
+    const perms = (navigator as Navigator & { permissions?: { query: (d: { name: string }) => Promise<{ state: string; onchange: (() => void) | null }> } }).permissions;
+    perms?.query({ name: "microphone" }).then((p) => {
+      const sync = () => setMicState(p.state === "granted" ? "granted" : p.state === "denied" ? "denied" : "prompt");
+      sync(); p.onchange = sync;
+    }).catch(() => {});
+  }, []);
+
+  /** Tap-to-talk: records with the real microphone and transcribes it (works in the desktop app). */
+  const startRecording = useCallback(async () => {
+    if (recorder.current || thinking.current || speaking.current || micBusy) return;
+    window.speechSynthesis?.cancel();
+    let media: MediaStream;
+    try {
+      media = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+      setMicState("granted");
+    } catch {
+      setMicState("denied"); setOpen(true);
+      setCaption("Your microphone is blocked. Allow it in your browser or computer settings (Windows: Settings → Privacy → Microphone), then tap Talk again. You can also type to me below.");
+      return;
+    }
+    const chunks: Blob[] = [];
+    let mr: MediaRecorder;
+    try { mr = new MediaRecorder(media, { audioBitsPerSecond: 32000 }); } catch { mr = new MediaRecorder(media); }
+    mr.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+    mr.onstop = async () => {
+      media.getTracks().forEach((t) => t.stop());
+      recorder.current = null; setRecording(false);
+      if (recTimer.current) clearTimeout(recTimer.current);
+      const blob = new Blob(chunks, { type: mr.mimeType || "audio/webm" });
+      if (blob.size < 2000) return;
+      setTranscribing(true);
+      try {
+        const buf = new Uint8Array(await blob.arrayBuffer());
+        let bin = ""; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+        const { text } = await transcribe({ data: { audio: btoa(bin), mimeType: blob.type } });
+        setTranscribing(false);
+        if (text) void handle(text);
+        else say("I didn't catch that. Tap Talk and try again, or type it below.");
+      } catch (e) {
+        setTranscribing(false);
+        say(e instanceof Error ? e.message.slice(0, 200) : "I couldn't hear that. Try typing it below.");
+      }
+    };
+    mr.start(500);
+    recorder.current = mr; setRecording(true); setOpen(true); setCaption("I'm listening… tap Stop when you're done.");
+    recTimer.current = setTimeout(() => recorder.current?.stop(), 30000);
+  }, [micBusy, transcribe, handle, say]);
+  const stopRecording = () => { if (recorder.current?.state === "recording") recorder.current.stop(); };
+
+  const talk = () => {
+    if (recording) return stopRecording();
+    if (noWakeWord || micState === "denied") return void startRecording();
+    wake();
+  };
+
+  const submitTyped = (e: React.FormEvent) => {
+    e.preventDefault();
+    const t = typed.trim();
+    if (!t || processing || recording || transcribing) return;
+    setTyped("");
+    if (BYE.test(t) || awake.current) void handle(t); else { keepAwake(); void handle(t); }
+  };
 
   // Quiet mode while a lecture is recording: stop talking and forget the open conversation.
   useEffect(() => {
