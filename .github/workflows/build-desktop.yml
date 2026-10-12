@@ -1,0 +1,29 @@
+name: Build Windows desktop app
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Package
+        run: |
+          mkdir -p /tmp/app/electron /tmp/app/public
+          cp electron/main.cjs /tmp/app/electron/
+          cp public/icon-192.png /tmp/app/public/
+          echo '{"name":"syllabusstudy","version":"1.0.0","main":"electron/main.cjs"}' > /tmp/app/package.json
+          npx --yes @electron/packager /tmp/app SyllabusStudy --platform=win32 --arch=x64 --out=out --overwrite
+          cd out && zip -qr ../SyllabusStudy-windows.zip SyllabusStudy-win32-x64
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: desktop-latest
+          name: SyllabusStudy Desktop
+          files: SyllabusStudy-windows.zip
