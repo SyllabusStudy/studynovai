@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Mic, MicOff, X, Check, MonitorUp, MonitorX, LoaderCircle, AudioLines } from "lucide-react";
+import { Mic, MicOff, X, Check, MonitorUp, MonitorX, LoaderCircle, AudioLines, Send, Square } from "lucide-react";
 import { MascotFace } from "@/components/ToolsMascot";
 import { Button } from "@/components/ui/button";
 import { createGloSpeechGate, GLO_SILENCE_MS } from "@/lib/glo-speech";
-import { gloCommand, type GloAction } from "@/lib/glo.functions";
+import { gloCommand, transcribeGloVoice, type GloAction } from "@/lib/glo.functions";
 import { addGloLog, describeGloAction } from "@/lib/glo-log";
 import { useAuth } from "@/lib/auth";
 import { useProfile } from "@/lib/data";
@@ -59,6 +59,14 @@ export function GloAssistant() {
   const [transcript, setTranscript] = useState("");
   const acceptSpeech = useRef(createGloSpeechGate());
   const [pending, setPending] = useState<Extract<GloAction, { type: "email" }> | null>(null);
+  const transcribe = useServerFn(transcribeGloVoice);
+  const [noWakeWord, setNoWakeWord] = useState(false);
+  const [micState, setMicState] = useState<"unknown" | "granted" | "denied" | "prompt">("unknown");
+  const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const [typed, setTyped] = useState("");
+  const recorder = useRef<MediaRecorder | null>(null);
+  const recTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [watching, setWatching] = useState(false);
   const stream = useRef<MediaStream | null>(null);
