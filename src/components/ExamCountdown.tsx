@@ -4,15 +4,18 @@ import { Button } from "@/components/ui/button";
 import { useActiveClass } from "@/lib/active-class";
 import { classLabel, type AssignmentRow, type ClassRow, type EventRow } from "@/lib/data";
 import { countdownLabel, upcomingExams } from "@/lib/exam-countdown";
+import { cn } from "@/lib/utils";
 
 export function ExamCountdown({
   assignments,
   events,
   classes,
+  className,
 }: {
   assignments: AssignmentRow[];
   events: EventRow[];
   classes: ClassRow[];
+  className?: string;
 }) {
   const navigate = useNavigate();
   const { setActiveClassId } = useActiveClass();
@@ -25,7 +28,7 @@ export function ExamCountdown({
   };
 
   return (
-    <section className="dash-glass space-y-3 p-4 sm:p-5" aria-label="Upcoming exams">
+    <section className={cn("dash-glass space-y-3 p-4 sm:p-5", className)} aria-label="Upcoming exams">
       {exams.map((ex) => {
         const cls = classes.find((c) => c.id === ex.classId);
         const urgent = ex.days <= 3;
