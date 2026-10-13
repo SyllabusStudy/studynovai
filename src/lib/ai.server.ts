@@ -622,7 +622,7 @@ export async function buildClassContext(
         .select("title,class_id,summary,key_concepts,transcript,created_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
-        .limit(40),
+        .limit(20),
     ]);
 
 
@@ -668,7 +668,7 @@ export async function buildClassContext(
       .filter((d) => d.class_id === c.id)
       .sort((a, b) => Number(b.is_syllabus) - Number(a.is_syllabus));
     // Per-class budget, shared across its documents so every file gets a fair slice.
-    let remaining = Math.max(12000, Math.floor(DOC_CHAR_BUDGET / Math.max(relevantClasses.length, 1)));
+    let remaining = Math.max(6000, Math.floor(DOC_CHAR_BUDGET / Math.max(relevantClasses.length, 1)));
     const readable = classDocs.filter((d) => (d.extracted_text ?? "").trim());
     readable.forEach((d, i) => {
       if (remaining <= 0) return;
@@ -681,10 +681,10 @@ export async function buildClassContext(
       );
     });
 
-    const cl = (lectures ?? []).filter((l) => l.class_id === c.id).slice(0, 8);
+    const cl = (lectures ?? []).filter((l) => l.class_id === c.id).slice(0, 5);
     for (const l of cl) {
       const concepts = Array.isArray(l.key_concepts) ? (l.key_concepts as unknown[]).map((k) => (typeof k === "string" ? k : JSON.stringify(k))).join("; ") : "";
-      const body = [l.summary, concepts && `Key concepts: ${concepts}`, !l.summary && l.transcript ? l.transcript.slice(0, 4000) : ""].filter(Boolean).join("\n").slice(0, 5000);
+      const body = [l.summary, concepts && `Key concepts: ${concepts}`, !l.summary && l.transcript ? l.transcript.slice(0, 2000) : ""].filter(Boolean).join("\n").slice(0, 2500);
       if (body.trim()) lines.push(`### LECTURE NOTE: ${l.title}`, body);
     }
 
