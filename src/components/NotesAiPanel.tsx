@@ -100,7 +100,7 @@ export function NotesAiPanel({ noteId, open, onOpen, onClose, editor, title, cla
     // paragraphs are auto-checked (the Spelling & grammar button still checks everything).
     const runSpell = async () => {
       const st = autoState.current;
-      if (st.spellBusy) return;
+      if (st.spellBusy || Date.now() < pausedUntil - 50) return;
       const paras = [...new Set(editor.getText().split(/\n+/).map(p => p.trim()).filter(p => p.length >= 4))];
       if (primedFor.current !== editor) { primedFor.current = editor; paras.slice(0, -4).forEach(p => st.checkedParas.add(p)); }
       const here = editor.state.selection.$from.parent.textContent.trim();
