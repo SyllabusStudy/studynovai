@@ -79,24 +79,43 @@ export function NotesAiPanel({ noteId, open, onOpen, onClose, editor, title, cla
     try { const v = JSON.parse(localStorage.getItem("studynova-notes-ai-auto") ?? "{}"); if (v.spell === false) setAutoSpell(false); if (v.feedback === false) setAutoFeedback(false); } catch { /* ignore */ }
   }, []);
   const saveAuto = (spell: boolean, fb: boolean) => localStorage.setItem("studynova-notes-ai-auto", JSON.stringify({ spell, feedback: fb }));
-  const autoState = useRef({ spellText: "", fbText: "", spellBusy: false, fbBusy: false, lastFb: 0 });
+  const autoState = useRef({ checkedParas: new Set<string>(), fbText: "", spellBusy: false, fbBusy: false, lastFb: 0 });
   useEffect(() => {
     if (!editor) return;
     let spellTimer: ReturnType<typeof setTimeout> | undefined, fbTimer: ReturnType<typeof setTimeout> | undefined;
     let disposed = false;
     const quiet = (e: unknown) => { if (e instanceof Error && /free limit|API key/i.test(e.message)) { setAutoSpell(false); setAutoFeedback(false); } };
+    // Only new or edited paragraphs are sent, in small batches, so checks come back fast
+    // even on long notes. Results are kept while the student keeps typing.
     const runSpell = async () => {
-      const text = editor.getText(); const st = autoState.current;
-      if (st.spellBusy || text.trim().length < 15 || text === st.spellText) return;
-      st.spellBusy = true; st.spellText = text;
+      const st = autoState.current;
+      if (st.spellBusy) return;
+      const paras = [...new Set(editor.getText().split(/\n+/).map(p => p.trim()).filter(p => p.length >= 4))];
+      const pending: string[] = []; let size = 0;
+      for (const p of paras) {
+        if (st.checkedParas.has(p)) continue;
+        if (pending.length && size + p.length > 2500) break;
+        pending.push(p); size += p.length;
+      }
+      if (!pending.length || size < 8) return;
+      st.spellBusy = true;
       try {
-        const r = await ai({ data: { action: "spelling", noteText: text, selection: "", question: "", writeMode: "", history: [] } });
+        const r = await ai({ data: { action: "spelling", noteText: pending.join("\n\n").slice(0, 6000), selection: "", question: "", writeMode: "", history: [] } });
         if (disposed || editor.isDestroyed) return;
         if (r.error) { quiet(new Error(r.error)); return; }
-        if (editor.getText() !== text) { st.spellText = ""; spellTimer = setTimeout(() => void runSpell(), 2500); return; }
+        pending.forEach(p => st.checkedParas.add(p));
         const current = editor.getText();
-        setSuggestions(prev => [...prev.filter(s => s.state), ...dropRejected(r.suggestions, rejected.current).filter(s => current.includes(s.original))]);
-      } catch (e) { quiet(e); } finally { st.spellBusy = false; }
+        const fresh = dropRejected(r.suggestions, rejected.current).filter(s => current.includes(s.original));
+        setSuggestions(prev => {
+          const kept = prev.filter(s => s.state || current.includes(s.original));
+          const seen = new Set(kept.filter(s => !s.state).map(s => s.original));
+          return [...kept, ...fresh.filter(s => !seen.has(s.original))];
+        });
+      } catch (e) { quiet(e); } finally {
+        st.spellBusy = false;
+        // More unchecked paragraphs (or edits made while waiting)? Check them right away.
+        if (!disposed && !editor.isDestroyed) { clearTimeout(spellTimer); spellTimer = setTimeout(() => void runSpell(), 400); }
+      }
     };
     const runFeedback = async () => {
       const text = editor.getText(); const st = autoState.current;
