@@ -112,22 +112,30 @@ async function callGeminiNative(
   let res: Response | null = null;
   for (let i = 0; i < models.length; i++) {
     const last = i === models.length - 1;
+    // Google sometimes leaves a busy model hanging for ~100s. Cap each try so a stuck
+    // model hands over to the next one instead of making the student wait.
+    const cap = hasVideo ? (last ? 90_000 : 45_000) : useSearch ? 20_000 : last ? 45_000 : 15_000;
     try {
       res = await fetchAiWithRetry(
         "google",
         `https://generativelanguage.googleapis.com/v1beta/models/${models[i]}:generateContent`,
-        { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body },
+        { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body, signal: AbortSignal.timeout(cap) },
         // A grounded attempt gives up after one try so the plain answer can take over quickly;
         // the first model gets one try so a used-up quota switches models without waiting.
         useSearch || !last ? 1 : undefined,
       );
     } catch (e) {
+      if (e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError")) {
+        console.warn("AI model too slow, switching", { model: models[i] });
+        if (last) throw new Error("I’m having trouble connecting right now. Your question is saved — try again in a moment.");
+        continue;
+      }
       if (last) throw e;
-      console.warn("Media model busy, trying the lite model", { model: models[i] });
+      console.warn("AI model busy, trying the next one", { model: models[i] });
       continue;
     }
     if (!res.ok && !last && (res.status === 404 || res.status === 429 || res.status >= 500 || res.status === 400)) {
-      console.warn("Media model rejected request, trying the lite model", { model: models[i], status: res.status });
+      console.warn("AI model rejected request, trying the next one", { model: models[i], status: res.status });
       await res.body?.cancel();
       continue;
     }
