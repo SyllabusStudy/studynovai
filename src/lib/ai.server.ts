@@ -108,13 +108,19 @@ async function callGeminiNative(
   // Text uses fast lite models only: the full Flash model can take 20-50s on free keys.
   const models = hasVideo
     ? ["gemini-flash-latest", "gemini-flash-lite-latest"]
-    : [CHAT_MODEL, "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"];
+    : [CHAT_MODEL, "gemini-2.5-flash-lite", "gemini-2.0-flash"];
+  // Long generations (quizzes, flashcards, study guides) legitimately take 20-40s.
+  const heavy = (opts?.maxTokens ?? 0) > 2000;
   let res: Response | null = null;
   for (let i = 0; i < models.length; i++) {
     const last = i === models.length - 1;
     // Google sometimes leaves a busy model hanging for ~100s. Cap each try so a stuck
     // model hands over to the next one instead of making the student wait.
-    const cap = hasVideo ? (last ? 90_000 : 45_000) : useSearch ? 20_000 : last ? 45_000 : 15_000;
+    const cap = hasVideo
+      ? (last ? 90_000 : 45_000)
+      : heavy
+        ? (last ? 90_000 : 60_000)
+        : useSearch ? 20_000 : last ? 45_000 : 15_000;
     try {
       res = await fetchAiWithRetry(
         "google",
