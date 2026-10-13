@@ -9,10 +9,12 @@ export function ExamCountdown({
   assignments,
   events,
   classes,
+  className,
 }: {
   assignments: AssignmentRow[];
   events: EventRow[];
   classes: ClassRow[];
+  className?: string;
 }) {
   const navigate = useNavigate();
   const { setActiveClassId } = useActiveClass();

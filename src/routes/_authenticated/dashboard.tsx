@@ -219,7 +219,7 @@ function Dashboard() {
             </div>
           </div>
 
-          <ExamCountdown assignments={assignments} events={events} classes={classes} />
+          <ExamCountdown assignments={assignments} events={events} classes={classes} className="hidden md:block" />
 
           {/* Quick actions */}
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
