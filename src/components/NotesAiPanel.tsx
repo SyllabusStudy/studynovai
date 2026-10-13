@@ -98,11 +98,12 @@ export function NotesAiPanel({ noteId, open, onOpen, onClose, editor, title, cla
         pending.push(p); size += p.length;
       }
       if (!pending.length || size < 8) return;
-      st.spellBusy = true;
+      st.spellBusy = true; let ok = false;
       try {
         const r = await ai({ data: { action: "spelling", noteText: pending.join("\n\n").slice(0, 6000), selection: "", question: "", writeMode: "", history: [] } });
         if (disposed || editor.isDestroyed) return;
         if (r.error) { quiet(new Error(r.error)); return; }
+        ok = true;
         pending.forEach(p => st.checkedParas.add(p));
         const current = editor.getText();
         const fresh = dropRejected(r.suggestions, rejected.current).filter(s => current.includes(s.original));
@@ -114,7 +115,7 @@ export function NotesAiPanel({ noteId, open, onOpen, onClose, editor, title, cla
       } catch (e) { quiet(e); } finally {
         st.spellBusy = false;
         // More unchecked paragraphs (or edits made while waiting)? Check them right away.
-        if (!disposed && !editor.isDestroyed) { clearTimeout(spellTimer); spellTimer = setTimeout(() => void runSpell(), 400); }
+        if (ok && !disposed && !editor.isDestroyed) { clearTimeout(spellTimer); spellTimer = setTimeout(() => void runSpell(), 400); }
       }
     };
     const runFeedback = async () => {
@@ -129,11 +130,11 @@ export function NotesAiPanel({ noteId, open, onOpen, onClose, editor, title, cla
       } catch (e) { quiet(e); } finally { st.fbBusy = false; }
     };
     const onUpdate = () => {
-      if (autoSpell) { clearTimeout(spellTimer); spellTimer = setTimeout(() => void runSpell(), 2500); }
+      if (autoSpell) { clearTimeout(spellTimer); spellTimer = setTimeout(() => void runSpell(), 1000); }
       if (autoFeedback) { clearTimeout(fbTimer); fbTimer = setTimeout(() => void runFeedback(), 8000); }
     };
     editor.on("update", onUpdate);
-    if (autoSpell) spellTimer = setTimeout(() => void runSpell(), 1500);
+    if (autoSpell) spellTimer = setTimeout(() => void runSpell(), 500);
     if (autoFeedback) fbTimer = setTimeout(() => void runFeedback(), 4000);
     return () => { disposed = true; editor.off("update", onUpdate); clearTimeout(spellTimer); clearTimeout(fbTimer); };
   }, [editor, autoSpell, autoFeedback, ai]);
