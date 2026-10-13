@@ -25,6 +25,7 @@ import { ClassChip } from "@/components/ClassBadge";
 import { Markdown } from "@/components/Markdown";
 import { InstallAppButton } from "@/components/InstallAppButton";
 import { DailyInspiration } from "@/components/DailyInspiration";
+import { ExamCountdown } from "@/components/ExamCountdown";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -217,6 +218,8 @@ function Dashboard() {
               </Link>
             </div>
           </div>
+
+          <ExamCountdown assignments={assignments} events={events} classes={classes} />
 
           {/* Quick actions */}
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
