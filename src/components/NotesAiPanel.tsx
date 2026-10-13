@@ -80,6 +80,7 @@ export function NotesAiPanel({ noteId, open, onOpen, onClose, editor, title, cla
   }, []);
   const saveAuto = (spell: boolean, fb: boolean) => localStorage.setItem("studynova-notes-ai-auto", JSON.stringify({ spell, feedback: fb }));
   const autoState = useRef({ checkedParas: new Set<string>(), fbText: "", spellBusy: false, fbBusy: false, lastFb: 0 });
+  const primedFor = useRef<unknown>(null);
   useEffect(() => {
     if (!editor) return;
     let spellTimer: ReturnType<typeof setTimeout> | undefined, fbTimer: ReturnType<typeof setTimeout> | undefined;
@@ -87,14 +88,19 @@ export function NotesAiPanel({ noteId, open, onOpen, onClose, editor, title, cla
     const quiet = (e: unknown) => { if (e instanceof Error && /free limit|API key/i.test(e.message)) { setAutoSpell(false); setAutoFeedback(false); } };
     // Only new or edited paragraphs are sent, in small batches, so checks come back fast
     // even on long notes. Results are kept while the student keeps typing.
+    // The paragraph being typed is checked first; when a note opens, only its last few
+    // paragraphs are auto-checked (the Spelling & grammar button still checks everything).
     const runSpell = async () => {
       const st = autoState.current;
       if (st.spellBusy) return;
       const paras = [...new Set(editor.getText().split(/\n+/).map(p => p.trim()).filter(p => p.length >= 4))];
+      if (primedFor.current !== editor) { primedFor.current = editor; paras.slice(0, -4).forEach(p => st.checkedParas.add(p)); }
+      const here = editor.state.selection.$from.parent.textContent.trim();
+      const order = [...(here && paras.includes(here) ? [here] : []), ...paras.slice().reverse().filter(p => p !== here)];
       const pending: string[] = []; let size = 0;
-      for (const p of paras) {
+      for (const p of order) {
         if (st.checkedParas.has(p)) continue;
-        if (pending.length && size + p.length > 2500) break;
+        if (pending.length && size + p.length > 1200) break;
         pending.push(p); size += p.length;
       }
       if (!pending.length || size < 8) return;
@@ -130,7 +136,7 @@ export function NotesAiPanel({ noteId, open, onOpen, onClose, editor, title, cla
       } catch (e) { quiet(e); } finally { st.fbBusy = false; }
     };
     const onUpdate = () => {
-      if (autoSpell) { clearTimeout(spellTimer); spellTimer = setTimeout(() => void runSpell(), 1000); }
+      if (autoSpell) { clearTimeout(spellTimer); spellTimer = setTimeout(() => void runSpell(), 700); }
       if (autoFeedback) { clearTimeout(fbTimer); fbTimer = setTimeout(() => void runFeedback(), 8000); }
     };
     editor.on("update", onUpdate);
