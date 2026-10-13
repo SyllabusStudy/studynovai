@@ -576,7 +576,9 @@ export type ClassContext = {
   events: Array<{ title: string; type: string; date: string }>;
 };
 
-const DOC_CHAR_BUDGET = 80000;
+// Smaller context = much faster answers on free-tier keys. Syllabi and the
+// newest documents still fit comfortably; only rarely-read tail text is cut.
+const DOC_CHAR_BUDGET = 24000;
 
 export async function buildClassContext(
   supabase: DB,
@@ -613,7 +615,7 @@ export async function buildClassContext(
         .select("content,kind,class_id,created_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
-        .limit(60),
+        .limit(25),
       supabase.from("grade_categories").select("class_id,name,weight").eq("user_id", userId),
       supabase
         .from("lecture_notes")
