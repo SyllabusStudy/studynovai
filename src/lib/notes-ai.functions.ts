@@ -59,7 +59,7 @@ export const runNotesAi = createServerFn({ method: "POST" })
         ? [...data.history.slice(-6).map(h => ({ role: h.role, content: h.content.slice(0, 6000) })), { role: "user" as const, content: prompt }]
         : [{ role: "user" as const, content: prompt }];
       // Smaller per-tool budgets + web search only for Research = much faster replies.
-      const budget: Record<string, number> = { feedback: 600, spelling: 2500, improve: 3000, diagram: 2000, quiz: 3500, flashcards: 3500, ask: 3000, explain: 2500, guide: 4500, research: 4000 };
+      const budget: Record<string, number> = { feedback: 600, spelling: 1200, improve: 3000, diagram: 2000, quiz: 3500, flashcards: 3500, ask: 3000, explain: 2500, guide: 4500, research: 4000 };
       const raw = await withUserAiKey(context.supabase, context.userId, () =>
         callAI(messages, { maxTokens: budget[data.action] ?? 3000, temperature: data.action === "spelling" ? 0.1 : 0.3, reasoningEffort: "low", search: data.action === "research" }));
       if (["improve", "spelling"].includes(data.action)) {
