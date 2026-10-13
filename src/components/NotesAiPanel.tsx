@@ -76,23 +76,31 @@ export function NotesAiPanel({ noteId, open, onOpen, onClose, editor, title, cla
   const [feedback, setFeedback] = useState("");
   const [feedbackNew, setFeedbackNew] = useState(false);
   useEffect(() => {
-    try { const v = JSON.parse(localStorage.getItem("studynova-notes-ai-auto") ?? "{}"); if (v.spell === false) setAutoSpell(false); if (v.feedback === false) setAutoFeedback(false); } catch { /* ignore */ }
+    // v2: auto checking is always ON by default; older saved "off" values (often set by errors, not the student) are ignored.
+    try { const v = JSON.parse(localStorage.getItem("studynova-notes-ai-auto-v2") ?? "{}"); if (v.spell === false) setAutoSpell(false); if (v.feedback === false) setAutoFeedback(false); } catch { /* ignore */ }
   }, []);
-  const saveAuto = (spell: boolean, fb: boolean) => localStorage.setItem("studynova-notes-ai-auto", JSON.stringify({ spell, feedback: fb }));
+  const saveAuto = (spell: boolean, fb: boolean) => localStorage.setItem("studynova-notes-ai-auto-v2", JSON.stringify({ spell, feedback: fb }));
   const autoState = useRef({ checkedParas: new Set<string>(), fbText: "", spellBusy: false, fbBusy: false, lastFb: 0 });
   const primedFor = useRef<unknown>(null);
   useEffect(() => {
     if (!editor) return;
     let spellTimer: ReturnType<typeof setTimeout> | undefined, fbTimer: ReturnType<typeof setTimeout> | undefined;
     let disposed = false;
-    const quiet = (e: unknown) => { if (e instanceof Error && /free limit|API key/i.test(e.message)) { setAutoSpell(false); setAutoFeedback(false); } };
+    // Errors never switch auto checking off — only the student's checkbox does. A busy AI
+    // retries shortly; a missing key or used-up limit just pauses for a minute.
+    let pausedUntil = 0;
+    const quiet = (e: unknown) => {
+      const blocked = e instanceof Error && /free limit|API key|AI key/i.test(e.message);
+      pausedUntil = Date.now() + (blocked ? 60_000 : 4_000);
+      if (!disposed) { clearTimeout(spellTimer); spellTimer = setTimeout(() => void runSpell(), blocked ? 60_000 : 4_000); }
+    };
     // Only new or edited paragraphs are sent, in small batches, so checks come back fast
     // even on long notes. Results are kept while the student keeps typing.
     // The paragraph being typed is checked first; when a note opens, only its last few
     // paragraphs are auto-checked (the Spelling & grammar button still checks everything).
     const runSpell = async () => {
       const st = autoState.current;
-      if (st.spellBusy) return;
+      if (st.spellBusy || Date.now() < pausedUntil - 50) return;
       const paras = [...new Set(editor.getText().split(/\n+/).map(p => p.trim()).filter(p => p.length >= 4))];
       if (primedFor.current !== editor) { primedFor.current = editor; paras.slice(0, -4).forEach(p => st.checkedParas.add(p)); }
       const here = editor.state.selection.$from.parent.textContent.trim();
