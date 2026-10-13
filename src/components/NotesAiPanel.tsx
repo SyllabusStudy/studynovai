@@ -136,7 +136,7 @@ export function NotesAiPanel({ noteId, open, onOpen, onClose, editor, title, cla
       } catch (e) { quiet(e); } finally { st.fbBusy = false; }
     };
     const onUpdate = () => {
-      if (autoSpell) { clearTimeout(spellTimer); spellTimer = setTimeout(() => void runSpell(), 1000); }
+      if (autoSpell) { clearTimeout(spellTimer); spellTimer = setTimeout(() => void runSpell(), 700); }
       if (autoFeedback) { clearTimeout(fbTimer); fbTimer = setTimeout(() => void runFeedback(), 8000); }
     };
     editor.on("update", onUpdate);
