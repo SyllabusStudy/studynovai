@@ -23,7 +23,10 @@ const REFINE = "FOLLOW-UPS: If the student sends a short revision command (e.g. 
 const CONTEXT = "Treat the note as informal live class notes that may contain phonetic spellings, speech-to-text errors, and typos. Infer the most likely intended everyday or course-related word from the surrounding sentences before answering. Prefer a simple contextual correction (for example, 'Gials' in criminal-justice notes likely means 'jails') over inventing an obscure concept. If two meanings are genuinely plausible, briefly ask which one the student meant instead of confidently guessing.";
 
 function promptFor(action: NotesAiAction, note: string, focus: string, question: string, writeMode: string) {
-  const notes = `STUDENT'S NOTE (their own words — never claim you changed it):\n"""\n${note.slice(0, 200_000)}\n"""`;
+  // Chat-style questions only need nearby context; a smaller prompt answers much faster.
+  const limit = action === "ask" || action === "explain" || action === "feedback" ? 20_000 : 200_000;
+  const trimmed = note.length > limit ? `…${note.slice(-limit)}` : note;
+  const notes = `STUDENT'S NOTE (their own words — never claim you changed it):\n"""\n${trimmed}\n"""`;
   const sel = focus ? `\nTHE PART THEY SELECTED:\n"""\n${focus.slice(0, 8000)}\n"""` : "";
   switch (action) {
     case "ask": return `You are SyllabusStudy's note-taking study assistant. ${CONTEXT} ${REFINE} Answer only the student's question. Use their note as context only when it's relevant. ${STYLE}\n\n${notes}${sel}\n\nQUESTION: ${question}`;
@@ -59,7 +62,7 @@ export const runNotesAi = createServerFn({ method: "POST" })
         ? [...data.history.slice(-6).map(h => ({ role: h.role, content: h.content.slice(0, 6000) })), { role: "user" as const, content: prompt }]
         : [{ role: "user" as const, content: prompt }];
       // Smaller per-tool budgets + web search only for Research = much faster replies.
-      const budget: Record<string, number> = { feedback: 600, spelling: 1200, improve: 3000, diagram: 2000, quiz: 3500, flashcards: 3500, ask: 3000, explain: 2500, guide: 4500, research: 4000 };
+      const budget: Record<string, number> = { feedback: 600, spelling: 1200, improve: 3000, diagram: 2000, quiz: 3500, flashcards: 3500, ask: 2000, explain: 1800, guide: 4500, research: 4000 };
       const raw = await withUserAiKey(context.supabase, context.userId, () =>
         callAI(messages, { maxTokens: budget[data.action] ?? 3000, temperature: data.action === "spelling" ? 0.1 : 0.3, reasoningEffort: "low", search: data.action === "research" }));
       if (["improve", "spelling"].includes(data.action)) {
