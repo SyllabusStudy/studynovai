@@ -82,6 +82,7 @@ export function NotesAiPanel({ noteId, open, onOpen, onClose, editor, title, cla
   const saveAuto = (spell: boolean, fb: boolean) => localStorage.setItem("studynova-notes-ai-auto-v2", JSON.stringify({ spell, feedback: fb }));
   const autoState = useRef({ checkedParas: new Set<string>(), fbText: "", spellBusy: false, fbBusy: false, lastFb: 0 });
   const primedFor = useRef<unknown>(null);
+  const asking = useRef(false);
   useEffect(() => {
     if (!editor) return;
     let spellTimer: ReturnType<typeof setTimeout> | undefined, fbTimer: ReturnType<typeof setTimeout> | undefined;
@@ -100,6 +101,8 @@ export function NotesAiPanel({ noteId, open, onOpen, onClose, editor, title, cla
     // paragraphs are auto-checked (the Spelling & grammar button still checks everything).
     const runSpell = async () => {
       const st = autoState.current;
+      // A student question always goes first; background checks wait until it's answered.
+      if (asking.current) { clearTimeout(spellTimer); spellTimer = setTimeout(() => void runSpell(), 1500); return; }
       if (st.spellBusy || Date.now() < pausedUntil - 50) return;
       const paras = [...new Set(editor.getText().split(/\n+/).map(p => p.trim()).filter(p => p.length >= 4))];
       if (primedFor.current !== editor) { primedFor.current = editor; paras.slice(0, -4).forEach(p => st.checkedParas.add(p)); }
@@ -133,6 +136,7 @@ export function NotesAiPanel({ noteId, open, onOpen, onClose, editor, title, cla
       }
     };
     const runFeedback = async () => {
+      if (asking.current) { clearTimeout(fbTimer); fbTimer = setTimeout(() => void runFeedback(), 5000); return; }
       const text = editor.getText(); const st = autoState.current;
       // Only when enough new writing has happened, and at most about once a minute.
       if (st.fbBusy || text.trim().length < 120 || Math.abs(text.length - st.fbText.length) < 100 || Date.now() - st.lastFb < 60_000) return;
