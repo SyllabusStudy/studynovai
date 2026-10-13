@@ -108,40 +108,26 @@ async function callGeminiNative(
   // Text uses fast lite models only: the full Flash model can take 20-50s on free keys.
   const models = hasVideo
     ? ["gemini-flash-latest", "gemini-flash-lite-latest"]
-    : [CHAT_MODEL, "gemini-2.5-flash-lite", "gemini-2.0-flash"];
-  // Long generations (quizzes, flashcards, study guides) legitimately take 20-40s.
-  const heavy = (opts?.maxTokens ?? 0) > 2000;
+    : [CHAT_MODEL, "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"];
   let res: Response | null = null;
   for (let i = 0; i < models.length; i++) {
     const last = i === models.length - 1;
-    // Google sometimes leaves a busy model hanging for ~100s. Cap each try so a stuck
-    // model hands over to the next one instead of making the student wait.
-    const cap = hasVideo
-      ? (last ? 90_000 : 45_000)
-      : heavy
-        ? (last ? 90_000 : 60_000)
-        : useSearch ? 20_000 : last ? 45_000 : 15_000;
     try {
       res = await fetchAiWithRetry(
         "google",
         `https://generativelanguage.googleapis.com/v1beta/models/${models[i]}:generateContent`,
-        { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body, signal: AbortSignal.timeout(cap) },
+        { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body },
         // A grounded attempt gives up after one try so the plain answer can take over quickly;
         // the first model gets one try so a used-up quota switches models without waiting.
         useSearch || !last ? 1 : undefined,
       );
     } catch (e) {
-      if (e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError")) {
-        console.warn("AI model too slow, switching", { model: models[i] });
-        if (last) throw new Error("I’m having trouble connecting right now. Your question is saved — try again in a moment.");
-        continue;
-      }
       if (last) throw e;
-      console.warn("AI model busy, trying the next one", { model: models[i] });
+      console.warn("Media model busy, trying the lite model", { model: models[i] });
       continue;
     }
     if (!res.ok && !last && (res.status === 404 || res.status === 429 || res.status >= 500 || res.status === 400)) {
-      console.warn("AI model rejected request, trying the next one", { model: models[i], status: res.status });
+      console.warn("Media model rejected request, trying the lite model", { model: models[i], status: res.status });
       await res.body?.cancel();
       continue;
     }
@@ -590,9 +576,7 @@ export type ClassContext = {
   events: Array<{ title: string; type: string; date: string }>;
 };
 
-// Smaller context = much faster answers on free-tier keys. Syllabi and the
-// newest documents still fit comfortably; only rarely-read tail text is cut.
-const DOC_CHAR_BUDGET = 24000;
+const DOC_CHAR_BUDGET = 80000;
 
 export async function buildClassContext(
   supabase: DB,
@@ -629,14 +613,14 @@ export async function buildClassContext(
         .select("content,kind,class_id,created_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
-        .limit(25),
+        .limit(60),
       supabase.from("grade_categories").select("class_id,name,weight").eq("user_id", userId),
       supabase
         .from("lecture_notes")
         .select("title,class_id,summary,key_concepts,transcript,created_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
-        .limit(20),
+        .limit(40),
     ]);
 
 
@@ -682,7 +666,7 @@ export async function buildClassContext(
       .filter((d) => d.class_id === c.id)
       .sort((a, b) => Number(b.is_syllabus) - Number(a.is_syllabus));
     // Per-class budget, shared across its documents so every file gets a fair slice.
-    let remaining = Math.max(6000, Math.floor(DOC_CHAR_BUDGET / Math.max(relevantClasses.length, 1)));
+    let remaining = Math.max(12000, Math.floor(DOC_CHAR_BUDGET / Math.max(relevantClasses.length, 1)));
     const readable = classDocs.filter((d) => (d.extracted_text ?? "").trim());
     readable.forEach((d, i) => {
       if (remaining <= 0) return;
@@ -695,10 +679,10 @@ export async function buildClassContext(
       );
     });
 
-    const cl = (lectures ?? []).filter((l) => l.class_id === c.id).slice(0, 5);
+    const cl = (lectures ?? []).filter((l) => l.class_id === c.id).slice(0, 8);
     for (const l of cl) {
       const concepts = Array.isArray(l.key_concepts) ? (l.key_concepts as unknown[]).map((k) => (typeof k === "string" ? k : JSON.stringify(k))).join("; ") : "";
-      const body = [l.summary, concepts && `Key concepts: ${concepts}`, !l.summary && l.transcript ? l.transcript.slice(0, 2000) : ""].filter(Boolean).join("\n").slice(0, 2500);
+      const body = [l.summary, concepts && `Key concepts: ${concepts}`, !l.summary && l.transcript ? l.transcript.slice(0, 4000) : ""].filter(Boolean).join("\n").slice(0, 5000);
       if (body.trim()) lines.push(`### LECTURE NOTE: ${l.title}`, body);
     }
 
