@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2 } from "lucide-react";
 import { getCreatorStats } from "@/lib/referral.functions";
+import { CreatorOutreach } from "./CreatorOutreach";
 
 const PRICE = 5.99;
 
@@ -12,6 +13,7 @@ export function AdminCreators() {
   if (error) return <p className="text-sm text-destructive">{(error as Error).message}</p>;
   return (
     <div className="space-y-4">
+      <CreatorOutreach />
       <p className="text-sm text-muted-foreground">
         Give each creator a link like <span className="font-semibold text-foreground">syllabusstudy.com/?ref=theirname</span>. Payout estimate = 25% of ${PRICE}/month per paying Pro student.
       </p>
