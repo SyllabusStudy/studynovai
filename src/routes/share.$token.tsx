@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { BrandLogo } from "@/components/BrandLogo";
+import { AdBanner } from "@/components/AdBanner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getSharedItem, type SharedItem } from "@/lib/share.functions";
@@ -94,6 +95,9 @@ function SharePage() {
             ) : (
               <Quiz questions={(data.payload.questions ?? []) as Q[]} />
             )}
+
+            <AdBanner />
+
 
             <div className="surface-card space-y-3 p-5 text-center">
               <p className="font-display text-lg font-bold">Want to make your own from your lecture notes?</p>
