@@ -74,30 +74,64 @@ export const draftCreatorPitch = createServerFn({ method: "POST" })
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) throw new Error("AI drafting isn't configured.");
     const { fetchAiWithRetry } = await import("./ai-request.server");
+    const system = [
+      "You write short, human cold-outreach emails from a student founder to a college/study YouTuber.",
+      "Product: SyllabusStudy (one word), an AI study app that turns syllabi, PDFs, assignments and YouTube lectures into notes, flashcards, quizzes and study plans.",
+      "Offer: free SyllabusStudy Pro, and 25% commission on eligible Pro subscriptions from students who sign up with their referral link.",
+      "No pressure to recommend it if they don't like it. Under 150 words. No emoji, no hype, no invented facts.",
+      "Do NOT include the link, signature or sign-off; those are added automatically.",
+      `Subject must include the word ${SUBJECT_TAG} and be under 60 characters. Body uses blank lines between paragraphs and starts with "Hey <name>,".`,
+    ].join(" ");
     const res = await fetchAiWithRetry("lovable", AI_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      headers: { "Content-Type": "application/json", "Lovable-API-Key": key, Authorization: `Bearer ${key}`, "X-Lovable-AIG-SDK": "fetch" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content: [
-              "You write short, human cold-outreach emails from a student founder to a college/study YouTuber.",
-              "Product: SyllabusStudy (one word), an AI study app that turns syllabi, PDFs, assignments and YouTube lectures into notes, flashcards, quizzes and study plans.",
-              "Offer: free SyllabusStudy Pro, and 25% commission on eligible Pro subscriptions from students who sign up with their referral link.",
-              "No pressure to recommend it if they don't like it. Under 150 words. No emoji, no hype, no invented facts.",
-              "Do NOT include the link, signature or sign-off; those are added automatically.",
-              `Reply JSON only: {"subject":"","body":""}. Subject must include the word ${SUBJECT_TAG} and be under 60 characters. Body uses blank lines between paragraphs and starts with "Hey <name>,".`,
-            ].join(" "),
+        model: "openai/gpt-6-astra",
+        stream: true,
+        store: false,
+        reasoning: { effort: "low" },
+        instructions: system,
+        input: [{ role: "user", content: `Creator: ${data.name}\nChannel: ${data.channel ?? ""}\nPersonal details / my instructions: ${data.notes ?? ""}` }],
+        text: {
+          format: {
+            type: "json_schema",
+            name: "pitch",
+            strict: true,
+            schema: {
+              type: "object",
+              additionalProperties: false,
+              required: ["subject", "body"],
+              properties: { subject: { type: "string" }, body: { type: "string" } },
+            },
           },
-          { role: "user", content: `Creator: ${data.name}\nChannel: ${data.channel ?? ""}\nPersonal details / my instructions: ${data.notes ?? ""}` },
-        ],
+        },
       }),
     });
-    if (!res.ok) throw new Error("Couldn't write the pitch just now. Try again.");
-    const j = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-    const raw = (j.choices?.[0]?.message?.content ?? "").replace(/```json|```/g, "").trim();
+    if (!res.ok || !res.body) {
+      console.error("Pitch draft failed", res.status, (await res.text()).slice(0, 300));
+      throw new Error("Couldn't write the pitch just now. Try again.");
+    }
+    let raw = "";
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = "";
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split("\n");
+      buf = lines.pop() ?? "";
+      for (const line of lines) {
+        if (!line.startsWith("data:")) continue;
+        const payload = line.slice(5).trim();
+        if (!payload || payload === "[DONE]") continue;
+        try {
+          const ev = JSON.parse(payload) as { type?: string; delta?: string };
+          if (ev.type === "response.output_text.delta" && ev.delta) raw += ev.delta;
+        } catch { /* ignore partial */ }
+      }
+    }
+    raw = raw.trim();
     try {
       const p = JSON.parse(raw) as { subject?: string; body?: string };
       let subject = String(p.subject ?? "").slice(0, 120);
