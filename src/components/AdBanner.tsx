@@ -19,11 +19,12 @@ function loadScript() {
 
 /** Google AdSense slot shown only to Free-plan students. Pro never loads ads. */
 export function AdBanner({ slot, className, variant = "banner" }: { slot?: string; className?: string; variant?: "banner" | "sidebar" }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth() as ReturnType<typeof useAuth> & { loading?: boolean };
   const load = useServerFn(getBilling);
   const { data } = useQuery({ queryKey: ["billing", user?.id], enabled: !!user, queryFn: () => load({}) });
   const ref = useRef<HTMLModElement>(null);
-  const free = !!data && data.plan !== "pro";
+  // Signed-out visitors (e.g. shared links) see ads; signed-in students only on Free.
+  const free = user ? !!data && data.plan !== "pro" : !loading;
 
   useEffect(() => {
     if (!free || !ref.current || ref.current.dataset["adsbygoogleStatus"]) return;
