@@ -75,12 +75,12 @@ export const draftCreatorPitch = createServerFn({ method: "POST" })
     if (!key) throw new Error("AI drafting isn't configured.");
     const { fetchAiWithRetry } = await import("./ai-request.server");
     const system = [
-      "You write short, human cold-outreach emails from a student founder to a college/study YouTuber.",
+      "You write short, personal cold-outreach emails from a student founder named David to a college/study YouTuber.",
       "Product: SyllabusStudy (one word), an AI study app that turns syllabi, PDFs, assignments and YouTube lectures into notes, flashcards, quizzes and study plans.",
-      "Offer: free SyllabusStudy Pro, and 25% commission on eligible Pro subscriptions from students who sign up with their referral link.",
-      "No pressure to recommend it if they don't like it. Under 150 words. No emoji, no hype, no invented facts.",
+      "Structure: one sentence referencing their channel or a recent video (use the personal details provided), one sentence on what SyllabusStudy does, then the offer: free Pro for them plus 25% recurring monthly commission on Pro subscriptions from students who join with their link. Phrase the commission as a human partnership offer (e.g. 'I'd give you 25% of every Pro subscription your students bring in, every month they stay subscribed'), never with the words affiliate, payout, campaign, or promo.",
+      "End the body with a low-pressure question like 'Want me to set you up with a free Pro account so you can try it first?'. Under 120 words. No emoji, no hype, no invented facts, no bullet lists.",
       "Do NOT include the link, signature or sign-off; those are added automatically.",
-      `Subject must include the word ${SUBJECT_TAG} and be under 60 characters. Body uses blank lines between paragraphs and starts with "Hey <name>,".`,
+      "Subject: casual and under 50 characters, e.g. 'quick idea for your study videos' — do not put the word SyllabusStudy in the subject.",
     ].join(" ");
     const res = await fetchAiWithRetry("lovable", AI_URL, {
       method: "POST",
@@ -152,12 +152,9 @@ export function buildPitch(body: string, code: string, senderName: string) {
   const link = referralLink(code);
   const paras = body.trim().split(/\n\s*\n/).map((p) => `<p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:#222">${esc(p).replace(/\n/g, "<br>")}</p>`).join("");
   const html = `<div style="font-family:Helvetica,Arial,sans-serif;max-width:560px">${paras}
-<p style="margin:18px 0 6px;font-size:15px;color:#222">Your personal referral link: <a href="${link}">${link}</a></p>
-<p style="margin:0 0 18px"><img src="${qrUrl(code, 220)}" width="160" height="160" alt="QR code for your referral link"></p>
-<p style="margin:0;font-size:15px;color:#222">Best,<br>${esc(senderName)}<br>Founder, SyllabusStudy<br><a href="${SITE}">${SITE.replace("https://", "")}</a></p>
-<p style="margin:16px 0 0"><img src="${LOGO}" width="40" height="40" alt="SyllabusStudy" style="border-radius:10px"></p>
-<p style="margin:14px 0 0;font-size:12px;color:#888">If you'd rather not hear from me again, just reply and let me know.</p></div>`;
-  const text = `${body.trim()}\n\nYour personal referral link: ${link}\nQR code: ${qrUrl(code)}\n\nBest,\n${senderName}\nFounder, SyllabusStudy\n${SITE}\n\nIf you'd rather not hear from me again, just reply and let me know.`;
+<p style="margin:18px 0 6px;font-size:15px;color:#222">Your link: <a href="${link}">${link}</a></p>
+<p style="margin:0;font-size:15px;color:#222">Best,<br>${esc(senderName)}<br>Founder, SyllabusStudy</p></div>`;
+  const text = `${body.trim()}\n\nYour link: ${link}\n\nBest,\n${senderName}\nFounder, SyllabusStudy`;
   return { html, text, link };
 }
 
