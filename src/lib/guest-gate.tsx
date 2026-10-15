@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Sparkles } from "lucide-react";
+import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import {
@@ -79,6 +80,7 @@ export function useGuestGate(tool: string) {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
   const isGuest = !loading && !user;
 
   const requireAccount = useCallback(
@@ -109,8 +111,33 @@ export function useGuestGate(tool: string) {
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="flex-col gap-2 sm:flex-col">
-          <Button className="w-full" onClick={() => navigate({ to: "/auth", search: { mode: "signup" } })}>
-            Create my free account
+          <Button
+            className="w-full"
+            disabled={googleBusy}
+            onClick={async () => {
+              setGoogleBusy(true);
+              const { lovable } = await import("@/integrations/lovable/index");
+              const result = await lovable.auth.signInWithOAuth("google", {
+                redirect_uri: window.location.href,
+              });
+              if (result.redirected) return;
+              setGoogleBusy(false);
+              if (result.error) {
+                toast.error("Google sign-in didn't finish. Try again.");
+                return;
+              }
+              setOpen(false);
+              toast.success("You're in! Your free uses are ready.");
+            }}
+          >
+            {googleBusy ? "Opening Google…" : "Continue with Google — 1 click"}
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => navigate({ to: "/auth", search: { mode: "signup" } })}
+          >
+            Sign up with email
           </Button>
           <Button
             variant="ghost"
