@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Download, Loader2, Send, Sparkles } from "lucide-react";
+import { Copy, Download, Loader2, Send, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +45,29 @@ export function CreatorOutreach() {
     },
     onError: (e) => toast.error((e as Error).message),
   });
+
+  const copyRich = async () => {
+    const link = `${SITE}/?ref=${ref}`;
+    const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const paras = body.trim().split(/\n{2,}/).map((p) => `<p style="margin:0 0 12px">${esc(p).replace(/\n/g, "<br>")}</p>`).join("");
+    const html = `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5">${paras}`
+      + `<p style="margin:0 0 8px">Your link: <a href="${link}">${link}</a></p>`
+      + `<p style="margin:0 0 12px"><img src="${qr(ref)}" alt="Referral QR code" width="140" height="140"></p>`
+      + `<p style="margin:0 0 6px">${esc(sender || "David")}<br>Founder, SyllabusStudy</p>`
+      + `<p style="margin:0"><img src="${SITE}/icon-192.png" alt="SyllabusStudy" width="48" height="48"></p></div>`;
+    const text = `${body.trim()}\n\nYour link: ${link}\n\n${sender || "David"}\nFounder, SyllabusStudy`;
+    try {
+      await navigator.clipboard.write([new ClipboardItem({
+        "text/html": new Blob([html], { type: "text/html" }),
+        "text/plain": new Blob([text], { type: "text/plain" }),
+      })]);
+      toast.success("Copied! Paste into a new Gmail message.");
+    } catch {
+      await navigator.clipboard.writeText(text);
+      toast.success("Copied text (your browser blocked images).");
+    }
+  };
+
 
   return (
     <div className="surface-card space-y-4 p-4">
@@ -90,9 +113,18 @@ export function CreatorOutreach() {
           <Textarea rows={9} value={body} onChange={(e) => setBody(e.target.value)} placeholder={"Hey Jessica,\n\n…"} />
           <p className="mt-1 text-xs text-muted-foreground">Their link, QR code, your signature and the SyllabusStudy logo are added at the bottom automatically.</p>
         </div>
-        <Button disabled={!st.data?.connected || !email || !subject || !body || go.isPending} onClick={() => go.mutate()}>
-          {go.isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />} Send email
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button disabled={!body || !ref} onClick={copyRich}>
+            <Copy className="size-4" /> Copy for Gmail (with QR + logo)
+          </Button>
+          <Button variant="outline" disabled={!subject} onClick={() => { navigator.clipboard.writeText(subject); toast.success("Subject copied"); }}>
+            <Copy className="size-4" /> Copy subject
+          </Button>
+          <Button variant="outline" disabled={!st.data?.connected || !email || !subject || !body || go.isPending} onClick={() => go.mutate()}>
+            {go.isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />} Send from app
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">Tip: for your first pitches, copy and paste into the regular Gmail website — it lands in inboxes more often.</p>
       </div>
 
       {!!st.data?.sent.length && (
