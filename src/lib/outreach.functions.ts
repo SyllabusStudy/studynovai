@@ -3,7 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { cleanRef } from "./referral.functions";
 
 const GMAIL = "https://connector-gateway.lovable.dev/google_mail/gmail/v1";
-const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const AI_URL = "https://ai.gateway.lovable.dev/v1/responses";
 const SITE = "https://syllabusstudy.com";
 const LOGO = `${SITE}/icon-192.png`;
 const SUBJECT_TAG = "SyllabusStudy";
