@@ -175,7 +175,6 @@ export const sendCreatorPitch = createServerFn({ method: "POST" })
     const boundary = `b_${crypto.randomUUID()}`;
     const mime = [
       `To: ${to}`,
-      `From: ${hdr(`${data.senderName.trim() || "David"} | SyllabusStudy`)} <me>`.replace(" <me>", ""),
       `Subject: ${hdr(data.subject.trim())}`,
       "MIME-Version: 1.0",
       `Content-Type: multipart/alternative; boundary="${boundary}"`,
