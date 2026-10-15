@@ -204,6 +204,13 @@
       "when": 1791450547831,
       "tag": "0028_promo_code_duration",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1792023419073,
+      "tag": "0029_add_referred_by",
+      "breakpoints": true
     }
   ]
 }
