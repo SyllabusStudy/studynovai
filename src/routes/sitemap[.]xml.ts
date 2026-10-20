@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
+import { GUIDES } from "@/content/guides";
 
 const BASE_URL = "https://syllabusstudy.com";
 
@@ -21,6 +22,8 @@ export const Route = createFileRoute("/sitemap.xml")({
           { path: "/auth", changefreq: "monthly", priority: "0.5" },
           { path: "/privacy", changefreq: "yearly", priority: "0.3" },
           { path: "/terms", changefreq: "yearly", priority: "0.3" },
+          { path: "/guides", changefreq: "monthly", priority: "0.8" },
+          ...GUIDES.map((g) => ({ path: `/guides/${g.slug}`, changefreq: "monthly" as const, priority: "0.7" })),
 
 
         ];
