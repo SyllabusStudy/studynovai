@@ -243,6 +243,9 @@ function Landing() {
             <Link to="/flashcards" className="hover:text-foreground">
               AI Flashcard Maker
             </Link>
+            <Link to="/guides" className="hover:text-foreground">
+              Study Guides
+            </Link>
             <Link to="/privacy" className="hover:text-foreground">
               Privacy Policy
             </Link>
