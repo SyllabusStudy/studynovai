@@ -174,6 +174,51 @@ export type Database = {
         }
         Relationships: []
       }
+      app_health_events: {
+        Row: {
+          area: string
+          created_at: string
+          device: string | null
+          diagnosis: string | null
+          duration_ms: number | null
+          fix: string | null
+          id: string
+          kind: string
+          message: string
+          page: string | null
+          resolved: boolean
+          user_id: string
+        }
+        Insert: {
+          area: string
+          created_at?: string
+          device?: string | null
+          diagnosis?: string | null
+          duration_ms?: number | null
+          fix?: string | null
+          id?: string
+          kind: string
+          message: string
+          page?: string | null
+          resolved?: boolean
+          user_id: string
+        }
+        Update: {
+          area?: string
+          created_at?: string
+          device?: string | null
+          diagnosis?: string | null
+          duration_ms?: number | null
+          fix?: string | null
+          id?: string
+          kind?: string
+          message?: string
+          page?: string | null
+          resolved?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       app_user_connections: {
         Row: {
           account_email: string | null
