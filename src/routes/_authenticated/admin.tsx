@@ -22,6 +22,7 @@ import { useAuth } from "@/lib/auth";
 import { AdminAiUsage, AdminUsers } from "@/components/AdminUsage";
 import { AdminVisitors } from "@/components/AdminVisitors";
 import { AdminCreators } from "@/components/AdminCreators";
+import { AdminHealth } from "@/components/AdminHealth";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -74,6 +75,7 @@ function AdminPage() {
       <Tabs defaultValue="feedback">
         <TabsList className="mb-6 flex-wrap">
           <TabsTrigger value="feedback">Feedback</TabsTrigger>
+          <TabsTrigger value="health">Bugs &amp; Lags</TabsTrigger>
           <TabsTrigger value="announcements">Announcements</TabsTrigger>
           <TabsTrigger value="pricing">Pricing &amp; promos</TabsTrigger>
           <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -85,6 +87,7 @@ function AdminPage() {
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
         <TabsContent value="feedback"><AdminFeedback /></TabsContent>
+        <TabsContent value="health"><AdminHealth /></TabsContent>
         <TabsContent value="announcements"><AdminAnnouncements /></TabsContent>
         <TabsContent value="pricing"><AdminPricing /></TabsContent>
         <TabsContent value="visitors"><AdminVisitors /></TabsContent>

@@ -211,6 +211,13 @@
       "when": 1792023419073,
       "tag": "0029_add_referred_by",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1792916074528,
+      "tag": "0030_app_health_events",
+      "breakpoints": true
     }
   ]
 }

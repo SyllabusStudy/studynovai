@@ -34,6 +34,10 @@ function AuthenticatedLayout() {
     if (!loading && !user && !guestAllowed) navigate({ to: "/auth" });
   }, [loading, user, navigate, guestAllowed]);
 
+  useEffect(() => {
+    if (user) void import("@/lib/health-monitor").then((m) => m.startHealthMonitor());
+  }, [user]);
+
   // Every signed-in student (email or Google) must add an AI key before entering the app.
   useEffect(() => {
     if (needsKey) navigate({ to: "/setup-ai", replace: true });
