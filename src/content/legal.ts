@@ -266,6 +266,8 @@ Those services may have their own privacy policies and terms.
 
 SyllabusStudy is not responsible for the privacy practices of third-party services that you choose to connect.
 
+Advertising and cookies: Free users and visitors may see ads served by Google AdSense (web) or Google AdMob (iOS app). Pro subscribers do not see ads. Third-party vendors, including Google, use cookies to serve ads based on a user's prior visits to this website or other websites. Google's use of advertising cookies enables it and its partners to serve ads based on your visits to SyllabusStudy and/or other sites on the Internet. You may opt out of personalized advertising by visiting Google Ads Settings at https://adssettings.google.com, or opt out of some third-party vendors' use of cookies for personalized advertising at https://www.aboutads.info. Your notes, uploaded files, and AI conversations are never used for ad targeting.
+
 13. INTERNATIONAL USERS
 
 SyllabusStudy may use service providers that process information in countries other than the country where you live.
@@ -285,8 +287,8 @@ The "Last Updated" date at the top of this Privacy Policy indicates when it was 
 If you have questions about this Privacy Policy or want to make a privacy request, contact us at:
 
 SyllabusStudy
-Email: [YOUR SUPPORT EMAIL]
-Website: [YOUR WEBSITE]`;
+Email: davidsawaqed12@gmail.com
+Website: https://syllabusstudy.com`;
 
 export const TERMS_OF_SERVICE = `SYLLABUSSTUDY TERMS OF SERVICE
 
@@ -550,5 +552,5 @@ Any dispute will be handled in the jurisdiction required or permitted by applica
 Questions about these Terms can be sent to:
 
 SyllabusStudy
-Email: [YOUR SUPPORT EMAIL]
-Website: [YOUR WEBSITE]`;
+Email: davidsawaqed12@gmail.com
+Website: https://syllabusstudy.com`;
