@@ -161,10 +161,15 @@ function AuthPage() {
 
           {mode !== "reset" ? (
             <>
+              <AppleSignInButton
+                className="mt-6 w-full gap-2"
+                onSignedIn={() => navigate({ to: (guestReturnPath() ?? "/dashboard") as "/dashboard" })}
+              />
+              {nativeApp ? null : (
               <Button
                 type="button"
                 variant="outline"
-                className="mt-6 w-full gap-2"
+                className="mt-3 w-full gap-2"
                 onClick={onGoogle}
                 disabled={googleBusy || busy}
               >
