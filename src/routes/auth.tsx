@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth";
 import { lovable } from "@/integrations/lovable/index";
 import { guestReturnPath } from "@/lib/guest-gate";
+import { AppleSignInButton } from "@/components/AppleSignInButton";
+import { isNativeApp } from "@/lib/pwa";
 import { isSchoolEmail, SCHOOL_EMAIL_MESSAGE } from "@/lib/school-email";
 
 const searchSchema = z.object({
@@ -49,6 +51,8 @@ function AuthPage() {
   const [googleBusy, setGoogleBusy] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [nativeApp, setNativeApp] = useState(false);
+  useEffect(() => setNativeApp(isNativeApp()), []);
 
   useEffect(() => {
     if (creating) return;
