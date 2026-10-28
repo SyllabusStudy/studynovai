@@ -77,7 +77,7 @@ export async function withUserAiKey<T>(
 }
 
 export type TrialBucket = "tools" | "tutor";
-export const TRIAL_LIMITS: Record<TrialBucket, number> = { tools: 3, tutor: 2 };
+export const TRIAL_LIMITS: Record<TrialBucket, number> = { tools: 10, tutor: 2 };
 
 /** Remaining free trial uses per bucket (never exposes the shared key). */
 export async function getTrialRemaining(
