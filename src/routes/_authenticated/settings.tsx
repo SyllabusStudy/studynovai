@@ -18,6 +18,8 @@ import { useAuth } from "@/lib/auth";
 import { useProfile } from "@/lib/data";
 import { useTheme } from "@/lib/theme";
 import { SEASONAL_THEMES, useSeasonalTheme } from "@/lib/seasonal-theme";
+import { useServerFn } from "@tanstack/react-start";
+import { deleteMyAccount } from "@/lib/account.functions";
 
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -245,6 +247,43 @@ function SettingsPage() {
           ))}
         </div>
       </div>
+
+      <DeleteAccountCard />
+    </div>
+  );
+}
+
+function DeleteAccountCard() {
+  const del = useServerFn(deleteMyAccount);
+  const [busy, setBusy] = useState(false);
+  async function onDelete() {
+    const typed = window.prompt(
+      'This permanently deletes your account, classes, notes and study history. It can\'t be undone.\n\nType DELETE to confirm.',
+    );
+    if (typed?.trim().toUpperCase() !== "DELETE") return;
+    setBusy(true);
+    try {
+      await del();
+      await supabase.auth.signOut();
+      toast.success("Your account was deleted.");
+      window.location.href = "/";
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't delete your account. Try again.");
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="surface-card mt-6 space-y-3 border-destructive/40 p-5">
+      <div>
+        <p className="text-sm font-semibold">Delete account</p>
+        <p className="text-xs text-muted-foreground">
+          Permanently remove your SyllabusStudy account and all of your data. If you pay through Apple, cancel the subscription in your Apple ID settings too.
+        </p>
+      </div>
+      <Button variant="destructive" disabled={busy} onClick={() => void onDelete()}>
+        {busy ? <Loader2 className="size-4 animate-spin" /> : null}
+        Delete my account
+      </Button>
     </div>
   );
 }
