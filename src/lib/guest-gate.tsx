@@ -1,3 +1,4 @@
+import { isNativeApp } from "@/lib/pwa";
 import { AppleSignInButton } from "@/components/AppleSignInButton";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
@@ -119,6 +120,7 @@ export function useGuestGate(tool: string) {
               toast.success("You're in! Your free uses are ready.");
             }}
           />
+          {open && isNativeApp() ? null : (
           <Button
             className="w-full"
             disabled={googleBusy}
@@ -140,6 +142,7 @@ export function useGuestGate(tool: string) {
           >
             {googleBusy ? "Opening Google…" : "Continue with Google — 1 click"}
           </Button>
+          )}
           <Button
             variant="outline"
             className="w-full"
