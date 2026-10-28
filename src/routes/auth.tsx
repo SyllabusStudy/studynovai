@@ -197,6 +197,7 @@ function AuthPage() {
                 )}
                 Continue with Google
               </Button>
+              )}
 
               <div className="mt-6 flex items-center gap-3">
                 <span className="h-px flex-1 bg-border" />
