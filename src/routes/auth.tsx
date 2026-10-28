@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth";
 import { lovable } from "@/integrations/lovable/index";
 import { guestReturnPath } from "@/lib/guest-gate";
+import { AppleSignInButton } from "@/components/AppleSignInButton";
+import { isNativeApp } from "@/lib/pwa";
 import { isSchoolEmail, SCHOOL_EMAIL_MESSAGE } from "@/lib/school-email";
 
 const searchSchema = z.object({
@@ -49,6 +51,8 @@ function AuthPage() {
   const [googleBusy, setGoogleBusy] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [nativeApp, setNativeApp] = useState(false);
+  useEffect(() => setNativeApp(isNativeApp()), []);
 
   useEffect(() => {
     if (creating) return;
@@ -161,10 +165,15 @@ function AuthPage() {
 
           {mode !== "reset" ? (
             <>
+              <AppleSignInButton
+                className="mt-6 w-full gap-2"
+                onSignedIn={() => navigate({ to: (guestReturnPath() ?? "/dashboard") as "/dashboard" })}
+              />
+              {nativeApp ? null : (
               <Button
                 type="button"
                 variant="outline"
-                className="mt-6 w-full gap-2"
+                className="mt-3 w-full gap-2"
                 onClick={onGoogle}
                 disabled={googleBusy || busy}
               >
@@ -192,6 +201,7 @@ function AuthPage() {
                 )}
                 Continue with Google
               </Button>
+              )}
 
               <div className="mt-6 flex items-center gap-3">
                 <span className="h-px flex-1 bg-border" />

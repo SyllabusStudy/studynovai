@@ -8,7 +8,16 @@ const config: CapacitorConfig = {
   backgroundColor: "#0F1117",
   server: {
     url: "https://syllabusstudy.com/dashboard?source=ios",
-    allowNavigation: ["syllabusstudy.com", "*.syllabusstudy.com", "accounts.google.com"],
+    // Keep sign-in inside the app (Apple guideline 4): the sign-in broker and Apple's sign-in page must not open Safari.
+    allowNavigation: [
+      "syllabusstudy.com",
+      "*.syllabusstudy.com",
+      "oauth.lovable.app",
+      "*.lovable.app",
+      "appleid.apple.com",
+      "*.apple.com",
+      "*.supabase.co",
+    ],
   },
   ios: {
     contentInset: "never",
