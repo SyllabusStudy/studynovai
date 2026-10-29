@@ -55,7 +55,7 @@ export const runNotesAi = createServerFn({ method: "POST" })
   .handler(async ({ context, data }): Promise<NotesAiResult> => {
     const out = empty();
     try {
-      const { withUserAiKey } = await import("./ai-key.server");
+      const { withTrialOrUserAiKey } = await import("./ai-key.server");
       const { callAI, parseJsonBlock } = await import("./ai.server");
       const prompt = promptFor(data.action, data.noteText, data.selection, data.question, data.writeMode);
       const messages = (data.action === "ask" || data.action === "research" || data.action === "explain")
@@ -63,8 +63,8 @@ export const runNotesAi = createServerFn({ method: "POST" })
         : [{ role: "user" as const, content: prompt }];
       // Smaller per-tool budgets + web search only for Research = much faster replies.
       const budget: Record<string, number> = { feedback: 600, spelling: 1200, improve: 3000, diagram: 2000, quiz: 3500, flashcards: 3500, ask: 2000, explain: 1800, guide: 4500, research: 4000 };
-      const raw = await withUserAiKey(context.supabase, context.userId, () =>
-        callAI(messages, { maxTokens: budget[data.action] ?? 3000, temperature: data.action === "spelling" ? 0.1 : 0.3, reasoningEffort: "low", search: data.action === "research" }));
+      const raw = await withTrialOrUserAiKey(context.supabase, context.userId, "tools", () =>
+        callAI(messages, { maxTokens: budget[data.action] ?? 3000, temperature: data.action === "spelling" ? 0.1 : 0.3, reasoningEffort: "low", search: data.action === "research" }), !["spelling", "feedback"].includes(data.action));
       if (["improve", "spelling"].includes(data.action)) {
         const j = parseJsonBlock<{ suggestions?: NotesAiSuggestion[] }>(raw);
         out.suggestions = (j.suggestions ?? []).filter(s => typeof s?.original === "string" && typeof s.suggestion === "string" && s.original && s.original !== s.suggestion && (data.selection || data.noteText).includes(s.original)).slice(0, 30).map(s => ({ ...s, reason: typeof s.reason === "string" ? s.reason : "", kind: s.kind === "spelling" || (data.action === "spelling" && /^spelling\b/i.test(s.reason ?? "")) ? "spelling" as const : "wording" as const }));
