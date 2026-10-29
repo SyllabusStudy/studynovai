@@ -39,7 +39,7 @@ async function readPdf(file: File): Promise<{ text: string; pages: number }> {
     let lastY: number | null = null;
     let line = "";
     for (const it of content.items as { str: string; transform: number[] }[]) {
-      const y = Math.round(it.transform[5]);
+      const y = Math.round(it.transform[5] ?? 0);
       if (lastY !== null && Math.abs(y - lastY) > 3) { out.push(line); line = ""; }
       line += (line && !line.endsWith(" ") ? " " : "") + it.str;
       lastY = y;

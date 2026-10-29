@@ -117,7 +117,7 @@ function cleanTitle(line: string, type: LocalEventType): string {
     .replace(/:\s*,\s*/g, ": ")
     .replace(/\s{2,}/g, " ")
     .trim();
-  if (t.length < 3) t = type[0].toUpperCase() + type.slice(1);
+  if (t.length < 3) t = type.charAt(0).toUpperCase() + type.slice(1);
   return t.slice(0, 120);
 }
 
@@ -134,9 +134,10 @@ export function detectEvents(text: string, fallbackYear = new Date().getFullYear
     let source = line;
     let usedNeighbor = false;
     // Table rows sometimes split the label onto the next line.
-    if (!type && lines[i + 1] && !findDates(lines[i + 1], year).length) {
-      type = classify(lines[i + 1]);
-      if (type) { source = `${line} ${lines[i + 1]}`; usedNeighbor = true; }
+    const next = lines[i + 1];
+    if (!type && next && !findDates(next, year).length) {
+      type = classify(next);
+      if (type) { source = `${line} ${next}`; usedNeighbor = true; }
     }
     if (!type) return;
     for (const d of dates) {
