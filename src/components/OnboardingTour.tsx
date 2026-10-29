@@ -202,7 +202,7 @@ export function OnboardingTour() {
       window.removeEventListener("resize", tick);
       window.removeEventListener("scroll", tick, true);
     };
-  }, [current, baseStep, pathname]);
+  }, [current, baseStep, pathname, step]);
 
   const [arrow, setArrow] = useState<{ x: number; y: number; deg: number } | null>(null);
   // Keep the card on-screen and off the highlighted element.
@@ -248,7 +248,24 @@ export function OnboardingTour() {
     navigate({ to: "/dashboard" });
   }
 
-  if (mode === "off" || paused) return null;
+  if (mode === "off") return null;
+  // A real form/dialog is open (e.g. Add assignment): Glo stays with them in a small bubble instead of vanishing.
+  if (paused) {
+    return (
+      <div className="pointer-events-none fixed inset-x-0 top-3 z-[100] flex justify-center px-3" aria-live="polite">
+        <div data-tour-card role="status" className="surface-card pointer-events-auto flex w-[min(92vw,24rem)] items-center gap-3 p-3 shadow-2xl">
+          <MascotBot className="animate-bounce" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-extrabold leading-tight">I'm still here! 👋</p>
+            <p className="text-xs text-muted-foreground">Fill this in and tap Save — or close it. Then we'll keep going.</p>
+          </div>
+          {current && current.kind === "next" ? (
+            <Button size="sm" onClick={() => setStep(step + 1)}>Next</Button>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
 
   // Darker backdrop so the spotlighted button stands out clearly.
   const dim = "color-mix(in oklch, var(--background) 88%, transparent)";
@@ -316,7 +333,7 @@ export function OnboardingTour() {
                 ))}
               </div>
             ) : null}
-            {current.action ? (
+            {current.action || mobileHint ? (
               <p className="mt-3 flex items-center gap-1.5 text-sm font-extrabold text-primary">
                 👉 {mobileHint ?? current.action} <span className="animate-pulse">— I'm pointing at it!</span>
               </p>
