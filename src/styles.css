@@ -110,6 +110,30 @@
   }
 }
 
+/* SnapQuick: scan while solving, pop the answer in when it's ready. */
+@keyframes answer-pop {
+  0% { opacity: 0; transform: translateY(14px) scale(0.96); }
+  60% { opacity: 1; transform: translateY(-2px) scale(1.01); }
+  100% { opacity: 1; transform: none; }
+}
+.animate-answer-pop { animation: answer-pop 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; transform-origin: top center; }
+@keyframes snap-scan { 0% { top: -4rem; } 100% { top: 100%; } }
+.snap-scan-beam {
+  top: -4rem;
+  background: linear-gradient(to bottom, transparent, color-mix(in oklch, var(--primary) 45%, transparent) 85%, var(--primary));
+  box-shadow: 0 6px 18px -4px var(--primary);
+  animation: snap-scan 1.6s ease-in-out infinite;
+}
+.snap-scan-grid {
+  background-image:
+    linear-gradient(color-mix(in oklch, var(--primary) 14%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklch, var(--primary) 14%, transparent) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-answer-pop, .snap-scan-beam { animation: none; }
+}
+
 @keyframes seasonal-float {
   0%,
   100% {
