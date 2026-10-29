@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Loader2, Plus, Upload } from "lucide-react";
+import { AlertTriangle, BookOpen, Loader2, Plus, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
@@ -53,12 +53,31 @@ function ClassesPage() {
   const { data: assignments = [] } = useAssignments(user?.id);
   const overrides = useCoverOverrides();
   const qc = useQueryClient();
+  // A syllabus still "working" after 4 minutes has stalled — show it as failed instead of spinning forever.
+  const STALL_MS = 4 * 60_000;
+  const isWorking = (d: (typeof documents)[number]) =>
+    ["processing", "pending", "analyzing"].includes(d.processing_status ?? "");
   const building = documents.filter(
+    (d) => d.is_syllabus && isWorking(d) && Date.now() - new Date(d.created_at).getTime() < STALL_MS,
+  );
+  const failed = documents.filter(
     (d) =>
       d.is_syllabus &&
-      ["processing", "pending", "analyzing"].includes(d.processing_status ?? "") &&
-      Date.now() - new Date(d.created_at).getTime() < 10 * 60_000,
+      !d.class_id &&
+      (d.processing_status === "failed" || (isWorking(d) && Date.now() - new Date(d.created_at).getTime() >= STALL_MS)),
   );
+  const failReason = (d: (typeof documents)[number]) => {
+    if (d.processing_error) return d.processing_error;
+    if ((d.file_size ?? 0) > 18 * 1024 * 1024) return "This file is too big for the AI to read (max 18 MB). Upload just the syllabus pages or a smaller PDF.";
+    return "It took too long to read. Remove it and try uploading again.";
+  };
+  async function removeFailed(d: (typeof documents)[number]) {
+    if (d.storage_path) await supabase.storage.from("course-materials").remove([d.storage_path]);
+    const { error } = await supabase.from("documents").delete().eq("id", d.id);
+    if (error) return toast.error(error.message);
+    toast.success("Removed");
+    void qc.invalidateQueries({ queryKey: ["documents"] });
+  }
   const buildingCount = building.length;
   useEffect(() => {
     if (buildingCount === 0) void qc.invalidateQueries({ queryKey: ["classes"] });
@@ -104,6 +123,18 @@ function ClassesPage() {
               </span>
               <span className="text-sm text-muted-foreground">Reading course details, grade weights & policies</span>
               <span className="truncate text-xs text-muted-foreground">{d.file_name}</span>
+            </div>
+          ))}
+          {failed.map((d) => (
+            <div key={d.id} className="surface-card flex flex-col justify-center gap-2 border-destructive/50 p-5" role="alert">
+              <span className="flex items-center gap-2 text-sm font-bold text-destructive">
+                <AlertTriangle className="size-4" /> Couldn't build this class
+              </span>
+              <span className="text-sm text-muted-foreground">{failReason(d)}</span>
+              <span className="truncate text-xs text-muted-foreground">{d.file_name}</span>
+              <Button size="sm" variant="outline" className="mt-1 self-start" onClick={() => void removeFailed(d)}>
+                <Trash2 className="size-4" /> Remove
+              </Button>
             </div>
           ))}
           {classes.map((c) => {
