@@ -92,7 +92,7 @@ export const generateFlashcards = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) =>
-    withUserAiKey(context.supabase, context.userId, () =>
+    withTrialOrUserAiKey(context.supabase, context.userId, "tools", () =>
       runFlashcardGeneration(context.supabase, context.userId, data),
     ),
   );
@@ -118,7 +118,7 @@ export const generateQuiz = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) =>
-    withUserAiKey(context.supabase, context.userId, () =>
+    withTrialOrUserAiKey(context.supabase, context.userId, "tools", () =>
       runQuizGeneration(context.supabase, context.userId, data),
     ),
   );
@@ -149,10 +149,10 @@ export const studyCoach = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    if (!(await hasUserAiKey(context.supabase, context.userId))) {
+    if (!(await canUseAi(context.supabase, context.userId, "tools"))) {
       return { summary: AI_KEY_HELP, tasks: [], needsAiKey: true };
     }
-    const result = await withUserAiKey(context.supabase, context.userId, () =>
+    const result = await withTrialOrUserAiKey(context.supabase, context.userId, "tools", () =>
       runStudyCoach(context.supabase, context.userId, data).then(track(context, "study_guide")),
     );
     return { ...result, needsAiKey: false };
@@ -183,12 +183,12 @@ export const assignmentHelp = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    if (!(await hasUserAiKey(context.supabase, context.userId))) {
+    if (!(await canUseAi(context.supabase, context.userId, "tools"))) {
       return { reply: AI_KEY_HELP };
     }
     const { assertQuota, recordUsage } = await import("./billing.server");
     await assertQuota(context.supabase, context.userId, "assignment_help");
-    const result = await withUserAiKey(context.supabase, context.userId, () =>
+    const result = await withTrialOrUserAiKey(context.supabase, context.userId, "tools", () =>
       runAssignmentHelp(context.supabase, context.userId, data),
     );
     await recordUsage(context.supabase, context.userId, "assignment_help");
