@@ -508,16 +508,33 @@ html.app-theme.dark {
   background: var(--background);
   min-height: 100dvh;
 }
-.dark .app-canvas { position: relative; isolation: isolate; }
-/* Glow painted once on a fixed GPU layer instead of repainting on every scroll frame. */
-.dark .app-canvas::before {
-  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-  transform: translateZ(0); will-change: transform;
+.app-canvas { position: relative; isolation: isolate; }
+/* Slowly drifting ambient blue glows on a fixed GPU layer. */
+.app-canvas::before {
+  content: ""; position: fixed; inset: -20%; z-index: -1; pointer-events: none;
+  will-change: transform;
   background:
-    radial-gradient(55% 40% at 90% 0%, oklch(0.42 0.16 300 / 0.35), transparent 70%),
-    radial-gradient(45% 35% at 5% 5%, oklch(0.38 0.14 262 / 0.3), transparent 70%),
-    var(--background);
+    radial-gradient(40% 35% at 85% 10%, var(--canvas-glow-1), transparent 70%),
+    radial-gradient(38% 32% at 10% 15%, var(--canvas-glow-2), transparent 70%),
+    radial-gradient(45% 40% at 55% 95%, var(--canvas-glow-3), transparent 70%);
+  animation: canvas-drift 28s ease-in-out infinite alternate;
 }
+:root {
+  --canvas-glow-1: oklch(0.85 0.09 240 / 0.45);
+  --canvas-glow-2: oklch(0.88 0.08 215 / 0.4);
+  --canvas-glow-3: oklch(0.86 0.07 255 / 0.3);
+}
+.dark {
+  --canvas-glow-1: oklch(0.45 0.18 260 / 0.4);
+  --canvas-glow-2: oklch(0.55 0.13 220 / 0.28);
+  --canvas-glow-3: oklch(0.35 0.14 265 / 0.3);
+}
+@keyframes canvas-drift {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-4%, 3%, 0) scale(1.05); }
+  100% { transform: translate3d(3%, -2%, 0) scale(1.02); }
+}
+@media (prefers-reduced-motion: reduce) { .app-canvas::before { animation: none; } }
 html:not(.dark) .dash-glass { box-shadow: var(--shadow-card); }
 html.app-theme h1 { letter-spacing: -0.01em; }
 
