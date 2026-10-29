@@ -121,6 +121,7 @@ function cleanTitle(line: string, type: LocalEventType): string {
 
 export function detectEvents(text: string, fallbackYear = new Date().getFullYear()): DetectedEvent[] {
   const year = inferYear(text, fallbackYear);
+  const termStated = /\b(fall|spring|summer|winter|autumn)\s+20\d{2}\b/i.test(text);
   const lines = text.split(/\r?\n/).map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean);
   const out: DetectedEvent[] = [];
   const seen = new Set<string>();
@@ -142,7 +143,7 @@ export function detectEvents(text: string, fallbackYear = new Date().getFullYear
       if (seen.has(key)) continue;
       seen.add(key);
       const reasons: string[] = [];
-      if (d.yearGuessed) reasons.push(`year assumed ${d.date.slice(0, 4)}`);
+      if (d.yearGuessed && !termStated) reasons.push(`year assumed ${d.date.slice(0, 4)}`);
       if (usedNeighbor) reasons.push("label found on next line");
       if (dates.length > 1) reasons.push("several dates on one line");
       if (type === "deadline") reasons.push("type unclear");
