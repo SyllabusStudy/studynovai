@@ -287,7 +287,7 @@ The "Last Updated" date at the top of this Privacy Policy indicates when it was 
 If you have questions about this Privacy Policy or want to make a privacy request, contact us at:
 
 SyllabusStudy
-Email: davidsawaqed12@gmail.com
+Email: syllabusstudyteam@gmail.com
 Website: https://syllabusstudy.com`;
 
 export const TERMS_OF_SERVICE = `SYLLABUSSTUDY TERMS OF SERVICE
@@ -552,5 +552,5 @@ Any dispute will be handled in the jurisdiction required or permitted by applica
 Questions about these Terms can be sent to:
 
 SyllabusStudy
-Email: davidsawaqed12@gmail.com
+Email: syllabusstudyteam@gmail.com
 Website: https://syllabusstudy.com`;

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BrandLogo } from "@/components/BrandLogo";
 
-const EMAIL = "davidsawaqed12@gmail.com";
+const EMAIL = "syllabusstudyteam@gmail.com";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
