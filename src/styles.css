@@ -435,10 +435,8 @@
   --dash-teal: oklch(0.72 0.13 175);
   --dash-amber: oklch(0.78 0.15 70);
   color: var(--foreground);
-  background:
-    radial-gradient(60% 50% at 85% 0%, oklch(0.42 0.16 300 / 0.55), transparent 70%),
-    radial-gradient(50% 40% at 10% 10%, oklch(0.38 0.14 262 / 0.45), transparent 70%),
-    linear-gradient(180deg, oklch(0.19 0.05 272), oklch(0.15 0.035 268));
+  /* Transparent so the app-wide drifting blue aurora shows through. */
+  background: transparent;
   min-height: calc(100dvh - 4rem);
   overflow-x: clip;
 }
