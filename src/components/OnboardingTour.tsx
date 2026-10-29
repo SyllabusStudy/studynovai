@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useProfile } from "@/lib/data";
 import { ArrowLeft } from "lucide-react";
+import { createPortal } from "react-dom";
 import { MascotBot } from "@/components/ToolsMascot";
 import { CLASS_DIALOG_GUIDANCE, setClassGuidanceActive, TOUR_CLASS_SAVED_EVENT, TOUR_EVENT, TOUR_STEPS, type TourEventDetail } from "@/lib/tour";
 
@@ -248,7 +249,11 @@ export function OnboardingTour() {
     navigate({ to: "/dashboard" });
   }
 
-  if (mode === "off") return null;
+  if (mode === "off" || typeof document === "undefined") return null;
+  // Render on top of everything (dialogs portal to <body>, outside the app's stacking layer).
+  return createPortal(renderTour(), document.body);
+
+  function renderTour() {
   // A real form/dialog is open (e.g. Add assignment): Glo stays with them in a small bubble instead of vanishing.
   if (paused) {
     return (
@@ -402,4 +407,5 @@ export function OnboardingTour() {
       </div>
     </div>
   );
+  }
 }
