@@ -514,20 +514,20 @@ html.app-theme.dark {
   content: ""; position: fixed; inset: -20%; z-index: -1; pointer-events: none;
   will-change: transform;
   background:
-    radial-gradient(40% 35% at 85% 10%, var(--canvas-glow-1), transparent 70%),
-    radial-gradient(38% 32% at 10% 15%, var(--canvas-glow-2), transparent 70%),
-    radial-gradient(45% 40% at 55% 95%, var(--canvas-glow-3), transparent 70%);
+    radial-gradient(48% 42% at 85% 8%, var(--canvas-glow-1), transparent 72%),
+    radial-gradient(45% 40% at 8% 14%, var(--canvas-glow-2), transparent 72%),
+    radial-gradient(52% 46% at 55% 95%, var(--canvas-glow-3), transparent 75%);
   animation: canvas-drift 28s ease-in-out infinite alternate;
 }
 :root {
-  --canvas-glow-1: oklch(0.85 0.09 240 / 0.45);
-  --canvas-glow-2: oklch(0.88 0.08 215 / 0.4);
-  --canvas-glow-3: oklch(0.86 0.07 255 / 0.3);
+  --canvas-glow-1: oklch(0.78 0.13 250 / 0.55);
+  --canvas-glow-2: oklch(0.83 0.11 222 / 0.5);
+  --canvas-glow-3: oklch(0.85 0.09 258 / 0.45);
 }
 .dark {
-  --canvas-glow-1: oklch(0.45 0.18 260 / 0.4);
-  --canvas-glow-2: oklch(0.55 0.13 220 / 0.28);
-  --canvas-glow-3: oklch(0.35 0.14 265 / 0.3);
+  --canvas-glow-1: oklch(0.55 0.21 255 / 0.8);
+  --canvas-glow-2: oklch(0.72 0.15 210 / 0.55);
+  --canvas-glow-3: oklch(0.42 0.2 270 / 0.6);
 }
 @keyframes canvas-drift {
   0% { transform: translate3d(0, 0, 0) scale(1); }
