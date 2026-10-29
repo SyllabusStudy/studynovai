@@ -42,18 +42,19 @@ export function inferYear(text: string, fallback: number): number {
   return m ? Number(m[m.length - 1]) : fallback;
 }
 
+type G = [string, string, string, string, string, string, string];
 interface DateHit { date: string; endDate: string | null; yearGuessed: boolean }
 
 export function findDates(line: string, year: number): DateHit[] {
   const hits: DateHit[] = [];
   const used: [number, number][] = [];
-  const take = (re: RegExp, fn: (m: RegExpExecArray) => DateHit | null) => {
+  const take = (re: RegExp, fn: (m: G) => DateHit | null) => {
     re.lastIndex = 0;
     let m: RegExpExecArray | null;
     while ((m = re.exec(line))) {
       const s = m.index, e = s + m[0].length;
       if (used.some(([a, b]) => s < b && e > a)) continue;
-      const h = fn(m);
+      const h = fn(m as unknown as G);
       if (h) { hits.push(h); used.push([s, e]); }
     }
   };
