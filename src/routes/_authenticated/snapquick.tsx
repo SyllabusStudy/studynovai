@@ -237,8 +237,17 @@ function SnapQuickPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openId, user?.id]);
 
+  const answerRef = useRef<HTMLDivElement>(null);
+  const lastCount = useRef(0);
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    const grew = messages.length > lastCount.current;
+    lastCount.current = messages.length;
+    // A fresh answer: bring its top (answer + first steps) into view instead of the bottom.
+    if (grew && !busy && messages[messages.length - 1]?.role === "assistant" && answerRef.current) {
+      answerRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    if (busy) endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, busy]);
 
   useRestoredGuestDraft("snapquick", setInput);
@@ -574,7 +583,11 @@ function SnapQuickPage() {
                   </div>
                 </div>
               ) : (
-                <div key={i} className="min-w-0">
+                <div
+                  key={i}
+                  ref={i === messages.length - 1 ? answerRef : undefined}
+                  className={cn("min-w-0 scroll-mt-3", i === messages.length - 1 && !revealed && "animate-answer-pop")}
+                >
                   <MathAnswer content={m.content} animate={!revealed && i === messages.length - 1} />
                   {checkState?.index === i ? (
                     <div className="mt-2 flex items-center gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
@@ -591,7 +604,18 @@ function SnapQuickPage() {
               ),
             )}
 
-            {busy ? (
+            {busy && messages.length <= 1 && image ? (
+              <div className="mx-auto w-full max-w-sm animate-fade-in">
+                <div className="relative overflow-hidden rounded-2xl border border-primary/40 bg-muted/40 shadow-card">
+                  <img src={image} alt="" className="max-h-56 w-full object-contain opacity-80" />
+                  <div className="snap-scan-grid pointer-events-none absolute inset-0" />
+                  <div className="snap-scan-beam pointer-events-none absolute inset-x-0 h-16" />
+                </div>
+                <p className="mt-2 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="size-4 animate-spin text-primary" /> Scanning and working it out…
+                </p>
+              </div>
+            ) : busy ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="size-4 animate-spin text-primary" />
                 {messages.length <= 1 ? "Reading the problem and working it out…" : "Thinking…"}
