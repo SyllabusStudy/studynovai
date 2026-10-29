@@ -142,7 +142,7 @@ function AuthPage() {
 
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="app-canvas flex min-h-screen flex-col">
       <header className="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4 sm:px-6">
         <Link to="/" className="flex items-center gap-2.5">
           <BrandLogo />
