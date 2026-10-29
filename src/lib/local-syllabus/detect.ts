@@ -113,6 +113,7 @@ function cleanTitle(line: string, type: LocalEventType): string {
     .replace(/\b20\d{2}-\d{1,2}-\d{1,2}\b/g, "")
     .replace(/\bweek\s*\d+\b/gi, "")
     .replace(/^[\s:–—\-|•*.,]+|[\s:–—\-|•*.,]+$/g, "")
+    .replace(/:\s*,\s*/g, ": ")
     .replace(/\s{2,}/g, " ")
     .trim();
   if (t.length < 3) t = type[0].toUpperCase() + type.slice(1);
