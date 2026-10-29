@@ -605,14 +605,18 @@ function SnapQuickPage() {
             )}
 
             {busy && messages.length <= 1 && image ? (
-              <div className="mx-auto w-full max-w-sm animate-fade-in">
-                <div className="relative overflow-hidden rounded-2xl border border-primary/40 bg-muted/40 shadow-card">
-                  <img src={image} alt="" className="max-h-56 w-full object-contain opacity-80" />
+              <div
+                role="status"
+                aria-live="polite"
+                className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-5 bg-background/85 p-6 backdrop-blur-md animate-fade-in"
+              >
+                <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-primary/50 bg-muted/40 shadow-card">
+                  <img src={image} alt="" className="max-h-[65vh] w-full object-contain" />
                   <div className="snap-scan-grid pointer-events-none absolute inset-0" />
-                  <div className="snap-scan-beam pointer-events-none absolute inset-x-0 h-16" />
+                  <div className="snap-scan-beam pointer-events-none absolute inset-x-0 h-20" />
                 </div>
-                <p className="mt-2 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="size-4 animate-spin text-primary" /> Scanning and working it out…
+                <p className="flex items-center gap-2 font-display text-lg font-bold">
+                  <Loader2 className="size-5 animate-spin text-primary" /> Scanning and working it out…
                 </p>
               </div>
             ) : busy ? (
