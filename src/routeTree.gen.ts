@@ -42,7 +42,6 @@ import { Route as FeaturesFlashcardsRouteImport } from './routes/features.flashc
 import { Route as FeaturesStudyScheduleGeneratorRouteImport } from './routes/features.study-schedule-generator'
 import { Route as GuidesIndexRouteImport } from './routes/guides.index'
 import { Route as GuidesSlugRouteImport } from './routes/guides.$slug'
-import { Route as LabLocalSyllabusRouteImport } from './routes/lab.local-syllabus'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as AuthenticatedClassesIndexRouteImport } from './routes/_authenticated/classes/index'
 import { Route as AuthenticatedClassesClassIdRouteImport } from './routes/_authenticated/classes/$classId'
@@ -222,11 +221,6 @@ const GuidesSlugRoute = GuidesSlugRouteImport.update({
   path: '/guides/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LabLocalSyllabusRoute = LabLocalSyllabusRouteImport.update({
-  id: '/lab/local-syllabus',
-  path: '/lab/local-syllabus',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ShareTokenRoute = ShareTokenRouteImport.update({
   id: '/share/$token',
   path: '/share/$token',
@@ -329,7 +323,6 @@ export interface FileRoutesByFullPath {
   '/features/flashcards': typeof FeaturesFlashcardsRoute
   '/features/study-schedule-generator': typeof FeaturesStudyScheduleGeneratorRoute
   '/guides/$slug': typeof GuidesSlugRoute
-  '/lab/local-syllabus': typeof LabLocalSyllabusRoute
   '/share/$token': typeof ShareTokenRoute
   '/guides/': typeof GuidesIndexRoute
   '/classes/$classId': typeof AuthenticatedClassesClassIdRoute
@@ -376,7 +369,6 @@ export interface FileRoutesByTo {
   '/features/flashcards': typeof FeaturesFlashcardsRoute
   '/features/study-schedule-generator': typeof FeaturesStudyScheduleGeneratorRoute
   '/guides/$slug': typeof GuidesSlugRoute
-  '/lab/local-syllabus': typeof LabLocalSyllabusRoute
   '/share/$token': typeof ShareTokenRoute
   '/guides': typeof GuidesIndexRoute
   '/classes/$classId': typeof AuthenticatedClassesClassIdRoute
@@ -425,7 +417,6 @@ export interface FileRoutesById {
   '/features/flashcards': typeof FeaturesFlashcardsRoute
   '/features/study-schedule-generator': typeof FeaturesStudyScheduleGeneratorRoute
   '/guides/$slug': typeof GuidesSlugRoute
-  '/lab/local-syllabus': typeof LabLocalSyllabusRoute
   '/share/$token': typeof ShareTokenRoute
   '/guides/': typeof GuidesIndexRoute
   '/_authenticated/classes/$classId': typeof AuthenticatedClassesClassIdRoute
@@ -474,7 +465,6 @@ export interface FileRouteTypes {
     | '/features/flashcards'
     | '/features/study-schedule-generator'
     | '/guides/$slug'
-    | '/lab/local-syllabus'
     | '/share/$token'
     | '/guides/'
     | '/classes/$classId'
@@ -521,7 +511,6 @@ export interface FileRouteTypes {
     | '/features/flashcards'
     | '/features/study-schedule-generator'
     | '/guides/$slug'
-    | '/lab/local-syllabus'
     | '/share/$token'
     | '/guides'
     | '/classes/$classId'
@@ -569,7 +558,6 @@ export interface FileRouteTypes {
     | '/features/flashcards'
     | '/features/study-schedule-generator'
     | '/guides/$slug'
-    | '/lab/local-syllabus'
     | '/share/$token'
     | '/guides/'
     | '/_authenticated/classes/$classId'
@@ -601,7 +589,6 @@ export interface RootRouteChildren {
   FeaturesFlashcardsRoute: typeof FeaturesFlashcardsRoute
   FeaturesStudyScheduleGeneratorRoute: typeof FeaturesStudyScheduleGeneratorRoute
   GuidesSlugRoute: typeof GuidesSlugRoute
-  LabLocalSyllabusRoute: typeof LabLocalSyllabusRoute
   ShareTokenRoute: typeof ShareTokenRoute
   GuidesIndexRoute: typeof GuidesIndexRoute
   OauthGoogleReturnRoute: typeof OauthGoogleReturnRoute
@@ -842,13 +829,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuidesSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/lab/local-syllabus': {
-      id: '/lab/local-syllabus'
-      path: '/lab/local-syllabus'
-      fullPath: '/lab/local-syllabus'
-      preLoaderRoute: typeof LabLocalSyllabusRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/share/$token': {
       id: '/share/$token'
       path: '/share/$token'
@@ -1011,7 +991,6 @@ const rootRouteChildren: RootRouteChildren = {
   FeaturesFlashcardsRoute: FeaturesFlashcardsRoute,
   FeaturesStudyScheduleGeneratorRoute: FeaturesStudyScheduleGeneratorRoute,
   GuidesSlugRoute: GuidesSlugRoute,
-  LabLocalSyllabusRoute: LabLocalSyllabusRoute,
   ShareTokenRoute: ShareTokenRoute,
   GuidesIndexRoute: GuidesIndexRoute,
   OauthGoogleReturnRoute: OauthGoogleReturnRoute,
