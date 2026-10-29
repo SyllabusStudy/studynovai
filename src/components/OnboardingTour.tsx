@@ -138,19 +138,21 @@ export function OnboardingTour() {
     const tick = () => {
       const mobile = window.innerWidth < 1024;
       const menuOpen = !!document.querySelector('[role="dialog"][data-state="open"] nav, [data-tour-menu][data-state="open"]');
-      // Mobile: while teaching a menu tap, the open menu is part of the tour — don't step aside.
+      // On phones the More menu is always part of the tour: point at the tool for this (or the next) tap step.
+      const nextStep = TOUR_STEPS[step + 1];
+      const menuStep = baseStep?.kind === "click" ? baseStep : nextStep?.kind === "click" ? nextStep : null;
       const mobileClick = mobile && current.kind === "click";
       const classDialog = baseStep?.id === "add-class"
         ? document.querySelector<HTMLElement>('[data-tour="class-dialog"][data-state="open"]') : null;
       const guidedClass = classDialog && classDialog.dataset["tourSyllabus"] !== "true";
       const stage = guidedClass ? (classDialog.dataset["tourClassReady"] === "true" ? "save" : "quick") : null;
       setClassStage(stage);
-      setPaused(guidedClass || (mobileClick && menuOpen) ? false : otherDialogOpen());
+      setPaused(guidedClass || (mobile && menuOpen && menuStep) ? false : otherDialogOpen());
       let el: HTMLElement | null = null;
       let hint: string | null = null;
       // Inside the open More menu, Glo points at the exact tool to tap there.
-      if (mobileClick && menuOpen && !stage) {
-        const sels = (baseStep?.selectors ?? current.selectors).flatMap((s) => [
+      if (mobile && menuOpen && menuStep && !stage) {
+        const sels = menuStep.selectors.flatMap((s) => [
           `[data-tour-menu][data-state="open"] ${s}`,
           `[role="dialog"][data-state="open"]:not([data-tour-card]) ${s}`,
         ]);
@@ -200,7 +202,7 @@ export function OnboardingTour() {
       window.removeEventListener("resize", tick);
       window.removeEventListener("scroll", tick, true);
     };
-  }, [current, baseStep, pathname]);
+  }, [current, baseStep, pathname, step]);
 
   const [arrow, setArrow] = useState<{ x: number; y: number; deg: number } | null>(null);
   // Keep the card on-screen and off the highlighted element.
@@ -246,7 +248,24 @@ export function OnboardingTour() {
     navigate({ to: "/dashboard" });
   }
 
-  if (mode === "off" || paused) return null;
+  if (mode === "off") return null;
+  // A real form/dialog is open (e.g. Add assignment): Glo stays with them in a small bubble instead of vanishing.
+  if (paused) {
+    return (
+      <div className="pointer-events-none fixed inset-x-0 top-3 z-[100] flex justify-center px-3" aria-live="polite">
+        <div data-tour-card role="status" className="surface-card pointer-events-auto flex w-[min(92vw,24rem)] items-center gap-3 p-3 shadow-2xl">
+          <MascotBot className="animate-bounce" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-extrabold leading-tight">I'm still here! 👋</p>
+            <p className="text-xs text-muted-foreground">Fill this in and tap Save — or close it. Then we'll keep going.</p>
+          </div>
+          {current && current.kind === "next" ? (
+            <Button size="sm" onClick={() => setStep(step + 1)}>Next</Button>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
 
   // Darker backdrop so the spotlighted button stands out clearly.
   const dim = "color-mix(in oklch, var(--background) 88%, transparent)";
@@ -314,7 +333,7 @@ export function OnboardingTour() {
                 ))}
               </div>
             ) : null}
-            {current.action ? (
+            {current.action || mobileHint ? (
               <p className="mt-3 flex items-center gap-1.5 text-sm font-extrabold text-primary">
                 👉 {mobileHint ?? current.action} <span className="animate-pulse">— I'm pointing at it!</span>
               </p>
