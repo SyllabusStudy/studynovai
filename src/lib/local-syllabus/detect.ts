@@ -20,7 +20,7 @@ const MONTHS: Record<string, number> = {
 const MON = "(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\\.?";
 
 const TYPE_RULES: [LocalEventType, RegExp][] = [
-  ["final", /\bfinal\s+(exam|examination|test)\b|\bfinals?\b/i],
+  ["final", /\bfinal\s+(exam|examination|test)\b|\bfinals?\s*(week|:|$)/i],
   ["exam", /\b(midterm|exam|examination|test)\b/i],
   ["quiz", /\bquiz(zes)?\b/i],
   ["project", /\bproject\b/i],
