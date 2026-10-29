@@ -107,7 +107,7 @@ function ClassesPage() {
 
       {isLoading ? (
         <Loader2 className="size-5 animate-spin text-primary" />
-      ) : classes.length === 0 && building.length === 0 ? (
+      ) : classes.length === 0 && building.length === 0 && failed.length === 0 ? (
         <EmptyState
           icon={BookOpen}
           title="No classes yet"
