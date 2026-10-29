@@ -531,6 +531,11 @@ export async function extractTextFromFile(params: {
   }
 
 
+  // The AI can only read files up to ~18MB inline; bigger ones crash the server.
+  if (bytes.byteLength > 18 * 1024 * 1024) {
+    throw new Error("This file is too big for the AI to read (max 18 MB). Upload just the syllabus pages, or a smaller/compressed PDF.");
+  }
+
   const base64 = bytesToBase64(bytes);
   const instruction =
     "Transcribe ALL readable text from this document exactly, preserving headings, tables (as plain rows), dates and bullet structure. Do not summarize, do not add commentary. If the document is unreadable, reply with the single word UNREADABLE.";
