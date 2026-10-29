@@ -515,7 +515,7 @@ html.app-theme.dark {
     radial-gradient(48% 42% at 85% 8%, var(--canvas-glow-1), transparent 72%),
     radial-gradient(45% 40% at 8% 14%, var(--canvas-glow-2), transparent 72%),
     radial-gradient(52% 46% at 55% 95%, var(--canvas-glow-3), transparent 75%);
-  animation: canvas-drift 28s ease-in-out infinite alternate;
+  animation: canvas-drift 18s ease-in-out infinite;
 }
 :root {
   --canvas-glow-1: oklch(0.78 0.13 250 / 0.55);
@@ -527,10 +527,13 @@ html.app-theme.dark {
   --canvas-glow-2: oklch(0.72 0.15 210 / 0.55);
   --canvas-glow-3: oklch(0.42 0.2 270 / 0.6);
 }
+/* Glows sway side to side and up and down in a slow loop. */
 @keyframes canvas-drift {
-  0% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(-4%, 3%, 0) scale(1.05); }
-  100% { transform: translate3d(3%, -2%, 0) scale(1.02); }
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  25%  { transform: translate3d(-10%, 6%, 0) scale(1.06); }
+  50%  { transform: translate3d(0, 12%, 0) scale(1.02); }
+  75%  { transform: translate3d(10%, 5%, 0) scale(1.06); }
+  100% { transform: translate3d(0, 0, 0) scale(1); }
 }
 @media (prefers-reduced-motion: reduce) { .app-canvas::before { animation: none; } }
 html:not(.dark) .dash-glass { box-shadow: var(--shadow-card); }
