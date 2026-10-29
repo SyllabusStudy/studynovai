@@ -74,7 +74,7 @@ function ClassesPage() {
   async function removeFailed(d: (typeof documents)[number]) {
     if (d.storage_path) await supabase.storage.from("course-materials").remove([d.storage_path]);
     const { error } = await supabase.from("documents").delete().eq("id", d.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Removed");
     void qc.invalidateQueries({ queryKey: ["documents"] });
   }
