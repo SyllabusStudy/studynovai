@@ -138,19 +138,21 @@ export function OnboardingTour() {
     const tick = () => {
       const mobile = window.innerWidth < 1024;
       const menuOpen = !!document.querySelector('[role="dialog"][data-state="open"] nav, [data-tour-menu][data-state="open"]');
-      // Mobile: while teaching a menu tap, the open menu is part of the tour — don't step aside.
+      // On phones the More menu is always part of the tour: point at the tool for this (or the next) tap step.
+      const nextStep = TOUR_STEPS[step + 1];
+      const menuStep = baseStep?.kind === "click" ? baseStep : nextStep?.kind === "click" ? nextStep : null;
       const mobileClick = mobile && current.kind === "click";
       const classDialog = baseStep?.id === "add-class"
         ? document.querySelector<HTMLElement>('[data-tour="class-dialog"][data-state="open"]') : null;
       const guidedClass = classDialog && classDialog.dataset["tourSyllabus"] !== "true";
       const stage = guidedClass ? (classDialog.dataset["tourClassReady"] === "true" ? "save" : "quick") : null;
       setClassStage(stage);
-      setPaused(guidedClass || (mobileClick && menuOpen) ? false : otherDialogOpen());
+      setPaused(guidedClass || (mobile && menuOpen && menuStep) ? false : otherDialogOpen());
       let el: HTMLElement | null = null;
       let hint: string | null = null;
       // Inside the open More menu, Glo points at the exact tool to tap there.
-      if (mobileClick && menuOpen && !stage) {
-        const sels = (baseStep?.selectors ?? current.selectors).flatMap((s) => [
+      if (mobile && menuOpen && menuStep && !stage) {
+        const sels = menuStep.selectors.flatMap((s) => [
           `[data-tour-menu][data-state="open"] ${s}`,
           `[role="dialog"][data-state="open"]:not([data-tour-card]) ${s}`,
         ]);
