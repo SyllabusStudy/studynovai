@@ -61,3 +61,16 @@ describe("rejected corrections", () => {
     expect(dropRejected([{ original: "solid bonds" }, { original: "teh" }], rejected)).toEqual([{ original: "teh" }]);
   });
 });
+describe("Notes correction matching", () => {
+  it("underlines whole words only and never inside a longer word", () => {
+    const d = schema.node("doc", null, [schema.node("paragraph", null, schema.text("tehran teh  cat"))]);
+    expect(findCorrectionRanges(d, "teh")).toEqual([{ from: 8, to: 11 }]);
+    expect(findCorrectionRanges(d, "teh cat")).toEqual([{ from: 8, to: 16 }]);
+  });
+  it("accept-all does not double words when a fix contains another fix's text", async () => {
+    const { planCorrectionReplacements } = await import("./note-corrections");
+    const d = schema.node("doc", null, [schema.node("paragraph", null, schema.text("i recieve it"))]);
+    const plan = planCorrectionReplacements(d, [{ original: "i recieve", suggestion: "I receive" }, { original: "recieve", suggestion: "receive" }]);
+    expect(plan).toHaveLength(1);
+  });
+});

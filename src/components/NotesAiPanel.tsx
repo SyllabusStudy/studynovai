@@ -221,7 +221,7 @@ export function NotesAiPanel({ noteId, open, onOpen, onClose, editor, title, cla
   const replaceInDoc = (s: NotesAiSuggestion) => {
     if (!editor) return false;
     const clicked = clickedRange.current;
-    const validClicked = clicked && suggestions[clicked.index] === s && editor.state.doc.textBetween(clicked.from, clicked.to, "", "\ufffc") === s.original;
+    const validClicked = clicked && suggestions[clicked.index] === s && findCorrectionRanges(editor.state.doc, s.original).some(r => r.from === clicked.from && r.to === clicked.to);
     const range = validClicked ? clicked : findCorrectionRanges(editor.state.doc, s.original)[0];
     if (!range) return false;
     editor.commands.command(({ tr }) => {
