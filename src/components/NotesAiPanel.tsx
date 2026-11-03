@@ -11,7 +11,7 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { VoiceTypeButton } from "@/components/VoiceTypeButton";
-import { correctionKind, findCorrectionRanges, noteCorrectionsKey, dropRejected, rejectKey } from "@/lib/note-corrections";
+import { correctionKind, findCorrectionRanges, planCorrectionReplacements, noteCorrectionsKey, dropRejected, rejectKey } from "@/lib/note-corrections";
 import { cn } from "@/lib/utils";
 import { runNotesAi, saveNoteFlashcards, type NotesAiAction, type NotesAiResult, type NotesAiSuggestion } from "@/lib/notes-ai.functions";
 import { createLectureNotes, transcribeLecturePiece } from "@/lib/lecture.functions";
@@ -221,7 +221,7 @@ export function NotesAiPanel({ noteId, open, onOpen, onClose, editor, title, cla
   const replaceInDoc = (s: NotesAiSuggestion) => {
     if (!editor) return false;
     const clicked = clickedRange.current;
-    const validClicked = clicked && suggestions[clicked.index] === s && editor.state.doc.textBetween(clicked.from, clicked.to, "", "\ufffc") === s.original;
+    const validClicked = clicked && suggestions[clicked.index] === s && findCorrectionRanges(editor.state.doc, s.original).some(r => r.from === clicked.from && r.to === clicked.to);
     const range = validClicked ? clicked : findCorrectionRanges(editor.state.doc, s.original)[0];
     if (!range) return false;
     editor.commands.command(({ tr }) => {
@@ -237,14 +237,12 @@ export function NotesAiPanel({ noteId, open, onOpen, onClose, editor, title, cla
     if (!editor) return;
     const accepted = new Set<number>();
     editor.commands.command(({ tr }) => {
-      suggestions.forEach((s, index) => {
-        if (s.state || !s.original || s.original === s.suggestion) return;
-        const ranges = findCorrectionRanges(tr.doc, s.original);
-        ranges.reverse().forEach(({ from, to }) => {
-          const marks = tr.doc.nodeAt(from)?.marks ?? tr.doc.resolve(from).marks();
-          tr.replaceWith(from, to, s.suggestion ? editor.schema.text(s.suggestion, marks) : []);
-          accepted.add(index);
-        });
+      const pending = suggestions.map(s => s.state ? { original: "", suggestion: "" } : s);
+      planCorrectionReplacements(tr.doc, pending).forEach(({ from, to, index }) => {
+        const s = suggestions[index]; if (!s) return;
+        const marks = tr.doc.nodeAt(from)?.marks ?? tr.doc.resolve(from).marks();
+        tr.replaceWith(from, to, s.suggestion ? editor.schema.text(s.suggestion, marks) : []);
+        accepted.add(index);
       });
       return true;
     });
