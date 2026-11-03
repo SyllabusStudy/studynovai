@@ -3,7 +3,7 @@
 export type Pt = [number, number];
 export type ShapeKind = "line" | "arrow" | "ellipse" | "rect" | "triangle" | "diamond";
 export type StrokeEl = { id: string; kind: "stroke"; tool: "pen" | "highlighter"; points: Pt[]; color: string; size: number; opacity: number; source?: "user" | "ai" };
-export type ShapeEl = { id: string; kind: "shape"; shape: ShapeKind; a: Pt; b: Pt; color: string; size: number; opacity: number; source?: "user" | "ai" };
+export type ShapeEl = { id: string; kind: "shape"; shape: ShapeKind; a: Pt; b: Pt; color: string; size: number; opacity: number; fill?: string; radius?: number; source?: "user" | "ai" };
 export type TextEl = { id: string; kind: "text"; at: Pt; text: string; color: string; size: number; opacity: number; source?: "user" | "ai" };
 export type DrawEl = StrokeEl | ShapeEl | TextEl;
 export type DrawPage = { id: string; elements: DrawEl[] };
@@ -23,7 +23,7 @@ export function normalizeDrawing(raw: unknown): Drawing {
 
 export type Box = { x: number; y: number; w: number; h: number };
 export function bounds(el: DrawEl): Box {
-  if (el.kind === "text") { const w = el.text.length * el.size * 0.55; return { x: el.at[0] - w / 2, y: el.at[1] - el.size * 0.8, w, h: el.size * 1.3 }; }
+  if (el.kind === "text") { const lines = el.text.split("\n"); const w = Math.max(...lines.map(l => l.length)) * el.size * 0.55; return { x: el.at[0] - w / 2, y: el.at[1] - el.size * 0.8, w, h: el.size * (0.1 + 1.2 * lines.length) }; }
   const pts = el.kind === "stroke" ? el.points : [el.a, el.b];
   let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
   for (const [x, y] of pts) { x1 = Math.min(x1, x); y1 = Math.min(y1, y); x2 = Math.max(x2, x); y2 = Math.max(y2, y); }
@@ -151,39 +151,75 @@ function recognizeShape(strokes: StrokeEl[]): { shape: ShapeEl; used: string[] }
   return { shape: { ...base, shape: "ellipse", a, b }, used: [sorted[0]!.id] };
 }
 
+/** Wraps a label into short centered lines (max 3) so it fits inside a card. */
+export function wrapLabel(label: string, maxChars: number): string[] {
+  const words = label.trim().split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  for (const w of words) {
+    const last = lines[lines.length - 1];
+    if (last !== undefined && (last + " " + w).length <= maxChars) lines[lines.length - 1] = last + " " + w;
+    else lines.push(w.length > maxChars ? w.slice(0, maxChars - 1) + "…" : w);
+  }
+  if (lines.length > 3) { lines.length = 3; lines[2] = lines[2]!.slice(0, maxChars - 1) + "…"; }
+  return lines.length ? lines : [""];
+}
+
+const PALETTE = ["var(--primary)", "var(--success)", "var(--warning)", "var(--feature-flashcards)", "var(--destructive)"];
+
 /** Lays out an AI diagram (flowchart or mind map) as regular, editable drawing elements. */
 export function diagramToElements(d: { title: string; layout: "flow" | "mind"; nodes: { id: string; label: string }[]; edges: { from: string; to: string; label?: string }[] }): DrawEl[] {
   const ink = "var(--foreground)", accent = "var(--primary)";
-  const pos = new Map<string, Pt>();
+  type Card = { c: Pt; hw: number; hh: number; color: string; lines: string[]; font: number; center?: boolean };
+  const cards = new Map<string, Card>();
+  const font = 22, lineH = font * 1.2;
+  const make = (id: string, label: string, c: Pt, w: number, color: string, center = false) => {
+    const f = center ? 26 : font;
+    const lines = wrapLabel(label, Math.max(8, Math.floor((w - 28) / (f * 0.55))));
+    cards.set(id, { c, hw: w / 2, hh: Math.max(36, (lines.length * f * 1.2 + 26) / 2), color, lines, font: f, center });
+  };
   const n = d.nodes.length;
   if (d.layout === "mind") {
     d.nodes.forEach((node, i) => {
-      if (i === 0) { pos.set(node.id, [PAGE_W / 2, PAGE_H / 2]); return; }
+      if (i === 0) { make(node.id, node.label, [PAGE_W / 2, PAGE_H / 2 + 20], 300, accent, true); return; }
       const t = ((i - 1) / Math.max(1, n - 1)) * Math.PI * 2 - Math.PI / 2;
-      pos.set(node.id, [PAGE_W / 2 + Math.cos(t) * 330, PAGE_H / 2 + Math.sin(t) * 420]);
+      make(node.id, node.label, [PAGE_W / 2 + Math.cos(t) * 330, PAGE_H / 2 + 20 + Math.sin(t) * 440], 230, PALETTE[(i - 1) % PALETTE.length]!);
     });
   } else {
-    const cols = n > 6 ? 2 : 1, rows = Math.ceil(n / cols);
-    d.nodes.forEach((node, i) => {
-      const c = cols === 1 ? 0 : i % 2, r = cols === 1 ? i : Math.floor(i / 2);
-      pos.set(node.id, [cols === 1 ? PAGE_W / 2 : 300 + c * 400, 200 + r * ((PAGE_H - 300) / Math.max(1, rows))]);
+    // Layered layout: each node sits one row below its deepest parent, so branches read top-to-bottom.
+    const level = new Map<string, number>(d.nodes.map(x => [x.id, 0]));
+    for (let pass = 0; pass < n; pass++) {
+      let moved = false;
+      for (const e of d.edges) { const lf = level.get(e.from)!, lt = level.get(e.to)!; if (e.from !== e.to && lt <= lf && lf + 1 < n) { level.set(e.to, lf + 1); moved = true; } }
+      if (!moved) break;
+    }
+    if (!d.edges.length) d.nodes.forEach((x, i) => level.set(x.id, i));
+    const rows: string[][] = [];
+    for (const x of d.nodes) (rows[level.get(x.id)!] ??= []).push(x.id);
+    const filled = rows.filter(Boolean);
+    const gap = Math.min(190, (PAGE_H - 260) / Math.max(1, filled.length));
+    const label = new Map(d.nodes.map(x => [x.id, x.label]));
+    filled.forEach((row, r) => {
+      const w = Math.min(300, (PAGE_W - 80) / row.length - 30);
+      row.forEach((id, j) => make(id, label.get(id)!, [PAGE_W / 2 + (j - (row.length - 1) / 2) * (w + 30), 210 + r * gap], w, PALETTE[r % PALETTE.length]!));
     });
   }
-  const els: DrawEl[] = [{ id: uid(), kind: "text", at: [PAGE_W / 2, 90], text: d.title, color: ink, size: 38, opacity: 1, source: "ai" }];
-  const hw = 130, hh = 38;
+  const els: DrawEl[] = [{ id: uid(), kind: "text", at: [PAGE_W / 2, 95], text: d.title, color: ink, size: 40, opacity: 1, source: "ai" }];
+  const edgeOf = (k: Card, dx: number, dy: number, sgn: number): Pt => {
+    const t = Math.min((k.hw + 8) / Math.abs(dx || 1e-6), (k.hh + 8) / Math.abs(dy || 1e-6));
+    return [k.c[0] + sgn * dx * t, k.c[1] + sgn * dy * t];
+  };
   for (const e of d.edges) {
-    const a = pos.get(e.from), b = pos.get(e.to); if (!a || !b) continue;
-    const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1;
-    const k = (pt: Pt, sgn: number): Pt => { const s = Math.min(hw / Math.abs(dx || 1e-6), hh / Math.abs(dy || 1e-6)); return [pt[0] + sgn * dx * Math.min(s, 0.45), pt[1] + sgn * dy * Math.min(s, 0.45)]; };
-    void len;
-    els.push({ id: uid(), kind: "shape", shape: "arrow", a: k(a, 1), b: k(b, -1), color: accent, size: 3, opacity: 1, source: "ai" });
-    if (e.label) els.push({ id: uid(), kind: "text", at: [(a[0] + b[0]) / 2 + 12, (a[1] + b[1]) / 2], text: e.label.slice(0, 30), color: "var(--muted-foreground)", size: 18, opacity: 1, source: "ai" });
+    const a = cards.get(e.from), b = cards.get(e.to); if (!a || !b || a === b) continue;
+    const dx = b.c[0] - a.c[0], dy = b.c[1] - a.c[1];
+    const p = edgeOf(a, dx, dy, 1), q = edgeOf(b, dx, dy, -1);
+    els.push({ id: uid(), kind: "shape", shape: d.layout === "mind" ? "line" : "arrow", a: p, b: q, color: d.layout === "mind" ? b.color : "var(--muted-foreground)", size: 3, opacity: 0.9, source: "ai" });
+    if (e.label) els.push({ id: uid(), kind: "text", at: [(p[0] + q[0]) / 2 + (Math.abs(dx) < 20 ? 14 : 0), (p[1] + q[1]) / 2 - 6], text: e.label.slice(0, 30), color: "var(--muted-foreground)", size: 17, opacity: 1, source: "ai" });
   }
-  d.nodes.forEach((node, i) => {
-    const [x, y] = pos.get(node.id)!;
-    const center = d.layout === "mind" && i === 0;
-    els.push({ id: uid(), kind: "shape", shape: center ? "ellipse" : "rect", a: [x - hw, y - hh], b: [x + hw, y + hh], color: center ? accent : ink, size: center ? 4 : 2.5, opacity: 1, source: "ai" });
-    els.push({ id: uid(), kind: "text", at: [x, y + 8], text: node.label.slice(0, 40), color: ink, size: node.label.length > 22 ? 18 : 22, opacity: 1, source: "ai" });
-  });
+  for (const k of cards.values()) {
+    els.push({ id: uid(), kind: "shape", shape: k.center ? "ellipse" : "rect", a: [k.c[0] - k.hw, k.c[1] - k.hh], b: [k.c[0] + k.hw, k.c[1] + k.hh], color: k.color, size: k.center ? 4 : 2.5, opacity: 1, fill: k.color, radius: 18, source: "ai" });
+    const top = k.c[1] - ((k.lines.length - 1) * k.font * 1.2) / 2 + k.font * 0.35;
+    els.push({ id: uid(), kind: "text", at: [k.c[0], top], text: k.lines.join("\n"), color: ink, size: k.font, opacity: 1, source: "ai" });
+  }
+  void lineH;
   return els;
 }
