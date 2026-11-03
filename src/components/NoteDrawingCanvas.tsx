@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as RPointerEvent } from "react";
-import { ArrowUpRight, Circle, Diamond, Eraser, Hand, Highlighter, Minus, MousePointer2, PenLine, Plus, Redo2, Scissors, Sparkles, Square, Trash2, Triangle, Undo2, X } from "lucide-react";
+import { ArrowUpRight, Circle, Diamond, Eraser, Hand, Highlighter, Minus, MousePointer2, PenLine, Plus, Redo2, Scissors, Sparkles, Square, Trash2, Triangle, Type, Undo2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -7,7 +7,7 @@ import {
   type Box, type DrawEl, type Drawing, type Pt, type ShapeEl, type ShapeKind, type StrokeEl,
 } from "@/lib/note-drawing";
 
-type Tool = "select" | "pen" | "highlighter" | "eraser" | "area" | ShapeKind;
+type Tool = "select" | "pen" | "highlighter" | "eraser" | "area" | "text" | ShapeKind;
 const INKS = ["var(--foreground)", "var(--primary)", "var(--destructive)", "var(--success)", "var(--warning)", "var(--feature-flashcards)"];
 const HIGHLIGHTS = ["var(--warning)", "var(--success)", "var(--feature-flashcards)", "var(--primary)"];
 const SHAPES: { id: ShapeKind; label: string; Icon: typeof Circle }[] = [
@@ -24,13 +24,18 @@ type Gesture =
   | { type: "scroll"; lastY: number };
 
 function Ink({ el, selected }: { el: DrawEl; selected?: boolean }) {
-  if (el.kind === "text") return <text x={el.at[0]} y={el.at[1]} fill={el.color} fillOpacity={el.opacity} fontSize={el.size} textAnchor="middle" fontFamily="var(--font-sans, sans-serif)" stroke={selected ? "var(--primary)" : "none"} strokeOpacity={0.35} strokeWidth={selected ? 3 : 0} paintOrder="stroke">{el.text}</text>;
+  if (el.kind === "text") return <text x={el.at[0]} y={el.at[1]} fill={el.color} fillOpacity={el.opacity} fontSize={el.size} fontWeight={el.source === "ai" ? 600 : 400} textAnchor="middle" fontFamily="var(--font-sans, sans-serif)" stroke={selected ? "var(--primary)" : "none"} strokeOpacity={0.35} strokeWidth={selected ? 3 : 0} paintOrder="stroke">{el.text.split("\n").map((l, i) => <tspan key={i} x={el.at[0]} dy={i ? el.size * 1.2 : 0}>{l}</tspan>)}</text>;
   const common = { stroke: el.color, strokeWidth: el.size, strokeOpacity: el.opacity, fill: "none", strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
   const glow = selected ? <path d={el.kind === "stroke" ? strokePath(el.points) : strokePath(shapeOutline(el))} stroke="var(--primary)" strokeOpacity={0.35} strokeWidth={el.size + 8} fill="none" strokeLinecap="round" /> : null;
   if (el.kind === "stroke") return <g>{glow}<path d={strokePath(el.points)} {...common} style={el.tool === "highlighter" ? { mixBlendMode: "multiply" } : undefined} /></g>;
+  const fill = el.kind === "shape" && el.fill ? { fill: el.fill, fillOpacity: 0.14 } : {};
+  if (el.shape === "rect" && el.radius) {
+    const x = Math.min(el.a[0], el.b[0]), y = Math.min(el.a[1], el.b[1]);
+    return <g>{glow}<rect x={x} y={y} width={Math.abs(el.b[0] - el.a[0])} height={Math.abs(el.b[1] - el.a[1])} rx={el.radius} {...common} {...fill} /></g>;
+  }
   if (el.shape === "ellipse") {
     const cx = (el.a[0] + el.b[0]) / 2, cy = (el.a[1] + el.b[1]) / 2;
-    return <g>{glow}<ellipse cx={cx} cy={cy} rx={Math.abs(el.b[0] - el.a[0]) / 2} ry={Math.abs(el.b[1] - el.a[1]) / 2} {...common} /></g>;
+    return <g>{glow}<ellipse cx={cx} cy={cy} rx={Math.abs(el.b[0] - el.a[0]) / 2} ry={Math.abs(el.b[1] - el.a[1]) / 2} {...common} {...fill} /></g>;
   }
   if (el.shape === "arrow") {
     const [x1, y1] = el.a, [x2, y2] = el.b, ang = Math.atan2(y2 - y1, x2 - x1), h = 14 + el.size * 2.5;
@@ -118,10 +123,20 @@ export function NoteDrawingCanvas({ value, onChange, incoming }: { value: Drawin
         if (p[0] >= selBox.x && p[0] <= hx && p[1] >= selBox.y && p[1] <= hy) { gesture.current = { type: "move", page, start: p, orig: selectedEls }; return; }
       }
       const hit = [...els].reverse().find(el => hitTest(el, p, 10));
+      if (hit && hit.kind === "text" && e.detail >= 2) {
+        const t = window.prompt("Edit text", hit.text);
+        if (t !== null) setPageEls(page, t.trim() ? els.map(x => x.id === hit.id ? { ...hit, text: t } : x) : els.filter(x => x.id !== hit.id));
+        return;
+      }
       if (hit) { setSelection({ page, ids: [hit.id] }); gesture.current = { type: "move", page, start: p, orig: [hit] }; return; }
       setSelection(null); gesture.current = { type: "marquee", page, start: p, end: p }; return;
     }
     setSelection(null);
+    if (tool === "text") {
+      const t = window.prompt("Type your text");
+      if (t?.trim()) setPageEls(page, [...els, { id: uid(), kind: "text", at: p, text: t.trim(), color, size: 16 + size * 3, opacity }]);
+      return;
+    }
     if (tool === "eraser" || tool === "area") {
       const next = tool === "area" ? eraseArea(els, p, 14) : els.filter(el => !hitTest(el, p, 8));
       gesture.current = { type: "erase", page, els: next, area: tool === "area" }; setPreview({ page, els: next }); return;
@@ -218,6 +233,7 @@ export function NoteDrawingCanvas({ value, onChange, incoming }: { value: Drawin
       <ToolBtn id="highlighter" label="Highlighter" Icon={Highlighter} />
       <ToolBtn id="eraser" label="Stroke eraser" Icon={Eraser} />
       <ToolBtn id="area" label="Area eraser" Icon={Scissors} />
+      <ToolBtn id="text" label="Text (double-tap text to edit)" Icon={Type} />
       {sep}
       {SHAPES.map(s => <ToolBtn key={s.id} id={s.id} label={s.label} Icon={s.Icon} />)}
       {sep}
