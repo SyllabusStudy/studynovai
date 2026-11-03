@@ -239,7 +239,7 @@ export function NotesAiPanel({ noteId, open, onOpen, onClose, editor, title, cla
     editor.commands.command(({ tr }) => {
       const pending = suggestions.map(s => s.state ? { original: "", suggestion: "" } : s);
       planCorrectionReplacements(tr.doc, pending).forEach(({ from, to, index }) => {
-        const s = suggestions[index];
+        const s = suggestions[index]; if (!s) return;
         const marks = tr.doc.nodeAt(from)?.marks ?? tr.doc.resolve(from).marks();
         tr.replaceWith(from, to, s.suggestion ? editor.schema.text(s.suggestion, marks) : []);
         accepted.add(index);
