@@ -14,7 +14,9 @@ export type GloAction =
   | { type: "email"; to: string; subject: string; body: string }
   | { type: "theme"; mode: "light" | "dark" }
   | { type: "quiz"; className?: string; topic?: string; noteTitle?: string; count?: number }
-  | { type: "flashcards"; className?: string; topic?: string; noteTitle?: string; count?: number };
+  | { type: "flashcards"; className?: string; topic?: string; noteTitle?: string; count?: number }
+  | { type: "assignment"; title: string; dueDate?: string; className?: string; category?: string }
+  | { type: "timer"; minutes: number; label?: string };
 
 const PAGES = ["/dashboard", "/classes", "/calendar", "/assignments", "/notes", "/grades", "/flashcards", "/quizzes", "/tutor", "/snapquick", "/quickvideo", "/lectures", "/studio", "/ai-checker", "/email", "/school", "/settings", "/upgrade"];
 
@@ -30,6 +32,10 @@ Never claim something was saved, linked or created unless you are returning the 
 - {"type":"quiz","className": string,"topic": string,"noteTitle": string,"count": number} — actually CREATE a quiz. "topic" = the EXACT topic the student named, word for word (empty only if none). "noteTitle" = the note/document name if they mention a specific note ("my photosynthesis note"), else "". className = the class they named, else "".
 - {"type":"flashcards", same fields} — actually CREATE flashcards the same way.
 - {"type":"theme","mode":"light"|"dark"}.
+- {"type":"assignment","title": string,"dueDate":"YYYY-MM-DD","className": string,"category":"assignment"|"exam"|"quiz"|"project"} — add an assignment/exam to their planner when they say "add/remind me/I have an exam...". Resolve relative dates ("next Friday") from Today.
+- {"type":"timer","minutes": number,"label": string} — start a focus/study timer ("start a 25 minute pomodoro"). Default 25 minutes.
+QUIZ ME MODE: if the student says "quiz me" / "test me" out loud, do NOT create a quiz — ask ONE short spoken question (prefer their Weak spots), wait, then on their next answer say if it's right in one sentence with a quick why, and ask the next question. Stop when they say stop.
+Weak spots are topics they recently missed on quizzes; when they ask "what should I study" suggest these first.
 "say" for quiz/flashcards must name the exact topic (e.g. "Making 10 flashcards on mitosis now.").
 Use the student's assignments below to answer what's due. Short follow-ups ("shorter", "yes", "the second one", "make it on that") refer to the previous turn. Never invent assignments.
 When a screenshot of the student's screen is attached, look at it carefully and answer about what is on it. If they ask you to take notes on it, use the "note" action with an advanced structured note built from the screen content.`.replace("PAGES", PAGES.join(", "));
@@ -80,19 +86,21 @@ export const gloCommand = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const today = new Date().toISOString().slice(0, 10);
-    const [{ data: due }, { data: classes }, { data: notes }] = await Promise.all([
+    const [{ data: due }, { data: classes }, { data: notes }, { data: weakRows }] = await Promise.all([
       context.supabase.from("assignments").select("title,due_date,status").eq("user_id", context.userId).neq("status", "completed")
         .not("due_date", "is", null).order("due_date").limit(20),
       context.supabase.from("classes").select("id,class_name").eq("user_id", context.userId),
       context.supabase.from("personal_notes").select("id,title,class_id").eq("user_id", context.userId).order("updated_at", { ascending: false }).limit(40),
+      context.supabase.from("quizzes").select("weak_topics").eq("user_id", context.userId).not("weak_topics", "is", null).order("created_at", { ascending: false }).limit(8),
     ]);
+    const weak = [...new Set((weakRows ?? []).flatMap((q) => (Array.isArray(q.weak_topics) ? q.weak_topics : []).map((t) => String(typeof t === "object" && t && "topic" in t ? (t as { topic: unknown }).topic : t))))].filter(Boolean).slice(0, 10).join(", ") || "none yet";
     const list = (due ?? []).map((a) => `- ${a.title} (due ${a.due_date})`).join("\n") || "none";
     const classList = (classes ?? []).map((c) => c.class_name).join(", ") || "none";
     const noteList = (notes ?? []).map((n) => n.title).filter(Boolean).slice(0, 40).join(" | ") || "none";
     const wantsNote = /\bnotes?\b/i.test(data.text) && /\b(make|write|create|take|add|save)\b/i.test(data.text);
     const raw = await withTrialOrUserAiKey(context.supabase, context.userId, "tutor", () =>
       callAI([
-        { role: "system", content: `${SYSTEM}\nToday: ${today}. Current page: ${data.path}.\nClasses: ${classList}\nNote titles: ${noteList}\nOpen assignments:\n${list}` },
+        { role: "system", content: `${SYSTEM}\nToday: ${today}. Current page: ${data.path}.\nClasses: ${classList}\nNote titles: ${noteList}\nWeak spots: ${weak}\nOpen assignments:\n${list}` },
         ...data.history,
         data.screen
           ? { role: "user", content: [{ type: "text", text: `[Screenshot of my screen attached]\n${data.text}` }, { type: "image_url", image_url: { url: data.screen } }] }
@@ -193,6 +201,20 @@ export const gloCommand = createServerFn({ method: "POST" })
       }).select("id").single();
       if (!note) return { say: "Sorry, I couldn't save that note.", action: { type: "none" } as GloAction };
       return { say: cls ? `Saved it to your notes in ${cls.class_name}.` : "Saved it to your notes.", action: { type: "none" } as GloAction };
+    }
+    if (action.type === "assignment") {
+      const title = String(action.title ?? "").trim().slice(0, 200);
+      if (!title) return { say: "What should I call that assignment?", action: { type: "none" } as GloAction };
+      const due = /^\d{4}-\d{2}-\d{2}$/.test(String(action.dueDate ?? "")) ? `${action.dueDate}T23:59:00` : null;
+      const cls = findClass(action.className);
+      const cat = ["assignment", "exam", "quiz", "project"].includes(String(action.category)) ? String(action.category) : "assignment";
+      const { error } = await context.supabase.from("assignments").insert({ user_id: context.userId, title, due_date: due, class_id: cls?.id ?? null, category: cat });
+      if (error) return { say: "Sorry, I couldn't add that right now.", action: { type: "none" } as GloAction };
+      return { say: `Added "${title}"${due ? ` due ${action.dueDate}` : ""}${cls ? ` to ${cls.class_name}` : ""}.`, action: { type: "none" } as GloAction };
+    }
+    if (action.type === "timer") {
+      const minutes = Math.min(120, Math.max(1, Math.round(Number(action.minutes) || 25)));
+      return { say: String(parsed.say ?? `Starting a ${minutes} minute focus timer.`), action: { type: "timer", minutes, label: String(action.label ?? "Focus").slice(0, 40) } as GloAction };
     }
     if (action.type === "link_note") {
       const want = lcs(String(action.noteTitle ?? ""));
