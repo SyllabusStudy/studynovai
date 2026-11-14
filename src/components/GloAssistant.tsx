@@ -41,6 +41,23 @@ function pickVoice(): SpeechSynthesisVoice | undefined {
   return pool.find((v) => v.localService) ?? pool[0];
 }
 
+/** Soft two-note chime when Glo wakes (or a brighter one when a timer ends). */
+function playGloChime(done = false) {
+  try {
+    const A = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!A) return;
+    const ac = new A();
+    (done ? [660, 880, 1320] : [740, 988]).forEach((f, i) => {
+      const o = ac.createOscillator(); const g = ac.createGain();
+      o.type = "sine"; o.frequency.value = f;
+      const t = ac.currentTime + i * 0.12;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.12, t + 0.02); g.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+      o.connect(g).connect(ac.destination); o.start(t); o.stop(t + 0.4);
+    });
+    setTimeout(() => void ac.close(), 1200);
+  } catch { /* audio not available */ }
+}
+
 /** Glo: always-on "Hey Glo" voice assistant that sits on the right edge. */
 export function GloAssistant() {
   const { user } = useAuth();
@@ -68,6 +85,8 @@ export function GloAssistant() {
   const recorder = useRef<MediaRecorder | null>(null);
   const recTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [timerEnd, setTimerEnd] = useState<{ at: number; label: string } | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const [watching, setWatching] = useState(false);
   const stream = useRef<MediaStream | null>(null);
   const video = useRef<HTMLVideoElement | null>(null);
@@ -185,6 +204,7 @@ export function GloAssistant() {
 
   const runAction = useCallback((a: GloAction) => {
     const c = ctx.current;
+    if (a.type === "timer") setTimerEnd({ at: Date.now() + a.minutes * 60000, label: a.label || "Focus" });
     if (a.type === "navigate" && a.to !== c.path) c.navigate({ to: a.to });
     if (a.type === "theme" && a.mode !== c.theme) c.toggle();
     if (a.type === "email") setPending(a);
@@ -246,8 +266,18 @@ export function GloAssistant() {
     }
   }, [ask, runAction, say, sendEmail, startWatching, stopWatching, snapshot, name, micBusy]);
 
+  useEffect(() => {
+    if (!timerEnd) return;
+    const id = setInterval(() => {
+      setNow(Date.now());
+      if (Date.now() >= timerEnd.at) { setTimerEnd(null); playGloChime(true); say(`Time's up! Great ${timerEnd.label.toLowerCase()} session. Take a short break.`); }
+    }, 1000);
+    return () => clearInterval(id);
+  }, [timerEnd, say]);
+
   const wake = useCallback((rest = "") => {
     if (thinking.current || speaking.current || micBusy) return;
+    playGloChime();
     setOpen(true);
     if (rest.trim().length > 3) { void handle(rest.trim()); return; }
     keepAwake();
@@ -521,6 +551,11 @@ export function GloAssistant() {
         <span aria-hidden="true" className="glo-meter absolute -bottom-1 flex h-3 items-center gap-0.5 rounded-full border border-border bg-card px-1.5">
           <i /><i /><i /><i /><i />
         </span>
+        {timerEnd ? (
+          <span className="absolute -left-12 top-1/2 -translate-y-1/2 rounded-full border border-border bg-card px-2 py-0.5 font-display text-[11px] font-bold tabular-nums text-foreground" aria-label={`${timerEnd.label} timer`}>
+            {(() => { const left = Math.max(0, Math.ceil((timerEnd.at - now) / 1000)); return `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`; })()}
+          </span>
+        ) : null}
         {watching ? <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-success" aria-label="Glo can see your screen" /> : null}
       </Button>
     </div>

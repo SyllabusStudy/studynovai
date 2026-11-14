@@ -426,6 +426,14 @@
 .glo-launcher:hover { background: var(--glo-shell); }
 .glo-face { background: var(--glo-face); }
 .glo-face > span { display: none; }
+.glo-launcher .glo-face { transition: transform .3s ease; }
+.glo-launcher[data-state="listening"] .glo-face, .glo-launcher[data-state="hearing"] .glo-face { animation: glo-perk 1.4s ease-in-out infinite; }
+.glo-launcher[data-state="thinking"] .glo-face, .glo-launcher[data-state="preparing"] .glo-face { animation: glo-think 1.6s ease-in-out infinite; }
+.glo-launcher[data-state="speaking"] .glo-face { animation: glo-talk .5s ease-in-out infinite; }
+@keyframes glo-perk { 50% { transform: translateY(-2px) scale(1.06); } }
+@keyframes glo-think { 25% { transform: rotate(-8deg); } 75% { transform: rotate(8deg); } }
+@keyframes glo-talk { 50% { transform: scaleY(.94) scaleX(1.04); } }
+@media (prefers-reduced-motion: reduce) { .glo-launcher .glo-face { animation: none !important; } }
 .glo-meter i { width: 2px; height: 3px; border-radius: 2px; background: var(--info); }
 .glo-meter i:nth-child(2), .glo-meter i:nth-child(4) { height: 5px; }
 .glo-meter i:nth-child(3) { height: 7px; }
