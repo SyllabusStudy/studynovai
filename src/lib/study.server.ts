@@ -937,6 +937,11 @@ export async function runQuizGeneration(
     "worked problems and calculations",
     "common mistakes and misconceptions",
     "connecting two different sections of the material",
+    "which-is-NOT / EXCEPT questions",
+    "same-as / equivalent meaning questions",
+    "best example of a concept",
+    "order of steps or sequence",
+    "analogies between concepts",
   ];
   const focus = angles.sort(() => Math.random() - 0.5).slice(0, 3).join("; ");
   const difficultyGuide: Record<string, string> = {
@@ -970,6 +975,7 @@ Quality rules:
 - Vary the correct option position across the quiz. Do not make the answer obvious by repeating words from the prompt.
 - Scenarios and problems must contain enough information to solve from the supplied material; never invent a required fact.
 - Prefer these angles for this quiz: ${focus}.
+- QUESTION STYLES: vary the stems like a real college exam. Mix in (where the material fits): negative stems ("Which of the following is NOT...", "All of the following are true EXCEPT..." — always write NOT/EXCEPT in capitals), equivalence stems ("Which is the same as...", "Which statement means the same thing as..."), distinction stems ("What best distinguishes A from B?"), cause/effect ("If X increases, what happens to Y?"), scenario/diagnosis ("A student observes... which best explains it?"), misconception spotting ("Which common belief is actually wrong?"), analogy ("A is to B as C is to ___"), best-example ("Which is the best example of..."), and ordering/sequence ("Which step comes first/next?"). Do not use the same stem style more than twice in a row. For NOT/EXCEPT questions, exactly one option must be false and the other three true.
 STRUCTURE QUESTIONS: only if the material involves chemistry/molecules, make about a third of the questions (at least 1) "structure_choice". The app DRAWS each option from SMILES — never use pictures from the material. For structure_choice: options must be ["A","B","C","D"], answer is the correct letter, "option_smiles" has exactly 4 valid, distinct SMILES strings in letter order (no names or labels). All 4 must be the same kind of molecule so distractors are plausible (e.g. rings of different sizes, isomers, different functional groups). The prompt must describe properties the student reasons about (ring size, bonds, functional groups, atom counts, products) and must never name the answer molecule. Double-check the correct SMILES truly matches the prompt and the explanation says why. If the material has no chemistry, do not use structure_choice.
 ${input.topic ? `STRICT TOPIC: every single question must be about "${input.topic}". Ignore material unrelated to it.${input.allowGeneral ? " If the material doesn't cover it well, use accurate standard college-level knowledge of the topic." : ""}\n` : ""}${pageImages.length ? `${pageImages.length} page images of the material are attached for reading only.\n` : ""}${asked.length ? `Do not repeat these:\n${asked.map((p) => `- ${p}`).join("\n").slice(0, 1500)}` : ""}
 
