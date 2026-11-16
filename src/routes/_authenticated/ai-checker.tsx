@@ -1,8 +1,11 @@
 import { MoreOptions } from "@/components/MoreOptions";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Copy, Crown, Loader2, ScanSearch, } from "lucide-react";
+import { Copy, Crown, FileUp, Loader2, NotebookPen, RefreshCw, ScanSearch } from "lucide-react";
+import { listPersonalNotes } from "@/lib/notes.functions";
+import { readTextFromFile } from "@/lib/checker-import";
+import { writingStats } from "@/lib/writing-stats";
 import { toast } from "sonner";
 import { checkAiText, humanizeAiText } from "@/lib/ai.functions";
 import { getBilling } from "@/lib/billing.functions";
@@ -49,6 +52,52 @@ function AiCheckerPage() {
   const [improved, setImproved] = useState(false);
   const [humanized, setHumanized] = useState<string | null>(null);
   const [original, setOriginal] = useState<string | null>(null);
+  const [tone, setTone] = useState<"natural" | "academic" | "casual" | "concise">("natural");
+  const [beforePercent, setBeforePercent] = useState<number | null>(null);
+  const [recheck, setRecheck] = useState<AiCheckResult | null>(null);
+  const [rechecking, setRechecking] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [notes, setNotes] = useState<{ id: string; title: string; plain_text: string | null }[] | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const loadNotes = useServerFn(listPersonalNotes);
+  const stats = useMemo(() => (result && !humanized ? writingStats(result.spans.map((s) => s.text).join("")) : null), [result, humanized]);
+
+  async function importFile(file: File | undefined) {
+    if (!file) return;
+    try {
+      const t = await readTextFromFile(file);
+      if (t.length < 50) return void toast.error("Couldn't find enough text in that file.");
+      setText(t.slice(0, 20000));
+      setResult(null);
+      toast.success(`Loaded ${file.name}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "That file couldn't be read.");
+    }
+  }
+
+  async function openNotes() {
+    if (notes) return setNotes(null);
+    try {
+      const n = await loadNotes();
+      setNotes((n ?? []).filter((x) => (x.plain_text ?? "").trim().length >= 50));
+    } catch {
+      toast.error("Your notes couldn't be loaded.");
+    }
+  }
+
+  async function doRecheck() {
+    if (!humanized || rechecking) return;
+    setRechecking(true);
+    try {
+      const res = await run({ data: { text: humanized.slice(0, 20000) } });
+      if (res.error) { if (!redirectForKey(res.error)) toast.error(res.error); }
+      else setRecheck(res.result);
+    } catch {
+      toast.error("I'm having trouble connecting right now. Try again in a moment.");
+    } finally {
+      setRechecking(false);
+    }
+  }
 
   useEffect(() => {
     loadBilling()
@@ -66,6 +115,7 @@ function AiCheckerPage() {
         data: {
           sentences: aiIdx.map((i) => ({ index: i, text: (result.spans[i]?.text ?? "").slice(0, 2000) })),
           context: result.spans.map((s) => s.text).join(""),
+          tone,
         },
       });
       if (res.error || !res.text) {
@@ -78,6 +128,8 @@ function AiCheckerPage() {
         return;
       }
       setImproved(true);
+      setBeforePercent(result.aiPercent);
+      setRecheck(null);
       setResult({ ...result, spans: [{ text: nextText, label: "human", section: 0 }] });
       setRewritten(new Set([0]));
       setText(nextText);
@@ -101,6 +153,8 @@ function AiCheckerPage() {
     setImproved(false);
     setHumanized(null);
     setOriginal(text);
+    setRecheck(null);
+    setBeforePercent(null);
     setOpenSection(null);
     try {
       const res = await run({ data: { text: text.slice(0, 20000) } });
@@ -120,7 +174,32 @@ function AiCheckerPage() {
     <div className="space-y-5">
       <PageHeader title="AI Text Checker" description="Paste your writing. See what sounds AI-written, and why." />
       <AiKeySetupBanner />
-      <section className="surface-card space-y-3 p-4 sm:p-6">
+      <section
+        className={cn("surface-card space-y-3 p-4 sm:p-6 transition", dragging && "ring-2 ring-primary")}
+        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(e) => { e.preventDefault(); setDragging(false); void importFile(e.dataTransfer.files[0]); }}
+      >
+        <div className="flex flex-wrap gap-2">
+          <input ref={fileRef} type="file" accept=".pdf,.docx,.txt,.md,text/plain,application/pdf" className="hidden" onChange={(e) => { void importFile(e.target.files?.[0]); e.target.value = ""; }} />
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => fileRef.current?.click()}>
+            <FileUp className="size-4" /> Upload PDF, Word or text
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => void openNotes()}>
+            <NotebookPen className="size-4" /> From my notes
+          </Button>
+          <span className="self-center text-xs text-muted-foreground">or drag a file here</span>
+        </div>
+        {notes ? (
+          <div className="max-h-48 space-y-1 overflow-y-auto rounded-xl border border-border p-2">
+            {notes.length ? notes.map((n) => (
+              <button key={n.id} type="button" className="block w-full truncate rounded-lg px-2 py-1.5 text-left text-sm hover:bg-accent"
+                onClick={() => { setText((n.plain_text ?? "").slice(0, 20000)); setNotes(null); setResult(null); }}>
+                {n.title || "Untitled note"}
+              </button>
+            )) : <p className="p-2 text-sm text-muted-foreground">No notes with enough text yet.</p>}
+          </div>
+        ) : null}
         <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -184,6 +263,35 @@ function AiCheckerPage() {
             </div>
           ) : null}
 
+          {stats && stats.sentences >= 3 ? (
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl border border-border p-3">
+                <p className="text-xs text-muted-foreground">Sentence variety</p>
+                <p className="font-display text-lg font-bold">{stats.variety}%</p>
+                <div className="mt-1 flex h-8 items-end gap-px">
+                  {stats.lengths.slice(0, 40).map((l, i) => (
+                    <span key={i} className="flex-1 rounded-sm bg-primary/60" style={{ height: `${Math.min(100, (l / Math.max(...stats.lengths)) * 100)}%` }} />
+                  ))}
+                </div>
+                <p className="mt-1 text-[11px] text-muted-foreground">{stats.variety < 35 ? "Sentences are very even — mix short and long." : "Good mix of short and long sentences."}</p>
+              </div>
+              <div className="rounded-xl border border-border p-3">
+                <p className="text-xs text-muted-foreground">Average sentence</p>
+                <p className="font-display text-lg font-bold">{stats.avgSentenceWords} words</p>
+                <p className="text-[11px] text-muted-foreground">{stats.sentences} sentences · ~{stats.readingMinutes} min read</p>
+              </div>
+              <div className="rounded-xl border border-border p-3">
+                <p className="text-xs text-muted-foreground">AI-sounding phrases</p>
+                <p className="font-display text-lg font-bold">{stats.cliches.reduce((a, c) => a + c.count, 0)}</p>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {stats.cliches.slice(0, 6).map((c) => (
+                    <span key={c.phrase} className="rounded-md bg-destructive/15 px-1.5 py-0.5 text-[11px] text-destructive">{c.phrase}{c.count > 1 ? ` ×${c.count}` : ""}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-3 text-xs">
               <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-destructive/25" /> Likely AI</span>
@@ -237,6 +345,15 @@ function AiCheckerPage() {
               );
             })() : null}
             <div className="flex flex-wrap items-center gap-2">
+              {pro && aiIdx.length ? (
+                <select value={tone} onChange={(e) => setTone(e.target.value as typeof tone)} aria-label="Rewrite tone"
+                  className="h-9 rounded-md border border-input bg-background px-2 text-sm">
+                  <option value="natural">Natural student</option>
+                  <option value="academic">Academic</option>
+                  <option value="casual">Casual</option>
+                  <option value="concise">Concise</option>
+                </select>
+              ) : null}
               {pro ? (
                 <Button onClick={() => void doHumanize()} disabled={humanizing || !aiIdx.length} className="gap-1.5">
                   {humanizing ? <Loader2 className="size-4 animate-spin" /> : null}
@@ -264,12 +381,24 @@ function AiCheckerPage() {
                   <p className="text-sm font-semibold">Humanized version</p>
                   <span className="text-xs text-muted-foreground">Meaningfully rewritten</span>
                 </div>
-                <p className="max-h-60 overflow-y-auto whitespace-pre-wrap rounded-lg border border-border bg-background/60 p-3 text-sm leading-7">
-                  {humanized}
-                </p>
-                <MoreOptions label="Show my original text">
-                  <p className="max-h-60 overflow-y-auto whitespace-pre-wrap text-sm leading-7 text-muted-foreground">{original ?? ""}</p>
-                </MoreOptions>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div>
+                    <p className="mb-1 text-xs font-semibold text-muted-foreground">Before{beforePercent !== null ? ` · ${beforePercent}% AI` : ""}</p>
+                    <p className="max-h-72 overflow-y-auto whitespace-pre-wrap rounded-lg border border-border bg-background/60 p-3 text-sm leading-7 text-muted-foreground">{original ?? ""}</p>
+                  </div>
+                  <div>
+                    <p className="mb-1 text-xs font-semibold text-success">After{recheck ? ` · ${recheck.aiPercent}% AI` : ""}</p>
+                    <p className="max-h-72 overflow-y-auto whitespace-pre-wrap rounded-lg border border-success/40 bg-background/60 p-3 text-sm leading-7">{humanized}</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button size="sm" variant="outline" className="gap-1.5" onClick={() => void doRecheck()} disabled={rechecking}>
+                    {rechecking ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />} Re-check new version
+                  </Button>
+                  {recheck && beforePercent !== null ? (
+                    <span className="text-sm">{beforePercent}% → <span className="font-semibold">{recheck.aiPercent}%</span> AI</span>
+                  ) : null}
+                </div>
               </div>
             ) : null}
             {rewritten.size ? <p className="text-xs text-muted-foreground">The rewritten version is underlined in green and now appears in your text box. This improves natural writing quality; it does not guarantee any detector result.</p> : null}

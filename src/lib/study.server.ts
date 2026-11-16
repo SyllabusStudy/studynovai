@@ -1839,9 +1839,18 @@ function preservesProtectedDetails(original: string, rewrite: string) {
   return protectedDetails(original).every((detail) => rewrite.includes(detail));
 }
 
+export const HUMANIZE_TONES = {
+  natural: "Write in a natural, clear student voice.",
+  academic: "Keep a formal academic register suitable for an essay or paper, but with natural rhythm and varied sentences.",
+  casual: "Use a relaxed, conversational student voice with contractions, while keeping every fact intact.",
+  concise: "Make it tighter and more direct: cut filler and repetition without dropping any claim or detail.",
+} as const;
+export type HumanizeTone = keyof typeof HUMANIZE_TONES;
+
 async function humanizePass(
   original: string,
   attempt: number,
+  tone: HumanizeTone = "natural",
 ): Promise<string | null> {
   const push =
     attempt === 0
@@ -1851,7 +1860,7 @@ async function humanizePass(
         : "\n\nThis is the final revision. The earlier drafts were superficial. Start from the ideas rather than the original sentence shapes, then write a fresh, natural version with different organization and rhythm. Preserve every fact, quotation, citation, number, and intended meaning.";
   const raw = await callAI(
     [
-      { role: "system", content: HUMANIZE_RULES + push },
+      { role: "system", content: HUMANIZE_RULES + `\n\nTone: ${HUMANIZE_TONES[tone]}` + push },
       { role: "user", content: `Rewrite this passage:\n\n${original}` },
     ],
     { temperature: attempt === 0 ? 0.75 : 0.9, maxTokens: Math.min(8000, 1200 + Math.ceil(original.length * 1.2)) },
@@ -1873,7 +1882,7 @@ async function humanizePass(
  * change naturally. Near-copies or drafts that lose protected details are retried;
  * if no draft passes every check, the most different usable draft is returned.
  */
-export async function runHumanize(input: { sentences: { index: number; text: string }[]; context: string }) {
+export async function runHumanize(input: { sentences: { index: number; text: string }[]; context: string; tone?: HumanizeTone | undefined }) {
   const original = input.context.trim();
   if (!original) return { text: null, similarity: null };
 
@@ -1881,7 +1890,7 @@ export async function runHumanize(input: { sentences: { index: number; text: str
   for (let attempt = 0; attempt < 3; attempt++) {
     let rewrite: string | null = null;
     try {
-      rewrite = await humanizePass(original, attempt);
+      rewrite = await humanizePass(original, attempt, input.tone);
     } catch (e) {
       if (attempt === 0 || (e instanceof Error && /key|settings|limit/i.test(e.message))) throw e;
       break;
