@@ -12,6 +12,7 @@ import {
 } from "./ai.server";
 import type { ChatMessage } from "./ai.server";
 import { tutorHistory } from "./tutor-prompt";
+import { writingStats } from "./writing-stats";
 
 type DB = SupabaseClient<Database>;
 
@@ -1818,6 +1819,15 @@ REQUIRED:
 - Keep the writer's apparent tone and level. The result should sound like a real student who understands the subject, while remaining coherent and grammatically appropriate.
 - Preserve paragraph breaks when they carry meaning, but improve paragraph organization when needed.
 
+HOW HUMAN WRITING ACTUALLY DIFFERS (apply all of these):
+- Burstiness: mix very short sentences (4-8 words) with longer ones (25+ words). Never write three sentences of similar length in a row.
+- Less predictable word choice: prefer the plain, specific word a student would pick over the safest "textbook" phrasing. Avoid stock collocations.
+- Vary openings: do not start consecutive sentences the same way, and rarely open with a transition word.
+- Uneven paragraphs: paragraphs should not all have the same shape or length; skip the neat "topic sentence, three points, summary" pattern.
+- Use contractions where the tone allows, occasional parenthetical asides, and the odd question or dash when it fits the idea.
+- No closing summary sentence that restates the paragraph ("Overall,", "In conclusion,", "Ultimately,").
+- BANNED words/phrases: delve, moreover, furthermore, additionally, in today's world, landscape, tapestry, crucial, pivotal, vital, foster, leverage, utilize, navigate, realm, robust, seamless, it is important to note, plays a significant role, a testament to, in conclusion, overall, ultimately, not only... but also, in summary, embark, underscore, multifaceted, intricate, ever-evolving, showcase.
+
 NEVER:
 - Add personal experiences, first-person claims, opinions, examples, evidence, facts, citations, or conclusions that are not in the source.
 - Add intentional mistakes, typos, forced slang, choppy fragments, or awkward wording.
@@ -1857,7 +1867,7 @@ async function humanizePass(
     attempt === 0
       ? ""
       : attempt === 1
-        ? "\n\nYour previous draft was too close to the source. Reconstruct the passage more substantially: change the paragraph flow, split or combine sentences, vary their openings and lengths, and recast the explanation while preserving every claim and protected detail."
+        ? "\n\nYour previous draft was too close to the source or still sounded machine-written (uniform sentence lengths or banned phrases). Make sentence lengths swing hard between short and long. Your previous draft was too close to the source. Reconstruct the passage more substantially: change the paragraph flow, split or combine sentences, vary their openings and lengths, and recast the explanation while preserving every claim and protected detail."
         : "\n\nThis is the final revision. The earlier drafts were superficial. Start from the ideas rather than the original sentence shapes, then write a fresh, natural version with different organization and rhythm. Preserve every fact, quotation, citation, number, and intended meaning.";
   const raw = await callAI(
     [
@@ -1898,7 +1908,9 @@ export async function runHumanize(input: { sentences: { index: number; text: str
     }
     if (!rewrite) continue;
     const similarity = textSimilarity(original, rewrite);
-    if (isMeaningfullyRewritten(original, rewrite) && preservesProtectedDetails(original, rewrite)) {
+    const st = writingStats(rewrite);
+    const soundsHuman = attempt === 2 || st.sentences < 4 || (st.variety >= 45 && st.cliches.length === 0);
+    if (soundsHuman && isMeaningfullyRewritten(original, rewrite) && preservesProtectedDetails(original, rewrite)) {
       return { text: rewrite, similarity };
     }
     if (similarity < 0.95 && (!best || similarity < best.similarity)) best = { text: rewrite, similarity };
