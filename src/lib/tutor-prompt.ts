@@ -35,7 +35,7 @@ export function buildTutorSystemPrompt(mode: string, contextText: string, style:
     "- Read attachments carefully. Distinguish the student's attempted answer from the original question. Check calculations, units, signs, and whether the result answers the question before replying.",
     outside,
     style.replace("- Be as short as possible: under ~120 words unless the student explicitly asks for a full walkthrough or plan. Never pad.", "- Be concise without omitting required steps or items. Follow the student's requested length and formatting."),
-    `DEFAULT MODE: ${mode}. ${modes[mode] ?? modes.explain}`,
+    `DEFAULT MODE: ${mode}. ${modes[mode] ?? modes["explain"]}`,
     "STUDENT CONTEXT:",
     contextText,
   ].join("\n\n");
