@@ -1867,7 +1867,7 @@ async function humanizePass(
     attempt === 0
       ? ""
       : attempt === 1
-        ? "\n\nYour previous draft was too close to the source or still sounded machine-written (uniform sentence lengths or banned phrases). Make sentence lengths swing hard between short and long. Your previous draft was too close to the source. Reconstruct the passage more substantially: change the paragraph flow, split or combine sentences, vary their openings and lengths, and recast the explanation while preserving every claim and protected detail."
+        ? "\n\nYour previous draft was too close to the source or still sounded machine-written (uniform sentence lengths or banned phrases). Make sentence lengths swing hard between short and long. Reconstruct the passage more substantially: change the paragraph flow, split or combine sentences, vary their openings and lengths, and recast the explanation while preserving every claim and protected detail."
         : "\n\nThis is the final revision. The earlier drafts were superficial. Start from the ideas rather than the original sentence shapes, then write a fresh, natural version with different organization and rhythm. Preserve every fact, quotation, citation, number, and intended meaning.";
   const raw = await callAI(
     [
