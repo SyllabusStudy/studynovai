@@ -1,5 +1,8 @@
 # Current work
 
+- [ ] Improve AI Tutor instruction-following by removing conflicting teaching rules and retaining more conversation context.
+- [ ] Run Tutor regression tests and verify a real follow-up conversation.
+
 - [x] Redesign only the AI Checker into a two-pane writing and analysis workspace, preserving all existing actions.
 - [x] Verify the signed-in AI Checker layout on desktop and phone in both themes; text entry/clear and writing-stats tests pass. A live analysis did not return results during verification; existing ad-script hydration warnings remain outside this visual-only change.
 
