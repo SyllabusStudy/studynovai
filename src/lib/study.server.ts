@@ -1882,7 +1882,7 @@ async function humanizePass(
  * change naturally. Near-copies or drafts that lose protected details are retried;
  * if no draft passes every check, the most different usable draft is returned.
  */
-export async function runHumanize(input: { sentences: { index: number; text: string }[]; context: string; tone?: HumanizeTone }) {
+export async function runHumanize(input: { sentences: { index: number; text: string }[]; context: string; tone?: HumanizeTone | undefined }) {
   const original = input.context.trim();
   if (!original) return { text: null, similarity: null };
 
