@@ -314,7 +314,7 @@ function AiCheckerPage() {
               {rewritten.size ? <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm border-2 border-success" /> Revised</span> : null}
             </div>
             <div className="max-h-[28rem] overflow-y-auto whitespace-pre-wrap rounded-xl border border-border bg-background/50 p-3 text-sm leading-7">
-              {result.spans.map((s, i) => (
+              {result.spans.map((s, i) => !s.text.trim() ? <span key={i}>{s.text}</span> : (
                 <span
                   key={i}
                   role="button"
