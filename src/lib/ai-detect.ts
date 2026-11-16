@@ -323,7 +323,7 @@ export type ModelJudgement = {
   genre?: string;
 };
 
-const labelFor = (p: number): Label => (p >= 60 ? "ai" : p <= 38 ? "human" : "mixed");
+const labelFor = (p: number): Label => (p >= 70 ? "ai" : p <= 40 ? "human" : "mixed");
 
 /**
  * Fuse the style score with the model reader. Plain averaging let a lenient

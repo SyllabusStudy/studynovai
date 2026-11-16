@@ -1828,7 +1828,9 @@ HOW HUMAN WRITING ACTUALLY DIFFERS (apply all of these):
 - Vary openings: do not start consecutive sentences the same way, and rarely open with a transition word.
 - Uneven paragraphs: paragraphs should not all have the same shape or length; skip the neat "topic sentence, three points, summary" pattern.
 - Use contractions where the tone allows, occasional parenthetical asides, and the odd question or dash when it fits the idea.
-- Avoid "A, B, and C" lists of three. Use at most one list per paragraph, and prefer pairs or a single concrete item.
+- NEVER write a list of three or more items joined by commas ("work, learn, and talk" / "privacy, jobs, ethics, and..."). This is the #1 AI giveaway. Name at most TWO things together; if the source lists more, split them across separate sentences or pick the most concrete ones and mention the rest in a different sentence shape.
+- Make paragraphs clearly uneven: e.g. one paragraph of a single short sentence, another of 3-4 sentences.
+- Include at least one very short sentence (under 7 words) and one long one (over 28 words).
 - Use contractions (it's, don't, that's) in most paragraphs unless the tone is academic.
 - Avoid grand sweeping statements ("marks a total shift", "opens up huge doors", "down the road"); say plainly what happens.
 - No closing summary sentence that restates the paragraph ("Overall,", "In conclusion,", "Ultimately,").
@@ -1872,7 +1874,7 @@ async function humanizePass(
   const push =
     attempt === 0
       ? ""
-      : attempt === 1
+      : attempt >= 1 && attempt < 3
         ? "\n\nYour previous draft was too close to the source or still sounded machine-written (uniform sentence lengths, banned phrases, or repeated A-B-and-C lists of three). Remove most lists of three and add contractions. Make sentence lengths swing hard between short and long. Reconstruct the passage more substantially: change the paragraph flow, split or combine sentences, vary their openings and lengths, and recast the explanation while preserving every claim and protected detail."
         : "\n\nThis is the final revision. The earlier drafts were superficial. Start from the ideas rather than the original sentence shapes, then write a fresh, natural version with different organization and rhythm. Preserve every fact, quotation, citation, number, and intended meaning.";
   const raw = await callAI(
@@ -1903,8 +1905,8 @@ export async function runHumanize(input: { sentences: { index: number; text: str
   const original = input.context.trim();
   if (!original) return { text: null, similarity: null };
 
-  let best: { text: string; similarity: number } | null = null;
-  for (let attempt = 0; attempt < 3; attempt++) {
+  let best: { text: string; similarity: number; penalty: number } | null = null;
+  for (let attempt = 0; attempt < 4; attempt++) {
     let rewrite: string | null = null;
     try {
       rewrite = await humanizePass(original, attempt, input.tone);
@@ -1918,11 +1920,12 @@ export async function runHumanize(input: { sentences: { index: number; text: str
     const sig = computeSignals(splitSentences(rewrite), paragraphsOf(rewrite));
     const local = localScore(sig) ?? 0;
     const triads = sig.some((x) => x.id === "triads" && x.detected);
-    const soundsHuman = attempt === 2 || st.sentences < 4 || (st.variety >= 45 && st.cliches.length === 0 && !triads && local < 40);
+    const soundsHuman = st.sentences < 4 || (st.variety >= 45 && st.cliches.length === 0 && !triads && local < 40);
     if (soundsHuman && isMeaningfullyRewritten(original, rewrite) && preservesProtectedDetails(original, rewrite)) {
       return { text: rewrite, similarity };
     }
-    if (similarity < 0.95 && (!best || similarity < best.similarity)) best = { text: rewrite, similarity };
+    const penalty = local + (triads ? 25 : 0);
+    if (similarity < 0.95 && preservesProtectedDetails(original, rewrite) && (!best || penalty < best.penalty)) best = { text: rewrite, similarity, penalty };
   }
-  return best ?? { text: null, similarity: null };
+  return best ? { text: best.text, similarity: best.similarity } : { text: null, similarity: null };
 }
