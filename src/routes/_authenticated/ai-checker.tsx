@@ -10,7 +10,6 @@ import { toast } from "sonner";
 import { checkAiText, humanizeAiText } from "@/lib/ai.functions";
 import { getBilling } from "@/lib/billing.functions";
 import type { AiCheckResult } from "@/lib/ai-detect";
-import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -172,10 +171,18 @@ function AiCheckerPage() {
   const words = text.trim() ? text.trim().split(/\s+/).length : 0;
   return (
     <div className="space-y-5">
-      <PageHeader title="AI Text Checker" description="Paste your writing. See what sounds AI-written, and why." />
+      <header className="ai-checker-hero flex items-center gap-4 p-5 sm:p-6">
+        <div className="ai-checker-icon size-12 shrink-0 sm:size-14">
+          <ScanSearch className="size-6 sm:size-7" />
+        </div>
+        <div className="relative min-w-0">
+          <h1 className="font-display text-xl font-bold sm:text-2xl">AI Text Checker</h1>
+          <p className="text-sm text-muted-foreground">Paste your writing. See what sounds AI-written, and why.</p>
+        </div>
+      </header>
       <AiKeySetupBanner />
       <section
-        className={cn("surface-card space-y-3 p-4 sm:p-6 transition", dragging && "ring-2 ring-primary")}
+        className={cn("ai-checker-card space-y-3 p-4 sm:p-6 transition", busy && "ai-checker-scanning", dragging && "ring-2 ring-primary")}
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={(e) => { e.preventDefault(); setDragging(false); void importFile(e.dataTransfer.files[0]); }}
@@ -226,10 +233,10 @@ function AiCheckerPage() {
       </section>
 
       {result ? (
-        <section className="surface-card space-y-5 p-4 sm:p-6">
+        <section className="ai-checker-card ai-checker-rise space-y-5 p-4 sm:p-6">
           <div className="flex items-center gap-5">
             <div
-              className="relative flex size-24 shrink-0 items-center justify-center rounded-full"
+              className="ai-checker-ring relative flex size-24 shrink-0 items-center justify-center"
               style={{ background: result.verdict === "insufficient" ? "var(--muted)" : `conic-gradient(var(--destructive) ${result.aiPercent * 3.6}deg, color-mix(in oklab, var(--primary) 35%, transparent) 0)` }}
               aria-hidden="true"
             >

@@ -444,6 +444,69 @@
   .glo-meter i:nth-child(3) { animation-delay: -0.5s; }
 }
 
+/* AI Checker: scoped sci-fi scanner look. Presentation only. */
+.ai-checker-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  border: 1px solid color-mix(in oklab, var(--primary) 40%, var(--border));
+  background:
+    radial-gradient(120% 160% at 8% 0%, color-mix(in oklab, var(--primary) 22%, transparent), transparent 55%),
+    radial-gradient(100% 140% at 95% 100%, color-mix(in oklab, var(--info, var(--primary)) 18%, transparent), transparent 60%),
+    var(--color-card);
+  box-shadow: 0 12px 40px -18px color-mix(in oklab, var(--primary) 45%, transparent);
+}
+.ai-checker-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(color-mix(in oklab, var(--primary) 8%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--primary) 8%, transparent) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: radial-gradient(80% 90% at 50% 0%, black, transparent 75%);
+}
+.ai-checker-icon {
+  display: grid;
+  place-items: center;
+  border-radius: 1rem;
+  color: var(--primary-foreground);
+  background: linear-gradient(135deg, var(--primary), color-mix(in oklab, var(--primary) 55%, var(--info, var(--primary))));
+  box-shadow: 0 8px 24px -8px var(--primary);
+}
+.ai-checker-card {
+  position: relative;
+  border-radius: var(--radius-lg);
+  border: 1px solid color-mix(in oklab, var(--primary) 25%, var(--border));
+  background: var(--color-card);
+  box-shadow: 0 10px 34px -20px color-mix(in oklab, var(--primary) 40%, transparent);
+  overflow: hidden;
+}
+.ai-checker-scanning::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 4rem;
+  top: -4rem;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, color-mix(in oklab, var(--primary) 35%, transparent) 85%, var(--primary));
+  box-shadow: 0 6px 18px -4px var(--primary);
+  animation: snap-scan 1.4s ease-in-out infinite;
+}
+.ai-checker-ring {
+  border-radius: 9999px;
+  padding: 5px;
+  box-shadow: 0 0 26px -6px color-mix(in oklab, var(--primary) 55%, transparent);
+}
+.ai-checker-rise { animation: fade-up 0.45s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .ai-checker-scanning::before { animation: none; opacity: 0; }
+  .ai-checker-rise { animation: none; }
+}
+
 /* Dashboard: dark navy glass look, scoped to the main dashboard area only. */
 .dash { min-height: calc(100dvh - 4rem); overflow-x: clip; color: var(--foreground); }
 .dark .dash {
