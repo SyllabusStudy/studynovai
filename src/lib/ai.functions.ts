@@ -316,6 +316,7 @@ export const humanizeAiText = createServerFn({ method: "POST" })
       .object({
         sentences: z.array(z.object({ index: z.number().int().min(0), text: z.string().min(1).max(2000) })).min(1).max(200),
         context: z.string().max(20000),
+        tone: z.enum(["natural", "academic", "casual", "concise"]).optional(),
       })
       .parse(d),
   )
