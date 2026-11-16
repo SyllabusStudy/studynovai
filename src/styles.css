@@ -446,6 +446,7 @@
 
 /* AI Checker: isolated two-pane writing workspace. Presentation only. */
 .ai-checker {
+  color: var(--foreground);
   --checker-surface: color-mix(in oklab, var(--card) 96%, var(--info));
   --checker-result: color-mix(in oklab, var(--card) 90%, var(--info));
   --checker-shadow: 0 18px 60px -32px color-mix(in oklab, var(--info) 40%, transparent);
@@ -463,6 +464,7 @@
 .ai-checker-results { background: var(--checker-result); border-top: 1px solid var(--border); }
 .ai-checker-step { color: var(--info); font-family: var(--font-mono); font-size: 11px; margin-right: 4px; }
 .ai-checker-text {
+  color: var(--foreground);
   background: transparent;
   border: 0;
   border-radius: 0;
