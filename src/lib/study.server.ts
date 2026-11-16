@@ -1753,6 +1753,9 @@ import {
   combine as combineAiEvidence,
   isMeaningfullyRewritten,
   splitSentences,
+  computeSignals,
+  localScore,
+  paragraphsOf,
   textSimilarity,
   type AiCheckResult as DetectResult,
 } from "./ai-detect";
@@ -1825,6 +1828,9 @@ HOW HUMAN WRITING ACTUALLY DIFFERS (apply all of these):
 - Vary openings: do not start consecutive sentences the same way, and rarely open with a transition word.
 - Uneven paragraphs: paragraphs should not all have the same shape or length; skip the neat "topic sentence, three points, summary" pattern.
 - Use contractions where the tone allows, occasional parenthetical asides, and the odd question or dash when it fits the idea.
+- Avoid "A, B, and C" lists of three. Use at most one list per paragraph, and prefer pairs or a single concrete item.
+- Use contractions (it's, don't, that's) in most paragraphs unless the tone is academic.
+- Avoid grand sweeping statements ("marks a total shift", "opens up huge doors", "down the road"); say plainly what happens.
 - No closing summary sentence that restates the paragraph ("Overall,", "In conclusion,", "Ultimately,").
 - BANNED words/phrases: delve, moreover, furthermore, additionally, in today's world, landscape, tapestry, crucial, pivotal, vital, foster, leverage, utilize, navigate, realm, robust, seamless, it is important to note, plays a significant role, a testament to, in conclusion, overall, ultimately, not only... but also, in summary, embark, underscore, multifaceted, intricate, ever-evolving, showcase.
 
@@ -1867,7 +1873,7 @@ async function humanizePass(
     attempt === 0
       ? ""
       : attempt === 1
-        ? "\n\nYour previous draft was too close to the source or still sounded machine-written (uniform sentence lengths or banned phrases). Make sentence lengths swing hard between short and long. Reconstruct the passage more substantially: change the paragraph flow, split or combine sentences, vary their openings and lengths, and recast the explanation while preserving every claim and protected detail."
+        ? "\n\nYour previous draft was too close to the source or still sounded machine-written (uniform sentence lengths, banned phrases, or repeated "A, B, and C" lists of three). Remove most lists of three and add contractions. Make sentence lengths swing hard between short and long. Reconstruct the passage more substantially: change the paragraph flow, split or combine sentences, vary their openings and lengths, and recast the explanation while preserving every claim and protected detail."
         : "\n\nThis is the final revision. The earlier drafts were superficial. Start from the ideas rather than the original sentence shapes, then write a fresh, natural version with different organization and rhythm. Preserve every fact, quotation, citation, number, and intended meaning.";
   const raw = await callAI(
     [
@@ -1909,7 +1915,10 @@ export async function runHumanize(input: { sentences: { index: number; text: str
     if (!rewrite) continue;
     const similarity = textSimilarity(original, rewrite);
     const st = writingStats(rewrite);
-    const soundsHuman = attempt === 2 || st.sentences < 4 || (st.variety >= 45 && st.cliches.length === 0);
+    const sig = computeSignals(splitSentences(rewrite), paragraphsOf(rewrite));
+    const local = localScore(sig) ?? 0;
+    const triads = sig.some((x) => x.id === "triads" && x.detected);
+    const soundsHuman = attempt === 2 || st.sentences < 4 || (st.variety >= 45 && st.cliches.length === 0 && !triads && local < 40);
     if (soundsHuman && isMeaningfullyRewritten(original, rewrite) && preservesProtectedDetails(original, rewrite)) {
       return { text: rewrite, similarity };
     }
