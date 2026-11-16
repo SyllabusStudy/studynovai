@@ -172,10 +172,18 @@ function AiCheckerPage() {
   const words = text.trim() ? text.trim().split(/\s+/).length : 0;
   return (
     <div className="space-y-5">
-      <PageHeader title="AI Text Checker" description="Paste your writing. See what sounds AI-written, and why." />
+      <header className="ai-checker-hero flex items-center gap-4 p-5 sm:p-6">
+        <div className="ai-checker-icon size-12 shrink-0 sm:size-14">
+          <ScanSearch className="size-6 sm:size-7" />
+        </div>
+        <div className="relative min-w-0">
+          <h1 className="font-display text-xl font-bold sm:text-2xl">AI Text Checker</h1>
+          <p className="text-sm text-muted-foreground">Paste your writing. See what sounds AI-written, and why.</p>
+        </div>
+      </header>
       <AiKeySetupBanner />
       <section
-        className={cn("surface-card space-y-3 p-4 sm:p-6 transition", dragging && "ring-2 ring-primary")}
+        className={cn("ai-checker-card space-y-3 p-4 sm:p-6 transition", busy && "ai-checker-scanning", dragging && "ring-2 ring-primary")}
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={(e) => { e.preventDefault(); setDragging(false); void importFile(e.dataTransfer.files[0]); }}
