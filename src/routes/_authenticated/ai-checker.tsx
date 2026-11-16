@@ -10,7 +10,6 @@ import { toast } from "sonner";
 import { checkAiText, humanizeAiText } from "@/lib/ai.functions";
 import { getBilling } from "@/lib/billing.functions";
 import type { AiCheckResult } from "@/lib/ai-detect";
-import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -234,10 +233,10 @@ function AiCheckerPage() {
       </section>
 
       {result ? (
-        <section className="surface-card space-y-5 p-4 sm:p-6">
+        <section className="ai-checker-card ai-checker-rise space-y-5 p-4 sm:p-6">
           <div className="flex items-center gap-5">
             <div
-              className="relative flex size-24 shrink-0 items-center justify-center rounded-full"
+              className="ai-checker-ring relative flex size-24 shrink-0 items-center justify-center"
               style={{ background: result.verdict === "insufficient" ? "var(--muted)" : `conic-gradient(var(--destructive) ${result.aiPercent * 3.6}deg, color-mix(in oklab, var(--primary) 35%, transparent) 0)` }}
               aria-hidden="true"
             >
