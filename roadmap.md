@@ -1,5 +1,8 @@
 # Current work
 
+- [ ] Redesign only the AI Checker into a two-pane writing and analysis workspace, preserving all existing actions.
+- [ ] Verify the AI Checker layout on desktop and phone in both themes.
+
 - [x] Show Glo’s live transcript and clear preparing-answer feedback; simulated repeated speech produced only one request and all seven focused tests passed.
 - [x] Refresh Glo’s dock button and verify light/dark appearance and disabled Talk while processing; real microphone behavior remains untested.
 

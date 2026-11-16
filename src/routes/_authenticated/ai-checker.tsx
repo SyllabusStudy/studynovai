@@ -2,7 +2,7 @@ import { MoreOptions } from "@/components/MoreOptions";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Copy, Crown, FileUp, Loader2, NotebookPen, RefreshCw, ScanSearch } from "lucide-react";
+import { ArrowUpRight, Copy, Crown, FileUp, Fingerprint, Loader2, NotebookPen, RefreshCw, ScanSearch, Trash2 } from "lucide-react";
 import { listPersonalNotes } from "@/lib/notes.functions";
 import { readTextFromFile } from "@/lib/checker-import";
 import { writingStats } from "@/lib/writing-stats";
@@ -170,40 +170,44 @@ function AiCheckerPage() {
 
   const words = text.trim() ? text.trim().split(/\s+/).length : 0;
   return (
-    <div className="space-y-5">
-      <header className="ai-checker-hero flex items-center gap-4 p-5 sm:p-6">
-        <div className="ai-checker-icon size-12 shrink-0 sm:size-14">
-          <ScanSearch className="size-6 sm:size-7" />
+    <div className="ai-checker space-y-6">
+      <header className="flex flex-wrap items-end justify-between gap-4 py-2 sm:py-4">
+        <div className="min-w-0">
+          <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase text-info"><Fingerprint className="size-4" /> Writing insights</div>
+          <h1 className="font-display text-3xl font-bold sm:text-4xl">AI Text Checker<span className="text-info">.</span></h1>
+          <p className="mt-3 text-sm text-muted-foreground">A closer look at your writing.</p>
         </div>
-        <div className="relative min-w-0">
-          <h1 className="font-display text-xl font-bold sm:text-2xl">AI Text Checker</h1>
-          <p className="text-sm text-muted-foreground">Paste your writing. See what sounds AI-written, and why.</p>
-        </div>
+        <span className="flex items-center gap-2 text-xs text-muted-foreground"><span className="size-2 rounded-full bg-info" /> {busy ? "Analysis in progress" : result ? "Analysis complete" : "Ready to analyze"}</span>
       </header>
       <AiKeySetupBanner />
+      <div className="ai-checker-workspace">
       <section
-        className={cn("ai-checker-card space-y-3 p-4 sm:p-6 transition", busy && "ai-checker-scanning", dragging && "ring-2 ring-primary")}
+        aria-label="Your writing"
+        className={cn("ai-checker-editor flex min-w-0 flex-col p-4 sm:p-6 transition", busy && "ai-checker-scanning", dragging && "ring-2 ring-info")}
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={(e) => { e.preventDefault(); setDragging(false); void importFile(e.dataTransfer.files[0]); }}
       >
-        <div className="flex flex-wrap gap-2">
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <h2 className="flex items-center gap-2 font-display text-sm font-semibold"><span className="ai-checker-step">01</span> Your writing</h2>
+          <span className="text-xs text-muted-foreground">{words.toLocaleString()} words</span>
+        </div>
+        <div className="mb-4 flex flex-wrap gap-2">
           <input ref={fileRef} type="file" accept=".pdf,.docx,.txt,.md,text/plain,application/pdf" className="hidden" onChange={(e) => { void importFile(e.target.files?.[0]); e.target.value = ""; }} />
           <Button variant="outline" size="sm" className="gap-1.5" onClick={() => fileRef.current?.click()}>
-            <FileUp className="size-4" /> Upload PDF, Word or text
+            <FileUp className="size-4" /> Upload file
           </Button>
           <Button variant="outline" size="sm" className="gap-1.5" onClick={() => void openNotes()}>
             <NotebookPen className="size-4" /> From my notes
           </Button>
-          <span className="self-center text-xs text-muted-foreground">or drag a file here</span>
         </div>
         {notes ? (
-          <div className="max-h-48 space-y-1 overflow-y-auto rounded-xl border border-border p-2">
+          <div className="mb-3 max-h-48 space-y-1 overflow-y-auto rounded-lg border border-border p-2">
             {notes.length ? notes.map((n) => (
-              <button key={n.id} type="button" className="block w-full truncate rounded-lg px-2 py-1.5 text-left text-sm hover:bg-accent"
+              <Button key={n.id} type="button" variant="ghost" className="w-full justify-start truncate px-2 py-1.5 text-left text-sm"
                 onClick={() => { setText((n.plain_text ?? "").slice(0, 20000)); setNotes(null); setResult(null); }}>
                 {n.title || "Untitled note"}
-              </button>
+              </Button>
             )) : <p className="p-2 text-sm text-muted-foreground">No notes with enough text yet.</p>}
           </div>
         ) : null}
@@ -211,29 +215,32 @@ function AiCheckerPage() {
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={10}
-          className="min-h-48 resize-y text-base sm:text-sm"
+          aria-label="Text to check"
+          className="ai-checker-text min-h-80 flex-1 resize-y text-base leading-7 sm:text-sm"
           placeholder="Paste an essay, paragraph or answer here…"
         />
-        <div className="grid gap-3 sm:flex sm:items-center sm:justify-between">
+        <div className="mt-4 space-y-4">
           <p className="text-xs text-muted-foreground">
-            {words.toLocaleString()} words{text.length > 20000 ? " · first 20,000 characters are checked" : ""}
+            PDF, Word, TXT or Markdown{text.length > 20000 ? " · first 20,000 characters are checked" : ""}
           </p>
-          <div className="grid grid-cols-[auto_1fr] gap-2 sm:flex">
+          <div className="flex gap-2">
             {text ? (
-              <Button variant="ghost" onClick={() => { setText(""); setResult(null); }} disabled={busy}>
-                Clear
+              <Button variant="outline" size="icon" title="Clear text" aria-label="Clear text" onClick={() => { setText(""); setResult(null); }} disabled={busy} className="size-11 shrink-0">
+                <Trash2 className="size-4" />
               </Button>
             ) : <span />}
-            <Button size="lg" onClick={() => void check()} disabled={busy} className="gap-1.5">
+            <Button size="lg" onClick={() => void check()} disabled={busy} className="ai-checker-submit h-11 flex-1 gap-2">
               {busy ? <Loader2 className="size-4 animate-spin" /> : <ScanSearch className="size-4" />}
               {busy ? "Checking…" : "Check text"}
+              {!busy ? <ArrowUpRight className="ml-auto size-4" /> : null}
             </Button>
           </div>
         </div>
       </section>
 
       {result ? (
-        <section className="ai-checker-card ai-checker-rise space-y-5 p-4 sm:p-6">
+        <section aria-label="Writing analysis" className="ai-checker-results ai-checker-rise min-w-0 space-y-5 p-4 sm:p-6">
+          <h2 className="flex items-center gap-2 font-display text-sm font-semibold"><span className="ai-checker-step">02</span> Your analysis</h2>
           <div className="flex items-center gap-5">
             <div
               className="ai-checker-ring relative flex size-24 shrink-0 items-center justify-center"
@@ -255,7 +262,7 @@ function AiCheckerPage() {
                   <p className="text-sm">
                     Confidence:{" "}
                     <span className={cn("font-semibold", result.confidence === "high" ? "text-success" : result.confidence === "medium" ? "text-warning" : "text-muted-foreground")}>
-                      {result.confidence[0]!.toUpperCase() + result.confidence.slice(1)}
+                      {result.confidence.charAt(0).toUpperCase() + result.confidence.slice(1)}
                     </span>
                   </p>
                 </>
@@ -271,8 +278,8 @@ function AiCheckerPage() {
           ) : null}
 
           {stats && stats.sentences >= 3 ? (
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-xl border border-border p-3">
+            <div className="ai-checker-metrics grid gap-4 border-y border-border py-4 sm:grid-cols-3">
+              <div className="min-w-0">
                 <p className="text-xs text-muted-foreground">Sentence variety</p>
                 <p className="font-display text-lg font-bold">{stats.variety}%</p>
                 <div className="mt-1 flex h-8 items-end gap-px">
@@ -282,12 +289,12 @@ function AiCheckerPage() {
                 </div>
                 <p className="mt-1 text-[11px] text-muted-foreground">{stats.variety < 35 ? "Sentences are very even — mix short and long." : "Good mix of short and long sentences."}</p>
               </div>
-              <div className="rounded-xl border border-border p-3">
+              <div className="min-w-0">
                 <p className="text-xs text-muted-foreground">Average sentence</p>
                 <p className="font-display text-lg font-bold">{stats.avgSentenceWords} words</p>
                 <p className="text-[11px] text-muted-foreground">{stats.sentences} sentences · ~{stats.readingMinutes} min read</p>
               </div>
-              <div className="rounded-xl border border-border p-3">
+              <div className="min-w-0">
                 <p className="text-xs text-muted-foreground">AI-sounding phrases</p>
                 <p className="font-display text-lg font-bold">{stats.cliches.reduce((a, c) => a + c.count, 0)}</p>
                 <div className="mt-1 flex flex-wrap gap-1">
@@ -306,7 +313,6 @@ function AiCheckerPage() {
               <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-warning/25" /> Uncertain</span>
               {rewritten.size ? <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm border-2 border-success" /> Revised</span> : null}
             </div>
-            <p className="text-xs text-muted-foreground">Tap any highlighted part to see why it was flagged.</p>
             <div className="max-h-[28rem] overflow-y-auto whitespace-pre-wrap rounded-xl border border-border bg-background/50 p-3 text-sm leading-7">
               {result.spans.map((s, i) => (
                 <span
@@ -332,7 +338,8 @@ function AiCheckerPage() {
               ))}
             </div>
             {openSection !== null && result.sections[openSection] ? (() => {
-              const sec = result.sections[openSection]!;
+              const sec = result.sections[openSection];
+              if (!sec) return null;
               return (
                 <div className="rounded-xl border border-border p-3">
                   <div className="flex items-center justify-between gap-2">
@@ -427,7 +434,25 @@ function AiCheckerPage() {
             AI detection is an estimate, not proof. It can produce false positives and false negatives and can't show who wrote something. This is not a plagiarism check.
           </p>
         </section>
-      ) : null}
+      ) : (
+        <section aria-label="Writing analysis" className="ai-checker-results flex min-w-0 flex-col p-4 sm:p-6">
+          <h2 className="flex items-center gap-2 font-display text-sm font-semibold"><span className="ai-checker-step">02</span> Your analysis</h2>
+          <div className="ai-checker-empty flex min-h-80 flex-1 flex-col items-center justify-center gap-6 py-10 text-center" aria-live="polite">
+            <div className={cn("ai-checker-fingerprint", busy && "is-scanning")}><Fingerprint className="size-24 stroke-1" /><span /></div>
+            <div>
+              <h3 className="font-display text-lg font-semibold">{busy ? "Reading between the lines…" : "Every word has a pattern"}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{busy ? "Analyzing your writing style" : "Your writing insights will appear here."}</p>
+            </div>
+            <div className="flex flex-wrap justify-center gap-5 text-xs text-muted-foreground">
+              <span className="flex items-center gap-2"><span className="size-2 rounded-full bg-destructive" /> AI</span>
+              <span className="flex items-center gap-2"><span className="size-2 rounded-full bg-success" /> Human</span>
+              <span className="flex items-center gap-2"><span className="size-2 rounded-full bg-warning" /> Mixed</span>
+            </div>
+          </div>
+          <p className="border-t border-border pt-4 text-xs leading-relaxed text-muted-foreground">AI detection is an estimate, not proof of authorship.</p>
+        </section>
+      )}
+      </div>
     </div>
   );
 }
