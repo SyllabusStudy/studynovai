@@ -11,6 +11,7 @@ import {
   tutorSystemPrompt,
 } from "./ai.server";
 import type { ChatMessage } from "./ai.server";
+import { tutorHistory } from "./tutor-prompt";
 
 type DB = SupabaseClient<Database>;
 
@@ -659,7 +660,7 @@ export async function runTutorChat(
   const reply = await callAI(
     [
       { role: "system", content: `${tutorSystemPrompt(input.mode, contextText)}\n\n${REFINE_RULE}` },
-      ...history.slice(-8).map((m) => ({ role: m.role, content: m.content })),
+      ...tutorHistory(history).map((m) => ({ role: m.role, content: m.content })),
       { role: "user", content: userContent },
     ],
     // Web lookup only when the student asks for outside/current info; greetings and course questions answer instantly.

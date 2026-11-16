@@ -32,3 +32,4 @@
 - iPhone Pro purchases use Apple StoreKit 2 (@capgo/native-purchases); the server verifies the signed transaction against Apple Root CA G3 and stores subscriptions.status='apple' with expiry, so Stripe and promo codes are hidden inside the iOS app per App Store rule 3.1.1.
 - Where browser speech recognition is missing or fails (desktop Electron app), Glo falls back to tap-to-talk MediaRecorder clips transcribed by transcribeGloVoice without spending trial uses; a typed box is always available, so Glo never depends on a cloud speech service.
 - Keep AI Checker workspace styling scoped to `.ai-checker` and its descendants so presentation updates do not affect other study tools.
+- Keep Tutor instruction priority and conversation-history selection in the pure `tutor-prompt` module so task-following rules have focused regression coverage without AI calls.

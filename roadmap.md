@@ -1,5 +1,9 @@
 # Current work
 
+- [x] Improve AI Tutor instruction-following by removing conflicting teaching rules and retaining more conversation context.
+- [x] Run Tutor regression tests: all 10 pass; real request returned exactly three flashcards without headings despite Explain mode.
+- [ ] Verify a real follow-up correction; blocked because this account exhausted its two Tutor trial uses and has no personal AI key.
+
 - [x] Redesign only the AI Checker into a two-pane writing and analysis workspace, preserving all existing actions.
 - [x] Verify the signed-in AI Checker layout on desktop and phone in both themes; text entry/clear and writing-stats tests pass. A live analysis did not return results during verification; existing ad-script hydration warnings remain outside this visual-only change.
 
